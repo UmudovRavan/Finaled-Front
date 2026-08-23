@@ -13,7 +13,6 @@ import {
 import altensorLogo from '../assets/Altensor-Logo.png';
 import taskManagementLogo from '../assets/Task-Management-Logo.svg';
 import altensorCrmLogo from '../assets/Altensor_CRM_Logo.svg';
-import authLogo from '../assets/auth-logo.svg';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -31,15 +30,8 @@ const appsList = [
     id: 'crm',
     name: 'Altensor CRM',
     logo: altensorCrmLogo,
-    externalRoute: import.meta.env.VITE_CRM_WEB_URL || 'https://info.altensor.com',
+    externalRoute: import.meta.env.VITE_CRM_WEB_URL || 'https://crm.altensor.com/desktop',
     requiredModule: 'crm'
-  },
-  {
-    id: 'auth',
-    name: 'Auth Service',
-    logo: authLogo,
-    externalRoute: import.meta.env.VITE_AUTH_WEB_URL || 'https://auth.altensor.com',
-    requiredModule: 'auth'
   }
 ];
 
@@ -141,8 +133,17 @@ const DesktopPage = () => {
       if (refreshToken) params.append('refreshToken', refreshToken);
       if (tenant) params.append('tenant', tenant);
 
-      const baseUrl = app.externalRoute.replace(/\/+$/, '');
-      const targetUrl = `${baseUrl}/?${params.toString()}`;
+      let targetUrl;
+      try {
+        const url = new URL(app.externalRoute);
+        url.searchParams.set('token', token);
+        if (refreshToken) url.searchParams.set('refreshToken', refreshToken);
+        if (tenant) url.searchParams.set('tenant', tenant);
+        targetUrl = url.toString();
+      } catch {
+        const separator = app.externalRoute.includes('?') ? '&' : '?';
+        targetUrl = `${app.externalRoute}${separator}${params.toString()}`;
+      }
 
       window.open(targetUrl, '_blank');
     } else if (app.route) {
@@ -292,7 +293,7 @@ const DesktopPage = () => {
 
       {/* Main Workspace Area */}
       <main className="flex-1 max-w-5xl w-full mx-auto px-6 py-20 flex flex-col items-center justify-center">
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 sm:gap-12 md:gap-16 w-full justify-items-center max-w-3xl">
+        <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-12 md:gap-16 w-full max-w-3xl">
           {filteredApps.map((app) => {
             const hasAccess = hasAccessToApp(app);
 
