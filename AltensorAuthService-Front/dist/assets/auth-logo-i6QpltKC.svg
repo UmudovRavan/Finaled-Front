@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="320 230 896 896" fill="none">
+  <defs>
+    <linearGradient id="frame" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff007f"/>
+      <stop offset="42%" stop-color="#f000d8"/>
+      <stop offset="70%" stop-color="#7b36ff"/>
+      <stop offset="100%" stop-color="#006cff"/>
+    </linearGradient>
+
+    <linearGradient id="shield" x1="5%" y1="10%" x2="95%" y2="90%">
+      <stop offset="0%" stop-color="#ff087f"/>
+      <stop offset="35%" stop-color="#d10bdc"/>
+      <stop offset="67%" stop-color="#4938e9"/>
+      <stop offset="100%" stop-color="#0879ff"/>
+    </linearGradient>
+
+    <radialGradient id="shieldGlow" cx="50%" cy="48%" r="62%">
+      <stop offset="0%" stop-color="#d80ad6" stop-opacity=".85"/>
+      <stop offset="45%" stop-color="#7031ff" stop-opacity=".55"/>
+      <stop offset="100%" stop-color="#005dff" stop-opacity="0"/>
+    </radialGradient>
+
+    <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="24" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="shieldSoftGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="32" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="keyShadow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="9" result="blur"/>
+      <feOffset dy="4"/>
+      <feComponentTransfer><feFuncA type="linear" slope=".45"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- outer rounded-square glow -->
+  <rect x="362" y="275" width="812" height="812" rx="205"
+        fill="none" stroke="url(#frame)" stroke-width="38"
+        opacity=".35" filter="url(#softGlow)"/>
+  <rect x="374" y="291" width="788" height="788" rx="190"
+        fill="none" stroke="url(#frame)" stroke-width="38"/>
+
+  <!-- shield glow -->
+  <path d="M768 446
+           C713 482 661 514 587 538
+           C556 548 548 571 549 611
+           C552 735 582 847 657 931
+           C701 981 747 1011 768 1022
+           C789 1011 835 981 879 931
+           C954 847 984 735 987 611
+           C988 571 980 548 949 538
+           C875 514 823 482 768 446Z"
+        fill="url(#shieldGlow)" opacity=".8" filter="url(#shieldSoftGlow)"/>
+
+  <!-- shield outline -->
+  <path d="M768 446
+           C713 482 661 514 587 538
+           C556 548 548 571 549 611
+           C552 735 582 847 657 931
+           C701 981 747 1011 768 1022
+           C789 1011 835 981 879 931
+           C954 847 984 735 987 611
+           C988 571 980 548 949 538
+           C875 514 823 482 768 446Z"
+        fill="url(#shield)" stroke="url(#frame)" stroke-width="38"
+        stroke-linejoin="round"/>
+
+  <!-- subtle inner shield -->
+  <path d="M768 476
+           C711 512 662 538 597 559
+           C579 565 572 578 573 611
+           C576 720 603 817 669 893
+           C708 937 749 966 768 976
+           C787 966 828 937 867 893
+           C933 817 960 720 963 611
+           C964 578 957 565 939 559
+           C874 538 825 512 768 476Z"
+        fill="url(#shield)" opacity=".45"/>
+
+  <!-- keyhole -->
+  <g fill="#081022" filter="url(#keyShadow)">
+    <circle cx="768" cy="655" r="65"/>
+    <path d="M739 704 L718 812 Q716 827 731 827 H805 Q820 827 818 812 L797 704Z"/>
+  </g>
+</svg>

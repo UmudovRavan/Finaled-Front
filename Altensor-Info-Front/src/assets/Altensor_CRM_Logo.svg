@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <linearGradient id="border" x1="180" y1="120" x2="850" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F20B78"/>
+      <stop offset="0.45" stop-color="#9B4BC6"/>
+      <stop offset="1" stop-color="#1477E8"/>
+    </linearGradient>
+    <linearGradient id="pinkPurple" x1="390" y1="410" x2="650" y2="720" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F01878"/>
+      <stop offset="1" stop-color="#8058D9"/>
+    </linearGradient>
+    <linearGradient id="purpleBlue" x1="470" y1="540" x2="700" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#B14CC4"/>
+      <stop offset="1" stop-color="#3778EA"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background (Transparent for theme adaptability) -->
+  <rect width="1024" height="1024" rx="80" fill="none"/>
+
+  <!-- Main rounded CRM frame -->
+  <rect x="150" y="145" width="724" height="724" rx="145"
+        stroke="url(#border)" stroke-width="34"/>
+
+  <!-- Connection arc -->
+  <path d="M365 430 C415 300 610 300 660 430"
+        stroke="#F21B7B" stroke-width="24" stroke-linecap="round"/>
+
+  <!-- Central person -->
+  <circle cx="512" cy="445" r="72" fill="url(#pinkPurple)"/>
+  <path d="M405 650 C405 570 452 525 512 525 C572 525 619 570 619 650
+           C619 666 606 680 590 680 H434 C418 680 405 666 405 650Z"
+        fill="url(#purpleBlue)"/>
+
+  <!-- Left person -->
+  <circle cx="315" cy="460" r="50" fill="url(#pinkPurple)"/>
+  <path d="M235 625 C235 565 270 535 315 535 C360 535 395 565 395 625
+           C395 639 384 650 370 650 H260 C246 650 235 639 235 625Z"
+        fill="url(#pinkPurple)"/>
+
+  <!-- Right person -->
+  <circle cx="709" cy="460" r="50" fill="url(#purpleBlue)"/>
+  <path d="M629 625 C629 565 664 535 709 535 C754 535 789 565 789 625
+           C789 639 778 650 764 650 H654 C640 650 629 639 629 625Z"
+        fill="url(#purpleBlue)"/>
+
+  <!-- Lower connection arcs -->
+  <path d="M325 690 C350 750 405 785 445 800"
+        stroke="#7C5CDE" stroke-width="24" stroke-linecap="round"/>
+  <path d="M699 690 C674 750 619 785 579 800"
+        stroke="#4779EA" stroke-width="24" stroke-linecap="round"/>
+
+  <!-- Chat bubble -->
+  <path d="M445 760 H579 C604 760 624 780 624 805 V877
+           C624 902 604 922 579 922 H530 L512 944 L494 922 H445
+           C420 922 400 902 400 877 V805 C400 780 420 760 445 760Z"
+        fill="none" stroke="url(#border)" stroke-width="14"/>
+
+  <!-- Chat lines -->
+  <rect x="454" y="807" width="116" height="13" rx="6.5" fill="#9D6BDD"/>
+  <rect x="454" y="837" width="116" height="13" rx="6.5" fill="#8B65DC"/>
+  <rect x="454" y="867" width="78" height="13" rx="6.5" fill="#5A7DE8"/>
+</svg>

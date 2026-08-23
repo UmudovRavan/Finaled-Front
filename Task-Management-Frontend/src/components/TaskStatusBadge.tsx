@@ -1,0 +1,70 @@
+import React from 'react';
+import { TaskStatus } from '../dto';
+import { useLanguage } from '../context/LanguageContext';
+
+interface TaskStatusBadgeProps {
+    status: number;
+}
+
+const TaskStatusBadge: React.FC<TaskStatusBadgeProps> = ({ status }) => {
+    const { t } = useLanguage();
+
+    const getStatusConfig = () => {
+        switch (status) {
+            case TaskStatus.Pending:
+                return {
+                    label: t('statuses.pending', {}, 'Gözləmədə'),
+                    bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
+                    textColor: 'text-yellow-700 dark:text-yellow-400',
+                };
+            case TaskStatus.Assigned:
+                return {
+                    label: t('statuses.assigned', {}, 'Təyin edilib'),
+                    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+                    textColor: 'text-blue-700 dark:text-blue-400',
+                };
+            case TaskStatus.InProgress:
+                return {
+                    label: t('statuses.inProgress', {}, 'İcrada'),
+                    bgColor: 'bg-purple-100 dark:bg-purple-900/30',
+                    textColor: 'text-purple-700 dark:text-purple-400',
+                };
+            case TaskStatus.UnderReview:
+                return {
+                    label: t('statuses.review', {}, 'Baxışda'),
+                    bgColor: 'bg-orange-100 dark:bg-orange-900/30',
+                    textColor: 'text-orange-700 dark:text-orange-400',
+                };
+            case TaskStatus.Completed:
+                return {
+                    label: t('statuses.completed', {}, 'Tamamlandı'),
+                    bgColor: 'bg-green-100 dark:bg-green-900/30',
+                    textColor: 'text-green-700 dark:text-green-400',
+                };
+            case TaskStatus.Expired:
+                return {
+                    label: t('common.overdue', {}, 'Vaxtı bitib'),
+                    bgColor: 'bg-red-100 dark:bg-red-900/30',
+                    textColor: 'text-red-700 dark:text-red-400',
+                };
+            default:
+                return {
+                    label: t('common.none', {}, 'Naməlum'),
+                    bgColor: 'bg-gray-100 dark:bg-gray-700',
+                    textColor: 'text-gray-700 dark:text-gray-400',
+                };
+        }
+    };
+
+    const config = getStatusConfig();
+
+    return (
+        <span
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bgColor} ${config.textColor}`}
+        >
+            {config.label}
+        </span>
+    );
+};
+
+export default TaskStatusBadge;

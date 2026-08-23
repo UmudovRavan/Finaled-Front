@@ -1,0 +1,631 @@
+@layer utilities {
+  .mesh-gradient {
+    background-color: #f8f9fa;
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(210, 20%, 95%, 1) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(210, 15%, 92%, 1) 0px, transparent 50%),
+      radial-gradient(at 50% 50%, hsla(210, 10%, 97%, 1) 0px, transparent 50%);
+  }
+
+  .input-border {
+    border: 1px solid #E2E8F0;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
+  .input-border:focus-within {
+    border-color: #4F46E5;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05), 0 0 0 1px #4F46E5;
+  }
+
+  .squircle {
+    border-radius: 24%;
+  }
+
+  .noise-bg {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+  }
+
+  .app-icon-shadow {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Remove native browser select arrow globally to eliminate double overlapping arrows */
+select {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-image: none !important;
+}
+
+select::-ms-expand {
+  display: none !important;
+}
+
+/* Custom Sleek Dark Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #121214;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #27272A;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3F3F46;
+}
+
+/* ==========================================
+   LIGHT MODE OVERRIDES (SCREENSHOT MATCH 100%)
+   ========================================== */
+html.light,
+html.light body,
+html.light #root {
+  background-color: #F8FAFC !important;
+  color: #1F2937 !important;
+}
+
+/* Layout Workspace Backgrounds */
+html.light [class*="bg-[#121214]"],
+html.light [class*="bg-[#0F0F11]"],
+html.light [class*="bg-[#0b0c10]"],
+html.light [class*="bg-[#08090C]"],
+html.light [class*="bg-[#0C0E14]"],
+html.light [class*="bg-[#0B0F17]"],
+html.light [class*="bg-[#0D0F16]"],
+html.light [class*="bg-[#0e1017]"] {
+  background-color: #F8FAFC !important;
+}
+
+/* Sidebar, Header, Modals & Containers Pure White Background */
+html.light [class*="bg-[#141416]"],
+html.light [class*="bg-[#18181B]"],
+html.light [class*="bg-[#1C1C1E]"],
+html.light [class*="bg-[#1F1F22]"] {
+  background-color: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+}
+
+/* Hover States & Active Pill Items */
+html.light [class*="bg-[#27272A]"]:not([class*="hover:bg-[#27272A]"]):not([class*="group-hover:bg-[#27272A]"]) {
+  background-color: #F1F5F9 !important;
+  color: #0F172A !important;
+  border-color: #E2E8F0 !important;
+}
+
+html.light [class*="bg-[#2C2C2E]"]:not([class*="hover:bg-[#2C2C2E]"]):not([class*="group-hover:bg-[#2C2C2E]"]) {
+  background-color: #E2E8F0 !important;
+  color: #0F172A !important;
+}
+
+html.light [class*="hover:bg-[#141416]"]:hover,
+html.light [class*="hover:bg-[#27272A]"]:hover,
+html.light [class*="hover:bg-[#2C2C2E]"]:hover,
+html.light [class*="hover:bg-[#3F3F46]"]:hover {
+  background-color: #F1F5F9 !important;
+  color: #0F172A !important;
+}
+
+/* Table Specific Light Mode Rules (Screenshot 1 & 2 Match 100%) */
+html.light table thead tr {
+  background-color: #F8FAFC !important;
+  border-color: #E2E8F0 !important;
+}
+
+html.light table th {
+  color: #64748B !important;
+  font-weight: 500 !important;
+}
+
+html.light table tbody tr {
+  background-color: #FFFFFF !important;
+  border-color: #F1F5F9 !important;
+}
+
+html.light table tbody tr:hover {
+  background-color: #F8FAFC !important;
+}
+
+/* Fix Dark Row Selection in Screenshot 2! */
+html.light table tbody tr[class*="bg-[#18181B]"],
+html.light table tbody tr[class*="bg-[#27272A]"] {
+  background-color: #F1F5F9 !important;
+}
+
+/* Fix "qara xetler" (Dark Horizontal Lines in Screenshot 3!) */
+html.light .h-px {
+  background-color: #E2E8F0 !important;
+}
+
+html.light [class*="divide-"] > * + * {
+  border-color: #F1F5F9 !important;
+}
+
+/* Borders */
+html.light [class*="border-[#2C2C2E]"] {
+  border-color: #E2E8F0 !important;
+}
+
+html.light [class*="border-[#27272A]"] {
+  border-color: #E2E8F0 !important;
+}
+
+html.light [class*="border-[#3F3F46]"] {
+  border-color: #CBD5E1 !important;
+}
+
+/* Inputs, Selects, Textareas in Light Mode */
+html.light input,
+html.light select,
+html.light textarea {
+  background-color: #F8FAFC !important;
+  border-color: #E2E8F0 !important;
+  color: #0F172A !important;
+}
+
+html.light input::placeholder,
+html.light select::placeholder,
+html.light textarea::placeholder {
+  color: #94A3B8 !important;
+}
+
+/* Text Colors */
+html.light [class*="text-white"] {
+  color: #0F172A !important;
+}
+
+html.light [class*="text-[#E4E4E7]"] {
+  color: #1E293B !important;
+}
+
+html.light [class*="text-[#D4D4D8]"] {
+  color: #334155 !important;
+}
+
+html.light [class*="text-[#A1A1AA]"] {
+  color: #64748B !important;
+}
+
+html.light [class*="text-[#71717A]"] {
+  color: #64748B !important;
+}
+
+html.light [class*="text-[#52525B]"] {
+  color: #94A3B8 !important;
+}
+
+/* Scrollbars in Light Mode */
+html.light ::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Kanban Card Price Color in Light Mode (Screenshot 5 Match) */
+html.light [class*="text-sky-400"][class*="font-extrabold"] {
+  color: #0F172A !important;
+}
+
+/* Floating Action Bar Light Mode Styling (Screenshot 2 & 5 Match) */
+html.light [class*="fixed bottom-6"] {
+  color: #0F172A !important;
+}
+
+html.light [class*="fixed bottom-6"] button {
+  background-color: transparent !important;
+}
+
+html.light [class*="fixed bottom-6"] button:hover {
+  background-color: transparent !important;
+  color: #000000 !important;
+}
+
+/* Floating Action Bar Checkmark Badge - Black checkmark on White Background */
+html.light [class*="fixed bottom-6"] .check-badge {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+  border-color: #D1D5DB !important;
+}
+
+/* ==========================================
+   MIDNIGHT BLUE MODE OVERRIDES (#0F172A)
+   ========================================== */
+html.midnight,
+html.midnight body,
+html.midnight #root {
+  background-color: #0F172A !important;
+  color: #F8FAFC !important;
+}
+
+html.midnight [class*="bg-[#121214]"],
+html.midnight [class*="bg-[#0F0F11]"],
+html.midnight [class*="bg-[#0b0c10]"],
+html.midnight [class*="bg-[#08090C]"],
+html.midnight [class*="bg-[#0C0E14]"],
+html.midnight [class*="bg-[#0B0F17]"],
+html.midnight [class*="bg-[#0D0F16]"],
+html.midnight [class*="bg-[#0e1017]"] {
+  background-color: #0F172A !important;
+}
+
+html.midnight [class*="bg-[#141416]"] {
+  background-color: #0F172A !important;
+  border-color: #334155 !important;
+}
+
+html.midnight [class*="bg-[#18181B]"],
+html.midnight [class*="bg-[#1C1C1E]"],
+html.midnight [class*="bg-[#1F1F22]"] {
+  background-color: #1E293B !important;
+  border-color: #334155 !important;
+}
+
+html.midnight [class*="bg-[#27272A]"]:not([class*="hover:bg-[#27272A]"]):not([class*="group-hover:bg-[#27272A]"]) {
+  background-color: #334155 !important;
+  color: #F8FAFC !important;
+}
+
+html.midnight [class*="bg-[#2C2C2E]"]:not([class*="hover:bg-[#2C2C2E]"]):not([class*="group-hover:bg-[#2C2C2E]"]) {
+  background-color: #334155 !important;
+  color: #F8FAFC !important;
+}
+
+html.midnight [class*="border-[#2C2C2E]"] {
+  border-color: #334155 !important;
+}
+
+html.midnight [class*="border-[#27272A]"] {
+  border-color: #334155 !important;
+}
+
+html.midnight [class*="border-[#3F3F46]"] {
+  border-color: #475569 !important;
+}
+
+html.midnight [class*="text-white"] {
+  color: #F8FAFC !important;
+}
+
+html.midnight [class*="text-[#E4E4E7]"] {
+  color: #F8FAFC !important;
+}
+
+html.midnight [class*="text-[#D4D4D8]"] {
+  color: #CBD5E1 !important;
+}
+
+html.midnight [class*="text-[#A1A1AA]"] {
+  color: #94A3B8 !important;
+}
+
+html.midnight [class*="text-[#71717A]"] {
+  color: #94A3B8 !important;
+}
+
+html.midnight [class*="text-[#52525B]"] {
+  color: #64748B !important;
+}
+
+/* ==========================================
+   DROPDOWN MENU LIGHT MODE (SCREENSHOT 1 MATCH 100%)
+   ========================================== */
+html.light .absolute.z-50,
+html.light .absolute.z-40,
+html.light [class*="z-50"][class*="rounded-"],
+html.light [class*="z-40"][class*="rounded-"] {
+  background-color: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.03) !important;
+  color: #1F2937 !important;
+}
+
+html.light .absolute.z-50 button:not(:hover),
+html.light .absolute.z-50 a:not(:hover),
+html.light .absolute.z-50 div:not(:hover),
+html.light .absolute.z-40 button:not(:hover),
+html.light .absolute.z-40 a:not(:hover),
+html.light .absolute.z-40 div:not(:hover),
+html.light [class*="z-50"] [class*="hover:bg-"]:not(:hover),
+html.light [class*="z-40"] [class*="hover:bg-"]:not(:hover) {
+  background-color: transparent !important;
+  color: #1F2937 !important;
+}
+
+html.light .absolute.z-50 button:hover,
+html.light .absolute.z-50 a:hover,
+html.light .absolute.z-50 div[class*="cursor-pointer"]:hover,
+html.light .absolute.z-50 [class*="hover:bg-"]:hover,
+html.light .absolute.z-40 button:hover,
+html.light .absolute.z-40 a:hover,
+html.light .absolute.z-40 div[class*="cursor-pointer"]:hover,
+html.light .absolute.z-40 [class*="hover:bg-"]:hover,
+html.light [class*="z-50"] [class*="hover:bg-"]:hover,
+html.light [class*="z-40"] [class*="hover:bg-"]:hover {
+  background-color: #F3F4F6 !important;
+  color: #111827 !important;
+}
+
+html.light .absolute.z-50 svg,
+html.light .absolute.z-40 svg {
+  color: #4B5563 !important;
+}
+
+html.light .absolute.z-50 button:hover svg,
+html.light .absolute.z-50 a:hover svg,
+html.light .absolute.z-40 button:hover svg,
+html.light .absolute.z-40 a:hover svg {
+  color: #111827 !important;
+}
+
+/* ==========================================
+   DROPDOWN MENU MIDNIGHT BLUE MODE
+   ========================================== */
+html.midnight .absolute.z-50,
+html.midnight .absolute.z-40,
+html.midnight [class*="z-50"][class*="rounded-"],
+html.midnight [class*="z-40"][class*="rounded-"] {
+  background-color: #1E293B !important;
+  border-color: #334155 !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.2) !important;
+  color: #F8FAFC !important;
+}
+
+html.midnight .absolute.z-50 button:not(:hover),
+html.midnight .absolute.z-50 a:not(:hover),
+html.midnight .absolute.z-50 div:not(:hover),
+html.midnight .absolute.z-40 button:not(:hover),
+html.midnight .absolute.z-40 a:not(:hover),
+html.midnight .absolute.z-40 div:not(:hover),
+html.midnight [class*="z-50"] [class*="hover:bg-"]:not(:hover),
+html.midnight [class*="z-40"] [class*="hover:bg-"]:not(:hover) {
+  background-color: transparent !important;
+  color: #CBD5E1 !important;
+}
+
+html.midnight .absolute.z-50 button:hover,
+html.midnight .absolute.z-50 a:hover,
+html.midnight .absolute.z-50 div[class*="cursor-pointer"]:hover,
+html.midnight .absolute.z-50 [class*="hover:bg-"]:hover,
+html.midnight .absolute.z-40 button:hover,
+html.midnight .absolute.z-40 a:hover,
+html.midnight .absolute.z-40 div[class*="cursor-pointer"]:hover,
+html.midnight .absolute.z-40 [class*="hover:bg-"]:hover,
+html.midnight [class*="z-50"] [class*="hover:bg-"]:hover,
+html.midnight [class*="z-40"] [class*="hover:bg-"]:hover {
+  background-color: #334155 !important;
+  color: #FFFFFF !important;
+}
+
+html.midnight .absolute.z-50 svg,
+html.midnight .absolute.z-40 svg {
+  color: #94A3B8 !important;
+}
+
+html.midnight .absolute.z-50 button:hover svg,
+html.midnight .absolute.z-50 a:hover svg,
+html.midnight .absolute.z-40 button:hover svg,
+html.midnight .absolute.z-40 a:hover svg {
+  color: #F8FAFC !important;
+}
+
+/* ==========================================
+   ALTENSOR BLOG / LANDING PAGE CUSTOM STYLES
+   ========================================== */
+.halo-bg {
+  background: radial-gradient(circle at center, rgba(198, 49, 143, 0.15) 0%, rgba(84, 30, 184, 0.1) 40%, transparent 70%);
+  filter: blur(100px);
+  z-index: -1;
+  pointer-events: none;
+}
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+}
+.organic-blob {
+  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  overflow: hidden;
+  background: #131315;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+}
+.organic-blob-img {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  opacity: 0.9;
+}
+.btn-primary {
+  background: #000;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+.btn-primary:hover {
+  border-color: rgba(255, 175, 214, 0.5);
+  box-shadow: 0 0 15px rgba(255, 175, 214, 0.2);
+}
+.btn-secondary {
+  background: transparent;
+  color: #fff;
+  border: 1px solid transparent;
+  position: relative;
+}
+.btn-secondary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(198, 49, 143, 0.3) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+  border-radius: 9999px;
+  filter: blur(8px);
+}
+.btn-secondary:hover::before {
+  opacity: 1;
+}
+.list-number {
+  font-family: 'Geist', sans-serif;
+  color: #ffafd6;
+}
+
+.glow-layer {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle at center, rgba(198, 49, 143, 0.15) 0%, rgba(84, 30, 184, 0.1) 40%, transparent 70%);
+  filter: blur(80px);
+  pointer-events: none;
+}
+
+.dot-grid {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.blob-atmosphere {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, rgba(198, 49, 143, 0.25) 0%, rgba(84, 30, 184, 0.18) 50%, transparent 75%);
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #ffafd6 0%, #d0bcff 50%, #a9c7ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ==========================================
+   LANDING & ABOUT PAGES LIGHT MODE STYLES
+   ========================================== */
+html.light,
+html.light body,
+html.light #root,
+html.light .bg-background {
+  background-color: #F8FAFC !important;
+  color: #0F172A !important;
+}
+
+html.light .text-on-surface,
+html.light .text-white,
+html.light [class*="text-slate-200"],
+html.light [class*="text-slate-300"] {
+  color: #0F172A !important;
+}
+
+html.light .text-on-surface-variant,
+html.light [class*="text-slate-400"] {
+  color: #475569 !important;
+}
+
+html.light .glass-card {
+  background: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.06), 0 4px 6px -2px rgba(0, 0, 0, 0.02) !important;
+}
+
+html.light [class*="border-white"],
+html.light [class*="border-slate-200/20"],
+html.light [class*="border-slate-200/30"] {
+  border-color: #E2E8F0 !important;
+}
+
+html.light .bg-surface-container-low,
+html.light .bg-surface-container-lowest,
+html.light .bg-surface-container-high,
+html.light .bg-surface-container,
+html.light [class*="bg-surface-container"] {
+  background-color: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+}
+
+html.light .bg-surface,
+html.light [class*="bg-surface"] {
+  background-color: #F1F5F9 !important;
+  border-color: #E2E8F0 !important;
+}
+
+html.light .dot-grid {
+  background-image: radial-gradient(rgba(15, 23, 42, 0.08) 1px, transparent 1px) !important;
+}
+
+html.light .btn-primary {
+  background: #0F172A !important;
+  color: #FFFFFF !important;
+  border: 1px solid #0F172A !important;
+}
+
+html.light .btn-primary:hover {
+  background: #1E293B !important;
+  box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2) !important;
+}
+
+html.light .btn-secondary {
+  background: #F1F5F9 !important;
+  color: #0F172A !important;
+  border: 1px solid #CBD5E1 !important;
+}
+
+html.light .btn-secondary:hover {
+  background: #E2E8F0 !important;
+  color: #0F172A !important;
+}
+
+html.light .gradient-text {
+  background: linear-gradient(135deg, #c6318f 0%, #7b4fe0 50%, #2563eb 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+html.light .list-number {
+  color: #c6318f !important;
+}
+
+html.light .halo-bg {
+  background: radial-gradient(circle at center, rgba(198, 49, 143, 0.08) 0%, rgba(123, 79, 224, 0.05) 40%, transparent 70%) !important;
+}
+
+html.light .blob-atmosphere {
+  background: radial-gradient(circle at center, rgba(198, 49, 143, 0.12) 0%, rgba(123, 79, 224, 0.08) 50%, transparent 75%) !important;
+}
+
+html.light footer {
+  background-color: #F1F5F9 !important;
+  border-color: #E2E8F0 !important;
+  color: #475569 !important;
+}
+
+html.light footer h5 {
+  color: #0F172A !important;
+}
+
+html.light footer a {
+  color: #475569 !important;
+}
+
+html.light footer a:hover {
+  color: #7b4fe0 !important;
+}
+
+
+
+
+

@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="frame" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0%" stop-color="#d22bb1"/>
+      <stop offset="42%" stop-color="#f41473"/>
+      <stop offset="72%" stop-color="#7b48c8"/>
+      <stop offset="100%" stop-color="#1678e8"/>
+    </linearGradient>
+    <linearGradient id="dot1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff236d"/>
+      <stop offset="100%" stop-color="#ef277f"/>
+    </linearGradient>
+    <linearGradient id="dot2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8b43c9"/>
+      <stop offset="100%" stop-color="#466ed1"/>
+    </linearGradient>
+    <linearGradient id="dot3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1475e6"/>
+      <stop offset="100%" stop-color="#1979df"/>
+    </linearGradient>
+    <linearGradient id="tile1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff2470"/>
+      <stop offset="100%" stop-color="#ef277d"/>
+    </linearGradient>
+    <linearGradient id="tile2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#a24ac4"/>
+      <stop offset="100%" stop-color="#7351c9"/>
+    </linearGradient>
+    <linearGradient id="tile3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2475dd"/>
+      <stop offset="100%" stop-color="#147ae8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded gradient frame -->
+  <rect x="200" y="175" width="624" height="674" rx="190"
+        fill="none" stroke="url(#frame)" stroke-width="30"/>
+
+  <!-- Left list dots -->
+  <circle cx="332" cy="333" r="42" fill="url(#dot1)"/>
+  <circle cx="332" cy="468" r="42" fill="url(#dot2)"/>
+  <circle cx="332" cy="603" r="42" fill="url(#dot3)"/>
+
+  <!-- Text bars -->
+  <rect x="400" y="319" width="178" height="19" rx="9.5" fill="#475569"/>
+  <rect x="400" y="358" width="103" height="17" rx="8.5" fill="#94A3B8"/>
+
+  <rect x="400" y="454" width="143" height="19" rx="9.5" fill="#475569"/>
+  <rect x="400" y="493" width="80" height="17" rx="8.5" fill="#94A3B8"/>
+
+  <rect x="400" y="589" width="103" height="19" rx="9.5" fill="#475569"/>
+  <rect x="400" y="628" width="80" height="17" rx="8.5" fill="#94A3B8"/>
+
+  <!-- Right tilted cards -->
+  <g transform="rotate(18 675 418)">
+    <rect x="610" y="365" width="140" height="116" rx="20" fill="url(#tile1)"/>
+  </g>
+  <g transform="rotate(18 675 550)">
+    <rect x="610" y="497" width="140" height="116" rx="20" fill="url(#tile2)"/>
+  </g>
+  <g transform="rotate(18 655 680)">
+    <rect x="590" y="627" width="140" height="116" rx="20" fill="url(#tile3)"/>
+  </g>
+</svg>

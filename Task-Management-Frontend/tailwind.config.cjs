@@ -1,0 +1,56 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+    darkMode: "class",
+    content: [
+        "./index.html",
+        "./src/**/*.{js,ts,jsx,tsx}",
+    ],
+    theme: {
+        extend: {
+            colors: {
+                "primary": "#2563EB",
+                "primary-hover": "#1D4ED8",
+                "crm-bg": "#121214",
+                "crm-card": "#18181B",
+                "crm-surface": "#1C1C1E",
+                "crm-hover": "#27272A",
+                "crm-border": "#3F3F46",
+                "background-light": "#F8FAFC",
+                "background-dark": "#121214",
+                "surface-dark": "#18181B",
+                "primary-register": "#2563EB",
+                "background-light-register": "#F8FAFC",
+                "background-dark-register": "#08090C",
+                "card-light": "#FFFFFF",
+                "card-dark": "#18181B",
+                "input-border-light": "#E2E8F0",
+                "input-border-dark": "#27272A",
+                "text-main-light": "#0F172A",
+                "text-main-dark": "#F4F4F5",
+                "text-muted-light": "#64748B",
+                "text-muted-dark": "#A1A1AA",
+                "background-light-reset": "#F8FAFC",
+                "background-dark-reset": "#08090C",
+                "primary-success": "#10B981",
+                "status-warning": "#FBBF24",
+                "status-danger": "#F87171",
+                "status-info": "#38BDF8",
+            },
+            fontFamily: {
+                "sans": ["Inter", "sans-serif"],
+                "display": ["'Plus Jakarta Sans'", "Inter", "sans-serif"],
+                "headline-display": ["'Plus Jakarta Sans'", "sans-serif"],
+                "body-md": ["'Inter'", "sans-serif"],
+                "label-sm": ["'Geist'", "'Inter'", "sans-serif"],
+            },
+            boxShadow: {
+                'soft': '0 25px 50px -12px rgba(0, 0, 0, 0.06)',
+                'input': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                'premium': '0 8px 24px rgba(0,0,0,0.35)',
+            },
+        },
+    },
+    plugins: [
+        require('@tailwindcss/forms'),
+    ],
+}

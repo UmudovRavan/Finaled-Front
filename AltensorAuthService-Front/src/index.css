@@ -1,0 +1,432 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #121214;
+    color: #F4F4F5;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* =========================================================
+   DEFAULT / DARK THEME FORM CONTROLS & CRM INPUT
+   ========================================================= */
+.crm-input {
+  background-color: #121214 !important;
+  border: 1px solid #27272A !important;
+  color: #FFFFFF !important;
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.crm-input:focus {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
+}
+
+.crm-input::placeholder {
+  color: #71717A !important;
+}
+
+select.crm-input option {
+  background-color: #18181B;
+  color: #FFFFFF;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+select,
+textarea {
+  background-color: #121214;
+  border: 1px solid #27272A;
+  color: #FFFFFF;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="reset"]):focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #71717A;
+}
+
+/* =========================================================
+   LIGHT MODE (Altensor Suite Clean Light Theme)
+   ========================================================= */
+html.light body,
+html.light main {
+  background-color: #F8FAFC !important;
+  color: #0F172A !important;
+}
+
+/* Headings in Light Mode */
+html.light h1,
+html.light h2,
+html.light h3,
+html.light h4,
+html.light h5,
+html.light h6 {
+  color: #0F172A !important;
+}
+
+/* Background overrides in Light Mode */
+html.light .bg-\[\#121214\],
+html.light .bg-\[\#08090C\],
+html.light .bg-\[\#0C0E14\] {
+  background-color: #F8FAFC !important;
+}
+
+html.light .bg-\[\#18181B\],
+html.light aside,
+html.light header,
+html.light .bg-\[\#1C1C1E\],
+html.light .bg-\[\#1A1A1E\] {
+  background-color: #FFFFFF !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+html.light .bg-\[\#141416\],
+html.light .bg-\[\#141417\] {
+  background-color: #F8FAFC !important;
+}
+
+html.light .bg-\[\#27272A\],
+html.light .bg-\[\#26262B\],
+html.light .bg-\[\#2A2F3D\] {
+  background-color: #E2E8F0 !important;
+}
+
+/* Universal Borders & Dividers in Light Mode */
+html.light [class*="border-white\/"],
+html.light [class*="border-\[\#27272A\]"],
+html.light [class*="border-\[\#2C2C2E\]"],
+html.light [class*="border-\[\#3F3F46\]"] {
+  border-color: #E2E8F0 !important;
+}
+
+html.light table,
+html.light thead,
+html.light tbody,
+html.light tr,
+html.light th,
+html.light td,
+html.light hr {
+  border-color: #E2E8F0 !important;
+}
+
+/* Text in Light Mode */
+html.light .text-white:not(.btn-primary):not(.btn-primary *):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-indigo-"]):not([class*="bg-fuchsia-"]):not([class*="bg-sky-"]),
+html.light .text-\[\#F4F4F5\],
+html.light .text-\[\#D4D4D8\],
+html.light .text-\[\#E4E4E7\],
+html.light .text-slate-200,
+html.light .text-slate-300 {
+  color: #0F172A !important;
+}
+
+html.light .text-\[\#A1A1AA\],
+html.light .text-slate-400 {
+  color: #475569 !important;
+}
+
+html.light .text-\[\#71717A\],
+html.light .text-slate-500 {
+  color: #64748B !important;
+}
+
+html.light th {
+  color: #475569 !important;
+  font-weight: 700 !important;
+}
+
+html.light label {
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+/* Inputs & Form Controls in Light Mode */
+html.light input:not([type="checkbox"]):not([type="radio"]),
+html.light select,
+html.light textarea,
+html.light .crm-input {
+  background-color: #F8FAFC !important;
+  border-color: #CBD5E1 !important;
+  color: #0F172A !important;
+}
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94A3B8 !important;
+}
+
+/* Secondary Buttons & Hover in Light Mode */
+html.light .btn-secondary {
+  background-color: #F1F5F9 !important;
+  color: #0F172A !important;
+  border-color: #CBD5E1 !important;
+}
+html.light .btn-secondary:hover {
+  background-color: #E2E8F0 !important;
+  border-color: #94A3B8 !important;
+}
+
+html.light .hover\:bg-white\/\[0\.02\]:hover,
+html.light .hover\:bg-white\/\[0\.03\]:hover,
+html.light .hover\:bg-white\/\[0\.04\]:hover,
+html.light .hover\:bg-white\/\[0\.06\]:hover,
+html.light .hover\:bg-white\/\[0\.08\]:hover,
+html.light .hover\:bg-\[\#27272A\]:hover,
+html.light tr:hover {
+  background-color: #F1F5F9 !important;
+}
+
+/* =========================================================
+   MIDNIGHT BLUE (Altensor Suite 1:1 Midnight Blue Theme)
+   ========================================================= */
+html.theme-midnight body,
+html.theme-midnight main {
+  background-color: #0B0F19 !important;
+  color: #F8FAFC !important;
+}
+
+/* Background overrides in Midnight Mode */
+html.theme-midnight .bg-\[\#121214\],
+html.theme-midnight .bg-\[\#08090C\] {
+  background-color: #0B0F19 !important;
+}
+
+html.theme-midnight .bg-\[\#0C0E14\] {
+  background-color: #0E1526 !important;
+}
+
+html.theme-midnight .bg-\[\#18181B\],
+html.theme-midnight aside,
+html.theme-midnight header,
+html.theme-midnight .bg-\[\#1C1C1E\],
+html.theme-midnight .bg-\[\#1A1A1E\] {
+  background-color: #0F172A !important;
+}
+
+html.theme-midnight .bg-\[\#141416\],
+html.theme-midnight .bg-\[\#141417\] {
+  background-color: #0E1526 !important;
+}
+
+html.theme-midnight .bg-\[\#27272A\],
+html.theme-midnight .bg-\[\#26262B\],
+html.theme-midnight .bg-\[\#2A2F3D\] {
+  background-color: #1E293B !important;
+}
+
+/* Universal Borders in Midnight Mode */
+html.theme-midnight [class*="border-white\/"],
+html.theme-midnight [class*="border-\[\#27272A\]"],
+html.theme-midnight [class*="border-\[\#2C2C2E\]"],
+html.theme-midnight [class*="border-\[\#3F3F46\]"] {
+  border-color: #1E293B !important;
+}
+
+html.theme-midnight table,
+html.theme-midnight thead,
+html.theme-midnight tbody,
+html.theme-midnight tr,
+html.theme-midnight th,
+html.theme-midnight td,
+html.theme-midnight hr {
+  border-color: #1E293B !important;
+}
+
+/* Text in Midnight Mode */
+html.theme-midnight .text-\[\#F4F4F5\],
+html.theme-midnight .text-\[\#D4D4D8\],
+html.theme-midnight .text-\[\#E4E4E7\] {
+  color: #FFFFFF !important;
+}
+
+html.theme-midnight .text-\[\#A1A1AA\] {
+  color: #94A3B8 !important;
+}
+
+html.theme-midnight .text-\[\#71717A\] {
+  color: #64748B !important;
+}
+
+/* Inputs & Form Controls in Midnight Mode */
+html.theme-midnight input:not([type="checkbox"]):not([type="radio"]),
+html.theme-midnight select,
+html.theme-midnight textarea,
+html.theme-midnight .crm-input {
+  background-color: #0B1120 !important;
+  border-color: #1E293B !important;
+  color: #FFFFFF !important;
+}
+html.theme-midnight input::placeholder,
+html.theme-midnight textarea::placeholder {
+  color: #64748B !important;
+}
+
+/* Secondary Buttons & Hover in Midnight Mode */
+html.theme-midnight .btn-secondary {
+  background-color: #131B2E !important;
+  color: #FFFFFF !important;
+  border-color: #1E293B !important;
+}
+html.theme-midnight .btn-secondary:hover {
+  background-color: #1E293B !important;
+  border-color: #334155 !important;
+}
+
+html.theme-midnight .hover\:bg-white\/\[0\.04\]:hover,
+html.theme-midnight .hover\:bg-white\/\[0\.06\]:hover,
+html.theme-midnight .hover\:bg-white\/\[0\.08\]:hover,
+html.theme-midnight .hover\:bg-\[\#27272A\]:hover,
+html.theme-midnight tr:hover {
+  background-color: #1E293B !important;
+}
+
+/* =========================================================
+   PRESERVE STATUS PILLS & BADGES
+   ========================================================= */
+.text-emerald-400, .text-emerald-500, .text-emerald-600 {
+  color: #10B981 !important;
+}
+.text-amber-400, .text-amber-500, .text-amber-600 {
+  color: #F59E0B !important;
+}
+.text-rose-400, .text-rose-500, .text-red-500, .text-red-600 {
+  color: #EF4444 !important;
+}
+.text-sky-400, .text-sky-500, .text-sky-600 {
+  color: #0284C7 !important;
+}
+.text-fuchsia-400, .text-fuchsia-500, .text-\[\#D946EF\] {
+  color: #D946EF !important;
+}
+
+/* =========================================================
+   COMMON CRM SCROLLBARS
+   ========================================================= */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #27272A;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3F3F46;
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+}
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+html.theme-midnight ::-webkit-scrollbar-thumb {
+  background: #1E293B;
+}
+html.theme-midnight ::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* =========================================================
+   PRIMARY & SECONDARY BUTTON STYLES
+   ========================================================= */
+/* Dark / Midnight Mode: Pure White Button with Black Text */
+.btn-primary {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+  border: 1px solid #FFFFFF !important;
+  font-weight: 600 !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.15) !important;
+}
+.btn-primary:hover {
+  background-color: #E4E4E7 !important;
+  border-color: #E4E4E7 !important;
+  color: #000000 !important;
+  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Light Mode: Slate Dark Button with White Text */
+html.light .btn-primary {
+  background-color: #0F172A !important;
+  color: #FFFFFF !important;
+  border: 1px solid #0F172A !important;
+  box-shadow: 0 2px 8px 0 rgba(15, 23, 42, 0.15) !important;
+}
+html.light .btn-primary:hover {
+  background-color: #1E293B !important;
+  border-color: #1E293B !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px 0 rgba(15, 23, 42, 0.25) !important;
+}
+
+/* Secondary Button */
+.btn-secondary {
+  background-color: #18181B !important;
+  color: #F4F4F5 !important;
+  border: 1px solid #27272A !important;
+  font-weight: 500 !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.btn-secondary:hover {
+  background-color: #27272A !important;
+  color: #FFFFFF !important;
+  border-color: #3F3F46 !important;
+}
+
+/* Active Pagination Button */
+.pagination-active {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+html.light .pagination-active {
+  background-color: #0F172A !important;
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+}
+
+/* Active Tab Pill */
+.tab-pill-active {
+  background-color: #27272A !important;
+  color: #FFFFFF !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+html.light .tab-pill-active {
+  background-color: #0F172A !important;
+  color: #FFFFFF !important;
+  font-weight: 600 !important;
+}
+
+html.theme-midnight .tab-pill-active {
+  background-color: #1E293B !important;
+  color: #FFFFFF !important;
+}
+
+.blob-atmosphere {
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(217, 70, 239, 0.15) 0%, rgba(217, 70, 239, 0) 70%);
+  filter: blur(40px);
+  pointer-events: none;
+}
