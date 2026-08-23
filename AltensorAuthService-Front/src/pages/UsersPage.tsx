@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { tenantApi } from '../api/tenantApi';
 import { UserResponse } from '../types/user.types';
 import { RoleResponse } from '../types/role.types';
@@ -44,6 +44,32 @@ export const UsersPage: React.FC = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Filter out Tenant Admin and System Admin roles so they cannot be assigned when adding regular users
+  const assignableRoles = useMemo(() => {
+    return roles.filter((r) => {
+      if (!r || !r.name) return false;
+      const normalized = r.name.toLowerCase().trim().replace(/[\s\-_]/g, '');
+      if (
+        normalized === 'tenantadmin' ||
+        normalized === 'tenantadministrator' ||
+        normalized === 'systemadmin' ||
+        normalized === 'systemadministrator' ||
+        normalized === 'superadmin' ||
+        normalized === 'superadministrator' ||
+        normalized === 'administrator' ||
+        normalized === 'admin' ||
+        normalized.includes('tenantadmin') ||
+        normalized.includes('systemadmin') ||
+        normalized.includes('superadmin') ||
+        (normalized.includes('tenant') && normalized.includes('admin')) ||
+        (normalized.includes('system') && normalized.includes('admin'))
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [roles]);
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -328,40 +354,46 @@ export const UsersPage: React.FC = () => {
               <div>
                 <label className="block text-xs font-bold text-white mb-1">{t('users.assignedRoles', {}, 'Təyin Ediləcək Rollar')}</label>
                 <div className="max-h-36 overflow-y-auto border border-[#27272A] rounded-xl p-2 space-y-1 bg-[#121214]">
-                  {roles.map((r) => {
-                    const isChecked = selectedRoleIds.includes(r.id);
-                    return (
-                      <label
-                        key={r.id}
-                        className={`flex items-start gap-2 p-1.5 rounded-lg text-xs cursor-pointer transition-all ${
-                          isChecked
-                            ? 'bg-white/[0.08] text-white font-bold border border-white/20'
-                            : 'text-[#A1A1AA] hover:bg-white/[0.04]'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedRoleIds([...selectedRoleIds, r.id]);
-                            } else {
-                              setSelectedRoleIds(selectedRoleIds.filter((id) => id !== r.id));
-                            }
-                          }}
-                          className="rounded h-3.5 w-3.5 mt-0.5 shrink-0 accent-white"
-                        />
-                        <div className="min-w-0">
-                          <span className="truncate block">{r.name}</span>
-                          {r.isSystemRole && (
-                            <span className="text-[9px] bg-[#27272A] text-[#71717A] px-1 rounded font-mono">
-                              SYSTEM
-                            </span>
-                          )}
-                        </div>
-                      </label>
-                    );
-                  })}
+                  {assignableRoles.length === 0 ? (
+                    <div className="py-4 text-center text-[#71717A] text-xs">
+                      {t('roles.noRoles', {}, 'Təyin edilə bilən fərdi rol tapılmadı.')}
+                    </div>
+                  ) : (
+                    assignableRoles.map((r) => {
+                      const isChecked = selectedRoleIds.includes(r.id);
+                      return (
+                        <label
+                          key={r.id}
+                          className={`flex items-start gap-2 p-1.5 rounded-lg text-xs cursor-pointer transition-all ${
+                            isChecked
+                              ? 'bg-white/[0.08] text-white font-bold border border-white/20'
+                              : 'text-[#A1A1AA] hover:bg-white/[0.04]'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedRoleIds([...selectedRoleIds, r.id]);
+                              } else {
+                                setSelectedRoleIds(selectedRoleIds.filter((id) => id !== r.id));
+                              }
+                            }}
+                            className="rounded h-3.5 w-3.5 mt-0.5 shrink-0 accent-white"
+                          />
+                          <div className="min-w-0">
+                            <span className="truncate block">{r.name}</span>
+                            {r.isSystemRole && (
+                              <span className="text-[9px] bg-[#27272A] text-[#71717A] px-1 rounded font-mono">
+                                SYSTEM
+                              </span>
+                            )}
+                          </div>
+                        </label>
+                      );
+                    })
+                  )}
                 </div>
               </div>
 
