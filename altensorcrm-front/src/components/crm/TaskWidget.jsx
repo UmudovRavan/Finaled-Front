@@ -11,11 +11,24 @@ import {
   PencilSquareIcon,
   LinkIcon,
   ListBulletIcon,
-  TrashIcon
+  TrashIcon,
+  PaperClipIcon,
+  ArrowDownTrayIcon,
+  EyeIcon,
+  DocumentIcon
 } from '@heroicons/react/24/outline';
 import { useLanguage } from '../../context/LanguageContext';
 import { getTaskStatusLabel, getPriorityLabel } from '../../utils/statusUtils';
 import { taskManagementApi, getCurrentUser } from '../../services/api';
+
+const formatFileSize = (bytes) => {
+  if (!bytes || bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+};
+
 
 const STATUSES = ['Backlog', 'Todo', 'In Progress', 'Done', 'Canceled'];
 const PRIORITIES = ['Low', 'Medium', 'High'];
@@ -399,7 +412,7 @@ const ModalDatePicker = ({
  * TaskWidget — reusable task panel for Lead & Deal detail pages.
  * Shows the same Create / Edit modals as TasksPage.
  */
-const TaskWidget = () => {
+const TaskWidget = ({ leadId = null, dealId = null, userId = null }) => {
   const { t, language } = useLanguage();
   const [tasks, setTasks] = useState([]);
   const [usersOptions, setUsersOptions] = useState([]);
@@ -411,6 +424,13 @@ const TaskWidget = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isWidgetDateOpen, setIsWidgetDateOpen] = useState(false);
+
+  // Attachment states
+  const [newTaskFiles, setNewTaskFiles] = useState([]);
+  const [editTaskFiles, setEditTaskFiles] = useState([]);
+  const [editTaskAttachments, setEditTaskAttachments] = useState([]);
+  const [previewingId, setPreviewingId] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
 
   const [newTaskForm, setNewTaskForm] = useState({
     title: '',
@@ -456,7 +476,7 @@ const TaskWidget = () => {
 
       const taskData = await taskManagementApi.getAllTasks();
       if (Array.isArray(taskData)) {
-        const formatted = taskData.map(t => {
+        let formatted = taskData.map(t => {
           const assignedId = String(t.assignedToUserId || t.AssignedToUserId || '');
           const matchedUser = users.find(u => String(u.id) === assignedId);
           const assignedName = matchedUser
@@ -472,6 +492,14 @@ const TaskWidget = () => {
             formattedDate = `${d.getDate().toString().padStart(2, '0')}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getFullYear()}`;
           }
 
+          const rawAttachments = t.attachments || t.Attachments || t.files || t.Files || t.taskAttachments || t.TaskAttachments || [];
+          const attachments = Array.isArray(rawAttachments) ? rawAttachments.map(a => ({
+            id: a.id || a.Id || a.attachmentId || a.AttachmentId,
+            fileName: a.fileName || a.FileName || 'file',
+            size: a.size || a.Size || 0,
+            contentType: a.contentType || a.ContentType || ''
+          })) : [];
+
           return {
             id: String(t.id || t.Id),
             title: t.title || t.Title || '',
@@ -483,9 +511,56 @@ const TaskWidget = () => {
             assignedTo: assignedName,
             assignedToUserId: assignedId,
             createdByUserId: t.createdByUserId || t.CreatedByUserId || '',
-            assignedInitial: (assignedName || 'U').charAt(0).toUpperCase()
+            assignedInitial: (assignedName || 'U').charAt(0).toUpperCase(),
+            attachments,
+            rawTask: t
           };
         });
+
+        // Filter out automatic background system tasks (comments activity containers & pure document attachment tasks)
+        const isSystemActivityTask = (t) => {
+          const title = t.title || '';
+          const desc = t.description || '';
+          return (
+            title.startsWith('Lead Activity Task #') ||
+            title.startsWith('Deal Activity Task #') ||
+            title.includes('Sənəd Qoşması:') ||
+            title.includes('Document Attachment:') ||
+            desc.includes('Activity and Comments for Lead #') ||
+            desc.includes('Activity and Comments for Deal #') ||
+            desc.includes('Lead qoşma faylları.') ||
+            desc.includes('Deal qoşma faylları.')
+          );
+        };
+
+        if (leadId) {
+          formatted = formatted.filter(t => 
+            !isSystemActivityTask(t) &&
+            (
+              String(t.rawTask?.leadId || t.rawTask?.LeadId) === String(leadId) ||
+              (t.description && t.description.includes(`[LEAD_ID:${leadId}]`)) ||
+              (t.title && t.title.includes(`Lead #${leadId}`))
+            )
+          );
+        } else if (dealId) {
+          formatted = formatted.filter(t => 
+            !isSystemActivityTask(t) &&
+            (
+              String(t.rawTask?.dealId || t.rawTask?.DealId) === String(dealId) ||
+              (t.description && t.description.includes(`[DEAL_ID:${dealId}]`)) ||
+              (t.title && t.title.includes(`Deal #${dealId}`))
+            )
+          );
+        } else if (userId) {
+          formatted = formatted.filter(t => 
+            !isSystemActivityTask(t) &&
+            (String(t.assignedToUserId) === String(userId) || String(t.createdByUserId) === String(userId))
+          );
+        } else {
+          formatted = formatted.filter(t => !isSystemActivityTask(t));
+        }
+
+
         setTasks(formatted);
       }
     } catch (err) {
@@ -497,7 +572,7 @@ const TaskWidget = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [leadId, dealId, userId]);
 
   const handleOpenEdit = (task) => {
     setEditTaskForm({
@@ -511,6 +586,8 @@ const TaskWidget = () => {
       status: task.status || 'Backlog',
       createdByUserId: task.createdByUserId || ''
     });
+    setEditTaskAttachments(task.attachments || []);
+    setEditTaskFiles([]);
     setIsEditModalOpen(true);
   };
 
@@ -521,9 +598,16 @@ const TaskWidget = () => {
     try {
       const currentUser = getCurrentUser();
       const currentUserId = currentUser?.userId || currentUser?.id || '';
+      let desc = newTaskForm.description || '';
+      if (leadId && !desc.includes(`[LEAD_ID:${leadId}]`)) {
+        desc = desc ? `${desc}\n[LEAD_ID:${leadId}]` : `[LEAD_ID:${leadId}]`;
+      } else if (dealId && !desc.includes(`[DEAL_ID:${dealId}]`)) {
+        desc = desc ? `${desc}\n[DEAL_ID:${dealId}]` : `[DEAL_ID:${dealId}]`;
+      }
+
       const payload = {
         title: newTaskForm.title.trim(),
-        description: newTaskForm.description || '',
+        description: desc,
         difficulty: mapStringToPriorityInt(newTaskForm.priority),
         status: mapStringToStatusInt(newTaskForm.status),
         deadline: newTaskForm.dueDate
@@ -532,9 +616,10 @@ const TaskWidget = () => {
         createdByUserId: currentUserId,
         assignedToUserId: newTaskForm.assignedToUserId || null
       };
-      await taskManagementApi.createTask(payload);
-      showToast('Task uğurla yaradıldı!', 'success');
+      await taskManagementApi.createTask(payload, newTaskFiles);
+      showToast(language === 'az' ? 'Tapşırıq uğurla yaradıldı!' : 'Task created successfully!', 'success');
       setIsCreateModalOpen(false);
+      setNewTaskFiles([]);
       setNewTaskForm({ title: '', description: '', priority: 'Low', assignedToUserId: '', dueDate: '', status: 'Backlog' });
       await loadData();
     } catch (err) {
@@ -552,7 +637,7 @@ const TaskWidget = () => {
       const currentUser = getCurrentUser();
       const currentUserId = editTaskForm.createdByUserId || currentUser?.userId || currentUser?.id || '';
       const payload = {
-        id: Number(editTaskForm.id),
+        id: editTaskForm.id,
         title: editTaskForm.title.trim(),
         description: editTaskForm.description || '',
         difficulty: mapStringToPriorityInt(editTaskForm.priority),
@@ -564,8 +649,12 @@ const TaskWidget = () => {
         assignedToUserId: editTaskForm.assignedToUserId || null
       };
       await taskManagementApi.updateTask(payload);
-      showToast('Task yeniləndi!', 'success');
+      if (editTaskFiles && editTaskFiles.length > 0) {
+        await taskManagementApi.addFilesToTask(editTaskForm.id, editTaskFiles);
+      }
+      showToast(language === 'az' ? 'Tapşırıq yeniləndi!' : 'Task updated successfully!', 'success');
       setIsEditModalOpen(false);
+      setEditTaskFiles([]);
       await loadData();
     } catch (err) {
       showToast(err.message || 'Yeniləmə xətası.', 'error');
@@ -575,22 +664,62 @@ const TaskWidget = () => {
   };
 
   const handleDeleteTask = async (id) => {
-    if (!window.confirm('Bu tapşırığı silmək istədiyinizə əminsiniz?')) return;
+    if (!window.confirm(language === 'az' ? 'Bu tapşırığı silmək istədiyinizə əminsiniz?' : 'Are you sure you want to delete this task?')) return;
     try {
       await taskManagementApi.deleteTask(id);
-      showToast('Task silindi!', 'success');
+      showToast(language === 'az' ? 'Tapşırıq silindi!' : 'Task deleted successfully!', 'success');
       await loadData();
     } catch (err) {
       showToast(err.message || 'Silinmə xətası.', 'error');
     }
   };
 
+  const handleDownloadAttachment = async (attachmentId, fileName) => {
+    try {
+      setDownloadingId(attachmentId);
+      await taskManagementApi.downloadAttachment(attachmentId, fileName);
+    } catch (err) {
+      showToast(err.message || 'Fayl endirilə bilmədi', 'error');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handlePreviewAttachment = async (attachmentId) => {
+    try {
+      setPreviewingId(attachmentId);
+      const res = await taskManagementApi.getAttachmentPreviewUrl(attachmentId);
+      const url = res?.url || res?.Url || res;
+      if (url && typeof url === 'string') {
+        window.open(url, '_blank');
+      } else {
+        showToast('Önbaxış linki tapılmadı', 'error');
+      }
+    } catch (err) {
+      showToast(err.message || 'Önbaxış açıla bilmədi', 'error');
+    } finally {
+      setPreviewingId(null);
+    }
+  };
+
   // ─── The shared Create / Edit Modal ─────────────────────────────────────────
-  const renderModal = ({ isOpen, onClose, formData, setFormData, onSubmit, title, submitLabel }) => {
+  const renderModal = ({
+    isOpen,
+    onClose,
+    formData,
+    setFormData,
+    files,
+    setFiles,
+    existingAttachments = [],
+    onSubmit,
+    title,
+    submitLabel
+  }) => {
     if (!isOpen) return null;
+    const fileInputId = `task_files_${formData.id || 'new'}`;
     return (
       <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-        <div className="bg-[#1F1F22] border border-[#2C2C2E] rounded-3xl shadow-2xl p-6 w-full max-w-xl text-[#E4E4E7] space-y-4 animate-in fade-in duration-150 relative">
+        <div className="bg-[#1F1F22] border border-[#2C2C2E] rounded-3xl shadow-2xl p-6 w-full max-w-xl text-[#E4E4E7] space-y-4 animate-in fade-in duration-150 relative max-h-[90vh] overflow-y-auto custom-scrollbar">
 
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -638,7 +767,7 @@ const TaskWidget = () => {
                   <button type="button" className="hover:text-white px-1"><ListBulletIcon className="w-3.5 h-3.5" /></button>
                 </div>
                 <textarea
-                  rows={4}
+                  rows={3}
                   placeholder={language === 'az' ? 'Təsvir' : language === 'en' ? 'Description' : 'Описание'}
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -710,8 +839,136 @@ const TaskWidget = () => {
               </div>
             </div>
 
+            {/* Existing Attachments Section (if editing) */}
+            {existingAttachments && existingAttachments.length > 0 && (
+              <div className="space-y-2 pt-1 border-t border-[#3F3F46]/50">
+                <label className="text-[#A1A1AA] font-semibold flex items-center gap-1.5">
+                  <PaperClipIcon className="w-3.5 h-3.5 text-sky-400" />
+                  <span>{language === 'az' ? 'Mövcud Qoşmalar' : language === 'en' ? 'Existing Attachments' : 'Прикрепленные файлы'}</span>
+                  <span className="text-[10px] text-[#71717A]">({existingAttachments.length})</span>
+                </label>
+                <div className="space-y-1.5 max-h-36 overflow-y-auto custom-scrollbar">
+                  {existingAttachments.map((att) => (
+                    <div
+                      key={att.id}
+                      className="flex items-center justify-between bg-[#141416]/70 border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs"
+                    >
+                      <div className="flex items-center gap-2 min-w-0 pr-2">
+                        <DocumentIcon className="w-4 h-4 text-sky-400 shrink-0" />
+                        <div className="truncate">
+                          <span className="text-white font-medium truncate block">{att.fileName}</span>
+                          {att.size > 0 && (
+                            <span className="text-[10px] text-[#71717A]">{formatFileSize(att.size)}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handlePreviewAttachment(att.id)}
+                          disabled={previewingId === att.id}
+                          className="p-1.5 rounded-lg bg-[#27272A] hover:bg-[#3F3F46] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+                          title={language === 'az' ? 'Önbaxış' : 'Preview'}
+                        >
+                          {previewingId === att.id ? (
+                            <ArrowPathIcon className="w-3.5 h-3.5 animate-spin text-sky-400" />
+                          ) : (
+                            <EyeIcon className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadAttachment(att.id, att.fileName)}
+                          disabled={downloadingId === att.id}
+                          className="p-1.5 rounded-lg bg-[#27272A] hover:bg-[#3F3F46] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+                          title={language === 'az' ? 'Endir' : 'Download'}
+                        >
+                          {downloadingId === att.id ? (
+                            <ArrowPathIcon className="w-3.5 h-3.5 animate-spin text-sky-400" />
+                          ) : (
+                            <ArrowDownTrayIcon className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* New File Upload / Dropzone */}
+            <div className="space-y-2 pt-1 border-t border-[#3F3F46]/50">
+              <div className="flex items-center justify-between">
+                <label className="text-[#A1A1AA] font-semibold flex items-center gap-1.5">
+                  <PaperClipIcon className="w-3.5 h-3.5 text-sky-400" />
+                  <span>{language === 'az' ? 'Fayl əlavə et' : language === 'en' ? 'Attach Files' : 'Прикрепить файлы'}</span>
+                </label>
+                {files && files.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setFiles([])}
+                    className="text-[10px] text-red-400 hover:text-red-300 font-medium cursor-pointer"
+                  >
+                    {language === 'az' ? 'Hamısını sil' : 'Clear all'}
+                  </button>
+                )}
+              </div>
+
+              <label
+                htmlFor={fileInputId}
+                className="border border-dashed border-[#3F3F46] hover:border-sky-500/70 bg-[#141416]/40 hover:bg-[#141416]/70 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all group"
+              >
+                <PaperClipIcon className="w-5 h-5 text-[#71717A] group-hover:text-sky-400 transition-colors mb-1" />
+                <span className="text-[11px] text-[#A1A1AA] group-hover:text-white font-medium">
+                  {language === 'az' ? 'Faylları seçmək üçün klikləyin və ya bura atın' : language === 'en' ? 'Click to select or drag & drop files here' : 'Нажмите для выбора файлов'}
+                </span>
+                <span className="text-[10px] text-[#52525B] mt-0.5">
+                  PDF, DOCX, PNG, JPG, ZIP və s.
+                </span>
+                <input
+                  id={fileInputId}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      const newSelected = Array.from(e.target.files);
+                      setFiles(prev => [...prev, ...newSelected]);
+                      e.target.value = '';
+                    }
+                  }}
+                />
+              </label>
+
+              {/* Selected Files Preview */}
+              {files && files.length > 0 && (
+                <div className="space-y-1.5 max-h-28 overflow-y-auto custom-scrollbar pt-1">
+                  {files.map((file, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between bg-[#27272A]/70 border border-[#3F3F46]/50 rounded-xl px-3 py-1.5 text-xs"
+                    >
+                      <div className="flex items-center gap-2 truncate pr-2">
+                        <DocumentIcon className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span className="text-white truncate font-medium">{file.name}</span>
+                        <span className="text-[10px] text-[#71717A] shrink-0">({formatFileSize(file.size)})</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setFiles(files.filter((_, i) => i !== idx))}
+                        className="p-1 rounded-lg hover:bg-red-500/20 text-[#A1A1AA] hover:text-red-400 transition-colors cursor-pointer"
+                        title={language === 'az' ? 'Sil' : 'Remove'}
+                      >
+                        <XMarkIcon className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Submit */}
-            <div className="flex items-center justify-end pt-4">
+            <div className="flex items-center justify-end pt-3">
               <button
                 type="submit"
                 disabled={submitting}
@@ -799,8 +1056,19 @@ const TaskWidget = () => {
                   onClick={() => handleOpenEdit(task)}
                   className="hover:bg-[#141416]/60 transition-colors group cursor-pointer"
                 >
-                  <td className="py-3 px-4 font-semibold text-white group-hover:text-sky-300 transition-colors max-w-[200px] truncate">
-                    {task.title}
+                  <td className="py-3 px-4 font-semibold text-white group-hover:text-sky-300 transition-colors max-w-[220px]">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span className="truncate">{task.title}</span>
+                      {task.attachments && task.attachments.length > 0 && (
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] font-semibold text-sky-400 bg-sky-950/70 border border-sky-800/50 px-1.5 py-0.5 rounded-md shrink-0"
+                          title={`${task.attachments.length} ${language === 'az' ? 'qoşma fayl' : 'attached files'}`}
+                        >
+                          <PaperClipIcon className="w-3 h-3" />
+                          <span>{task.attachments.length}</span>
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="py-3 px-4">{renderStatusBadge(task.status, language)}</td>
                   <td className="py-3 px-4">{renderPriorityDot(task.priority, language)}</td>
@@ -854,9 +1122,15 @@ const TaskWidget = () => {
       {/* Create Modal */}
       {renderModal({
         isOpen: isCreateModalOpen,
-        onClose: () => setIsCreateModalOpen(false),
+        onClose: () => {
+          setIsCreateModalOpen(false);
+          setNewTaskFiles([]);
+        },
         formData: newTaskForm,
         setFormData: setNewTaskForm,
+        files: newTaskFiles,
+        setFiles: setNewTaskFiles,
+        existingAttachments: [],
         onSubmit: handleCreateTask,
         title: language === 'az' ? 'Tapşırıq Yarat' : language === 'en' ? 'Create Task' : 'Создать задачу',
         submitLabel: t('common.create', {}, 'Create')
@@ -865,9 +1139,15 @@ const TaskWidget = () => {
       {/* Edit Modal */}
       {renderModal({
         isOpen: isEditModalOpen,
-        onClose: () => setIsEditModalOpen(false),
+        onClose: () => {
+          setIsEditModalOpen(false);
+          setEditTaskFiles([]);
+        },
         formData: editTaskForm,
         setFormData: setEditTaskForm,
+        files: editTaskFiles,
+        setFiles: setEditTaskFiles,
+        existingAttachments: editTaskAttachments,
         onSubmit: handleUpdateTask,
         title: language === 'az' ? 'Tapşırığı redaktə et' : language === 'en' ? 'Edit Task' : 'Редактировать задачу',
         submitLabel: t('common.save', {}, 'Save')
@@ -877,3 +1157,4 @@ const TaskWidget = () => {
 };
 
 export default TaskWidget;
+

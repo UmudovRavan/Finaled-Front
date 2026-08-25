@@ -323,7 +323,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                                 onFocus={handleAssignInputFocus}
                                 onClick={handleAssignInputFocus}
                                 onKeyDown={handleAssignKeyDown}
-                                placeholder="@ istifadəçi axtarın və ya seçin..."
+                                placeholder={t('common.search', {}, '@ istifadəçi axtarın və ya seçin...')}
                                 className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium"
                             />
                             <UserIcon className="w-4 h-4 text-[#71717A] absolute left-3 pointer-events-none" />
@@ -354,7 +354,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                                 <input type="file" multiple onChange={handleFileChange} className="hidden" />
                             </label>
                             <span className="text-[11px] text-[#71717A]">
-                                {files.length > 0 ? `${files.length} fayl seçildi` : t('common.optional', {}, 'İstəyə görə')}
+                                {files.length > 0 ? `${files.length} ${t('tasks.attachments', {}, 'fayl seçildi')}` : t('common.optional', {}, 'İstəyə görə')}
                             </span>
                         </div>
 

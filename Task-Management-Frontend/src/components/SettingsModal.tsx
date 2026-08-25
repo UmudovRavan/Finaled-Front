@@ -254,10 +254,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 {/* ─── Left Sidebar Navigation ─── */}
                 <div className="w-full md:w-64 bg-[#18181B] border-b md:border-b-0 md:border-r border-[#27272A] p-4 flex flex-col justify-between shrink-0 overflow-y-auto custom-scrollbar">
                     <div className="space-y-5">
-                        {/* Section 1: İSTİFADƏÇİ KONFİQURASİYASI */}
+                        {/* Section 1: USER CONFIGURATION */}
                         <div className="space-y-1">
                             <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#71717A] px-3 pb-1">
-                                İstifadəçi Konfiqurasiyası
+                                {t('settings.userConfig', {}, 'İstifadəçi Konfiqurasiyası')}
                             </p>
 
                             <button
@@ -271,7 +271,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                 <div className="w-5 h-5 rounded-md bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center font-bold text-[10px]">
                                     {userInitial}
                                 </div>
-                                <span>Profil</span>
+                                <span>{t('settings.profileTab', {}, 'Profil')}</span>
                             </button>
 
                             <button
@@ -283,14 +283,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                 }`}
                             >
                                 <SwatchIcon className="w-4 h-4 text-[#A1A1AA]" />
-                                <span>Tərcihlər</span>
+                                <span>{t('settings.preferences', {}, 'Tərcihlər')}</span>
                             </button>
                         </div>
 
-                        {/* Section 2: SİSTEM KONFİQURASİYASI */}
+                        {/* Section 2: SYSTEM CONFIGURATION */}
                         <div className="space-y-1">
                             <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#71717A] px-3 pb-1">
-                                Sistem Konfiqurasiyası
+                                {t('settings.systemConfig', {}, 'Sistem Konfiqurasiyası')}
                             </p>
 
                             <button
@@ -302,7 +302,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                 }`}
                             >
                                 <Cog6ToothIcon className="w-4 h-4 text-[#A1A1AA]" />
-                                <span>Ümumi</span>
+                                <span>{t('settings.general', {}, 'Ümumi')}</span>
                             </button>
 
                             <button
@@ -314,7 +314,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                 }`}
                             >
                                 <Squares2X2Icon className="w-4 h-4 text-[#A1A1AA]" />
-                                <span>Dashboard</span>
+                                <span>{t('nav.dashboard', {}, 'Dashboard')}</span>
                             </button>
 
                             <button
@@ -326,15 +326,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                 }`}
                             >
                                 <BuildingOfficeIcon className="w-4 h-4 text-[#A1A1AA]" />
-                                <span>Brend & Loqo</span>
+                                <span>{t('settings.brandLogo', {}, 'Brend & Loqo')}</span>
                             </button>
                         </div>
 
-                        {/* Section 3: İSTİFADƏÇİ İDARƏETMƏSİ (If Admin) */}
+                        {/* Section 3: USER MANAGEMENT (If Admin) */}
                         {isAdmin && (
                             <div className="space-y-1">
                                 <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#71717A] px-3 pb-1">
-                                    İstifadəçi İdarəetməsi
+                                    {t('settings.userManagement', {}, 'İstifadəçi İdarəetməsi')}
                                 </p>
 
                                 <button
@@ -346,7 +346,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                     }`}
                                 >
                                     <UserGroupIcon className="w-4 h-4 text-[#A1A1AA]" />
-                                    <span>İstifadəçilər</span>
+                                    <span>{t('settings.users', {}, 'İstifadəçilər')}</span>
                                 </button>
                             </div>
                         )}
@@ -359,7 +359,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                             className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-[#A1A1AA] hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
                         >
                             <ArrowRightOnRectangleIcon className="w-4 h-4" />
-                            <span>Çıxış et</span>
+                            <span>{t('nav.logout', {}, 'Çıxış et')}</span>
                         </button>
                     </div>
                 </div>
@@ -371,30 +371,30 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                         <div>
                             <h2 className="text-base font-extrabold text-white tracking-tight">
                                 {activeTab === 'profile'
-                                    ? 'Profil'
+                                    ? t('settings.profileTab', {}, 'Profil')
                                     : activeTab === 'preferences'
-                                    ? 'Tərcihlər'
+                                    ? t('settings.preferences', {}, 'Tərcihlər')
                                     : activeTab === 'users'
-                                    ? 'İstifadəçilər'
+                                    ? t('settings.users', {}, 'İstifadəçilər')
                                     : activeTab === 'general'
-                                    ? 'Ümumi Parametrlər'
+                                    ? t('settings.generalTab', {}, 'Ümumi Parametrlər')
                                     : activeTab === 'dashboard'
-                                    ? 'Dashboard Konfiqurasiyası'
-                                    : 'Brend Tənzimləmələri'}
+                                    ? t('nav.dashboard', {}, 'Dashboard')
+                                    : t('settings.brandLogo', {}, 'Brend Tənzimləmələri')}
                             </h2>
                             <p className="text-xs text-[#71717A]">
                                 {activeTab === 'profile'
-                                    ? 'Profil və giriş məlumatlarınızı idarə edin.'
+                                    ? t('settings.subtitle', {}, 'Profil və giriş məlumatlarınızı idarə edin.')
                                     : activeTab === 'preferences'
-                                    ? 'Görünüş, dil və bildiriş tərcihlərinizi fərdiləşdirin.'
-                                    : 'Sistem parametrlərinin idarəsi.'}
+                                    ? t('settings.preferencesSubtitle', {}, 'Görünüş, dil və bildiriş tərcihlərinizi fərdiləşdirin.')
+                                    : t('settings.generalSubtitle', {}, 'Sistem parametrlərinin idarəsi.')}
                             </p>
                         </div>
 
                         <button
                             onClick={onClose}
                             className="p-1.5 rounded-xl text-[#71717A] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-                            title="Bağla"
+                            title={t('common.close', {}, 'Bağla')}
                         >
                             <XMarkIcon className="w-5 h-5" />
                         </button>
@@ -592,9 +592,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                 {/* Section 1: Appearance & 3 Themes */}
                                 <div className="space-y-3">
                                     <div>
-                                        <h3 className="text-sm font-bold text-white tracking-tight">Görünüş & Tema</h3>
+                                        <h3 className="text-sm font-bold text-white tracking-tight">{t('settings.appearanceTheme', {}, 'Görünüş & Tema')}</h3>
                                         <p className="text-xs text-[#71717A]">
-                                            Açıq, qaranlıq və gecə mavisi temaları arasında seçim edin.
+                                            {t('settings.appearanceSubtitle', {}, 'Açıq, qaranlıq və gecə mavisi temaları arasında seçim edin.')}
                                         </p>
                                     </div>
 
@@ -621,7 +621,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                             </div>
 
                                             <div className="flex items-center justify-between pt-2">
-                                                <span className="text-xs text-[#D4D4D8] font-semibold">Açıq (Light)</span>
+                                                <span className="text-xs text-[#D4D4D8] font-semibold">{t('settings.lightTheme', {}, 'Açıq (Light)')}</span>
                                                 <div
                                                     className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
                                                         theme === 'light' ? 'border-blue-500 bg-blue-500' : 'border-[#52525B]'
@@ -654,7 +654,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                             </div>
 
                                             <div className="flex items-center justify-between pt-2">
-                                                <span className="text-xs text-[#D4D4D8] font-semibold">Qaranlıq (Dark)</span>
+                                                <span className="text-xs text-[#D4D4D8] font-semibold">{t('settings.darkTheme', {}, 'Qaranlıq (Dark)')}</span>
                                                 <div
                                                     className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
                                                         theme === 'dark' ? 'border-blue-500 bg-blue-500' : 'border-[#52525B]'
@@ -687,7 +687,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                             </div>
 
                                             <div className="flex items-center justify-between pt-2">
-                                                <span className="text-xs text-[#D4D4D8] font-semibold">Gecə Mavisi</span>
+                                                <span className="text-xs text-[#D4D4D8] font-semibold">{t('settings.midnightTheme', {}, 'Gecə Mavisi')}</span>
                                                 <div
                                                     className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
                                                         theme === 'midnight' ? 'border-blue-500 bg-blue-500' : 'border-[#52525B]'
@@ -702,7 +702,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
                                 {/* Section 2: Dil & Saat (Language & Time) */}
                                 <div className="space-y-3 pt-2">
-                                    <h3 className="text-sm font-bold text-white tracking-tight">Dil & Saat Qurşağı</h3>
+                                    <h3 className="text-sm font-bold text-white tracking-tight">{t('settings.languageRegion', {}, 'Dil & Saat Qurşağı')}</h3>
 
                                     <div className="space-y-3 text-xs">
                                         {/* Language Dropdown */}
@@ -710,7 +710,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                             <div className="space-y-0.5">
                                                 <div className="flex items-center gap-2">
                                                     <GlobeAltIcon className="w-4 h-4 text-[#A1A1AA]" />
-                                                    <p className="font-bold text-white">İnterfeys Dili</p>
+                                                    <p className="font-bold text-white">{t('settings.interfaceLanguage', {}, 'İnterfeys Dili')}</p>
                                                 </div>
                                                 <p className="text-[11px] text-[#71717A]">
                                                     {t('settings.languageSubtitle', {}, 'Tətbiqdə istifadə etmək istədiyiniz dili seçin.')}
@@ -736,10 +736,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                             <div className="space-y-0.5">
                                                 <div className="flex items-center gap-2">
                                                     <ClockIcon className="w-4 h-4 text-[#A1A1AA]" />
-                                                    <p className="font-bold text-white">Vaxt Formatı</p>
+                                                    <p className="font-bold text-white">{t('settings.timeFormat', {}, 'Vaxt Formatı')}</p>
                                                 </div>
                                                 <p className="text-[11px] text-[#71717A]">
-                                                    Tapşırıq və bildiriş tarixlərinin formatı.
+                                                    {t('settings.timeFormatSubtitle', {}, 'Tapşırıq və bildiriş tarixlərinin formatı.')}
                                                 </p>
                                             </div>
 
@@ -750,7 +750,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                         timeFormat === '24h' ? 'bg-[#18181B] text-white shadow-xs' : 'text-[#71717A] hover:text-white'
                                                     }`}
                                                 >
-                                                    24 saatlıq (14:30)
+                                                    {t('settings.timeFormat24', {}, '24 saatlıq (14:30)')}
                                                 </button>
                                                 <button
                                                     onClick={() => setTimeFormat('12h')}
@@ -758,7 +758,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                         timeFormat === '12h' ? 'bg-[#18181B] text-white shadow-xs' : 'text-[#71717A] hover:text-white'
                                                     }`}
                                                 >
-                                                    12 saatlıq (02:30 PM)
+                                                    {t('settings.timeFormat12', {}, '12 saatlıq (02:30 PM)')}
                                                 </button>
                                             </div>
                                         </div>
@@ -767,15 +767,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
                                 {/* Section 3: Bildiriş Tərcihləri (Notification Preferences) */}
                                 <div className="space-y-3 pt-2">
-                                    <h3 className="text-sm font-bold text-white tracking-tight">Bildiriş Tərcihləri</h3>
+                                    <h3 className="text-sm font-bold text-white tracking-tight">{t('settings.notificationPreferences', {}, 'Bildiriş Tərcihləri')}</h3>
 
                                     <div className="space-y-2.5 text-xs">
                                         {/* Toggle 1: Email */}
                                         <div className="flex items-center justify-between p-4 rounded-xl bg-[#18181B] border border-[#27272A]">
                                             <div className="space-y-0.5">
-                                                <p className="font-bold text-white">E-poçt Bildirişləri</p>
+                                                <p className="font-bold text-white">{t('settings.emailNotifications', {}, 'E-poçt Bildirişləri')}</p>
                                                 <p className="text-[11px] text-[#71717A]">
-                                                    Yeni tapşırıqlar təyin edildikdə e-poçt bildirişi alın.
+                                                    {t('settings.emailNotificationsSubtitle', {}, 'Yeni tapşırıqlar təyin edildikdə e-poçt bildirişi alın.')}
                                                 </p>
                                             </div>
                                             <button

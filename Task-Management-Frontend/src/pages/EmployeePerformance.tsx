@@ -16,6 +16,7 @@ import type {
 import { TaskStatus, DifficultyLevel } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
 import type { UserInfo } from '../utils';
+import { useLanguage } from '../context/LanguageContext';
 import {
     ArrowLeftIcon,
     BoltIcon,
@@ -69,6 +70,7 @@ const CrmChartTooltip = ({ active, payload, label }: any) => {
 
 const EmployeePerformance: React.FC = () => {
     const navigate = useNavigate();
+    const { t, language } = useLanguage();
     const { userId } = useParams<{ userId: string }>();
 
     const [employeeData, setEmployeeData] = useState<EmployeePerformanceData | null>(null);
@@ -82,15 +84,15 @@ const EmployeePerformance: React.FC = () => {
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 
     const displayName = useMemo(() => {
-        if (!userInfo) return 'İstifadəçi';
+        if (!userInfo) return t('common.user', {}, 'İstifadəçi');
         if (userInfo.userName) {
             return userInfo.userName.charAt(0).toUpperCase() + userInfo.userName.slice(1);
         }
         if (userInfo.email) {
             return userInfo.email.split('@')[0];
         }
-        return 'İstifadəçi';
-    }, [userInfo]);
+        return t('common.user', {}, 'İstifadəçi');
+    }, [userInfo, t]);
 
     const userRole = useMemo(() => {
         if (!userInfo || !userInfo.roles.length) return 'Employee';
@@ -353,7 +355,7 @@ const EmployeePerformance: React.FC = () => {
                                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-xs font-semibold text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
                             >
                                 <ArrowLeftIcon className="w-4 h-4" />
-                                <span>Geri</span>
+                                <span>{t('common.back', {}, 'Geri')}</span>
                             </button>
 
                             <div className="flex items-center gap-2.5">
@@ -370,7 +372,7 @@ const EmployeePerformance: React.FC = () => {
                                         </span>
                                     </div>
                                     <p className="text-xs text-[#71717A] mt-0.5">
-                                        {employeeData.workGroupName} • Fərdi Performans Analitikası
+                                        {employeeData.workGroupName} • {t('performance.title', {}, 'Fərdi Performans Analitikası')}
                                     </p>
                                 </div>
                             </div>
@@ -384,7 +386,7 @@ const EmployeePerformance: React.FC = () => {
                                     trendRange === '7d' ? 'bg-[#27272A] text-white' : 'text-[#71717A] hover:text-white'
                                 }`}
                             >
-                                Son 7 Gün
+                                {t('common.daysLeft', { days: 7 }, 'Son 7 Gün')}
                             </button>
                             <button
                                 onClick={() => setTrendRange('30d')}
@@ -392,7 +394,7 @@ const EmployeePerformance: React.FC = () => {
                                     trendRange === '30d' ? 'bg-[#27272A] text-white' : 'text-[#71717A] hover:text-white'
                                 }`}
                             >
-                                Son 30 Gün
+                                {t('common.daysLeft', { days: 30 }, 'Son 30 Gün')}
                             </button>
                         </div>
                     </div>
@@ -403,10 +405,10 @@ const EmployeePerformance: React.FC = () => {
                             <div className="flex items-center justify-between gap-2 mb-3">
                                 <div className="flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-                                    <span className="text-xs font-semibold text-[#A1A1AA]">Toplam Xal</span>
+                                    <span className="text-xs font-semibold text-[#A1A1AA]">{t('performance.totalPoints', {}, 'Toplam Xal')}</span>
                                 </div>
                                 <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                    Xal
+                                    {t('common.points', {}, 'Xal')}
                                 </span>
                             </div>
                             <div className="flex items-baseline justify-between">

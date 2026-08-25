@@ -19,7 +19,7 @@ const desktopApps = [
   {
     id: 'crm',
     name: 'Altensor CRM',
-    route: import.meta.env.VITE_CRM_WEB_URL || 'https://info.altensor.com',
+    route: import.meta.env.VITE_CRM_WEB_URL || 'https://crm.altensor.com',
     iconBg: '#D946EF',
     icon: 'filter_alt'
   },

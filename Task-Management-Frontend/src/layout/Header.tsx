@@ -13,6 +13,8 @@ import {
     UserCircleIcon,
     Cog6ToothIcon,
     Bars3Icon,
+    ChevronDownIcon,
+    CheckIcon,
 } from '@heroicons/react/24/outline';
 import taskManagementLogo from '../assets/Task-Management-Logo.svg';
 
@@ -51,11 +53,13 @@ const Header: React.FC<HeaderProps> = ({
     const [showSearchDropdown, setShowSearchDropdown] = useState(false);
     const [showNotifDropdown, setShowNotifDropdown] = useState(false);
     const [showUserDropdown, setShowUserDropdown] = useState(false);
+    const [showLangDropdown, setShowLangDropdown] = useState(false);
 
     const searchRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const notifRef = useRef<HTMLDivElement>(null);
     const userRef = useRef<HTMLDivElement>(null);
+    const langRef = useRef<HTMLDivElement>(null);
 
     // Keyboard shortcut: Ctrl+K
     useEffect(() => {
@@ -81,6 +85,9 @@ const Header: React.FC<HeaderProps> = ({
             }
             if (userRef.current && !userRef.current.contains(e.target as Node)) {
                 setShowUserDropdown(false);
+            }
+            if (langRef.current && !langRef.current.contains(e.target as Node)) {
+                setShowLangDropdown(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -188,8 +195,55 @@ const Header: React.FC<HeaderProps> = ({
                 </div>
             </div>
 
-            {/* Right: Theme, Notifications, User Profile */}
+            {/* Right: Language, Theme, Notifications, User Profile */}
             <div className="flex items-center gap-2">
+                {/* Language Switcher Dropdown */}
+                <div className="relative" ref={langRef}>
+                    <button
+                        onClick={() => setShowLangDropdown(!showLangDropdown)}
+                        type="button"
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer border ${
+                            isDark
+                                ? 'bg-[#18181B] hover:bg-[#27272A] border-[#27272A] text-[#F4F4F5]'
+                                : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800'
+                        }`}
+                        title={t('settings.selectLanguage', {}, 'Dili dəyiş')}
+                    >
+                        <span>{language === 'az' ? '🇦🇿 AZ' : language === 'ru' ? '🇷🇺 RU' : '🇬🇧 EN'}</span>
+                        <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A]" />
+                    </button>
+
+                    {showLangDropdown && (
+                        <div
+                            className={`absolute top-full mt-2 right-0 w-44 rounded-2xl border shadow-2xl z-50 overflow-hidden py-1 animate-in fade-in duration-100 ${
+                                isDark ? 'bg-[#1C1C1E] border-[#2C2C2E] text-white' : 'bg-white border-slate-200 text-slate-900'
+                            }`}
+                        >
+                            {languages.map((l) => (
+                                <button
+                                    key={l.code}
+                                    type="button"
+                                    onClick={() => {
+                                        setLanguage(l.code);
+                                        setShowLangDropdown(false);
+                                    }}
+                                    className={`w-full flex items-center justify-between px-3.5 py-2.5 text-xs font-medium transition-colors cursor-pointer text-left ${
+                                        language === l.code
+                                            ? isDark ? 'bg-blue-600/20 text-blue-400 font-bold' : 'bg-blue-50 text-blue-600 font-bold'
+                                            : isDark ? 'hover:bg-white/5 text-[#D4D4D8]' : 'hover:bg-slate-50 text-slate-700'
+                                    }`}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <span className="text-base">{l.flag}</span>
+                                        <span>{l.name}</span>
+                                    </span>
+                                    {language === l.code && <CheckIcon className="w-3.5 h-3.5 text-blue-400" />}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
                 {/* Theme Toggle */}
                 <button
                     onClick={toggleTheme}

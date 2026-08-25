@@ -5,6 +5,7 @@ import { authService, notificationService } from '../api';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
 import type { UserInfo } from '../utils';
 import type { NotificationResponse } from '../dto';
+import { useLanguage, LANGUAGES } from '../context/LanguageContext';
 
 // ─── theme helpers ────────────────────────────────────────────────────────────
 const getIsDark = () =>
@@ -168,6 +169,7 @@ const ThemeToggle: React.FC<{ isDark: boolean; onToggle: () => void }> = ({ isDa
 // ─── Main Component ───────────────────────────────────────────────────────────
 const Settings: React.FC = () => {
     const navigate = useNavigate();
+    const { t, language, setLanguage } = useLanguage();
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
     const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
     const [isDark, setIsDark] = useState(getIsDark);
@@ -700,6 +702,53 @@ const Settings: React.FC = () => {
                                             </span>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </Card>
+
+                        {/* ── Language & Region ── */}
+                        <Card title={t('settings.languageTitle', {}, 'İnterfeys Dili & Region')} icon="language" isDark={isDark}>
+                            <div className="space-y-4">
+                                <p className="text-xs" style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}>
+                                    {t('settings.languageSubtitle', {}, 'Tətbiqdə istifadə etmək istədiyiniz dili seçin. Seçim bütün sistemdə avtomatik tətbiq olunur.')}
+                                </p>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                                    {LANGUAGES.map((l) => {
+                                        const isSelected = language === l.code;
+                                        return (
+                                            <div
+                                                key={l.code}
+                                                onClick={() => setLanguage(l.code)}
+                                                className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+                                                    isSelected
+                                                        ? 'border-indigo-500 bg-indigo-500/10 shadow-sm'
+                                                        : isDark
+                                                        ? 'border-gray-700 bg-gray-900/50 hover:border-gray-600'
+                                                        : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                                                }`}
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-2xl">{l.flag}</span>
+                                                    <div
+                                                        className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                                                            isSelected ? 'border-indigo-500 bg-indigo-500' : 'border-gray-400'
+                                                        }`}
+                                                    >
+                                                        {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                                    </div>
+                                                </div>
+                                                <div className="mt-3">
+                                                    <p className="text-xs font-bold" style={{ color: isDark ? '#F9FAFB' : '#111827' }}>
+                                                        {l.name}
+                                                    </p>
+                                                    <span className="text-[10px] text-gray-500 uppercase font-semibold">
+                                                        {l.code}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </Card>

@@ -6,6 +6,7 @@ import type { LeaderboardEntry, NotificationResponse, TaskResponse } from '../dt
 import { TaskStatus, DifficultyLevel } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
 import type { UserInfo } from '../utils';
+import { useLanguage } from '../context/LanguageContext';
 import {
     TrophyIcon,
     BoltIcon,
@@ -61,6 +62,7 @@ const UserAvatar: React.FC<{
 
 const Leaderboard: React.FC = () => {
     const navigate = useNavigate();
+    const { t, language } = useLanguage();
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [allTasks, setAllTasks] = useState<TaskResponse[]>([]);
@@ -264,13 +266,13 @@ const Leaderboard: React.FC = () => {
     const getDateFilterLabel = () => {
         switch (dateFilter) {
             case '7d':
-                return 'Bu həftə';
+                return t('common.daysLeft', { days: 7 }, 'Son 7 gün');
             case '30d':
-                return 'Bu ay (30 gün)';
+                return t('common.daysLeft', { days: 30 }, 'Son 30 gün');
             case 'thisMonth':
-                return 'Bu ay (Təqvim)';
+                return t('leaderboard.monthlyRanking', {}, 'Bu ay');
             default:
-                return 'Bütün vaxtlar';
+                return t('common.all', {}, 'Bütün vaxtlar');
         }
     };
 
@@ -283,7 +285,7 @@ const Leaderboard: React.FC = () => {
                     <main className="flex-1 flex items-center justify-center">
                         <div className="flex flex-col items-center gap-3">
                             <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                            <p className="text-xs text-[#71717A] font-medium">Liderlər lövhəsi yüklənir...</p>
+                            <p className="text-xs text-[#71717A] font-medium">{t('common.loading', {}, 'Liderlər lövhəsi yüklənir...')}</p>
                         </div>
                     </main>
                 </div>
@@ -310,15 +312,15 @@ const Leaderboard: React.FC = () => {
                         <div>
                             <div className="flex items-center gap-2">
                                 <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-                                    Liderlər Lövhəsi
+                                    {t('leaderboard.title', {}, 'Liderlər Lövhəsi')}
                                 </h1>
                                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
                                     <SparklesIcon className="w-3 h-3" />
-                                    <span>Həftəlik Sprint</span>
+                                    <span>{t('leaderboard.topEmployees', {}, 'Ən Yaxşılar')}</span>
                                 </span>
                             </div>
                             <p className="text-xs text-[#A1A1AA] mt-1">
-                                Həftəlik Sprint • {new Date().toLocaleDateString('az-AZ', { month: 'short', day: 'numeric' })} - {new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('az-AZ', { month: 'short', day: 'numeric' })}
+                                {t('leaderboard.subtitle', {}, 'Ən yüksək performans və xal toplayan əməkdaşlar')}
                             </p>
                         </div>
 
@@ -329,7 +331,7 @@ const Leaderboard: React.FC = () => {
                                 onClick={handleRefresh}
                                 disabled={refreshing}
                                 className="p-2 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer disabled:opacity-50"
-                                title="Yenilə"
+                                title={t('common.refresh', {}, 'Yenilə')}
                                 type="button"
                             >
                                 <ArrowPathIcon className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
@@ -349,10 +351,10 @@ const Leaderboard: React.FC = () => {
                                 {showDateDropdown && (
                                     <div className="absolute right-0 top-full mt-1.5 w-48 bg-[#1C1C1E] border border-[#2C2C2E] rounded-xl shadow-2xl p-1 z-50 flex flex-col text-xs animate-in fade-in duration-100">
                                         {[
-                                            { id: '7d', label: 'Bu həftə' },
-                                            { id: '30d', label: 'Bu ay (30 gün)' },
-                                            { id: 'thisMonth', label: 'Bu ay (Təqvim)' },
-                                            { id: 'all', label: 'Bütün vaxtlar' },
+                                            { id: '7d', label: t('common.daysLeft', { days: 7 }, 'Son 7 gün') },
+                                            { id: '30d', label: t('common.daysLeft', { days: 30 }, 'Son 30 gün') },
+                                            { id: 'thisMonth', label: t('leaderboard.monthlyRanking', {}, 'Bu ay') },
+                                            { id: 'all', label: t('common.all', {}, 'Bütün vaxtlar') },
                                         ].map((item) => (
                                             <button
                                                 key={item.id}

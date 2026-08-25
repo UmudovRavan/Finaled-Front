@@ -29,7 +29,8 @@ import {
     CalendarIcon,
     ShieldCheckIcon,
     XMarkIcon,
-    AtSymbolIcon
+    AtSymbolIcon,
+    CheckBadgeIcon
 } from '@heroicons/react/24/outline';
 
 const TaskDetail: React.FC = () => {
@@ -111,7 +112,7 @@ const TaskDetail: React.FC = () => {
         const isCreator = Boolean(task.createdByUserId && String(task.createdByUserId).toLowerCase() === String(userInfo.userId).toLowerCase());
         const isAssignee = Boolean(task.assignedToUserId && String(task.assignedToUserId).toLowerCase() === String(userInfo.userId).toLowerCase());
 
-        // The assignee can never award performance points to themselves
+        // İcraçı özünə performans xalı əlavə edə bilməz, o yalnız "Nəzərdən Keçirilir" bildirişini görür
         if (isAssignee) {
             return false;
         }
@@ -181,8 +182,25 @@ const TaskDetail: React.FC = () => {
         loadData();
     }, [navigate, id]);
 
-    // Live SignalR notification / comment sync on TaskDetail
+    // Live SignalR notification / comment / status sync on TaskDetail
     useEffect(() => {
+        const currentTaskId = String(id || '').trim();
+        if (!currentTaskId) return;
+
+        const syncTaskData = () => {
+            taskService.getTaskById(currentTaskId)
+                .then((latestTask) => {
+                    setTask(latestTask);
+                    const stored = taskService.getStoredTaskComments(currentTaskId);
+                    const serverComments = [...(latestTask.taskComments || (latestTask as any).comments || [])];
+                    const commentMap = new Map<string, TaskCommentDto>();
+                    stored.forEach(c => commentMap.set(`${c.userId}_${c.content}_${(c.createdAt || '').slice(0, 16)}`, c));
+                    serverComments.forEach(c => commentMap.set(`${c.userId}_${c.content}_${(c.createdAt || '').slice(0, 16)}`, c));
+                    setComments(Array.from(commentMap.values()));
+                })
+                .catch(() => {});
+        };
+
         const unsubscribe = signalRService.subscribe('ReceiveNotification', (msgPayload: string) => {
             try {
                 let message = msgPayload;
@@ -197,34 +215,58 @@ const TaskDetail: React.FC = () => {
                     // plain string
                 }
 
-                const currentTaskId = String(id || '').trim();
-                if (!currentTaskId) return;
-
                 const isForThisTask =
                     (notifTaskId && String(notifTaskId).toLowerCase() === currentTaskId.toLowerCase()) ||
                     (task && message.toLowerCase().includes(task.title.toLowerCase()));
 
-                if (isForThisTask && (message.includes('mention') || message.includes('şərh') || message.includes('comment') || message.includes('@'))) {
-                    const match = message.match(/:\s*["']?(.+?)["']?$/) || message.match(/qeyd etdi:\s*(.+)$/);
-                    const commentText = match ? match[1] : message;
-                    const incomingComment: TaskCommentDto = {
-                        id: Date.now(),
-                        content: commentText,
-                        userId: '',
-                        userName: 'Həmkar',
-                        taskId: currentTaskId,
-                        createdAt: new Date().toISOString(),
-                        taskCommentMentionIDs: [],
-                    };
-                    const updated = taskService.saveStoredTaskComment(currentTaskId, incomingComment);
-                    setComments(updated);
+                if (isForThisTask) {
+                    if (message.includes('mention') || message.includes('şərh') || message.includes('comment') || message.includes('@') || message.includes('🔄') || message.includes('🏁')) {
+                        const match = message.match(/:\s*["']?(.+?)["']?$/) || message.match(/qeyd etdi:\s*(.+)$/);
+                        const commentText = match ? match[1] : message;
+                        const incomingComment: TaskCommentDto = {
+                            id: Date.now(),
+                            content: commentText,
+                            userId: '',
+                            userName: 'Həmkar',
+                            taskId: currentTaskId,
+                            createdAt: new Date().toISOString(),
+                            taskCommentMentionIDs: [],
+                        };
+                        const updated = taskService.saveStoredTaskComment(currentTaskId, incomingComment);
+                        setComments(updated);
+                    }
+
+                    // Always sync latest task status
+                    syncTaskData();
                 }
             } catch (err) {
                 console.warn('[TaskDetail] SignalR notification processing warning:', err);
             }
         });
 
-        return () => unsubscribe();
+        // Sync when user focuses the tab or returns to window
+        const handleVisibility = () => {
+            if (document.visibilityState === 'visible') {
+                syncTaskData();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibility);
+        window.addEventListener('focus', handleVisibility);
+
+        // Gentle polling interval (every 10 seconds) while viewing task detail
+        const pollInterval = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                syncTaskData();
+            }
+        }, 10000);
+
+        return () => {
+            unsubscribe();
+            document.removeEventListener('visibilitychange', handleVisibility);
+            window.removeEventListener('focus', handleVisibility);
+            clearInterval(pollInterval);
+        };
     }, [id, task]);
 
     const loadData = async () => {
@@ -415,10 +457,23 @@ const TaskDetail: React.FC = () => {
                 createdByUserId: task.createdByUserId,
             });
 
+            // Immediately reflect Completed status in state
+            setTask((prev) => (prev ? { ...prev, status: TaskStatus.Completed } : prev));
+
+            // Add system comment for completion and performance
+            const approvalComment = `✨ [Sistem / Təsdiqləndi]: Tapşırıq rəhbər tərəfindən təsdiqləndi və tamamlandı.${performanceReason.trim() ? ` Performans qeydi: "${performanceReason.trim()}"` : ''}`;
+            await taskService.addComment(task.id, approvalComment).catch(() => {});
+
             setPerformanceReason('');
             // Reload task to get updated status
-            const updatedTask = await taskService.getTaskById(task.id);
-            setTask(updatedTask);
+            const updatedTask = await taskService.getTaskById(task.id).catch(() => null);
+            if (updatedTask) {
+                setTask({ ...updatedTask, status: TaskStatus.Completed });
+            }
+            const updatedComments = taskService.getStoredTaskComments(task.id);
+            if (updatedComments.length > 0) {
+                setComments(updatedComments);
+            }
             addToast('Performans xalları uğurla əlavə edildi və tapşırıq tamamlandı!', undefined, 'success');
         } catch (error: any) {
             const errorMessage = error.response?.data?.message
@@ -455,12 +510,50 @@ const TaskDetail: React.FC = () => {
 
         setProcessingReturn(true);
         try {
-            await taskService.returnForRevision(task.id, userInfo.userId, returnReason.trim());
+            const reasonText = returnReason.trim();
+            const currentUserId = userInfo.userId || '';
+            const currentUserName = userInfo.userName || displayName || 'Yaradıcı';
+
+            // 1. Send status change to backend
+            await taskService.returnForRevision(task.id, currentUserId, reasonText);
+
+            // 2. Immediately reflect InProgress status in state
+            setTask((prev) => (prev ? { ...prev, status: TaskStatus.InProgress } : prev));
+
+            // 3. Format comment with exact user-typed reason from modal
+            const revisionComment = `🏁 [Sistem / Geri Qaytarıldı]: Tapşırıq rədd edildi: "${reasonText}"`;
+            const newCommentObj: TaskCommentDto = {
+                id: Date.now(),
+                content: revisionComment,
+                userId: currentUserId,
+                userName: currentUserName,
+                taskId: String(task.id),
+                createdAt: new Date().toISOString(),
+                taskCommentMentionIDs: [],
+            };
+
+            // 4. Immediately save locally & set comments state
+            taskService.saveStoredTaskComment(task.id, newCommentObj);
+            setComments((prev) => [...prev, newCommentObj]);
+
+            // 5. Send to backend AddComment API
+            await taskService.addComment(task.id, revisionComment, newCommentObj).catch(() => {});
+
             setShowReturnModal(false);
             setReturnReason('');
-            // Reload task to get updated status
-            const updatedTask = await taskService.getTaskById(task.id);
-            setTask(updatedTask);
+
+            // 6. Reload task to get updated status
+            const updatedTask = await taskService.getTaskById(task.id).catch(() => null);
+            if (updatedTask) {
+                setTask({ ...updatedTask, status: TaskStatus.InProgress });
+            }
+            const stored = taskService.getStoredTaskComments(task.id);
+            const server = updatedTask?.taskComments || [];
+            const merged = new Map<string, TaskCommentDto>();
+            server.forEach((c) => merged.set(c.id ? String(c.id) : `${c.content}_${c.createdAt}`, c));
+            stored.forEach((c) => merged.set(c.id ? String(c.id) : `${c.content}_${c.createdAt}`, c));
+            setComments(Array.from(merged.values()));
+
             addToast('Tapşırıq yenidən icra üçün geri göndərildi!', undefined, 'success');
         } catch (error: any) {
             const errorMessage = error.response?.data?.message
@@ -483,9 +576,12 @@ const TaskDetail: React.FC = () => {
         setProcessingAccept(true);
         try {
             await taskService.acceptTask(task.id);
-            // Reload task to get updated status
-            const updatedTask = await taskService.getTaskById(task.id);
-            setTask(updatedTask);
+            // Immediately set InProgress
+            setTask((prev) => (prev ? { ...prev, status: TaskStatus.InProgress } : prev));
+            const updatedTask = await taskService.getTaskById(task.id).catch(() => null);
+            if (updatedTask) {
+                setTask({ ...updatedTask, status: TaskStatus.InProgress });
+            }
             addToast('Tapşırıq uğurla qəbul edildi və icraya başlandı!', undefined, 'success');
         } catch (error: any) {
             const errorMessage = error.response?.data?.message
@@ -511,12 +607,43 @@ const TaskDetail: React.FC = () => {
 
         setProcessingReject(true);
         try {
-            await taskService.rejectTask(task.id, rejectReason.trim());
+            const rReason = rejectReason.trim();
+            const currentUserId = userInfo.userId || '';
+            const currentUserName = userInfo.userName || displayName || 'İcraçı';
+
+            await taskService.rejectTask(task.id, rReason);
+
+            // Add system comment for task rejection
+            const rejectionComment = `❌ [Sistem / İmtina]: Tapşırıq icraçı tərəfindən rədd edildi: "${rReason}"`;
+            const newCommentObj: TaskCommentDto = {
+                id: Date.now(),
+                content: rejectionComment,
+                userId: currentUserId,
+                userName: currentUserName,
+                taskId: String(task.id),
+                createdAt: new Date().toISOString(),
+                taskCommentMentionIDs: [],
+            };
+
+            taskService.saveStoredTaskComment(task.id, newCommentObj);
+            setComments((prev) => [...prev, newCommentObj]);
+            await taskService.addComment(task.id, rejectionComment, newCommentObj).catch(() => {});
+
             setShowRejectModal(false);
             setRejectReason('');
+            setTask((prev) => (prev ? { ...prev, status: TaskStatus.Pending } : prev));
             // Reload task to get updated status
-            const updatedTask = await taskService.getTaskById(task.id);
-            setTask(updatedTask);
+            const updatedTask = await taskService.getTaskById(task.id).catch(() => null);
+            if (updatedTask) {
+                setTask({ ...updatedTask, status: TaskStatus.Pending });
+            }
+            const stored = taskService.getStoredTaskComments(task.id);
+            const server = updatedTask?.taskComments || [];
+            const merged = new Map<string, TaskCommentDto>();
+            server.forEach((c) => merged.set(c.id ? String(c.id) : `${c.content}_${c.createdAt}`, c));
+            stored.forEach((c) => merged.set(c.id ? String(c.id) : `${c.content}_${c.createdAt}`, c));
+            setComments(Array.from(merged.values()));
+
             addToast('Tapşırıq rədd edildi', undefined, 'success');
         } catch (error: any) {
             const errorMessage = error.response?.data?.message
@@ -542,10 +669,42 @@ const TaskDetail: React.FC = () => {
 
         setProcessingFinish(true);
         try {
+            const currentUserId = userInfo.userId || '';
+            const currentUserName = userInfo.userName || displayName || 'İcraçı';
+
             await taskService.finishTask(task.id);
+
+            // Immediately set UnderReview in state
+            setTask((prev) => (prev ? { ...prev, status: TaskStatus.UnderReview } : prev));
+
+            // Add system comment for task finish
+            const finishComment = '🏁 [Sistem / Bitirildi]: Tapşırıq icraçı tərəfindən tamamlandı və yoxlamaya təqdim edildi.';
+            const newCommentObj: TaskCommentDto = {
+                id: Date.now(),
+                content: finishComment,
+                userId: currentUserId,
+                userName: currentUserName,
+                taskId: String(task.id),
+                createdAt: new Date().toISOString(),
+                taskCommentMentionIDs: [],
+            };
+
+            taskService.saveStoredTaskComment(task.id, newCommentObj);
+            setComments((prev) => [...prev, newCommentObj]);
+            await taskService.addComment(task.id, finishComment, newCommentObj).catch(() => {});
+
             // Reload task to get updated status
-            const updatedTask = await taskService.getTaskById(task.id);
-            setTask(updatedTask);
+            const updatedTask = await taskService.getTaskById(task.id).catch(() => null);
+            if (updatedTask) {
+                setTask({ ...updatedTask, status: TaskStatus.UnderReview });
+            }
+            const stored = taskService.getStoredTaskComments(task.id);
+            const server = updatedTask?.taskComments || [];
+            const merged = new Map<string, TaskCommentDto>();
+            server.forEach((c) => merged.set(c.id ? String(c.id) : `${c.content}_${c.createdAt}`, c));
+            stored.forEach((c) => merged.set(c.id ? String(c.id) : `${c.content}_${c.createdAt}`, c));
+            setComments(Array.from(merged.values()));
+
             addToast('Tapşırıq uğurla bitirildi! Yaradan tərəfindən nəzərdən keçirilməsi gözlənilir.', undefined, 'success');
         } catch (error: any) {
             const errorMessage = error.response?.data?.message
@@ -703,30 +862,30 @@ const TaskDetail: React.FC = () => {
     const getStatusBadge = (status: number) => {
         switch (status) {
             case TaskStatus.Pending:
-                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">Gözləmədə</span>;
+                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">{t('statuses.pending', {}, 'Gözləmədə')}</span>;
             case TaskStatus.Assigned:
-                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">Təyin edilib</span>;
+                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">{t('statuses.assigned', {}, 'Təyin edilib')}</span>;
             case TaskStatus.InProgress:
-                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">İcrada</span>;
+                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">{t('statuses.inProgress', {}, 'İcrada')}</span>;
             case TaskStatus.UnderReview:
-                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-orange-500/10 text-orange-400 border border-orange-500/20">Nəzərdən keçirilir</span>;
+                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-orange-500/10 text-orange-400 border border-orange-500/20">{t('statuses.review', {}, 'Nəzərdən keçirilir')}</span>;
             case TaskStatus.Completed:
-                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Tamamlandı</span>;
+                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{t('statuses.completed', {}, 'Tamamlandı')}</span>;
             case TaskStatus.Expired:
-                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">Vaxtı bitib</span>;
+                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">{t('common.overdue', {}, 'Vaxtı bitib')}</span>;
             default:
-                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-[#27272A] text-[#A1A1AA]">Naməlum</span>;
+                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-[#27272A] text-[#A1A1AA]">{t('common.none', {}, 'Naməlum')}</span>;
         }
     };
 
     const getDifficultyBadge = (diff: number) => {
         switch (diff) {
             case DifficultyLevel.Easy:
-                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Asan (+10 xal)</span>;
+                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{t('difficulties.easy', {}, 'Asan')} (+10 {t('common.points', {}, 'xal')})</span>;
             case DifficultyLevel.Medium:
-                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">Orta (+20 xal)</span>;
+                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">{t('difficulties.medium', {}, 'Orta')} (+20 {t('common.points', {}, 'xal')})</span>;
             case DifficultyLevel.Hard:
-                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">Çətin (+30 xal)</span>;
+                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">{t('difficulties.hard', {}, 'Çətin')} (+30 {t('common.points', {}, 'xal')})</span>;
             default:
                 return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-[#27272A] text-[#A1A1AA]">Standart</span>;
         }
@@ -826,11 +985,11 @@ const TaskDetail: React.FC = () => {
                                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-xs font-semibold text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
                             >
                                 <ArrowLeftIcon className="w-4 h-4" />
-                                <span>Tapşırıqlara Qayıt</span>
+                                <span>{t('common.back', {}, 'Tapşırıqlara Qayıt')}</span>
                             </button>
 
                             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#27272A] text-[#D4D4D8]">
-                                Tapşırıq #{task.id}
+                                {t('tasks.taskDetails', {}, 'Tapşırıq')} #{task.id}
                             </span>
                         </div>
 
@@ -843,12 +1002,12 @@ const TaskDetail: React.FC = () => {
                                         className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-xs font-semibold text-white transition-colors cursor-pointer"
                                     >
                                         <PencilSquareIcon className="w-4 h-4 text-[#A1A1AA]" />
-                                        <span>Redaktə</span>
+                                        <span>{t('common.edit', {}, 'Redaktə')}</span>
                                     </button>
                                     <button
                                         onClick={handleDelete}
                                         className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 transition-colors cursor-pointer"
-                                        title="Tapşırığı Sil"
+                                        title={t('common.delete', {}, 'Tapşırığı Sil')}
                                     >
                                         <TrashIcon className="w-4 h-4" />
                                     </button>
@@ -874,10 +1033,10 @@ const TaskDetail: React.FC = () => {
 
                                 <div className="pt-2 border-t border-[#27272A] space-y-2">
                                     <h3 className="text-xs uppercase tracking-wider font-bold text-[#71717A]">
-                                        Təsvir
+                                        {t('common.description', {}, 'Təsvir')}
                                     </h3>
                                     <p className="text-sm text-[#D4D4D8] leading-relaxed whitespace-pre-wrap">
-                                        {task.description || 'Bu tapşırıq üçün ətraflı təsvir qeyd edilməyib.'}
+                                        {task.description || t('tasks.noTasksFound', {}, 'Bu tapşırıq üçün ətraflı təsvir qeyd edilməyib.')}
                                     </p>
                                 </div>
                             </div>
@@ -959,6 +1118,81 @@ const TaskDetail: React.FC = () => {
                                             const commentUser = allUsers.find(u => String(u.id).toLowerCase() === String(comment.userId || '').toLowerCase());
                                             const commentAvatarUrl = getProfilePictureUrl(commentUser?.id, commentUser?.profilePictureUrl);
                                             const authorName = comment.userName || commentUser?.userName || getUserName(comment.userId);
+                                            
+                                            // Check if this is a system status event comment
+                                            const isRevisionComment = comment.content?.includes('[Sistem / Geri Qaytarıldı') || comment.content?.includes('[Düzəliş Tələbi') || comment.content?.includes('Geri Qaytarıldı') || comment.content?.includes('🔄');
+                                            const isFinishComment = comment.content?.includes('[Sistem / Bitirildi') || (comment.content?.includes('🏁') && !comment.content?.includes('Geri Qaytarıldı'));
+                                            const isApprovalComment = comment.content?.includes('[Sistem / Təsdiqləndi') || comment.content?.includes('✨');
+                                            const isRejectComment = comment.content?.includes('[Sistem / İmtina') || comment.content?.includes('❌');
+                                            const isSpecialSystemComment = isRevisionComment || isFinishComment || isApprovalComment || isRejectComment;
+
+                                            if (isSpecialSystemComment) {
+                                                return (
+                                                    <div
+                                                        key={comment.id}
+                                                        className={`p-3.5 rounded-xl border flex items-start gap-3 transition-colors ${
+                                                            isRevisionComment
+                                                                ? 'bg-amber-950/20 border-amber-500/30 text-amber-200'
+                                                                : isFinishComment
+                                                                ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-200'
+                                                                : isRejectComment
+                                                                ? 'bg-rose-950/20 border-rose-500/30 text-rose-200'
+                                                                : 'bg-purple-950/20 border-purple-500/30 text-purple-200'
+                                                        }`}
+                                                    >
+                                                        <div
+                                                            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                                                                isRevisionComment
+                                                                    ? 'bg-amber-500/20 text-amber-400'
+                                                                    : isFinishComment
+                                                                    ? 'bg-emerald-500/20 text-emerald-400'
+                                                                    : isRejectComment
+                                                                    ? 'bg-rose-500/20 text-rose-400'
+                                                                    : 'bg-purple-500/20 text-purple-400'
+                                                            }`}
+                                                        >
+                                                            {isRevisionComment ? (
+                                                                <ArrowPathIcon className="w-4 h-4" />
+                                                            ) : isFinishComment ? (
+                                                                <CheckCircleIcon className="w-4 h-4" />
+                                                            ) : isRejectComment ? (
+                                                                <XCircleIcon className="w-4 h-4" />
+                                                            ) : (
+                                                                <SparklesIcon className="w-4 h-4" />
+                                                            )}
+                                                        </div>
+                                                        <div className="flex flex-col gap-1 min-w-0 flex-1">
+                                                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-xs font-bold text-white">
+                                                                        {authorName}
+                                                                    </span>
+                                                                    <span
+                                                                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                                                                            isRevisionComment
+                                                                                ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                                                                                : isFinishComment
+                                                                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                                                                : isRejectComment
+                                                                                ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                                                                                : 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                                                                        }`}
+                                                                    >
+                                                                        {isRevisionComment ? 'Geri Qaytarıldı' : isFinishComment ? 'Bitirildi' : isRejectComment ? 'İmtina Edildi' : 'Təsdiqləndi'}
+                                                                    </span>
+                                                                </div>
+                                                                <span className="text-[10px] text-[#71717A]">
+                                                                    {formatCommentDate(comment.createdAt)}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-xs text-[#E4E4E7] leading-relaxed whitespace-pre-wrap font-medium">
+                                                                {renderCommentContent(comment.content)}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
                                             return (
                                                 <div key={comment.id} className="p-3.5 rounded-xl bg-[#1C1C1E] border border-[#27272A] flex items-start gap-3">
                                                     <div
@@ -1127,8 +1361,8 @@ const TaskDetail: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* Performance Points Section - Only for UnderReview tasks created by current user */}
-                            {canAddPerformance && task.assignedToUserId && (
+                            {/* Performance Points Section - For UnderReview tasks reviewable by creator/manager */}
+                            {canAddPerformance && (
                                 <div className="rounded-2xl border border-purple-500/30 bg-purple-950/10 p-6 shadow-xs space-y-4">
                                     <div className="flex items-center gap-2 text-purple-400">
                                         <SparklesIcon className="w-5 h-5" />

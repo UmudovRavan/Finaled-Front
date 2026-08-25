@@ -1,0 +1,9 @@
+{
+  "name": "altensor-workspace",
+  "private": true,
+  "scripts": {
+    "dev:info": "npm --prefix Altensor-Info-Front run dev",
+    "dev:crm": "npm --prefix altensorcrm-front run dev",
+    "dev:tms": "npm --prefix Task-Management-Frontend run dev"
+  }
+}

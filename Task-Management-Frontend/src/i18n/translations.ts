@@ -1,282 +1,17 @@
 export interface TranslationSchema {
-  common: {
-    save: string;
-    cancel: string;
-    delete: string;
-    edit: string;
-    create: string;
-    search: string;
-    filter: string;
-    sort: string;
-    options: string;
-    exportCsv: string;
-    refresh: string;
-    actions: string;
-    loading: string;
-    status: string;
-    priority: string;
-    difficulty: string;
-    assignedTo: string;
-    assignedBy: string;
-    dueDate: string;
-    startDate: string;
-    createdAt: string;
-    updatedAt: string;
-    success: string;
-    error: string;
-    confirm: string;
-    close: string;
-    clear: string;
-    all: string;
-    none: string;
-    yes: string;
-    no: string;
-    name: string;
-    title: string;
-    description: string;
-    email: string;
-    phone: string;
-    back: string;
-    details: string;
-    viewAll: string;
-    submit: string;
-    download: string;
-    upload: string;
-    remove: string;
-    add: string;
-    select: string;
-    total: string;
-    active: string;
-    completed: string;
-    pending: string;
-    inProgress: string;
-    cancelled: string;
-    urgent: string;
-    high: string;
-    medium: string;
-    low: string;
-    easy: string;
-    hard: string;
-    points: string;
-    score: string;
-    rank: string;
-    department: string;
-    group: string;
-    role: string;
-    members: string;
-    noData: string;
-    locked: string;
-    today: string;
-    yesterday: string;
-    daysLeft: string;
-    overdue: string;
-  };
-  nav: {
-    dashboard: string;
-    myTasks: string;
-    workgroups: string;
-    leaderboard: string;
-    performance: string;
-    employeePerformance: string;
-    workgroupRanking: string;
-    notifications: string;
-    settings: string;
-    logout: string;
-    searchPlaceholder: string;
-    quickCreate: string;
-    profile: string;
-  };
-  statuses: {
-    pending: string;
-    inProgress: string;
-    review: string;
-    completed: string;
-    cancelled: string;
-    paused: string;
-    assigned: string;
-  };
-  priorities: {
-    low: string;
-    medium: string;
-    high: string;
-    urgent: string;
-  };
-  difficulties: {
-    easy: string;
-    medium: string;
-    hard: string;
-  };
-  dashboard: {
-    title: string;
-    subtitle: string;
-    totalTasks: string;
-    inProgressTasks: string;
-    completedTasks: string;
-    pendingTasks: string;
-    urgentTasks: string;
-    performanceScore: string;
-    kpiSummary: string;
-    recentActivity: string;
-    workloadDistribution: string;
-    topPerformers: string;
-    upcomingDeadlines: string;
-    taskBreakdown: string;
-    productivityRate: string;
-    overviewTab: string;
-    statsTab: string;
-  };
-  tasks: {
-    taskList: string;
-    myTasksTitle: string;
-    myTasksSubtitle: string;
-    allTasksTitle: string;
-    newTask: string;
-    createTask: string;
-    editTask: string;
-    taskDetails: string;
-    taskTitle: string;
-    taskDesc: string;
-    assignedUser: string;
-    selectAssignee: string;
-    selectPriority: string;
-    selectStatus: string;
-    selectDifficulty: string;
-    weight: string;
-    taskWeight: string;
-    subtasks: string;
-    addSubtask: string;
-    comments: string;
-    addComment: string;
-    writeComment: string;
-    attachments: string;
-    uploadAttachment: string;
-    activityHistory: string;
-    changeStatus: string;
-    markCompleted: string;
-    deleteConfirm: string;
-    deleteDesc: string;
-    filterByStatus: string;
-    filterByPriority: string;
-    searchTasks: string;
-    noTasksFound: string;
-    assignee: string;
-    reporter: string;
-    duration: string;
-    timeSpent: string;
-    deadlinePassed: string;
-  };
-  workgroups: {
-    title: string;
-    subtitle: string;
-    createGroup: string;
-    groupName: string;
-    groupDesc: string;
-    leader: string;
-    memberCount: string;
-    activeTasksCount: string;
-    rankingsTitle: string;
-    rankingsSubtitle: string;
-    departmentRanking: string;
-    avgScore: string;
-    topGroup: string;
-    performanceMetrics: string;
-  };
-  leaderboard: {
-    title: string;
-    subtitle: string;
-    topEmployees: string;
-    monthlyRanking: string;
-    allTimeRanking: string;
-    tasksCompleted: string;
-    totalPointsEarned: string;
-    efficiencyRating: string;
-    badgeLegend: string;
-    rank1: string;
-    rank2: string;
-    rank3: string;
-  };
-  performance: {
-    title: string;
-    subtitle: string;
-    employeeTitle: string;
-    employeeSubtitle: string;
-    completionRate: string;
-    onTimeDelivery: string;
-    qualityScore: string;
-    overallGrade: string;
-    monthlyTrends: string;
-    taskVelocity: string;
-    strengths: string;
-    areasForImprovement: string;
-  };
-  notifications: {
-    title: string;
-    subtitle: string;
-    markAllRead: string;
-    noNotifications: string;
-    noNotificationsDesc: string;
-    taskAssigned: string;
-    taskCompleted: string;
-    commentAdded: string;
-    statusChanged: string;
-    deadlineApproaching: string;
-    justNow: string;
-  };
-  settings: {
-    title: string;
-    subtitle: string;
-    generalTab: string;
-    profileTab: string;
-    securityTab: string;
-    notificationsTab: string;
-    languageTab: string;
-    appearanceTab: string;
-    fullName: string;
-    emailAddress: string;
-    phoneNumber: string;
-    changePassword: string;
-    currentPassword: string;
-    newPassword: string;
-    confirmPassword: string;
-    languageTitle: string;
-    languageSubtitle: string;
-    selectLanguage: string;
-    themeTitle: string;
-    themeSubtitle: string;
-    lightTheme: string;
-    darkTheme: string;
-    systemTheme: string;
-    emailNotifications: string;
-    pushNotifications: string;
-    saveChanges: string;
-    savedSuccess: string;
-  };
-  auth: {
-    loginTitle: string;
-    loginSubtitle: string;
-    registerTitle: string;
-    registerSubtitle: string;
-    forgotPasswordTitle: string;
-    forgotPasswordSubtitle: string;
-    resetPasswordTitle: string;
-    resetPasswordSubtitle: string;
-    otpTitle: string;
-    otpSubtitle: string;
-    verifyOtp: string;
-    resendOtp: string;
-    loginButton: string;
-    registerButton: string;
-    sendResetLink: string;
-    resetPasswordButton: string;
-    backToLogin: string;
-    haveAccount: string;
-    noAccount: string;
-    termsAgreement: string;
-    invalidEmail: string;
-    passwordMismatch: string;
-    loginSuccess: string;
-    logoutSuccess: string;
-  };
+  common: { [key: string]: any };
+  nav: { [key: string]: any };
+  statuses: { [key: string]: any };
+  priorities: { [key: string]: any };
+  difficulties: { [key: string]: any };
+  dashboard: { [key: string]: any };
+  tasks: { [key: string]: any };
+  workgroups: { [key: string]: any };
+  leaderboard: { [key: string]: any };
+  performance: { [key: string]: any };
+  notifications: { [key: string]: any };
+  settings: { [key: string]: any };
+  auth: { [key: string]: any };
 }
 
 export const translations: { az: TranslationSchema; en: TranslationSchema; ru: TranslationSchema } = {
@@ -351,7 +86,23 @@ export const translations: { az: TranslationSchema; en: TranslationSchema; ru: T
       today: 'Bugün',
       yesterday: 'Dünən',
       daysLeft: 'gün qaldı',
-      overdue: 'Vaxtı keçib'
+      daysRemaining: '{{days}} gün qaldı',
+      overdue: 'Vaxtı keçib',
+      goodMorning: 'Sabahınız xeyir',
+      goodDay: 'Hər vaxtınız xeyir',
+      goodEvening: 'Axşamınız xeyir',
+      mon: 'B.e',
+      tue: 'Ç.a',
+      wed: 'Çər',
+      thu: 'C.a',
+      fri: 'Cüm',
+      sat: 'Şən',
+      sun: 'Baz',
+      justNow: 'İndicə',
+      minsAgo: '{{mins}} dəq əvvəl',
+      hoursAgo: '{{hours}} saat əvvəl',
+      daysAgo: '{{days}} gün əvvəl',
+      new: 'yeni'
     },
     nav: {
       dashboard: 'Dashboard',
@@ -405,7 +156,23 @@ export const translations: { az: TranslationSchema; en: TranslationSchema; ru: T
       taskBreakdown: 'Mərhələlər üzrə Bölgü',
       productivityRate: 'Effektivlik Faizi',
       overviewTab: 'Ümumi Baxış',
-      statsTab: 'Statistika'
+      statsTab: 'Statistika',
+      taskDynamics: 'Tapşırıq Dinamikası',
+      weeklyOverview: 'Həftəlik baxış',
+      statusDistribution: 'Status Bölgüsü',
+      recentTasksGlobal: 'Son Tapşırıqlar (Qlobal)',
+      recentTasksGroup: 'Qrupun Son Tapşırıqları',
+      recentTasksPersonal: 'Şəxsi Son Tapşırıqlarım',
+      viewAllTasks: 'Bütün tapşırıqlara bax',
+      recentActivities: 'Son Fəaliyyətlər',
+      viewAll: 'Hamısına bax',
+      noRecentActivity: 'Hələlik yeni fəaliyyət yoxdur',
+      entireCompany: 'Bütün Şirkət',
+      workGroup: 'İş Qrupu',
+      personal: 'Şəxsi',
+      last7Days: 'Son 7 Gün',
+      last30Days: 'Son 30 Gün',
+      thisMonth: 'Bu Ay'
     },
     tasks: {
       taskList: 'Tapşırıq Siyahısı',
@@ -525,13 +292,41 @@ export const translations: { az: TranslationSchema; en: TranslationSchema; ru: T
       selectLanguage: 'Dil seçin',
       themeTitle: 'İnterfeys Teması',
       themeSubtitle: 'Göz rahatlığınız üçün uyğun rəng rejimini təyin edin.',
-      lightTheme: 'İşıqlı Rejim',
-      darkTheme: 'Qaranlıq Rejim',
+      lightTheme: 'Açıq (Light)',
+      darkTheme: 'Qaranlıq (Dark)',
+      midnightTheme: 'Gecə Mavisi',
       systemTheme: 'Sistem Rejimi',
       emailNotifications: 'E-poçt Bildirişləri',
       pushNotifications: 'Ani Push Bildirişləri',
       saveChanges: 'Dəyişiklikləri Yadda Saxla',
-      savedSuccess: 'Tənzimləmələr uğurla yadda saxlanıldı!'
+      savedSuccess: 'Tənzimləmələr uğurla yadda saxlanıldı!',
+      userConfig: 'İstifadəçi Konfiqurasiyası',
+      preferences: 'Tərcihlər',
+      preferencesSubtitle: 'Görünüş, dil və bildiriş tərcihlərinizi fərdiləşdirin.',
+      systemConfig: 'Sistem Konfiqurasiyası',
+      general: 'Ümumi',
+      generalSubtitle: 'Ümumi sistem parametrləri.',
+      brandLogo: 'Brend & Loqo',
+      userManagement: 'İstifadəçi İdarəetməsi',
+      users: 'İstifadəçilər',
+      appearanceTheme: 'Görünüş & Tema',
+      appearanceSubtitle: 'Açıq, qaranlıq və gecə mavisi temaları arasında seçim edin.',
+      languageRegion: 'Dil & Saat Qurşağı',
+      interfaceLanguage: 'İnterfeys Dili',
+      timeFormat: 'Vaxt Formatı',
+      timeFormatSubtitle: 'Tapşırıq və bildiriş tarixlərinin formatı.',
+      timeFormat24: '24 saatlıq (14:30)',
+      timeFormat12: '12 saatlıq (02:30 PM)',
+      notificationPreferences: 'Bildiriş Tərcihləri',
+      emailNotificationsSubtitle: 'Yeni tapşırıqlar təyin edildikdə e-poçt bildirişi alın.',
+      accountSecurity: 'Hesab Məlumatları & Təhlükəsizlik',
+      emailsSignature: 'E-poçtlar & İmza',
+      emailsSignatureDesc: 'Yazışmalar və bildirişlər üçün e-poçt imzanızı tənzimləyin.',
+      setup: 'Quraşdır',
+      passwordDesc: 'Təhlükəsizlik üçün hesabınızın şifrəsini dəyişin.',
+      resetPassword: 'Şifrəni Sıfırla',
+      changePhoto: 'Şəkli dəyiş',
+      deletePhoto: 'Şəkli sil'
     },
     auth: {
       loginTitle: 'Daxil Ol',
@@ -632,7 +427,23 @@ export const translations: { az: TranslationSchema; en: TranslationSchema; ru: T
       today: 'Today',
       yesterday: 'Yesterday',
       daysLeft: 'days left',
-      overdue: 'Overdue'
+      daysRemaining: '{{days}} days left',
+      overdue: 'Overdue',
+      goodMorning: 'Good morning',
+      goodDay: 'Good afternoon',
+      goodEvening: 'Good evening',
+      mon: 'Mon',
+      tue: 'Tue',
+      wed: 'Wed',
+      thu: 'Thu',
+      fri: 'Fri',
+      sat: 'Sat',
+      sun: 'Sun',
+      justNow: 'Just now',
+      minsAgo: '{{mins}}m ago',
+      hoursAgo: '{{hours}}h ago',
+      daysAgo: '{{days}}d ago',
+      new: 'new'
     },
     nav: {
       dashboard: 'Dashboard',
@@ -686,7 +497,23 @@ export const translations: { az: TranslationSchema; en: TranslationSchema; ru: T
       taskBreakdown: 'Stage Distribution',
       productivityRate: 'Efficiency Rate',
       overviewTab: 'Overview',
-      statsTab: 'Analytics'
+      statsTab: 'Analytics',
+      taskDynamics: 'Task Dynamics',
+      weeklyOverview: 'Weekly Overview',
+      statusDistribution: 'Status Distribution',
+      recentTasksGlobal: 'Recent Tasks (Global)',
+      recentTasksGroup: 'Recent Group Tasks',
+      recentTasksPersonal: 'My Recent Tasks',
+      viewAllTasks: 'View all tasks',
+      recentActivities: 'Recent Activities',
+      viewAll: 'View all',
+      noRecentActivity: 'No recent activity yet',
+      entireCompany: 'Entire Company',
+      workGroup: 'Work Group',
+      personal: 'Personal',
+      last7Days: 'Last 7 Days',
+      last30Days: 'Last 30 Days',
+      thisMonth: 'This Month'
     },
     tasks: {
       taskList: 'Task Directory',
@@ -808,11 +635,39 @@ export const translations: { az: TranslationSchema; en: TranslationSchema; ru: T
       themeSubtitle: 'Configure light or dark color schemes for optimal focus.',
       lightTheme: 'Light Theme',
       darkTheme: 'Dark Theme',
+      midnightTheme: 'Midnight',
       systemTheme: 'Match System',
       emailNotifications: 'Email Alerts',
       pushNotifications: 'Real-time Push Notifications',
       saveChanges: 'Save Preferences',
-      savedSuccess: 'Settings updated successfully!'
+      savedSuccess: 'Settings updated successfully!',
+      userConfig: 'User Configuration',
+      preferences: 'Preferences',
+      preferencesSubtitle: 'Customize your appearance, language, and notification preferences.',
+      systemConfig: 'System Configuration',
+      general: 'General',
+      generalSubtitle: 'General system settings.',
+      brandLogo: 'Brand & Logo',
+      userManagement: 'User Management',
+      users: 'Users',
+      appearanceTheme: 'Appearance & Theme',
+      appearanceSubtitle: 'Choose between light, dark, and midnight themes.',
+      languageRegion: 'Language & Timezone',
+      interfaceLanguage: 'Interface Language',
+      timeFormat: 'Time Format',
+      timeFormatSubtitle: 'Format of task and notification dates.',
+      timeFormat24: '24 hours (14:30)',
+      timeFormat12: '12 hours (02:30 PM)',
+      notificationPreferences: 'Notification Preferences',
+      emailNotificationsSubtitle: 'Get email notifications when new tasks are assigned.',
+      accountSecurity: 'Account Information & Security',
+      emailsSignature: 'Emails & Signature',
+      emailsSignatureDesc: 'Set up your email signature for correspondence and notifications.',
+      setup: 'Set up',
+      passwordDesc: 'Change your account password for security.',
+      resetPassword: 'Reset Password',
+      changePhoto: 'Change photo',
+      deletePhoto: 'Delete photo'
     },
     auth: {
       loginTitle: 'Sign In',
@@ -913,7 +768,23 @@ export const translations: { az: TranslationSchema; en: TranslationSchema; ru: T
       today: 'Сегодня',
       yesterday: 'Вчера',
       daysLeft: 'дн. осталось',
-      overdue: 'Просрочено'
+      daysRemaining: 'осталось {{days}} дн.',
+      overdue: 'Просрочено',
+      goodMorning: 'Доброе утро',
+      goodDay: 'Добрый день',
+      goodEvening: 'Добрый вечер',
+      mon: 'Пн',
+      tue: 'Вт',
+      wed: 'Ср',
+      thu: 'Чт',
+      fri: 'Пт',
+      sat: 'Сб',
+      sun: 'Вс',
+      justNow: 'Только что',
+      minsAgo: '{{mins}} мин назад',
+      hoursAgo: '{{hours}} ч назад',
+      daysAgo: '{{days}} дн назад',
+      new: 'новые'
     },
     nav: {
       dashboard: 'Панель управления',
@@ -967,7 +838,23 @@ export const translations: { az: TranslationSchema; en: TranslationSchema; ru: T
       taskBreakdown: 'Распределение по этапам',
       productivityRate: 'Уровень продуктивности',
       overviewTab: 'Обзор',
-      statsTab: 'Аналитика'
+      statsTab: 'Аналитика',
+      taskDynamics: 'Динамика задач',
+      weeklyOverview: 'Еженедельный обзор',
+      statusDistribution: 'Распределение по статусам',
+      recentTasksGlobal: 'Последние задачи (Глобально)',
+      recentTasksGroup: 'Последние задачи группы',
+      recentTasksPersonal: 'Мои недавние задачи',
+      viewAllTasks: 'Посмотреть все задачи',
+      recentActivities: 'Последние действия',
+      viewAll: 'Посмотреть все',
+      noRecentActivity: 'Пока нет новых действий',
+      entireCompany: 'Вся компания',
+      workGroup: 'Рабочая группа',
+      personal: 'Личные',
+      last7Days: 'Последние 7 дней',
+      last30Days: 'Последние 30 дней',
+      thisMonth: 'В этом месяце'
     },
     tasks: {
       taskList: 'Список задач',
@@ -1087,13 +974,41 @@ export const translations: { az: TranslationSchema; en: TranslationSchema; ru: T
       selectLanguage: 'Выберите язык',
       themeTitle: 'Цветовая тема',
       themeSubtitle: 'Выберите светлую или темную тему для комфортной работы.',
-      lightTheme: 'Светлая тема',
-      darkTheme: 'Темная тема',
+      lightTheme: 'Светлая (Light)',
+      darkTheme: 'Темная (Dark)',
+      midnightTheme: 'Полуночный синий',
       systemTheme: 'Системная тема',
-      emailNotifications: 'Email уведомления',
+      emailNotifications: 'Email-уведомления',
       pushNotifications: 'Мгновенные Push-уведомления',
       saveChanges: 'Сохранить настройки',
-      savedSuccess: 'Настройки успешно сохранены!'
+      savedSuccess: 'Настройки успешно сохранены!',
+      userConfig: 'Конфигурация пользователя',
+      preferences: 'Настройки',
+      preferencesSubtitle: 'Настройте внешний вид, язык и параметры уведомлений.',
+      systemConfig: 'Системная конфигурация',
+      general: 'Общие',
+      generalSubtitle: 'Общие параметры системы.',
+      brandLogo: 'Бренд и Логотип',
+      userManagement: 'Управление пользователями',
+      users: 'Пользователи',
+      appearanceTheme: 'Внешний вид и Тема',
+      appearanceSubtitle: 'Выберите между светлой, темной и полуночной темами.',
+      languageRegion: 'Язык и часовой пояс',
+      interfaceLanguage: 'Язык интерфейса',
+      timeFormat: 'Формат времени',
+      timeFormatSubtitle: 'Формат дат задач и уведомлений.',
+      timeFormat24: '24-часовой (14:30)',
+      timeFormat12: '12-часовой (02:30 PM)',
+      notificationPreferences: 'Настройки уведомлений',
+      emailNotificationsSubtitle: 'Получать email-уведомления при назначении новых задач.',
+      accountSecurity: 'Информация об аккаунте и Безопасность',
+      emailsSignature: 'Эл. почта и Подпись',
+      emailsSignatureDesc: 'Настройте подпись эл. почты для переписки и уведомлений.',
+      setup: 'Настроить',
+      passwordDesc: 'Смените пароль вашей учетной записи для безопасности.',
+      resetPassword: 'Сбросить пароль',
+      changePhoto: 'Изменить фото',
+      deletePhoto: 'Удалить фото'
     },
     auth: {
       loginTitle: 'Вход в систему',

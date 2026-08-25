@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { signalRService } from '../services';
 import { notificationService, authService } from '../api';
+import { useAuth } from './AuthContext';
 import type { NotificationResponse } from '../dto';
 
 interface ToastItem {
@@ -212,19 +213,23 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         }, 1500);
     }, [addNotification, addToast, refreshNotifications]);
 
-    // Initialize SignalR
+    const { isAuthenticated, user } = useAuth();
+
+    // Initialize SignalR and load notifications on authentication
     useEffect(() => {
         isUnmountedRef.current = false;
 
         const token = authService.getToken();
-        if (!token) {
-            console.log('[NotificationContext] No auth token, skipping SignalR');
+        if (!isAuthenticated || !token) {
+            console.log('[NotificationContext] User not authenticated, skipping SignalR');
+            setNotifications([]);
+            signalRService.stop().catch(() => {});
             return;
         }
 
-        console.log('[NotificationContext] 🚀 Starting SignalR initialization...');
+        console.log('[NotificationContext] 🚀 Starting SignalR initialization for user:', user?.userName || user?.userId);
 
-        // Load initial notifications
+        // Load initial notifications immediately upon login
         refreshNotifications();
 
         // Subscribe to notifications
@@ -242,7 +247,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
             toastTimeoutsRef.current.clear();
             unsubscribe();
         };
-    }, [refreshNotifications, handleNotification]);
+    }, [isAuthenticated, user?.userId, refreshNotifications, handleNotification]);
 
     return (
         <NotificationContext.Provider value={{

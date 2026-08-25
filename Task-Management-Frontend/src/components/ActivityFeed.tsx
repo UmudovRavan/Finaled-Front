@@ -1,5 +1,6 @@
 import React from 'react';
 import type { NotificationResponse } from '../dto';
+import { useLanguage } from '../context/LanguageContext';
 import {
     CheckCircleIcon,
     ChatBubbleLeftEllipsisIcon,
@@ -14,6 +15,8 @@ interface ActivityFeedProps {
 }
 
 const ActivityFeed: React.FC<ActivityFeedProps> = ({ notifications, onViewAll }) => {
+    const { t } = useLanguage();
+
     const formatTimeAgo = (dateStr: string): string => {
         const date = new Date(dateStr);
         const now = new Date();
@@ -22,10 +25,10 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({ notifications, onViewAll })
         const diffHours = Math.floor(diffMs / 3600000);
         const diffDays = Math.floor(diffMs / 86400000);
 
-        if (diffMins < 1) return 'İndi';
-        if (diffMins < 60) return `${diffMins} dəq əvvəl`;
-        if (diffHours < 24) return `${diffHours} saat əvvəl`;
-        return `${diffDays} gün əvvəl`;
+        if (diffMins < 1) return t('common.justNow', {}, 'İndi');
+        if (diffMins < 60) return t('common.minsAgo', { mins: diffMins }, `${diffMins} dəq əvvəl`);
+        if (diffHours < 24) return t('common.hoursAgo', { hours: diffHours }, `${diffHours} saat əvvəl`);
+        return t('common.daysAgo', { days: diffDays }, `${diffDays} gün əvvəl`);
     };
 
     const getActivityIcon = (message: string) => {
@@ -50,13 +53,13 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({ notifications, onViewAll })
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-fuchsia-500"></span>
-                    <h3 className="text-sm font-bold text-white tracking-tight">Son Fəaliyyətlər</h3>
+                    <h3 className="text-sm font-bold text-white tracking-tight">{t('dashboard.recentActivities', {}, 'Son Fəaliyyətlər')}</h3>
                 </div>
                 <button
                     onClick={onViewAll}
                     className="text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
                 >
-                    Hamısına bax
+                    {t('dashboard.viewAll', {}, 'Hamısına bax')}
                 </button>
             </div>
 
@@ -64,7 +67,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({ notifications, onViewAll })
                 {notifications.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-10 text-center text-xs text-[#71717A]">
                         <BellIcon className="w-6 h-6 mb-2 text-[#52525B]" />
-                        <span>Hələlik yeni fəaliyyət yoxdur</span>
+                        <span>{t('dashboard.noRecentActivity', {}, 'Hələlik yeni fəaliyyət yoxdur')}</span>
                     </div>
                 ) : (
                     notifications.slice(0, 6).map((notification) => (

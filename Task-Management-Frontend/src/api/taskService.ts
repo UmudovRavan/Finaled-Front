@@ -218,10 +218,32 @@ export function normalizeTask(raw: any): TaskResponse {
     };
 }
 
+export function isSystemActivityTask(rawOrTask: any): boolean {
+    if (!rawOrTask) return false;
+    const title = String(rawOrTask.title ?? rawOrTask.Title ?? rawOrTask.name ?? rawOrTask.Name ?? '').trim().toLowerCase();
+    const desc = String(rawOrTask.description ?? rawOrTask.Description ?? rawOrTask.desc ?? rawOrTask.Desc ?? '').trim().toLowerCase();
+
+    return (
+        title.includes('activity task') ||
+        title.startsWith('deal activity') ||
+        title.startsWith('lead activity') ||
+        title.includes('sənəd qoşması') ||
+        title.includes('document attachment') ||
+        desc.includes('activity and comments for lead') ||
+        desc.includes('activity and comments for deal') ||
+        desc.includes('activity and comments') ||
+        desc.includes('lead qoşma faylları') ||
+        desc.includes('deal qoşma faylları') ||
+        title.includes('[deal_id:') ||
+        title.includes('[lead_id:')
+    );
+}
+
 export const taskService = {
     getStoredTaskComments,
     saveStoredTaskComment,
     clearStoredTaskComments,
+    isSystemActivityTask,
 
     async getAllTasks(): Promise<TaskResponse[]> {
         const candidateEndpoints = [
@@ -252,7 +274,7 @@ export const taskService = {
                 }
 
                 if (list.length > 0) {
-                    return list.map(normalizeTask);
+                    return list.map(normalizeTask).filter((t) => !isSystemActivityTask(t));
                 }
             } catch {
                 // Try next endpoint
@@ -437,7 +459,18 @@ export const taskService = {
 
         saveStoredTaskComment(cleanTaskId, newComment);
 
-        await httpClient.post(`/Task/AddComment?taskId=${encodeURIComponent(cleanTaskId)}&comment=${encodeURIComponent(cleanComment)}`);
+        try {
+            await httpClient.post(`/Task/AddComment?taskId=${encodeURIComponent(cleanTaskId)}&comment=${encodeURIComponent(cleanComment)}`);
+        } catch (err1) {
+            try {
+                await httpClient.post('/Task/AddComment', {
+                    taskId: cleanTaskId,
+                    comment: cleanComment,
+                });
+            } catch (err2) {
+                console.warn('[taskService] addComment API failed, stored locally:', err2);
+            }
+        }
         return newComment;
     },
 

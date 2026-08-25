@@ -5,6 +5,7 @@ import { notificationService, authService } from '../api';
 import type { NotificationResponse } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
 import type { UserInfo } from '../utils';
+import { useLanguage } from '../context/LanguageContext';
 import {
     BellIcon,
     CheckIcon,
@@ -22,6 +23,7 @@ type FilterTab = 'all' | 'unread' | 'mentions';
 
 const Notifications: React.FC = () => {
     const navigate = useNavigate();
+    const { t, language } = useLanguage();
     const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -29,15 +31,15 @@ const Notifications: React.FC = () => {
     const [activeTab, setActiveTab] = useState<FilterTab>('all');
 
     const displayName = useMemo(() => {
-        if (!userInfo) return 'İstifadəçi';
+        if (!userInfo) return t('common.user', {}, 'İstifadəçi');
         if (userInfo.userName) {
             return userInfo.userName.charAt(0).toUpperCase() + userInfo.userName.slice(1);
         }
         if (userInfo.email) {
             return userInfo.email.split('@')[0];
         }
-        return 'İstifadəçi';
-    }, [userInfo]);
+        return t('common.user', {}, 'İstifadəçi');
+    }, [userInfo, t]);
 
     const userRole = useMemo(() => {
         if (!userInfo || !userInfo.roles?.length) return 'Employee';
@@ -80,11 +82,11 @@ const Notifications: React.FC = () => {
 
             let groupKey: string;
             if (date.getTime() === today.getTime()) {
-                groupKey = 'Bu gün';
+                groupKey = t('common.today', {}, 'Bu gün');
             } else if (date.getTime() === yesterday.getTime()) {
-                groupKey = 'Dünən';
+                groupKey = t('common.yesterday', {}, 'Dünən');
             } else {
-                groupKey = date.toLocaleDateString('az-AZ', { month: 'short', day: 'numeric', year: 'numeric' });
+                groupKey = date.toLocaleDateString(language === 'az' ? 'az-AZ' : language === 'ru' ? 'ru-RU' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             }
 
             if (!groups[groupKey]) {
@@ -94,7 +96,7 @@ const Notifications: React.FC = () => {
         });
 
         return groups;
-    }, [filteredNotifications]);
+    }, [filteredNotifications, t, language]);
 
     useEffect(() => {
         const token = authService.getToken();
@@ -251,16 +253,16 @@ const Notifications: React.FC = () => {
                         <div>
                             <div className="flex items-center gap-2.5">
                                 <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-                                    Bildirişlər
+                                    {t('notifications.title', {}, 'Bildirişlər')}
                                 </h1>
                                 {unreadCount > 0 && (
                                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/30">
-                                        {unreadCount} yeni
+                                        {unreadCount} {t('common.new', {}, 'yeni')}
                                     </span>
                                 )}
                             </div>
                             <p className="text-xs text-[#A1A1AA] mt-1">
-                                Son tapşırıq hərəkətləri, təyinatlar və rəylər.
+                                {t('notifications.subtitle', {}, 'Son tapşırıq hərəkətləri, təyinatlar və rəylər.')}
                             </p>
                         </div>
 
@@ -270,7 +272,7 @@ const Notifications: React.FC = () => {
                                 onClick={handleRefresh}
                                 disabled={refreshing}
                                 className="p-2 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer disabled:opacity-50"
-                                title="Yenilə"
+                                title={t('common.refresh', {}, 'Yenilə')}
                                 type="button"
                             >
                                 <ArrowPathIcon className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
@@ -285,7 +287,7 @@ const Notifications: React.FC = () => {
                                         <CheckIcon className="w-3.5 h-3.5 stroke-[2.5]" />
                                         <CheckIcon className="w-3.5 h-3.5 stroke-[2.5]" />
                                     </div>
-                                    <span>Hamısını oxunmuş et</span>
+                                    <span>{t('notifications.markAllRead', {}, 'Hamısını oxunmuş et')}</span>
                                 </button>
                             )}
                         </div>
@@ -301,7 +303,7 @@ const Notifications: React.FC = () => {
                                     : 'text-[#71717A] hover:text-[#D4D4D8]'
                             }`}
                         >
-                            Hamısı ({notifications.length})
+                            {t('common.all', {}, 'Hamısı')} ({notifications.length})
                         </button>
 
                         <button
@@ -312,7 +314,7 @@ const Notifications: React.FC = () => {
                                     : 'text-[#71717A] hover:text-[#D4D4D8]'
                             }`}
                         >
-                            <span>Oxunmamış</span>
+                            <span>{t('statuses.pending', {}, 'Oxunmamış')}</span>
                             {unreadCount > 0 && (
                                 <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] flex items-center justify-center font-bold">
                                     {unreadCount}
@@ -328,7 +330,7 @@ const Notifications: React.FC = () => {
                                     : 'text-[#71717A] hover:text-[#D4D4D8]'
                             }`}
                         >
-                            @ Mentionlar
+                            @ Mention
                         </button>
                     </div>
 

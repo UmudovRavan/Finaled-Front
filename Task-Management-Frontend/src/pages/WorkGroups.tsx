@@ -7,6 +7,7 @@ import type { WorkGroupResponse, WorkGroupStats, WorkGroupListItem, CreateWorkGr
 import type { NotificationResponse, UserResponse } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, isUserAdmin, isUserManager, hasWorkGroupAccess } from '../utils';
 import type { UserInfo } from '../utils';
+import { useLanguage } from '../context/LanguageContext';
 import {
     UserGroupIcon,
     PlusIcon,
@@ -33,6 +34,7 @@ const SECTORS = [
 
 const WorkGroups: React.FC = () => {
     const navigate = useNavigate();
+    const { t, language } = useLanguage();
     const [workGroups, setWorkGroups] = useState<WorkGroupListItem[]>([]);
     const [stats, setStats] = useState<WorkGroupStats>({
         totalWorkGroups: 0,
@@ -362,7 +364,7 @@ const WorkGroups: React.FC = () => {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-                                İş Qrupları
+                                {t('workgroups.title', {}, 'İş Qrupları')}
                             </h1>
                             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/10 text-white border border-white/15">
                                 {workGroups.length}
@@ -375,7 +377,7 @@ const WorkGroups: React.FC = () => {
                                 onClick={handleRefresh}
                                 disabled={refreshing}
                                 className="p-2 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer disabled:opacity-50"
-                                title="Yenilə"
+                                title={t('common.refresh', {}, 'Yenilə')}
                                 type="button"
                             >
                                 <ArrowPathIcon className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
@@ -388,7 +390,7 @@ const WorkGroups: React.FC = () => {
                                     className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg transition-colors cursor-pointer"
                                 >
                                     <PlusIcon className="w-4 h-4 stroke-[2.5]" />
-                                    <span>Yeni İş Qrupu</span>
+                                    <span>{t('workgroups.createGroup', {}, 'Yeni İş Qrupu')}</span>
                                 </button>
                             )}
                         </div>
@@ -400,10 +402,10 @@ const WorkGroups: React.FC = () => {
                             <div className="flex items-center justify-between gap-2 mb-3">
                                 <div className="flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full bg-sky-400"></span>
-                                    <span className="text-xs font-semibold text-[#A1A1AA]">Ümumi İş Qrupları</span>
+                                    <span className="text-xs font-semibold text-[#A1A1AA]">{t('workgroups.totalWorkGroups', {}, 'Ümumi İş Qrupları')}</span>
                                 </div>
                                 <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white/5 text-[#D4D4D8] border border-white/10">
-                                    Aktiv
+                                    {t('statuses.inProgress', {}, 'Aktiv')}
                                 </span>
                             </div>
                             <div className="flex items-baseline gap-2">
@@ -411,7 +413,7 @@ const WorkGroups: React.FC = () => {
                                     {stats.totalWorkGroups}
                                 </span>
                                 <span className="text-xs font-semibold text-emerald-400">
-                                    +{stats.totalWorkGroupsChange} bu ay
+                                    +{stats.totalWorkGroupsChange} {t('common.thisMonth', {}, 'bu ay')}
                                 </span>
                             </div>
                         </div>
@@ -420,10 +422,10 @@ const WorkGroups: React.FC = () => {
                             <div className="flex items-center justify-between gap-2 mb-3">
                                 <div className="flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                                    <span className="text-xs font-semibold text-[#A1A1AA]">Aktiv Üzvlər</span>
+                                    <span className="text-xs font-semibold text-[#A1A1AA]">{t('workgroups.activeMembers', {}, 'Aktiv Üzvlər')}</span>
                                 </div>
                                 <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white/5 text-[#D4D4D8] border border-white/10">
-                                    Komanda
+                                    {t('common.team', {}, 'Komanda')}
                                 </span>
                             </div>
                             <div className="flex items-baseline gap-2">
@@ -440,10 +442,10 @@ const WorkGroups: React.FC = () => {
                             <div className="flex items-center justify-between gap-2 mb-3">
                                 <div className="flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-                                    <span className="text-xs font-semibold text-[#A1A1AA]">Orta Qrup Xalı</span>
+                                    <span className="text-xs font-semibold text-[#A1A1AA]">{t('workgroups.avgGroupPoints', {}, 'Orta Qrup Xalı')}</span>
                                 </div>
                                 <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white/5 text-[#D4D4D8] border border-white/10">
-                                    Xal
+                                    {t('common.points', {}, 'Xal')}
                                 </span>
                             </div>
                             <div className="flex items-baseline gap-2">
@@ -460,7 +462,7 @@ const WorkGroups: React.FC = () => {
                             <div className="flex items-center justify-between gap-2 mb-3">
                                 <div className="flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full bg-purple-400"></span>
-                                    <span className="text-xs font-semibold text-[#A1A1AA]">Məhsuldarlıq Səviyyəsi</span>
+                                    <span className="text-xs font-semibold text-[#A1A1AA]">{t('workgroups.productivityRate', {}, 'Məhsuldarlıq Səviyyəsi')}</span>
                                 </div>
                                 <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white/5 text-[#D4D4D8] border border-white/10">
                                     {stats.productivityLabel}
@@ -488,12 +490,12 @@ const WorkGroups: React.FC = () => {
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="İş qrupu axtar..."
+                                placeholder={t('common.search', {}, 'İş qrupu axtar...')}
                                 className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl pl-9 pr-3.5 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium"
                             />
                         </div>
                         <span className="text-xs text-[#71717A] font-medium hidden sm:block">
-                            {filteredWorkGroups.length} qrup göstərilir
+                            {filteredWorkGroups.length} {t('common.count', {}, 'qrup göstərilir')}
                         </span>
                     </div>
 
@@ -501,7 +503,7 @@ const WorkGroups: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {filteredWorkGroups.length === 0 ? (
                             <div className="col-span-full py-16 text-center text-xs text-[#71717A] rounded-2xl border border-[#27272A] bg-[#18181B]">
-                                İş qrupu tapılmadı
+                                {t('common.noResults', {}, 'İş qrupu tapılmadı')}
                             </div>
                         ) : (
                             filteredWorkGroups.map((group) => (

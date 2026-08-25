@@ -6,6 +6,7 @@ import type { NotificationResponse, TaskResponse, LeaderboardEntry } from '../dt
 import { TaskStatus, DifficultyLevel } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
 import type { UserInfo } from '../utils';
+import { useLanguage } from '../context/LanguageContext';
 import {
     SparklesIcon,
     ArrowPathIcon,
@@ -54,6 +55,7 @@ const CrmChartTooltip = ({ active, payload, label }: any) => {
 
 const Performance: React.FC = () => {
     const navigate = useNavigate();
+    const { t, language } = useLanguage();
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
     const [totalPoints, setTotalPoints] = useState<number>(0);
     const [allTasks, setAllTasks] = useState<TaskResponse[]>([]);
@@ -257,13 +259,13 @@ const Performance: React.FC = () => {
     const getDateFilterLabel = () => {
         switch (dateFilter) {
             case '7d':
-                return 'Son 7 gün';
+                return t('common.daysLeft', { days: 7 }, 'Son 7 gün');
             case '30d':
-                return 'Son 30 gün';
+                return t('common.daysLeft', { days: 30 }, 'Son 30 gün');
             case 'thisMonth':
-                return 'Bu ay';
+                return t('leaderboard.monthlyRanking', {}, 'Bu ay');
             default:
-                return 'Bütün vaxtlar';
+                return t('common.all', {}, 'Bütün vaxtlar');
         }
     };
 
@@ -281,7 +283,7 @@ const Performance: React.FC = () => {
                     <main className="flex-1 flex items-center justify-center">
                         <div className="flex flex-col items-center gap-3">
                             <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                            <p className="text-xs text-[#71717A] font-medium">Performans məlumatları yüklənir...</p>
+                            <p className="text-xs text-[#71717A] font-medium">{t('common.loading', {}, 'Performans məlumatları yüklənir...')}</p>
                         </div>
                     </main>
                 </div>
@@ -308,15 +310,15 @@ const Performance: React.FC = () => {
                         <div>
                             <div className="flex items-center gap-2">
                                 <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-                                    Fərdi Performans
+                                    {t('performance.title', {}, 'Fərdi Performans')}
                                 </h1>
                                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
                                     <SparklesIcon className="w-3 h-3" />
-                                    <span>Məhsuldarlıq</span>
+                                    <span>{t('dashboard.productivityRate', {}, 'Məhsuldarlıq')}</span>
                                 </span>
                             </div>
                             <p className="text-xs text-[#A1A1AA] mt-1">
-                                Fərdi tapşırıq icrası və toplanmış xalların dinamikası.
+                                {t('performance.subtitle', {}, 'Fərdi tapşırıq icrası və toplanmış xalların dinamikası.')}
                             </p>
                         </div>
 
@@ -327,7 +329,7 @@ const Performance: React.FC = () => {
                                 onClick={handleRefresh}
                                 disabled={refreshing}
                                 className="p-2 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer disabled:opacity-50"
-                                title="Yenilə"
+                                title={t('common.refresh', {}, 'Yenilə')}
                                 type="button"
                             >
                                 <ArrowPathIcon className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
@@ -348,10 +350,10 @@ const Performance: React.FC = () => {
                                 {showDateDropdown && (
                                     <div className="absolute right-0 top-full mt-1.5 w-44 bg-[#1C1C1E] border border-[#2C2C2E] rounded-xl shadow-2xl p-1 z-50 flex flex-col text-xs animate-in fade-in duration-100">
                                         {[
-                                            { id: '7d', label: 'Son 7 gün' },
-                                            { id: '30d', label: 'Son 30 gün' },
-                                            { id: 'thisMonth', label: 'Bu ay' },
-                                            { id: 'all', label: 'Bütün vaxtlar' },
+                                            { id: '7d', label: t('common.daysLeft', { days: 7 }, 'Son 7 gün') },
+                                            { id: '30d', label: t('common.daysLeft', { days: 30 }, 'Son 30 gün') },
+                                            { id: 'thisMonth', label: t('leaderboard.monthlyRanking', {}, 'Bu ay') },
+                                            { id: 'all', label: t('common.all', {}, 'Bütün vaxtlar') },
                                         ].map((item) => (
                                             <button
                                                 key={item.id}

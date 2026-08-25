@@ -51,7 +51,7 @@ const desktopApps = [
     {
         id: 'crm',
         name: 'Altensor CRM',
-        route: import.meta.env.VITE_CRM_WEB_URL || 'https://info.altensor.com',
+        route: import.meta.env.VITE_CRM_WEB_URL || 'https://crm.altensor.com',
         iconElement: (
             <div className="w-6 h-6 rounded-lg bg-[#D946EF] text-white flex items-center justify-center shrink-0">
                 <Squares2X2Icon className="w-3.5 h-3.5" />

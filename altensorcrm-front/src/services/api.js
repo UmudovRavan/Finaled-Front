@@ -467,7 +467,7 @@ export const taskManagementApi = {
   getAllTasks: () => taskRequest('/Task/GetAllTask'),
   getAllUsers: () => taskRequest('/Authorize/AllUsers'),
   getTaskById: (id) => taskRequest(`/Task/GetTask/${id}`),
-  createTask: (data) => {
+  createTask: (data, files = []) => {
     const formData = new FormData();
     formData.append('Title', data.title);
     formData.append('Description', data.description || '');
@@ -476,7 +476,38 @@ export const taskManagementApi = {
     if (data.deadline) formData.append('Deadline', data.deadline);
     if (data.createdByUserId) formData.append('CreatedByUserId', data.createdByUserId);
     if (data.assignedToUserId) formData.append('AssignedToUserId', data.assignedToUserId);
+    if (files && files.length > 0) {
+      files.forEach((file) => {
+        formData.append('files', file);
+      });
+    }
     return taskRequest('/Task/CreateTask', 'POST', formData);
+  },
+  addFilesToTask: (taskId, files = []) => {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+    return taskRequest(`/Task/AddFilesToTask/${taskId}`, 'POST', formData);
+  },
+  downloadAttachment: async (attachmentId, fileName = 'attachment') => {
+    const token = getAuthToken();
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await fetch(`${TASK_MGMT_API_URL}/TaskAttachment/${attachmentId}/download`, { headers });
+    if (!response.ok) throw new Error('Fayl yüklənərkən xəta baş verdi');
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  },
+  getAttachmentPreviewUrl: async (attachmentId) => {
+    return taskRequest(`/TaskAttachment/${attachmentId}/preview-url`);
   },
   updateTask: (data) => taskRequest('/Task/UpdateTask', 'PUT', data),
   deleteTask: (id) => taskRequest(`/Task/DeleteTask/${id}`, 'DELETE'),
@@ -485,3 +516,4 @@ export const taskManagementApi = {
   getNotifications: () => taskRequest('/Notifications'),
   markNotificationRead: (id) => taskRequest(`/Notifications/${id}/read`, 'POST')
 };
+

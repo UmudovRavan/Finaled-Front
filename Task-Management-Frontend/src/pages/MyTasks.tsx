@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../layout';
 import CreateTaskModal from '../components/CreateTaskModal';
 import { taskService, authService, notificationService } from '../api';
+import { signalRService } from '../services/signalRService';
 import type { TaskResponse, NotificationResponse } from '../dto';
 import { TaskStatus, DifficultyLevel } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
@@ -44,7 +45,7 @@ const MyTasks: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
-    const [ownershipFilter, setOwnershipFilter] = useState<string>('assigned');
+    const [ownershipFilter, setOwnershipFilter] = useState<string>('all');
     const [datePreset, setDatePreset] = useState<string>('all');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [openActionMenuId, setOpenActionMenuId] = useState<string | number | null>(null);
@@ -100,6 +101,45 @@ const MyTasks: React.FC = () => {
         return () => document.removeEventListener('click', handleOutside);
     }, []);
 
+    // Live SignalR sync and focus/visibility auto-refresh for real-time task status updates
+    useEffect(() => {
+        const syncTasks = () => {
+            taskService.getAllTasks()
+                .then((tasks) => {
+                    const clean = (tasks || []).filter((t: any) => !taskService.isSystemActivityTask(t));
+                    setAllTasks(clean);
+                })
+                .catch(() => {});
+        };
+
+        const unsubscribe = signalRService.subscribe('ReceiveNotification', () => {
+            syncTasks();
+        });
+
+        const handleVisibility = () => {
+            if (document.visibilityState === 'visible') {
+                syncTasks();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibility);
+        window.addEventListener('focus', handleVisibility);
+
+        // Gentle polling interval (every 10 seconds)
+        const pollInterval = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                syncTasks();
+            }
+        }, 10000);
+
+        return () => {
+            unsubscribe();
+            document.removeEventListener('visibilitychange', handleVisibility);
+            window.removeEventListener('focus', handleVisibility);
+            clearInterval(pollInterval);
+        };
+    }, []);
+
     const loadData = async () => {
         try {
             setLoading(true);
@@ -107,7 +147,8 @@ const MyTasks: React.FC = () => {
                 taskService.getAllTasks().catch(() => []),
                 notificationService.getMyNotifications().catch(() => []),
             ]);
-            setAllTasks(tasksData);
+            const cleanTasks = (tasksData || []).filter((t: any) => !taskService.isSystemActivityTask(t));
+            setAllTasks(cleanTasks);
             setNotifications(notificationsData);
         } catch {
             // Silent fail
@@ -163,6 +204,8 @@ const MyTasks: React.FC = () => {
         e.stopPropagation();
         try {
             await taskService.finishTask(taskId);
+            const finishComment = '🏁 [Sistem / Bitirildi]: Tapşırıq icraçı tərəfindən bitirildi və yoxlamaya təqdim edildi.';
+            await taskService.addComment(taskId, finishComment).catch(() => {});
             setAllTasks((prev) =>
                 prev.map((t) => (String(t.id) === String(taskId) ? { ...t, status: TaskStatus.UnderReview } : t))
             );
@@ -173,7 +216,7 @@ const MyTasks: React.FC = () => {
 
     // Filter Logic
     const filteredTasks = useMemo(() => {
-        let result = allTasks;
+        let result = allTasks.filter((t: any) => !taskService.isSystemActivityTask(t));
 
         // 1. Ownership Filter
         if (ownershipFilter === 'created') {
@@ -273,59 +316,59 @@ const MyTasks: React.FC = () => {
     }[]>(() => [
         {
             id: 'pending',
-            title: 'Gözləmədə',
+            title: t('statuses.pending', {}, 'Gözləmədə'),
             statuses: [TaskStatus.Pending, TaskStatus.Assigned],
             color: '#38BDF8',
             bgGlow: 'bg-sky-500/10',
         },
         {
             id: 'inProgress',
-            title: 'İcrada',
+            title: t('statuses.inProgress', {}, 'İcrada'),
             statuses: [TaskStatus.InProgress],
             color: '#FBBF24',
             bgGlow: 'bg-amber-500/10',
         },
         {
             id: 'underReview',
-            title: 'Yoxlanışda',
+            title: t('statuses.review', {}, 'Yoxlanışda'),
             statuses: [TaskStatus.UnderReview],
             color: '#A78BFA',
             bgGlow: 'bg-purple-500/10',
         },
         {
             id: 'completed',
-            title: 'Tamamlandı',
+            title: t('statuses.completed', {}, 'Tamamlandı'),
             statuses: [TaskStatus.Completed],
             color: '#34D399',
             bgGlow: 'bg-emerald-500/10',
         },
         {
             id: 'expired',
-            title: 'Gecikmiş / Ləğv',
+            title: `${t('statuses.cancelled', {}, 'Ləğv')} / ${t('statuses.pending', {}, 'Gecikmiş')}`,
             statuses: [TaskStatus.Expired, TaskStatus.Canceled],
             color: '#F87171',
             bgGlow: 'bg-rose-500/10',
         },
-    ], []);
+    ], [t]);
 
     const getPriorityBadge = (difficultyLevel?: number) => {
         if (difficultyLevel === DifficultyLevel.Hard) {
             return (
                 <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                    Yüksək
+                    {t('difficulties.hard', {}, 'Yüksək')}
                 </span>
             );
         }
         if (difficultyLevel === DifficultyLevel.Medium) {
             return (
                 <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                    Orta
+                    {t('difficulties.medium', {}, 'Orta')}
                 </span>
             );
         }
         return (
             <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-500/10 text-slate-400 border border-slate-500/20">
-                Aşağı
+                {t('difficulties.easy', {}, 'Aşağı')}
             </span>
         );
     };
@@ -336,42 +379,42 @@ const MyTasks: React.FC = () => {
                 return (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                        Tamamlandı
+                        {t('statuses.completed', {}, 'Tamamlandı')}
                     </span>
                 );
             case TaskStatus.InProgress:
                 return (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                        İcrada
+                        {t('statuses.inProgress', {}, 'İcrada')}
                     </span>
                 );
             case TaskStatus.UnderReview:
                 return (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
                         <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
-                        Yoxlanışda
+                        {t('statuses.review', {}, 'Yoxlanışda')}
                     </span>
                 );
             case TaskStatus.Expired:
                 return (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
                         <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
-                        Gecikmiş
+                        {t('common.overdue', {}, 'Gecikmiş')}
                     </span>
                 );
             case TaskStatus.Canceled:
                 return (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-500/10 text-slate-400 border border-slate-500/20">
                         <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                        Ləğv edildi
+                        {t('statuses.cancelled', {}, 'Ləğv edildi')}
                     </span>
                 );
             default:
                 return (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20">
                         <span className="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
-                        Gözləmədə
+                        {t('statuses.pending', {}, 'Gözləmədə')}
                     </span>
                 );
         }
@@ -412,7 +455,7 @@ const MyTasks: React.FC = () => {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-                                Tapşırıqlar
+                                {t('tasks.allTasksTitle', {}, 'Tapşırıqlar')}
                             </h1>
                             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/10 text-white border border-white/15">
                                 {filteredTasks.length}
@@ -426,7 +469,7 @@ const MyTasks: React.FC = () => {
                                 onClick={handleRefresh}
                                 disabled={refreshing}
                                 className="p-2 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer disabled:opacity-50"
-                                title="Yenilə"
+                                title={t('common.refresh', {}, 'Yenilə')}
                                 type="button"
                             >
                                 <ArrowPathIcon className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
@@ -456,7 +499,7 @@ const MyTasks: React.FC = () => {
                                     type="button"
                                 >
                                     <ListBulletIcon className="w-3.5 h-3.5" />
-                                    <span>Cədvəl</span>
+                                    <span>{t('tasks.taskList', {}, 'Cədvəl')}</span>
                                 </button>
                             </div>
 
@@ -467,7 +510,7 @@ const MyTasks: React.FC = () => {
                                 className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg transition-colors cursor-pointer"
                             >
                                 <PlusIcon className="w-4 h-4 stroke-[2.5]" />
-                                <span>Yeni Tapşırıq</span>
+                                <span>{t('tasks.newTask', {}, 'Yeni Tapşırıq')}</span>
                             </button>
                         </div>
                     </div>
@@ -483,7 +526,7 @@ const MyTasks: React.FC = () => {
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Tapşırıq axtar..."
+                                    placeholder={t('tasks.searchTasks', {}, 'Tapşırıq axtar...')}
                                     className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl pl-9 pr-3.5 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium"
                                 />
                             </div>
@@ -496,7 +539,7 @@ const MyTasks: React.FC = () => {
                                         ownershipFilter === 'assigned' ? 'bg-[#18181B] text-white shadow-xs' : 'text-[#A1A1AA] hover:text-white'
                                     }`}
                                 >
-                                    Təyin Edilənlər
+                                    {t('tasks.assignedTo', {}, 'Təyin Edilənlər')}
                                 </button>
                                 <button
                                     onClick={() => setOwnershipFilter('created')}
@@ -504,7 +547,7 @@ const MyTasks: React.FC = () => {
                                         ownershipFilter === 'created' ? 'bg-[#18181B] text-white shadow-xs' : 'text-[#A1A1AA] hover:text-white'
                                     }`}
                                 >
-                                    Yaratdıqlarım
+                                    {t('tasks.assignedBy', {}, 'Yaratdıqlarım')}
                                 </button>
                                 <button
                                     onClick={() => setOwnershipFilter('all')}
@@ -512,7 +555,7 @@ const MyTasks: React.FC = () => {
                                         ownershipFilter === 'all' ? 'bg-[#18181B] text-white shadow-xs' : 'text-[#A1A1AA] hover:text-white'
                                     }`}
                                 >
-                                    Hamısı
+                                    {t('common.all', {}, 'Hamısı')}
                                 </button>
                             </div>
 
@@ -523,10 +566,10 @@ const MyTasks: React.FC = () => {
                                     onChange={(e) => setDifficultyFilter(e.target.value)}
                                     className="bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3 py-1.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-blue-500 pr-7 font-medium"
                                 >
-                                    <option value="all">Bütün Prioritetlər</option>
-                                    <option value={DifficultyLevel.Hard}>Yüksək (Çətin)</option>
-                                    <option value={DifficultyLevel.Medium}>Orta</option>
-                                    <option value={DifficultyLevel.Easy}>Aşağı (Asan)</option>
+                                    <option value="all">{t('tasks.filterByPriority', {}, 'Bütün Prioritetlər')}</option>
+                                    <option value={DifficultyLevel.Hard}>{t('difficulties.hard', {}, 'Yüksək (Çətin)')}</option>
+                                    <option value={DifficultyLevel.Medium}>{t('difficulties.medium', {}, 'Orta')}</option>
+                                    <option value={DifficultyLevel.Easy}>{t('difficulties.easy', {}, 'Aşağı (Asan)')}</option>
                                 </select>
                                 <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-2.5 pointer-events-none" />
                             </div>
@@ -538,12 +581,12 @@ const MyTasks: React.FC = () => {
                                     onChange={(e) => setStatusFilter(e.target.value)}
                                     className="bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3 py-1.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-blue-500 pr-7 font-medium"
                                 >
-                                    <option value="all">Bütün Statuslar</option>
-                                    <option value={TaskStatus.Pending}>Gözləmədə</option>
-                                    <option value={TaskStatus.InProgress}>İcrada</option>
-                                    <option value={TaskStatus.UnderReview}>Yoxlanışda</option>
-                                    <option value={TaskStatus.Completed}>Tamamlandı</option>
-                                    <option value={TaskStatus.Expired}>Gecikmiş</option>
+                                    <option value="all">{t('tasks.filterByStatus', {}, 'Bütün Statuslar')}</option>
+                                    <option value={TaskStatus.Pending}>{t('statuses.pending', {}, 'Gözləmədə')}</option>
+                                    <option value={TaskStatus.InProgress}>{t('statuses.inProgress', {}, 'İcrada')}</option>
+                                    <option value={TaskStatus.UnderReview}>{t('statuses.review', {}, 'Yoxlanışda')}</option>
+                                    <option value={TaskStatus.Completed}>{t('statuses.completed', {}, 'Tamamlandı')}</option>
+                                    <option value={TaskStatus.Expired}>{t('common.overdue', {}, 'Gecikmiş')}</option>
                                 </select>
                                 <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-2.5 pointer-events-none" />
                             </div>
@@ -555,8 +598,8 @@ const MyTasks: React.FC = () => {
                                     onChange={(e) => setDatePreset(e.target.value)}
                                     className="bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3 py-1.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-blue-500 pr-7 font-medium"
                                 >
-                                    <option value="all">Bütün Tarixlər</option>
-                                    <option value="today">Bugün</option>
+                                    <option value="all">{t('common.all', {}, 'Bütün Tarixlər')}</option>
+                                    <option value="today">{t('common.today', {}, 'Bugün')}</option>
                                     <option value="tomorrow">Sabah</option>
                                     <option value="nextWeek">+7 Gün</option>
                                 </select>
@@ -572,7 +615,7 @@ const MyTasks: React.FC = () => {
                                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold transition-colors cursor-pointer shrink-0"
                             >
                                 <XMarkIcon className="w-3.5 h-3.5" />
-                                <span>Təmizlə</span>
+                                <span>{t('common.clear', {}, 'Təmizlə')}</span>
                             </button>
                         )}
                     </div>

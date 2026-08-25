@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
-import { leadsApi, orgsApi, contactsApi, taskManagementApi, getCurrentUser, usersApi } from '../../services/api';
+import { leadsApi, orgsApi, contactsApi, taskManagementApi, getCurrentUser, usersApi, notesApi, callLogsApi } from '../../services/api';
 import { formatAppDate } from '../../utils/dateUtils';
 import { useLanguage } from '../../context/LanguageContext';
-import { getLeadStatusLabel, getSalutationLabel, getSourceLabel, getIndustryLabel, getTerritoryLabel, normalizeLeadStatus } from '../../utils/statusUtils';
+import { getLeadStatusLabel, getSalutationLabel, getSourceLabel, getIndustryLabel, normalizeLeadStatus } from '../../utils/statusUtils';
 import TaskWidget from '../../components/crm/TaskWidget';
 import EmailWidget from '../../components/crm/EmailWidget';
+import AttachmentWidget from '../../components/crm/AttachmentWidget';
+
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -47,14 +49,124 @@ const convertStatusList = [
 ];
 
 const salutationOptions = ['Dr', 'Madam', 'Master', 'Miss', 'Mr', 'Mrs', 'Ms'];
-const industryOptions = ['Banking', 'Chemical', 'Accounting', 'Consulting', 'Computer', 'Advertising', 'Aerospace', 'Agriculture'];
-const territoryOptions = ['Azerbaijan', 'Turkey', 'United States', 'Global'];
-const sourceOptions = ['Website', 'Referral', 'Social Media', 'Cold Call', 'Event'];
+const industryOptions = ['Technology', 'Finance', 'Healthcare', 'Education', 'Manufacturing', 'Retail', 'Services', 'Other'];
 const initialOwnerList = [
   { name: 'Elvin Muzaffarli', initial: 'E', email: 'elvinmuzaffarli@gmail.com' },
   { name: 'Administrator', initial: 'A', email: 'admin@altensor.io' },
   { name: 'Yusif Hashimov', initial: 'Y', email: 'yusif@altensor.io' }
 ];
+
+const callTypes = ['Outgoing', 'Incoming'];
+const callStatuses = ['Completed', 'Missed', 'Busy', 'Scheduled'];
+
+// REAL WORKING RICH TEXT EDITOR COMPONENT (Matching NotesPage & DealDetailPage!)
+const RichTextEditor = ({ value, onChange }) => {
+  const editorRef = useRef(null);
+  const toolbarRef = useRef(null);
+  const [activeFormats, setActiveFormats] = useState({
+    bold: false,
+    italic: false,
+    strike: false,
+    h1: false
+  });
+
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.innerHTML !== value) {
+      editorRef.current.innerHTML = value || '';
+    }
+  }, [value]);
+
+  const exec = (command, val = null) => {
+    document.execCommand(command, false, val);
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+    updateFormatState();
+  };
+
+  const updateFormatState = () => {
+    setActiveFormats({
+      bold: document.queryCommandState('bold'),
+      italic: document.queryCommandState('italic'),
+      strike: document.queryCommandState('strikeThrough'),
+      h1: document.queryCommandValue('formatBlock') === 'h1'
+    });
+  };
+
+  return (
+    <div className="bg-[#141416] border border-[#2C2C2E] rounded-2xl overflow-hidden shadow-inner">
+      <div className="p-2 bg-[#18181B] border-b border-[#2C2C2E] space-y-1.5 select-none">
+        <div ref={toolbarRef} className="flex items-center gap-1.5 text-[#A1A1AA] text-xs overflow-x-auto custom-scrollbar pb-1">
+          <button
+            type="button"
+            onClick={() => exec('formatBlock', '<p>')}
+            className="w-7 h-7 flex items-center justify-center hover:bg-[#2C2C2E] rounded-lg text-white font-serif border border-[#3F3F46]/60 cursor-pointer shrink-0"
+            title="Normal Text"
+          >
+            T
+          </button>
+          <button
+            type="button"
+            onClick={() => exec('formatBlock', '<h1>')}
+            className={`w-7 h-7 flex items-center justify-center rounded-lg text-white font-bold text-[11px] cursor-pointer shrink-0 ${activeFormats.h1 ? 'bg-[#2C2C2E] border border-sky-500' : 'hover:bg-[#2C2C2E]'
+              }`}
+            title="Heading 1"
+          >
+            H1
+          </button>
+          <button
+            type="button"
+            onClick={() => exec('bold')}
+            className={`w-7 h-7 flex items-center justify-center rounded-lg text-white font-bold cursor-pointer shrink-0 ${activeFormats.bold ? 'bg-[#2C2C2E] border border-white/20' : 'hover:bg-[#2C2C2E]'
+              }`}
+            title="Bold"
+          >
+            B
+          </button>
+          <button
+            type="button"
+            onClick={() => exec('italic')}
+            className={`w-7 h-7 flex items-center justify-center rounded-lg text-white italic cursor-pointer shrink-0 ${activeFormats.italic ? 'bg-[#2C2C2E] border border-white/20' : 'hover:bg-[#2C2C2E]'
+              }`}
+            title="Italic"
+          >
+            I
+          </button>
+          <button
+            type="button"
+            onClick={() => exec('strikeThrough')}
+            className={`w-7 h-7 flex items-center justify-center rounded-lg text-white line-through cursor-pointer shrink-0 ${activeFormats.strike ? 'bg-[#2C2C2E] border border-white/20' : 'hover:bg-[#2C2C2E]'
+              }`}
+            title="Strikethrough"
+          >
+            S
+          </button>
+          <div className="w-px h-5 bg-[#2C2C2E] mx-0.5 shrink-0"></div>
+          <button
+            type="button"
+            onClick={() => {
+              const url = prompt('Enter URL:');
+              if (url) exec('createLink', url);
+            }}
+            className="w-7 h-7 flex items-center justify-center hover:bg-[#2C2C2E] rounded-lg text-white cursor-pointer shrink-0"
+            title="Link"
+          >
+            <LinkIcon className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      <div
+        ref={editorRef}
+        contentEditable
+        onInput={() => onChange(editorRef.current.innerHTML)}
+        onKeyUp={updateFormatState}
+        onMouseUp={updateFormatState}
+        className="p-3 min-h-[140px] text-xs text-white focus:outline-none leading-relaxed overflow-y-auto max-h-[220px] custom-scrollbar"
+      />
+    </div>
+  );
+};
 
 const LeadDetailPage = () => {
   const { t, language } = useLanguage();
@@ -287,6 +399,24 @@ const LeadDetailPage = () => {
   const statusRef = useRef(null);
   const convertModalRef = useRef(null);
 
+  // Real DB Notes & Call Logs State
+  const [notesList, setNotesList] = useState([]);
+  const [callLogsList, setCallLogsList] = useState([]);
+  const [isNewNoteModalOpen, setIsNewNoteModalOpen] = useState(false);
+  const [isNewCallModalOpen, setIsNewCallModalOpen] = useState(false);
+  const [openDropdownField, setOpenDropdownField] = useState(null);
+  const [dropdownSearch, setDropdownSearch] = useState('');
+
+  const [noteForm, setNoteForm] = useState({ title: '', content: '' });
+  const [callForm, setCallForm] = useState({
+    type: 'Outgoing',
+    receiver: '',
+    status: 'Completed',
+    duration: '30s',
+    fromNumber: '0500000000',
+    toNumber: '0550000000'
+  });
+
   // Form State
   const [formData, setFormData] = useState({
     salutation: '',
@@ -297,9 +427,6 @@ const LeadDetailPage = () => {
     companyName: '',
     website: '',
     industry: '',
-    jobTitle: '',
-    territory: '',
-    source: '',
     status: 'New',
     leadOwner: 'Administrator'
   });
@@ -314,8 +441,107 @@ const LeadDetailPage = () => {
     if (id) {
       fetchLeadDetail(id);
       fetchLookups();
+      fetchLeadNotesAndCalls(id);
     }
   }, [id]);
+
+  const fetchLeadNotesAndCalls = async (leadId) => {
+    try {
+      const [allNotes, allCalls] = await Promise.all([
+        notesApi.getAll().catch(() => []),
+        callLogsApi.getAll().catch(() => [])
+      ]);
+
+      if (Array.isArray(allNotes)) {
+        const leadNotes = allNotes.filter(n => String(n.leadId || n.LeadId) === String(leadId));
+        setNotesList(leadNotes.length > 0 ? leadNotes : allNotes.filter(n => !n.dealId && !n.DealId));
+      }
+      if (Array.isArray(allCalls)) {
+        const leadCalls = allCalls.filter(c => String(c.leadId || c.LeadId) === String(leadId));
+        setCallLogsList(leadCalls.length > 0 ? leadCalls : allCalls.filter(c => !c.dealId && !c.DealId));
+      }
+    } catch (err) {
+      console.warn('Notice fetching lead notes/calls:', err);
+    }
+  };
+
+  const handleCreateNoteSubmit = async (e) => {
+    e.preventDefault();
+    if (!noteForm.title.trim() && !noteForm.content.trim()) return;
+
+    const newNote = {
+      id: String(Date.now()),
+      title: noteForm.title || 'Untitled Note',
+      content: noteForm.content || '',
+      owner: formData.leadOwner || 'Administrator',
+      ownerInitial: (formData.leadOwner || 'A').charAt(0).toUpperCase(),
+      lastModified: 'Just now',
+      leadId: id
+    };
+
+    setNotesList((prev) => [newNote, ...prev]);
+    setIsNewNoteModalOpen(false);
+    showToast(language === 'az' ? 'Qeyd yaradıldı!' : 'Note created successfully!', 'success');
+
+    try {
+      const payload = {
+        title: noteForm.title || 'Untitled Note',
+        content: noteForm.content || '',
+        createdById: null,
+        leadId: id,
+        dealId: null
+      };
+      await notesApi.create(payload);
+      await fetchLeadNotesAndCalls(id);
+    } catch (err) {
+      console.error('Error saving note:', err);
+    } finally {
+      setNoteForm({ title: '', content: '' });
+    }
+  };
+
+  const handleCreateCallSubmit = async (e) => {
+    e.preventDefault();
+    const typeStr = callForm.type === 'Outgoing' ? 'Outgoing' : 'Incoming';
+    const durSec = parseInt(String(callForm.duration || '0').replace(/[^0-9]/g, '')) || 0;
+
+    const newCall = {
+      id: String(Date.now()),
+      caller: formData.leadOwner || 'Administrator',
+      callerInitial: (formData.leadOwner || 'A').charAt(0).toUpperCase(),
+      receiver: callForm.receiver || `${formData.firstName || ''} ${formData.lastName || ''}`.trim() || 'Contact',
+      receiverInitial: (callForm.receiver || formData.firstName || 'C').charAt(0).toUpperCase(),
+      type: typeStr,
+      status: callForm.status || 'Completed',
+      duration: callForm.duration || '30s',
+      fromNumber: callForm.fromNumber || '0500000000',
+      toNumber: callForm.toNumber || '0550000000',
+      createdOn: 'Just now',
+      leadId: id
+    };
+
+    setCallLogsList((prev) => [newCall, ...prev]);
+    setIsNewCallModalOpen(false);
+    showToast(language === 'az' ? 'Zəng qeydə alındı!' : 'Call logged successfully!', 'success');
+
+    try {
+      const payload = {
+        type: typeStr === 'Outgoing' ? 0 : 1,
+        toNumber: callForm.toNumber || '0550000000',
+        fromNumber: callForm.fromNumber || '0500000000',
+        status: callForm.status === 'Completed' ? 3 : callForm.status === 'Missed' ? 7 : 5,
+        durationInSeconds: durSec,
+        callReceivedById: null,
+        callerUserId: null,
+        leadId: id,
+        dealId: null
+      };
+      await callLogsApi.create(payload);
+      await fetchLeadNotesAndCalls(id);
+    } catch (err) {
+      console.error('Error saving call log:', err);
+    }
+  };
 
   const fetchLookups = async () => {
     try {
@@ -365,9 +591,6 @@ const LeadDetailPage = () => {
           companyName: data.companyName || '',
           website: data.website || '',
           industry: data.industryName || data.industry || '',
-          jobTitle: data.designation || '',
-          territory: data.territoryName || '',
-          source: '',
           status: stName,
           leadOwner: data.leadOwnerName || 'Administrator'
         });
@@ -384,6 +607,8 @@ const LeadDetailPage = () => {
     try {
       setSaving(true);
       let mappedStatus = normalizeLeadStatus(dataToSave.status);
+      const indIdx = industryOptions.indexOf(dataToSave.industry);
+      const matchedOwner = ownerList.find(o => o.name === dataToSave.leadOwner);
 
       const payload = {
         id: id,
@@ -398,15 +623,17 @@ const LeadDetailPage = () => {
         noOfEmployees: null,
         territoryId: null,
         annualRevenue: 0,
-        industry: null,
+        industry: indIdx !== -1 ? indIdx : null,
         status: mappedStatus,
-        leadOwnerId: null
+        leadOwnerId: matchedOwner?.id || null
       };
 
       await leadsApi.update(id, payload);
+      showToast(language === 'az' ? 'Yadda saxlanıldı!' : 'Lead saved successfully!', 'success');
       await fetchLeadDetail(id);
     } catch (err) {
       console.error('Error updating lead:', err);
+      showToast(err.message || 'Error updating lead', 'error');
     } finally {
       setSaving(false);
     }
@@ -896,100 +1123,56 @@ const LeadDetailPage = () => {
                   </button>
 
                   {isDetailsOpen && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 text-xs">
-                      {/* Column 1 */}
-                      <div className="space-y-3.5">
-                        <div className="space-y-1.5">
-                          <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Təşkilat' : language === 'en' ? 'Organization' : 'Организация'}</label>
-                          <input
-                            type="text"
-                            value={formData.companyName}
-                            onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-sky-500"
-                          />
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Sənaye sahəsi' : language === 'en' ? 'Industry' : 'Отрасль'}</label>
-                          <select
-                            value={formData.industry}
-                            onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-sky-500 cursor-pointer"
-                          >
-                            <option value="">{language === 'az' ? 'Sənaye seçin...' : language === 'en' ? 'Select Industry...' : 'Выберите отрасль...'}</option>
-                            {industryOptions.map((ind) => (
-                              <option key={ind} value={ind}>{ind}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Lid sahibi' : language === 'en' ? 'Lead Owner' : 'Владелец лида'}</label>
-                          <select
-                            value={formData.leadOwner}
-                            onChange={(e) => setFormData({ ...formData, leadOwner: e.target.value })}
-                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-sky-500 cursor-pointer"
-                          >
-                            {ownerList.map((o) => (
-                              <option key={o.name} value={o.name}>{o.name}</option>
-                            ))}
-                          </select>
-                        </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 text-xs">
+                      {/* Organization */}
+                      <div className="space-y-1.5">
+                        <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Təşkilat' : language === 'en' ? 'Organization' : 'Организация'}</label>
+                        <input
+                          type="text"
+                          value={formData.companyName}
+                          onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                          className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-sky-500"
+                        />
                       </div>
 
-                      {/* Column 2 */}
-                      <div className="space-y-3.5">
-                        <div className="space-y-1.5">
-                          <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Veb sayt' : language === 'en' ? 'Website' : 'Веб-сайт'}</label>
-                          <input
-                            type="text"
-                            value={formData.website}
-                            onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-sky-500 font-mono"
-                          />
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Vəzifə' : language === 'en' ? 'Job Title' : 'Должность'}</label>
-                          <input
-                            type="text"
-                            placeholder={language === 'az' ? 'Vəzifə' : language === 'en' ? 'Job Title' : 'Должность'}
-                            value={formData.jobTitle}
-                            onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
-                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
-                          />
-                        </div>
+                      {/* Website */}
+                      <div className="space-y-1.5">
+                        <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Veb sayt' : language === 'en' ? 'Website' : 'Веб-сайт'}</label>
+                        <input
+                          type="text"
+                          value={formData.website}
+                          onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                          className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-sky-500 font-mono"
+                        />
                       </div>
 
-                      {/* Column 3 */}
-                      <div className="space-y-3.5">
-                        <div className="space-y-1.5">
-                          <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Ərazi' : language === 'en' ? 'Territory' : 'Территория'}</label>
-                          <select
-                            value={formData.territory}
-                            onChange={(e) => setFormData({ ...formData, territory: e.target.value })}
-                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-sky-500 cursor-pointer"
-                          >
-                            <option value="">{language === 'az' ? 'Ərazi' : language === 'en' ? 'Territory' : 'Территория'}</option>
-                            {territoryOptions.map((t) => (
-                              <option key={t} value={t}>{t}</option>
-                            ))}
-                          </select>
-                        </div>
+                      {/* Industry */}
+                      <div className="space-y-1.5">
+                        <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Sənaye sahəsi' : language === 'en' ? 'Industry' : 'Отрасль'}</label>
+                        <select
+                          value={formData.industry}
+                          onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                          className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-sky-500 cursor-pointer"
+                        >
+                          <option value="">{language === 'az' ? 'Sənaye seçin...' : language === 'en' ? 'Select Industry...' : 'Выберите отрасль...'}</option>
+                          {industryOptions.map((ind) => (
+                            <option key={ind} value={ind}>{getIndustryLabel(ind, language) || ind}</option>
+                          ))}
+                        </select>
+                      </div>
 
-                        <div className="space-y-1.5">
-                          <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Mənbə' : language === 'en' ? 'Source' : 'Источник'}</label>
-                          <select
-                            value={formData.source}
-                            onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-sky-500 cursor-pointer"
-                          >
-                            <option value="">{language === 'az' ? 'Mənbə' : language === 'en' ? 'Source' : 'Источник'}</option>
-                            {sourceOptions.map((s) => (
-                              <option key={s} value={s}>{s}</option>
-                            ))}
-                          </select>
-                        </div>
+                      {/* Lead Owner */}
+                      <div className="space-y-1.5">
+                        <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Lid sahibi' : language === 'en' ? 'Lead Owner' : 'Владелец лида'}</label>
+                        <select
+                          value={formData.leadOwner}
+                          onChange={(e) => setFormData({ ...formData, leadOwner: e.target.value })}
+                          className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-sky-500 cursor-pointer"
+                        >
+                          {ownerList.map((o) => (
+                            <option key={o.name} value={o.name}>{o.name}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
                   )}
@@ -1085,28 +1268,52 @@ const LeadDetailPage = () => {
                   <h1 className="text-xl font-bold text-white tracking-tight">{language === 'az' ? 'Zənglər' : language === 'en' ? 'Calls' : 'Звонки'}</h1>
                   <button
                     type="button"
-                    className="flex items-center gap-1.5 bg-[#1C1C1E] border border-[#2C2C2E] hover:border-[#3F3F46] px-3 py-1.5 rounded-xl text-xs font-semibold text-white transition-colors cursor-pointer"
+                    onClick={() => setIsNewCallModalOpen(true)}
+                    className="flex items-center gap-1.5 bg-[#1C1C1E] border border-[#2C2C2E] hover:border-[#3F3F46] px-3.5 py-1.5 rounded-xl text-xs font-semibold text-white transition-colors cursor-pointer"
                   >
-                    <span>+ {language === 'az' ? 'Zəng qeyd et' : language === 'en' ? 'Log a Call' : 'Записать звонок'}</span>
+                    <PlusIcon className="w-3.5 h-3.5" />
+                    <span>{language === 'az' ? 'Zəng qeyd et' : language === 'en' ? 'Log a Call' : 'Записать звонок'}</span>
                   </button>
                 </div>
 
-                <div className="py-16 flex flex-col items-center justify-center text-center">
-                  <div className="w-12 h-12 rounded-2xl bg-[#1C1C1E] border border-[#2C2C2E] flex items-center justify-center text-[#71717A]">
-                    <PhoneIcon className="w-6 h-6" />
+                {callLogsList.length === 0 ? (
+                  <div className="py-16 flex flex-col items-center justify-center text-center">
+                    <div className="w-12 h-12 rounded-2xl bg-[#1C1C1E] border border-[#2C2C2E] flex items-center justify-center text-[#71717A]">
+                      <PhoneIcon className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-sm font-bold text-white mt-3">{language === 'az' ? 'Zəng tarixçəsi yoxdur' : language === 'en' ? 'No Call History' : 'История звонков пуста'}</h3>
+                    <p className="text-xs text-[#A1A1AA] max-w-sm mt-1">
+                      {language === 'az' ? 'Göstəriləcək zəng yoxdur. Zəng qeydiyyatı aparın və ya zəng edin!' : language === 'en' ? 'No recent calls to display. Log a call or call someone now!' : 'Нет недавних звонков для отображения.'}
+                    </p>
                   </div>
-                  <h3 className="text-sm font-bold text-white mt-3">{language === 'az' ? 'Zəng tarixçəsi yoxdur' : language === 'en' ? 'No Call History' : 'История звонков пуста'}</h3>
-                  <p className="text-xs text-[#A1A1AA] max-w-sm mt-1">
-                    {language === 'az' ? 'Göstəriləcək zəng yoxdur. Zəng qeydiyyatı aparın və ya zəng edin!' : language === 'en' ? 'No recent calls to display. Log a call or call someone now!' : 'Нет недавних звонков для отображения.'}
-                  </p>
-                </div>
+                ) : (
+                  <div className="space-y-3 pt-2">
+                    {callLogsList.map((call, idx) => (
+                      <div key={call.id || idx} className="bg-[#141416] border border-[#2C2C2E] rounded-2xl p-4 flex items-center justify-between text-xs text-[#E4E4E7]">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center font-bold">
+                            <PhoneIcon className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-white">{call.caller || call.callerUserName || 'Administrator'}</span>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#27272A] text-sky-400 font-medium">{call.type || 'Outgoing'}</span>
+                            </div>
+                            <p className="text-[#A1A1AA] text-[11px] mt-0.5">To: {call.toNumber || call.receiver || 'Contact'} ({call.durationInSeconds ? `${call.durationInSeconds}s` : (call.duration || '0s')})</p>
+                          </div>
+                        </div>
+                        <span className="text-[11px] text-[#71717A]">{call.createdOn ? formatAppDate(call.createdOn) : (call.lastModified || 'Recent')}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </>
             )}
 
             {/* 6. TASKS TAB */}
             {activeTab === 'Tasks' && (
               <>
-                <TaskWidget />
+                <TaskWidget leadId={id} />
               </>
             )}
 
@@ -1117,48 +1324,52 @@ const LeadDetailPage = () => {
                   <h1 className="text-xl font-bold text-white tracking-tight">{language === 'az' ? 'Qeydlər' : language === 'en' ? 'Notes' : 'Заметки'}</h1>
                   <button
                     type="button"
-                    className="flex items-center gap-1.5 bg-[#1C1C1E] border border-[#2C2C2E] hover:border-[#3F3F46] px-3 py-1.5 rounded-xl text-xs font-semibold text-white transition-colors cursor-pointer"
+                    onClick={() => setIsNewNoteModalOpen(true)}
+                    className="flex items-center gap-1.5 bg-[#1C1C1E] border border-[#2C2C2E] hover:border-[#3F3F46] px-3.5 py-1.5 rounded-xl text-xs font-semibold text-white transition-colors cursor-pointer"
                   >
+                    <PlusIcon className="w-3.5 h-3.5" />
                     <span>+ {language === 'az' ? 'Yeni Qeyd' : language === 'en' ? 'New Note' : 'Новая заметка'}</span>
                   </button>
                 </div>
 
-                <div className="py-16 flex flex-col items-center justify-center text-center">
-                  <div className="w-12 h-12 rounded-2xl bg-[#1C1C1E] border border-[#2C2C2E] flex items-center justify-center text-[#71717A]">
-                    <DocumentTextIcon className="w-6 h-6" />
+                {notesList.length === 0 ? (
+                  <div className="py-16 flex flex-col items-center justify-center text-center">
+                    <div className="w-12 h-12 rounded-2xl bg-[#1C1C1E] border border-[#2C2C2E] flex items-center justify-center text-[#71717A]">
+                      <DocumentTextIcon className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-sm font-bold text-white mt-3">{language === 'az' ? 'Qeyd tapılmadı' : language === 'en' ? 'No Notes Found' : 'Заметок не найдено'}</h3>
+                    <p className="text-xs text-[#A1A1AA] max-w-sm mt-1">
+                      {language === 'az' ? 'Hələ ki heç bir qeyd yoxdur. İzləmək üçün qeyd əlavə edin.' : language === 'en' ? 'Nothing here for now. Add a note to keep track of things.' : 'Пока здесь ничего нет. Добавьте заметку.'}
+                    </p>
                   </div>
-                  <h3 className="text-sm font-bold text-white mt-3">{language === 'az' ? 'Qeyd tapılmadı' : language === 'en' ? 'No Notes Found' : 'Заметок не найдено'}</h3>
-                  <p className="text-xs text-[#A1A1AA] max-w-sm mt-1">
-                    {language === 'az' ? 'Hələ ki heç bir qeyd yoxdur. İzləmək üçün qeyd əlavə edin.' : language === 'en' ? 'Nothing here for now. Add a note to keep track of things.' : 'Пока здесь ничего нет. Добавьте заметку.'}
-                  </p>
-                </div>
+                ) : (
+                  <div className="space-y-3 pt-2">
+                    {notesList.map((note, idx) => (
+                      <div key={note.id || idx} className="bg-[#141416] border border-[#2C2C2E] rounded-2xl p-4 space-y-2 text-xs text-[#E4E4E7]">
+                        <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 pb-2">
+                          <div className="flex items-center gap-2">
+                            <DocumentTextIcon className="w-4 h-4 text-sky-400" />
+                            <span className="font-bold text-white text-sm">{note.title || 'Untitled Note'}</span>
+                          </div>
+                          <span className="text-[11px] text-[#71717A]">{note.createdAt ? formatAppDate(note.createdAt) : (note.lastModified || 'Recent')}</span>
+                        </div>
+                        <div className="text-[#D4D4D8] leading-relaxed whitespace-pre-line" dangerouslySetInnerHTML={{ __html: note.content || '' }} />
+                        <div className="text-[11px] text-[#71717A] pt-1">By: {note.owner || note.createdByName || 'Administrator'}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </>
             )}
 
             {/* 8. ATTACHMENTS TAB */}
             {activeTab === 'Attachments' && (
-              <>
-                <div className="flex items-center justify-between border-b border-[#2C2C2E]/40 pb-3.5">
-                  <h1 className="text-xl font-bold text-white tracking-tight">{language === 'az' ? 'Əlavələr' : language === 'en' ? 'Attachments' : 'Вложения'}</h1>
-                  <button
-                    type="button"
-                    className="flex items-center gap-1.5 bg-[#1C1C1E] border border-[#2C2C2E] hover:border-[#3F3F46] px-3 py-1.5 rounded-xl text-xs font-semibold text-white transition-colors cursor-pointer"
-                  >
-                    <span>+ {language === 'az' ? 'Fayl yüklə' : language === 'en' ? 'Upload File' : 'Загрузить файл'}</span>
-                  </button>
-                </div>
-
-                <div className="py-16 flex flex-col items-center justify-center text-center">
-                  <div className="w-12 h-12 rounded-2xl bg-[#1C1C1E] border border-[#2C2C2E] flex items-center justify-center text-[#71717A]">
-                    <PaperClipIcon className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-sm font-bold text-white mt-3">{language === 'az' ? 'Əlavə tapılmadı' : language === 'en' ? 'No Attachments Found' : 'Вложений не найдено'}</h3>
-                  <p className="text-xs text-[#A1A1AA] max-w-sm mt-1">
-                    {language === 'az' ? 'Bu lid üçün heç bir qoşma tapılmadı. Faylları yükləyərək izləyin.' : language === 'en' ? 'No attachments found for this lead. Upload files to keep track.' : 'Для этого лида вложений не найдено.'}
-                  </p>
-                </div>
-              </>
+              <AttachmentWidget
+                leadId={id}
+                title={`${formData.firstName || ''} ${formData.lastName || ''}`.trim() || formData.companyName}
+              />
             )}
+
           </div>
 
           {/* Bottom Fixed Action Bar */}
@@ -1572,6 +1783,247 @@ const LeadDetailPage = () => {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE NOTE MODAL */}
+      {isNewNoteModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-3xl shadow-2xl p-6 w-full max-w-xl text-[#E4E4E7] space-y-5 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 pb-3">
+              <h2 className="text-lg font-bold text-white tracking-tight">{language === 'az' ? 'Qeyd Yarat' : language === 'en' ? 'Create Note' : 'Создать заметку'}</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsNewNoteModalOpen(false)}
+                  className="p-1.5 rounded-xl hover:bg-[#2C2C2E] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleCreateNoteSubmit} className="space-y-4 text-xs">
+              <div className="space-y-1.5">
+                <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Başlıq' : language === 'en' ? 'Title' : 'Заголовок'} <span className="text-rose-400">*</span></label>
+                <input
+                  type="text"
+                  required
+                  placeholder={language === 'az' ? 'Başlıq' : language === 'en' ? 'Title' : 'Заголовок'}
+                  value={noteForm.title}
+                  onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
+                  className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Məzmun' : language === 'en' ? 'Content' : 'Содержимое'}</label>
+                <RichTextEditor
+                  value={noteForm.content}
+                  onChange={(html) => setNoteForm({ ...noteForm, content: html })}
+                />
+              </div>
+
+              <div className="flex items-center justify-end pt-2">
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-colors shadow-md cursor-pointer"
+                >
+                  {t('common.create', {}, 'Create')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE CALL LOG MODAL */}
+      {isNewCallModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-3xl shadow-2xl p-6 w-full max-w-lg text-[#E4E4E7] space-y-5 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 pb-3">
+              <h2 className="text-lg font-bold text-white tracking-tight">{language === 'az' ? 'Zəng qeydi yarat' : language === 'en' ? 'Create Call Log' : 'Записать звонок'}</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsNewCallModalOpen(false)}
+                  className="p-1.5 rounded-xl hover:bg-[#2C2C2E] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleCreateCallSubmit} className="space-y-4 text-xs">
+              {/* Row 1: Type * & To Number * */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5 relative">
+                  <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Növ' : language === 'en' ? 'Type' : 'Тип'} <span className="text-rose-400">*</span></label>
+                  <button
+                    type="button"
+                    onClick={() => setOpenDropdownField(openDropdownField === 'type' ? null : 'type')}
+                    className="flex items-center justify-between w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-[#D4D4D8] focus:outline-none focus:border-sky-500 cursor-pointer"
+                  >
+                    <span>{callForm.type || (language === 'az' ? 'Növ' : language === 'en' ? 'Type' : 'Тип')}</span>
+                    <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
+                  </button>
+
+                  {openDropdownField === 'type' && (
+                    <div className="absolute top-14 left-0 w-full bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-[100] text-xs text-[#E4E4E7] space-y-0.5 animate-in fade-in duration-150">
+                      {callTypes.map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => {
+                            setCallForm({ ...callForm, type: t });
+                            setOpenDropdownField(null);
+                          }}
+                          className={`flex items-center justify-between w-full px-3 py-2 rounded-xl transition-colors text-left cursor-pointer ${callForm.type === t ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
+                            }`}
+                        >
+                          <span>{t}</span>
+                          {callForm.type === t && <CheckIcon className="w-4 h-4 text-sky-400" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Qəbul edən nömrə' : language === 'en' ? 'To Number' : 'Номер получателя'} <span className="text-rose-400">*</span></label>
+                  <input
+                    type="text"
+                    required
+                    placeholder={language === 'az' ? 'Qəbul edən nömrə' : language === 'en' ? 'To Number' : 'Номер получателя'}
+                    value={callForm.toNumber}
+                    onChange={(e) => setCallForm({ ...callForm, toNumber: e.target.value })}
+                    className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white font-mono placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: From Number * & Status * */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Zəng edən nömrə' : language === 'en' ? 'From Number' : 'Номер звонящего'} <span className="text-rose-400">*</span></label>
+                  <input
+                    type="text"
+                    required
+                    placeholder={language === 'az' ? 'Zəng edən nömrə' : language === 'en' ? 'From Number' : 'Номер звонящего'}
+                    value={callForm.fromNumber}
+                    onChange={(e) => setCallForm({ ...callForm, fromNumber: e.target.value })}
+                    className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white font-mono placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5 relative">
+                  <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Status' : language === 'en' ? 'Status' : 'Статус'} <span className="text-rose-400">*</span></label>
+                  <button
+                    type="button"
+                    onClick={() => setOpenDropdownField(openDropdownField === 'status' ? null : 'status')}
+                    className="flex items-center justify-between w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-[#D4D4D8] focus:outline-none focus:border-sky-500 cursor-pointer"
+                  >
+                    <span className="truncate">{callForm.status || (language === 'az' ? 'Status' : language === 'en' ? 'Status' : 'Статус')}</span>
+                    <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
+                  </button>
+
+                  {openDropdownField === 'status' && (
+                    <div className="absolute top-14 left-0 w-full bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-[100] text-xs text-[#E4E4E7] space-y-0.5 animate-in fade-in duration-150 max-h-48 overflow-y-auto custom-scrollbar">
+                      {callStatuses.map((st) => (
+                        <button
+                          key={st}
+                          type="button"
+                          onClick={() => {
+                            setCallForm({ ...callForm, status: st });
+                            setOpenDropdownField(null);
+                          }}
+                          className={`flex items-center justify-between w-full px-3 py-2 rounded-xl transition-colors text-left cursor-pointer ${callForm.status === st ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
+                            }`}
+                        >
+                          <span>{st}</span>
+                          {callForm.status === st && <CheckIcon className="w-4 h-4 text-sky-400" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Row 3: Duration & Dynamic User */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Müddət' : language === 'en' ? 'Duration' : 'Длительность'}</label>
+                  <input
+                    type="text"
+                    placeholder="30s"
+                    value={callForm.duration}
+                    onChange={(e) => setCallForm({ ...callForm, duration: e.target.value })}
+                    className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5 relative">
+                  <label className="text-[#A1A1AA] font-medium">
+                    {callForm.type === 'Incoming' ? (language === 'az' ? 'Qəbul edən istifadəçi' : language === 'en' ? 'Call Received By' : 'Принял звонок') : (language === 'az' ? 'Zəng edən istifadəçi' : language === 'en' ? 'Caller' : 'Звонящий')}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => { setOpenDropdownField(openDropdownField === 'callUser' ? null : 'callUser'); setDropdownSearch(''); }}
+                    className="flex items-center justify-between w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-[#D4D4D8] focus:outline-none focus:border-sky-500 cursor-pointer"
+                  >
+                    <span className="truncate">
+                      {callForm.type === 'Incoming' ? (callForm.receiver || (language === 'az' ? 'Qəbul edən' : 'Receiver')) : (callForm.caller || (language === 'az' ? 'Zəng edən' : 'Caller'))}
+                    </span>
+                    <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
+                  </button>
+
+                  {openDropdownField === 'callUser' && (
+                    <div className="absolute top-14 left-0 w-full bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-2 z-[100] text-xs text-[#E4E4E7] space-y-2 animate-in fade-in duration-150">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder={t('common.search', {}, 'Search')}
+                          value={dropdownSearch}
+                          onChange={(e) => setDropdownSearch(e.target.value)}
+                          className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl pl-3 pr-7 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
+                        />
+                      </div>
+
+                      <div className="max-h-40 overflow-y-auto space-y-0.5 custom-scrollbar pr-1">
+                        {ownerList.filter(o => o.name.toLowerCase().includes(dropdownSearch.toLowerCase())).map((usr) => (
+                          <button
+                            key={usr.name}
+                            type="button"
+                            onClick={() => {
+                              if (callForm.type === 'Incoming') {
+                                setCallForm({ ...callForm, receiver: usr.name });
+                              } else {
+                                setCallForm({ ...callForm, caller: usr.name });
+                              }
+                              setOpenDropdownField(null);
+                            }}
+                            className={`w-full text-left px-2.5 py-1.5 rounded-xl transition-colors cursor-pointer ${(callForm.type === 'Incoming' ? callForm.receiver : callForm.caller) === usr.name ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
+                              }`}
+                          >
+                            {usr.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end pt-3">
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-colors shadow-md cursor-pointer"
+                >
+                  {t('common.create', {}, 'Create')}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

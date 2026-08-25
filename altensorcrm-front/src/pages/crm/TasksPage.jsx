@@ -507,7 +507,24 @@ const TasksPage = () => {
       // 2. Load Tasks from Live API
       const taskData = await taskManagementApi.getAllTasks();
       if (Array.isArray(taskData)) {
-        const formatted = taskData.map(t => {
+        // Filter out automatic background system tasks (comments activity containers & pure document attachment tasks)
+        const isSystemActivityTask = (t) => {
+          const title = t.title || t.Title || '';
+          const desc = t.description || t.Description || '';
+          return (
+            title.startsWith('Lead Activity Task #') ||
+            title.startsWith('Deal Activity Task #') ||
+            title.includes('Sənəd Qoşması:') ||
+            title.includes('Document Attachment:') ||
+            desc.includes('Activity and Comments for Lead #') ||
+            desc.includes('Activity and Comments for Deal #') ||
+            desc.includes('Lead qoşma faylları.') ||
+            desc.includes('Deal qoşma faylları.')
+          );
+        };
+
+        const validTasks = taskData.filter(t => !isSystemActivityTask(t));
+        const formatted = validTasks.map(t => {
           const rawStatus = t.status ?? t.Status;
           const rawDiff = t.difficulty ?? t.Difficulty;
           const assignedId = String(t.assignedToUserId || t.AssignedToUserId || '');
@@ -546,6 +563,7 @@ const TasksPage = () => {
       } else {
         setTasks([]);
       }
+
     } catch (err) {
       console.warn('Task load notice:', err);
     } finally {

@@ -68,7 +68,9 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (typeof current === 'string' && params && typeof params === 'object') {
       let interpolated = current;
       for (const [pKey, pVal] of Object.entries(params)) {
-        interpolated = interpolated.replace(new RegExp(`{{${pKey}}}`, 'g'), String(pVal));
+        interpolated = interpolated
+          .replace(new RegExp(`{{${pKey}}}`, 'g'), String(pVal))
+          .replace(new RegExp(`{${pKey}}`, 'g'), String(pVal));
       }
       return interpolated;
     }

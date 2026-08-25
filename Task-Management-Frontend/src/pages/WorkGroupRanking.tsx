@@ -7,6 +7,7 @@ import { workGroupService } from '../api/workGroupService';
 import type { WorkGroupResponse, WorkGroupMemberPerformance, NotificationResponse, LeaderboardEntry, UserResponse } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
 import type { UserInfo } from '../utils';
+import { useLanguage } from '../context/LanguageContext';
 import {
     ArrowLeftIcon,
     MagnifyingGlassIcon,
@@ -33,6 +34,7 @@ const SECTORS = [
 
 const WorkGroupRanking: React.FC = () => {
     const navigate = useNavigate();
+    const { t, language } = useLanguage();
     const { workGroupId } = useParams<{ workGroupId: string }>();
 
     const [workGroup, setWorkGroup] = useState<WorkGroupResponse | null>(null);
@@ -294,7 +296,7 @@ const WorkGroupRanking: React.FC = () => {
                                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-xs font-semibold text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
                                 >
                                     <ArrowLeftIcon className="w-4 h-4" />
-                                    <span>İş Qrupları</span>
+                                    <span>{t('workgroups.title', {}, 'İş Qrupları')}</span>
                                 </button>
                             )}
 
@@ -305,9 +307,9 @@ const WorkGroupRanking: React.FC = () => {
                                 <div className="flex items-center gap-2 text-xs text-[#71717A] mt-0.5">
                                     <span>{groupSector}</span>
                                     <span>•</span>
-                                    <span>{members.length} Üzv</span>
+                                    <span>{members.length} {t('common.members', {}, 'Üzv')}</span>
                                     <span>•</span>
-                                    <span className="font-bold text-amber-400">{totalPoints.toLocaleString()} Toplam Xal</span>
+                                    <span className="font-bold text-amber-400">{totalPoints.toLocaleString()} {t('common.points', {}, 'Toplam Xal')}</span>
                                 </div>
                             </div>
                         </div>
@@ -318,7 +320,7 @@ const WorkGroupRanking: React.FC = () => {
                                 onClick={() => setShowFilterDropdown(!showFilterDropdown)}
                                 className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-xs font-semibold text-white transition-colors cursor-pointer"
                             >
-                                <span>Filtr</span>
+                                <span>{t('common.filter', {}, 'Filtr')}</span>
                                 <ChevronDownIcon className={`w-3.5 h-3.5 text-[#71717A] transition-transform ${showFilterDropdown ? 'rotate-180' : ''}`} />
                             </button>
 
@@ -330,7 +332,7 @@ const WorkGroupRanking: React.FC = () => {
                                             filterType === 'all' ? 'bg-blue-500/20 text-blue-400 font-bold' : 'text-[#D4D4D8] hover:bg-white/5'
                                         }`}
                                     >
-                                        <span>Hamısı</span>
+                                        <span>{t('common.all', {}, 'Hamısı')}</span>
                                         {filterType === 'all' && <CheckIcon className="w-3.5 h-3.5" />}
                                     </button>
                                     <button
@@ -339,7 +341,7 @@ const WorkGroupRanking: React.FC = () => {
                                             filterType === 'high_eff' ? 'bg-blue-500/20 text-blue-400 font-bold' : 'text-[#D4D4D8] hover:bg-white/5'
                                         }`}
                                     >
-                                        <span>Yüksək Səmərəlilik (&gt;80%)</span>
+                                        <span>{t('performance.highEfficiency', {}, 'Yüksək Səmərəlilik')} (&gt;80%)</span>
                                         {filterType === 'high_eff' && <CheckIcon className="w-3.5 h-3.5" />}
                                     </button>
                                     <button
@@ -348,7 +350,7 @@ const WorkGroupRanking: React.FC = () => {
                                             filterType === 'low_eff' ? 'bg-blue-500/20 text-blue-400 font-bold' : 'text-[#D4D4D8] hover:bg-white/5'
                                         }`}
                                     >
-                                        <span>Aşağı Səmərəlilik (&lt;60%)</span>
+                                        <span>{t('performance.lowEfficiency', {}, 'Aşağı Səmərəlilik')} (&lt;50%)</span>
                                         {filterType === 'low_eff' && <CheckIcon className="w-3.5 h-3.5" />}
                                     </button>
                                     <div className="h-px bg-[#2C2C2E] my-1"></div>

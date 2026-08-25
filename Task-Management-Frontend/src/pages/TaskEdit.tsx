@@ -6,6 +6,7 @@ import type { TaskResponse, NotificationResponse, UserResponse } from '../dto';
 import { TaskStatus, DifficultyLevel } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
 import type { UserInfo } from '../utils';
+import { useLanguage } from '../context/LanguageContext';
 import UserSuggestionList from '../components/UserSuggestionList';
 import {
     ArrowLeftIcon,
@@ -18,6 +19,7 @@ import {
 const TaskEdit: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { t, language } = useLanguage();
 
     const [task, setTask] = useState<TaskResponse | null>(null);
     const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
@@ -44,15 +46,15 @@ const TaskEdit: React.FC = () => {
     const assignInputRef = useRef<HTMLInputElement>(null);
 
     const displayName = useMemo(() => {
-        if (!userInfo) return 'İstifadəçi';
+        if (!userInfo) return t('common.user', {}, 'İstifadəçi');
         if (userInfo.userName) {
             return userInfo.userName.charAt(0).toUpperCase() + userInfo.userName.slice(1);
         }
         if (userInfo.email) {
             return userInfo.email.split('@')[0];
         }
-        return 'İstifadəçi';
-    }, [userInfo]);
+        return t('common.user', {}, 'İstifadəçi');
+    }, [userInfo, t]);
 
     const userRole = useMemo(() => {
         if (!userInfo || !userInfo.roles.length) return 'Employee';
@@ -253,9 +255,9 @@ const TaskEdit: React.FC = () => {
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-xs font-semibold text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
                         >
                             <ArrowLeftIcon className="w-4 h-4" />
-                            <span>Geri</span>
+                            <span>{t('common.back', {}, 'Geri')}</span>
                         </button>
-                        <h1 className="text-base font-bold text-white tracking-tight">Tapşırığı Redaktə Et</h1>
+                        <h1 className="text-base font-bold text-white tracking-tight">{t('tasks.editTask', {}, 'Tapşırığı Redaktə Et')}</h1>
                     </div>
 
                     {/* Form Card */}
@@ -277,7 +279,7 @@ const TaskEdit: React.FC = () => {
                         <form onSubmit={handleSubmit} className="space-y-5">
                             {/* Title */}
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-[#A1A1AA]">Tapşırıq Başlığı *</label>
+                                <label className="text-xs font-semibold text-[#A1A1AA]">{t('tasks.taskTitle', {}, 'Tapşırıq Başlığı')} *</label>
                                 <input
                                     type="text"
                                     value={title}
@@ -289,7 +291,7 @@ const TaskEdit: React.FC = () => {
 
                             {/* Description */}
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-[#A1A1AA]">Təsvir</label>
+                                <label className="text-xs font-semibold text-[#A1A1AA]">{t('tasks.taskDesc', {}, 'Təsvir')}</label>
                                 <textarea
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
@@ -301,35 +303,35 @@ const TaskEdit: React.FC = () => {
                             {/* Row: Status & Priority */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">Status</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.status', {}, 'Status')}</label>
                                     <div className="relative flex items-center">
                                         <select
                                             value={status}
                                             onChange={(e) => setStatus(Number(e.target.value))}
                                             className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-blue-500 pr-8 font-medium"
                                         >
-                                            <option value={TaskStatus.Pending}>Gözləmədə</option>
-                                            <option value={TaskStatus.Assigned}>Təyin Edildi</option>
-                                            <option value={TaskStatus.InProgress}>İcrada</option>
-                                            <option value={TaskStatus.UnderReview}>Yoxlanışda</option>
-                                            <option value={TaskStatus.Completed}>Tamamlandı</option>
-                                            <option value={TaskStatus.Expired}>Gecikmiş</option>
+                                            <option value={TaskStatus.Pending}>{t('statuses.pending', {}, 'Gözləmədə')}</option>
+                                            <option value={TaskStatus.Assigned}>{t('statuses.assigned', {}, 'Təyin Edildi')}</option>
+                                            <option value={TaskStatus.InProgress}>{t('statuses.inProgress', {}, 'İcrada')}</option>
+                                            <option value={TaskStatus.UnderReview}>{t('statuses.review', {}, 'Nəzərdən keçirilir')}</option>
+                                            <option value={TaskStatus.Completed}>{t('statuses.completed', {}, 'Tamamlandı')}</option>
+                                            <option value={TaskStatus.Expired}>{t('common.overdue', {}, 'Gecikmiş')}</option>
                                         </select>
                                         <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-3 pointer-events-none" />
                                     </div>
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">Prioritet / Çətinlik</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.difficulty', {}, 'Prioritet / Çətinlik')}</label>
                                     <div className="relative flex items-center">
                                         <select
                                             value={difficulty}
                                             onChange={(e) => setDifficulty(Number(e.target.value))}
                                             className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-blue-500 pr-8 font-medium"
                                         >
-                                            <option value={DifficultyLevel.Easy}>Aşağı (Asan)</option>
-                                            <option value={DifficultyLevel.Medium}>Orta</option>
-                                            <option value={DifficultyLevel.Hard}>Yüksək (Çətin)</option>
+                                            <option value={DifficultyLevel.Easy}>{t('difficulties.easy', {}, 'Aşağı (Asan)')}</option>
+                                            <option value={DifficultyLevel.Medium}>{t('difficulties.medium', {}, 'Orta')}</option>
+                                            <option value={DifficultyLevel.Hard}>{t('difficulties.hard', {}, 'Yüksək (Çətin)')}</option>
                                         </select>
                                         <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-3 pointer-events-none" />
                                     </div>
@@ -339,7 +341,7 @@ const TaskEdit: React.FC = () => {
                             {/* Row: Deadline & Assignee */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">İcra Tarixi *</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.dueDate', {}, 'İcra Tarixi')} *</label>
                                     <input
                                         type="datetime-local"
                                         value={deadline}
@@ -350,14 +352,14 @@ const TaskEdit: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-1.5 relative">
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">Təyin Edilən Şəxs</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('tasks.assignedUser', {}, 'Təyin Edilən Şəxs')}</label>
                                     <div className="relative flex items-center">
                                         <input
                                             ref={assignInputRef}
                                             type="text"
                                             value={assignInputValue}
                                             onChange={handleAssignInputChange}
-                                            placeholder="@ istifadəçi axtarın..."
+                                            placeholder={t('common.search', {}, '@ istifadəçi axtarın...')}
                                             className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium"
                                         />
                                         <UserIcon className="w-4 h-4 text-[#71717A] absolute left-3 pointer-events-none" />
@@ -380,14 +382,14 @@ const TaskEdit: React.FC = () => {
                                     onClick={() => navigate(`/tasks/${task.id}`)}
                                     className="px-4 py-2 rounded-xl text-xs font-semibold text-[#A1A1AA] hover:text-white"
                                 >
-                                    Ləğv et
+                                    {t('common.cancel', {}, 'Ləğv et')}
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={saving}
                                     className="px-6 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg transition-colors cursor-pointer disabled:opacity-50"
                                 >
-                                    {saving ? 'Yadda saxlanılır...' : 'Dəyişiklikləri Saxla'}
+                                    {saving ? t('common.loading', {}, 'Yadda saxlanılır...') : t('common.save', {}, 'Dəyişiklikləri Saxla')}
                                 </button>
                             </div>
                         </form>

@@ -6,6 +6,8 @@ import { useLanguage } from '../../context/LanguageContext';
 import { getDealStatusLabel } from '../../utils/statusUtils';
 import TaskWidget from '../../components/crm/TaskWidget';
 import EmailWidget from '../../components/crm/EmailWidget';
+import AttachmentWidget from '../../components/crm/AttachmentWidget';
+
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -40,12 +42,12 @@ const dealStatusList = [
   { name: 'Lost', color: '#EF4444' }
 ];
 
-const territoryOptions = ['Azerbaijan', 'Turkey', 'United States', 'Global'];
 const initialOwnerList = [
   { name: 'Elvin Muzaffarli', initial: 'E', email: 'elvinmuzaffarli@gmail.com' },
   { name: 'Administrator', initial: 'A', email: 'admin@altensor.io' },
   { name: 'Yusif Hashimov', initial: 'Y', email: 'yusif@altensor.io' }
 ];
+
 
 const callTypes = ['Outgoing', 'Incoming'];
 const callStatuses = ['Completed', 'Missed', 'Busy', 'Scheduled'];
@@ -360,15 +362,12 @@ const DealDetailPage = () => {
   const [formData, setFormData] = useState({
     organizationName: '',
     website: '',
-    territory: '',
     annualRevenue: '$ 0.00',
-    closedDate: '',
-    probability: '25.000%',
-    nextStep: '',
     dealOwner: 'Elvin Muzaffarli',
     status: 'Demo/Making',
     contactName: 'Nermin Veliyeva'
   });
+
 
   // Collapsible Section Controls
   const [isDetailsOpen, setIsDetailsOpen] = useState(true);
@@ -1365,7 +1364,7 @@ const DealDetailPage = () => {
                   </button>
 
                   {isDetailsOpen && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs">
                       {/* Column 1 */}
                       <div className="space-y-3.5">
                         <div className="space-y-1.5">
@@ -1387,17 +1386,6 @@ const DealDetailPage = () => {
                             className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-sky-500 font-mono"
                           />
                         </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Növbəti addım' : language === 'en' ? 'Next Step' : 'Следующий шаг'}</label>
-                          <input
-                            type="text"
-                            placeholder={language === 'az' ? 'Növbəti addım' : language === 'en' ? 'Next Step' : 'Следующий шаг'}
-                            value={formData.nextStep}
-                            onChange={(e) => setFormData({ ...formData, nextStep: e.target.value })}
-                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
-                          />
-                        </div>
                       </div>
 
                       {/* Column 2 */}
@@ -1409,17 +1397,6 @@ const DealDetailPage = () => {
                             value={formData.website}
                             onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                             className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-sky-500 font-mono"
-                          />
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Bağlanma tarixi' : language === 'en' ? 'Closed Date' : 'Дата закрытия'}</label>
-                          <input
-                            type="text"
-                            placeholder={language === 'az' ? 'Bağlanma tarixi' : language === 'en' ? 'Closed Date' : 'Дата закрытия'}
-                            value={formData.closedDate}
-                            onChange={(e) => setFormData({ ...formData, closedDate: e.target.value })}
-                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
                           />
                         </div>
 
@@ -1436,35 +1413,9 @@ const DealDetailPage = () => {
                           </select>
                         </div>
                       </div>
-
-                      {/* Column 3 */}
-                      <div className="space-y-3.5">
-                        <div className="space-y-1.5">
-                          <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Ərazi' : language === 'en' ? 'Territory' : 'Территория'}</label>
-                          <select
-                            value={formData.territory}
-                            onChange={(e) => setFormData({ ...formData, territory: e.target.value })}
-                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-sky-500 cursor-pointer"
-                          >
-                            <option value="">{language === 'az' ? 'Ərazi' : language === 'en' ? 'Territory' : 'Территория'}</option>
-                            {territoryOptions.map((t) => (
-                              <option key={t} value={t}>{t}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Ehtimal' : language === 'en' ? 'Probability' : 'Вероятность'}</label>
-                          <input
-                            type="text"
-                            value={formData.probability}
-                            onChange={(e) => setFormData({ ...formData, probability: e.target.value })}
-                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-sky-500 font-mono"
-                          />
-                        </div>
-                      </div>
                     </div>
                   )}
+
                 </div>
 
                 <div className="h-px bg-[#2C2C2E]/60 my-5"></div>
@@ -1764,28 +1715,12 @@ const DealDetailPage = () => {
 
             {/* 8. ATTACHMENTS TAB */}
             {activeTab === 'Attachments' && (
-              <>
-                <div className="flex items-center justify-between border-b border-[#2C2C2E]/40 pb-3.5">
-                  <h1 className="text-xl font-bold text-white tracking-tight">{language === 'az' ? 'Əlavələr' : language === 'en' ? 'Attachments' : 'Вложения'}</h1>
-                  <button
-                    type="button"
-                    className="flex items-center gap-1.5 bg-[#1C1C1E] border border-[#2C2C2E] hover:border-[#3F3F46] px-3 py-1.5 rounded-xl text-xs font-semibold text-white transition-colors cursor-pointer"
-                  >
-                    <span>+ {language === 'az' ? 'Fayl yüklə' : language === 'en' ? 'Upload File' : 'Загрузить файл'}</span>
-                  </button>
-                </div>
-
-                <div className="py-16 flex flex-col items-center justify-center text-center">
-                  <div className="w-12 h-12 rounded-2xl bg-[#1C1C1E] border border-[#2C2C2E] flex items-center justify-center text-[#71717A]">
-                    <PaperClipIcon className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-sm font-bold text-white mt-3">{language === 'az' ? 'Əlavə tapılmadı' : language === 'en' ? 'No Attachments Found' : 'Вложений не найдено'}</h3>
-                  <p className="text-xs text-[#A1A1AA] max-w-sm mt-1">
-                    {language === 'az' ? 'Bu sövdələşmə üçün heç bir qoşma tapılmadı. Faylları yükləyərək izləyin.' : language === 'en' ? 'No attachments found for this deal. Upload files to keep track.' : 'Для этой сделки вложений не найдено.'}
-                  </p>
-                </div>
-              </>
+              <AttachmentWidget
+                dealId={id}
+                title={dealTitle}
+              />
             )}
+
           </div>
 
           {/* Bottom Fixed Action Bar */}
@@ -1910,28 +1845,8 @@ const DealDetailPage = () => {
                 </div>
 
                 <div>
-                  <span className="text-[#71717A] block text-[11px]">{language === 'az' ? 'Ərazi' : language === 'en' ? 'Territory' : 'Территория'}</span>
-                  <span className="text-[#71717A]">{formData.territory || (language === 'az' ? 'Ərazi əlavə et...' : language === 'en' ? 'Add Territory...' : 'Добавить территорию...')}</span>
-                </div>
-
-                <div>
                   <span className="text-[#71717A] block text-[11px]">{language === 'az' ? 'İllik gəlir' : language === 'en' ? 'Annual Revenue' : 'Годовой доход'}</span>
                   <span className="font-mono text-white">{formData.annualRevenue || '$ 0.00'}</span>
-                </div>
-
-                <div>
-                  <span className="text-[#71717A] block text-[11px]">{language === 'az' ? 'Bağlanma tarixi' : language === 'en' ? 'Closed Date' : 'Дата закрытия'}</span>
-                  <span className="text-[#71717A]">{formData.closedDate || (language === 'az' ? 'Tarix əlavə et...' : language === 'en' ? 'Add Closed Date...' : 'Добавить дату...')}</span>
-                </div>
-
-                <div>
-                  <span className="text-[#71717A] block text-[11px]">{language === 'az' ? 'Ehtimal' : language === 'en' ? 'Probability' : 'Вероятность'}</span>
-                  <span className="font-mono text-white">{formData.probability || '25.000%'}</span>
-                </div>
-
-                <div>
-                  <span className="text-[#71717A] block text-[11px]">{language === 'az' ? 'Növbəti addım' : language === 'en' ? 'Next Step' : 'Следующий шаг'}</span>
-                  <span className="text-[#71717A]">{formData.nextStep || (language === 'az' ? 'Addım əlavə et...' : language === 'en' ? 'Add Next Step...' : 'Добавить шаг...')}</span>
                 </div>
 
                 <div>
@@ -1943,6 +1858,7 @@ const DealDetailPage = () => {
                     <span className="font-semibold text-white">{formData.dealOwner}</span>
                   </div>
                 </div>
+
               </div>
             )}
           </div>
