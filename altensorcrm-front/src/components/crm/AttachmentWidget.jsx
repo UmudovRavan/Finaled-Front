@@ -101,16 +101,18 @@ const AttachmentWidget = ({
 
         let matchedTasks = [];
         if (leadId) {
+          const lId = String(leadId).trim().toLowerCase();
           matchedTasks = taskList.filter((t) =>
-            String(t.leadId || t.LeadId || '') === String(leadId) ||
-            (t.description && t.description.includes(`[LEAD_ID:${leadId}]`)) ||
-            (t.title && (t.title.includes(`Lead #${leadId}`) || t.title.includes(`Lead Activity Task #${leadId}`)))
+            String(t.leadId || t.LeadId || '').toLowerCase() === lId ||
+            (t.description && t.description.toLowerCase().includes(`[lead_id:${lId}]`)) ||
+            (t.title && (t.title.toLowerCase().includes(`lead #${lId}`) || t.title.toLowerCase().includes(`lead activity task #${lId}`)))
           );
         } else if (dealId) {
+          const dId = String(dealId).trim().toLowerCase();
           matchedTasks = taskList.filter((t) =>
-            String(t.dealId || t.DealId || '') === String(dealId) ||
-            (t.description && t.description.includes(`[DEAL_ID:${dealId}]`)) ||
-            (t.title && (t.title.includes(`Deal #${dealId}`) || t.title.includes(`Deal Activity Task #${dealId}`)))
+            String(t.dealId || t.DealId || '').toLowerCase() === dId ||
+            (t.description && t.description.toLowerCase().includes(`[deal_id:${dId}]`)) ||
+            (t.title && (t.title.toLowerCase().includes(`deal #${dId}`) || t.title.toLowerCase().includes(`deal activity task #${dId}`)))
           );
         }
 

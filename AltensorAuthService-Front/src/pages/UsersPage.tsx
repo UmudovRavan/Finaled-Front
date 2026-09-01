@@ -45,25 +45,18 @@ export const UsersPage: React.FC = () => {
     loadData();
   }, [loadData]);
 
-  // Filter out Tenant Admin and System Admin roles so they cannot be assigned when adding regular users
+  // Filter out system admin roles so they cannot be assigned when adding regular tenant users
   const assignableRoles = useMemo(() => {
     return roles.filter((r) => {
       if (!r || !r.name) return false;
+      if (r.isSystemRole) return false;
       const normalized = r.name.toLowerCase().trim().replace(/[\s\-_]/g, '');
       if (
         normalized === 'tenantadmin' ||
         normalized === 'tenantadministrator' ||
-        normalized === 'systemadmin' ||
-        normalized === 'systemadministrator' ||
+        normalized === 'platformsuperadmin' ||
         normalized === 'superadmin' ||
-        normalized === 'superadministrator' ||
-        normalized === 'administrator' ||
-        normalized === 'admin' ||
-        normalized.includes('tenantadmin') ||
-        normalized.includes('systemadmin') ||
-        normalized.includes('superadmin') ||
-        (normalized.includes('tenant') && normalized.includes('admin')) ||
-        (normalized.includes('system') && normalized.includes('admin'))
+        normalized === 'superadministrator'
       ) {
         return false;
       }
@@ -79,12 +72,33 @@ export const UsersPage: React.FC = () => {
     }
     setCreating(true);
     try {
-      await tenantApi.createUser({
+      const validRoleIds = selectedRoleIds.filter(
+        (id) => typeof id === 'string' && id.trim().length > 0
+      );
+
+      // Step 1: Create user without roleIds to prevent backend duplicate role creation
+      const createdUser = await tenantApi.createUser({
         fullName: newFullName.trim(),
         email: newEmail.trim(),
         password: newPassword,
-        roleIds: selectedRoleIds
+        roleIds: undefined
       });
+
+      const newUserId =
+        createdUser?.id ||
+        (createdUser as any)?.data?.id ||
+        (createdUser as any)?.userId ||
+        (createdUser as any)?.data?.userId;
+
+      // Step 2: Assign roles via the direct assignRole endpoint
+      if (validRoleIds.length > 0 && newUserId) {
+        await Promise.all(
+          validRoleIds.map((roleId) =>
+            tenantApi.assignRole(newUserId, { roleId })
+          )
+        );
+      }
+
       showToast('success', t('users.userCreated', {}, 'İstifadəçi uğurla yaradıldı!'), 'Success');
       setIsCreateOpen(false);
       setNewFullName('');

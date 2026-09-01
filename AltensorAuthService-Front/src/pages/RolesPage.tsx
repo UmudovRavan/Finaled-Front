@@ -9,10 +9,22 @@ import ActionConfirmModal from '../components/common/ActionConfirmModal';
 
 const moduleMap: Record<string, string> = {
   crm: 'CRM Modulu',
+  tms: 'Task Management (TMS) Modulu',
   inventory: 'Anbar (Inventory) Modulu',
   hr: 'İnsan Resursları (HR) Modulu',
   accounting: 'Mühasibatlıq (Accounting) Modulu',
   system: 'Sistem (Platform) İcazələri'
+};
+
+const PERMISSION_PAIRS: Record<string, string[]> = {
+  'crm.tasks.view': ['tms.tasks.view', 'tms.tasks.attachment.view'],
+  'crm.tasks.create': ['tms.tasks.create', 'tms.tasks.attachment.upload'],
+  'crm.tasks.update': ['tms.tasks.update'],
+  'crm.tasks.delete': ['tms.tasks.delete'],
+  'tms.tasks.view': ['crm.tasks.view'],
+  'tms.tasks.create': ['crm.tasks.create'],
+  'tms.tasks.update': ['crm.tasks.update'],
+  'tms.tasks.delete': ['crm.tasks.delete'],
 };
 
 export const RolesPage: React.FC = () => {
@@ -42,75 +54,116 @@ export const RolesPage: React.FC = () => {
   // Delete Confirmation Modal State
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
+  const getPairedPermissionIds = useCallback(
+    (targetCodeOrId: string, allPerms: PermissionResponse[]): string[] => {
+      const targetPerm = allPerms.find(
+        (p) =>
+          p.id.toLowerCase() === targetCodeOrId.toLowerCase() ||
+          (p.code && p.code.toLowerCase() === targetCodeOrId.toLowerCase())
+      );
+      if (!targetPerm || !targetPerm.code) return [];
+
+      const pairedCodes = PERMISSION_PAIRS[targetPerm.code.toLowerCase()] || [];
+      const pairedIds: string[] = [];
+      pairedCodes.forEach((code) => {
+        const found = allPerms.find((p) => p.code && p.code.toLowerCase() === code.toLowerCase());
+        if (found) pairedIds.push(found.id);
+      });
+      return pairedIds;
+    },
+    []
+  );
+
+  const expandWithPairedPermissions = useCallback(
+    (permIds: string[], allPerms: PermissionResponse[]): string[] => {
+      const result = new Set<string>(permIds);
+      permIds.forEach((id) => {
+        const paired = getPairedPermissionIds(id, allPerms);
+        paired.forEach((pId) => result.add(pId));
+      });
+      return Array.from(result);
+    },
+    [getPairedPermissionIds]
+  );
+
+  // Helper to extract clean UUIDs for permissions
+  const getRolePermissionIds = useCallback(
+    (role: RoleResponse, allPerms: PermissionResponse[]): string[] => {
+      const ids = new Set<string>();
+
+      if (role.permissionIds && Array.isArray(role.permissionIds)) {
+        role.permissionIds.forEach((id: string) => {
+          if (id) ids.add(id);
+        });
+      }
+
+      if (role.permissions && Array.isArray(role.permissions)) {
+        role.permissions.forEach((perm: any) => {
+          if (typeof perm === 'string') {
+            const found = allPerms.find(
+              (p) =>
+                p.id.toLowerCase() === perm.toLowerCase() ||
+                (p.code && p.code.toLowerCase() === perm.toLowerCase()) ||
+                (p.name && p.name.toLowerCase() === perm.toLowerCase())
+            );
+            if (found) {
+              ids.add(found.id);
+            }
+          } else if (perm?.id) {
+            ids.add(perm.id);
+          }
+        });
+      }
+
+      const baseIds = Array.from(ids);
+      return expandWithPairedPermissions(baseIds, allPerms);
+    },
+    [expandWithPairedPermissions]
+  );
+
   const isPermissionActive = useCallback(
     (p: PermissionResponse) => {
       return selectedPermissionIds.some(
-        (idOrCode) =>
-          idOrCode.toLowerCase() === p.id.toLowerCase() ||
-          (p.code && idOrCode.toLowerCase() === p.code.toLowerCase()) ||
-          (p.name && idOrCode.toLowerCase() === p.name.toLowerCase())
+        (id) => id.toLowerCase() === p.id.toLowerCase()
       );
     },
     [selectedPermissionIds]
   );
 
-  const loadData = useCallback(async (targetRoleId?: string) => {
-    setLoading(true);
-    try {
-      const [rolesData, permsData] = await Promise.all([
-        tenantApi.getRoles(),
-        permissionsApi.getPermissions()
-      ]);
-      setRoles(rolesData);
-      setPermissions(permsData);
+  const loadData = useCallback(
+    async (targetRoleId?: string) => {
+      setLoading(true);
+      try {
+        const [rolesData, permsData] = await Promise.all([
+          tenantApi.getRoles(),
+          permissionsApi.getPermissions()
+        ]);
+        setRoles(rolesData);
+        setPermissions(permsData);
 
-      const activeId = targetRoleId || selectedRoleIdRef.current;
-      if (activeId) {
-        const found = rolesData.find((r) => r.id === activeId);
-        if (found) {
-          setSelectedRole(found);
-          const initialIds: string[] = [];
-          if (found.permissions && Array.isArray(found.permissions)) {
-            found.permissions.forEach((p: any) => {
-              if (typeof p === 'string') initialIds.push(p);
-              else if (p?.id) initialIds.push(p.id);
-              else if (p?.code) initialIds.push(p.code);
-            });
+        const activeId = targetRoleId || selectedRoleIdRef.current;
+        if (activeId) {
+          const found = rolesData.find((r) => r.id === activeId);
+          if (found) {
+            setSelectedRole(found);
+            setSelectedPermissionIds(getRolePermissionIds(found, permsData));
+            return;
           }
-          if (found.permissionIds && Array.isArray(found.permissionIds)) {
-            found.permissionIds.forEach((id: string) => {
-              if (!initialIds.includes(id)) initialIds.push(id);
-            });
-          }
-          setSelectedPermissionIds(initialIds);
-          return;
         }
-      }
 
-      if (rolesData.length > 0) {
-        const first = rolesData[0];
-        setSelectedRole(first);
-        const initialIds: string[] = [];
-        if (first.permissions && Array.isArray(first.permissions)) {
-          first.permissions.forEach((p: any) => {
-            if (typeof p === 'string') initialIds.push(p);
-            else if (p?.id) initialIds.push(p.id);
-            else if (p?.code) initialIds.push(p.code);
-          });
+        if (rolesData.length > 0) {
+          const first = rolesData[0];
+          setSelectedRole(first);
+          setSelectedPermissionIds(getRolePermissionIds(first, permsData));
         }
-        if (first.permissionIds && Array.isArray(first.permissionIds)) {
-          first.permissionIds.forEach((id: string) => {
-            if (!initialIds.includes(id)) initialIds.push(id);
-          });
-        }
-        setSelectedPermissionIds(initialIds);
+      } catch (err: any) {
+        showToast('error', err.message || 'Error loading roles & permissions', 'Error');
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      showToast('error', err.message || 'Error loading roles & permissions', 'Error');
-    } finally {
-      setLoading(false);
-    }
-  }, [showToast]);
+    },
+    [showToast, getRolePermissionIds]
+  );
 
   useEffect(() => {
     loadData();
@@ -118,36 +171,22 @@ export const RolesPage: React.FC = () => {
 
   const handleRoleSelect = (role: RoleResponse) => {
     setSelectedRole(role);
-    const initialIds: string[] = [];
-    if (role.permissions && Array.isArray(role.permissions)) {
-      role.permissions.forEach((p: any) => {
-        if (typeof p === 'string') initialIds.push(p);
-        else if (p?.id) initialIds.push(p.id);
-        else if (p?.code) initialIds.push(p.code);
-      });
-    }
-    if (role.permissionIds && Array.isArray(role.permissionIds)) {
-      role.permissionIds.forEach((id: string) => {
-        if (!initialIds.includes(id)) initialIds.push(id);
-      });
-    }
-    setSelectedPermissionIds(initialIds);
+    setSelectedPermissionIds(getRolePermissionIds(role, permissions));
   };
 
   const handleTogglePermission = (p: PermissionResponse) => {
     if (selectedRole?.isSystemRole) return;
     const active = isPermissionActive(p);
+    const pairedIds = getPairedPermissionIds(p.id, permissions);
+
     if (active) {
+      const idsToRemove = new Set([p.id.toLowerCase(), ...pairedIds.map((id) => id.toLowerCase())]);
       setSelectedPermissionIds(
-        selectedPermissionIds.filter(
-          (idOrCode) =>
-            idOrCode.toLowerCase() !== p.id.toLowerCase() &&
-            (!p.code || idOrCode.toLowerCase() !== p.code.toLowerCase()) &&
-            (!p.name || idOrCode.toLowerCase() !== p.name.toLowerCase())
-        )
+        selectedPermissionIds.filter((id) => !idsToRemove.has(id.toLowerCase()))
       );
     } else {
-      setSelectedPermissionIds([...selectedPermissionIds, p.id]);
+      const newIds = new Set([...selectedPermissionIds, p.id, ...pairedIds]);
+      setSelectedPermissionIds(Array.from(newIds));
     }
   };
 
@@ -160,10 +199,11 @@ export const RolesPage: React.FC = () => {
 
     setSaving(true);
     try {
+      const fullPermissionIds = expandWithPairedPermissions(selectedPermissionIds, permissions);
       await tenantApi.updateRole(selectedRole.id, {
         name: selectedRole.name,
         description: selectedRole.description,
-        permissionIds: selectedPermissionIds
+        permissionIds: fullPermissionIds
       });
       showToast('success', t('roles.roleUpdated', {}, 'Rol məlumatları yeniləndi!'), 'Success');
       await loadData(selectedRole.id);
@@ -195,10 +235,11 @@ export const RolesPage: React.FC = () => {
     }
     setCreating(true);
     try {
+      const fullPermissionIds = expandWithPairedPermissions(newRolePermissionIds, permissions);
       const created = await tenantApi.createRole({
         name: newRoleName.trim(),
         description: newRoleDescription.trim() || undefined,
-        permissionIds: newRolePermissionIds
+        permissionIds: fullPermissionIds
       });
       const roleId =
         (created as any)?.id ||
@@ -546,10 +587,13 @@ export const RolesPage: React.FC = () => {
                           type="checkbox"
                           checked={isChecked}
                           onChange={(e) => {
+                            const pairedIds = getPairedPermissionIds(p.id, permissions);
                             if (e.target.checked) {
-                              setNewRolePermissionIds([...newRolePermissionIds, p.id]);
+                              const newIds = new Set([...newRolePermissionIds, p.id, ...pairedIds]);
+                              setNewRolePermissionIds(Array.from(newIds));
                             } else {
-                              setNewRolePermissionIds(newRolePermissionIds.filter((id) => id !== p.id));
+                              const idsToRemove = new Set([p.id.toLowerCase(), ...pairedIds.map((id) => id.toLowerCase())]);
+                              setNewRolePermissionIds(newRolePermissionIds.filter((id) => !idsToRemove.has(id.toLowerCase())));
                             }
                           }}
                           className="rounded h-3.5 w-3.5 mt-0.5 shrink-0 accent-white"

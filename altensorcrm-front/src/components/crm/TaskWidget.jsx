@@ -534,21 +534,23 @@ const TaskWidget = ({ leadId = null, dealId = null, userId = null }) => {
         };
 
         if (leadId) {
+          const lId = String(leadId).trim().toLowerCase();
           formatted = formatted.filter(t => 
             !isSystemActivityTask(t) &&
             (
-              String(t.rawTask?.leadId || t.rawTask?.LeadId) === String(leadId) ||
-              (t.description && t.description.includes(`[LEAD_ID:${leadId}]`)) ||
-              (t.title && t.title.includes(`Lead #${leadId}`))
+              String(t.rawTask?.leadId || t.rawTask?.LeadId || '').toLowerCase() === lId ||
+              (t.description && t.description.toLowerCase().includes(`[lead_id:${lId}]`)) ||
+              (t.title && t.title.toLowerCase().includes(`lead #${lId}`))
             )
           );
         } else if (dealId) {
+          const dId = String(dealId).trim().toLowerCase();
           formatted = formatted.filter(t => 
             !isSystemActivityTask(t) &&
             (
-              String(t.rawTask?.dealId || t.rawTask?.DealId) === String(dealId) ||
-              (t.description && t.description.includes(`[DEAL_ID:${dealId}]`)) ||
-              (t.title && t.title.includes(`Deal #${dealId}`))
+              String(t.rawTask?.dealId || t.rawTask?.DealId || '').toLowerCase() === dId ||
+              (t.description && t.description.toLowerCase().includes(`[deal_id:${dId}]`)) ||
+              (t.title && t.title.toLowerCase().includes(`deal #${dId}`))
             )
           );
         } else if (userId) {

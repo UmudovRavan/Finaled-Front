@@ -464,7 +464,41 @@ async function taskRequest(endpoint, method = 'GET', body = null) {
 }
 
 export const taskManagementApi = {
-  getAllTasks: () => taskRequest('/Task/GetAllTask'),
+  getAllTasks: async () => {
+    const candidateEndpoints = [
+      '/Task/GetAllTask',
+      '/Dashboard/GetRoleTasks',
+      '/Task/GetRoleTasks',
+      '/Task/GetAllTasks',
+      '/Task/GetMyTasks',
+      '/Task',
+    ];
+
+    for (const ep of candidateEndpoints) {
+      try {
+        const res = await taskRequest(ep);
+        let list = [];
+        if (Array.isArray(res)) {
+          list = res;
+        } else if (res && Array.isArray(res.data)) {
+          list = res.data;
+        } else if (res && Array.isArray(res.tasks)) {
+          list = res.tasks;
+        } else if (res && Array.isArray(res.items)) {
+          list = res.items;
+        } else if (res && typeof res === 'object') {
+          const arr = Object.values(res).find((val) => Array.isArray(val));
+          if (arr) list = arr;
+        }
+        if (list && list.length > 0) {
+          return list;
+        }
+      } catch {
+        // try next endpoint
+      }
+    }
+    return [];
+  },
   getAllUsers: () => taskRequest('/Authorize/AllUsers'),
   getTaskById: (id) => taskRequest(`/Task/GetTask/${id}`),
   createTask: (data, files = []) => {

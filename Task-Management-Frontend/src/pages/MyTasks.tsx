@@ -6,7 +6,7 @@ import { taskService, authService, notificationService } from '../api';
 import { signalRService } from '../services/signalRService';
 import type { TaskResponse, NotificationResponse } from '../dto';
 import { TaskStatus, DifficultyLevel } from '../dto';
-import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
+import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, isUserAdmin, isUserManager } from '../utils';
 import type { UserInfo } from '../utils';
 import { useLanguage } from '../context/LanguageContext';
 import {
@@ -72,9 +72,7 @@ const MyTasks: React.FC = () => {
 
     const isManager = useMemo(() => {
         if (!userInfo || !userInfo.roles.length) return false;
-        return userInfo.roles.some(
-            (r) => r.toLowerCase().includes('manager') || r.toLowerCase().includes('admin')
-        );
+        return isUserAdmin(userInfo.roles) || isUserManager(userInfo.roles);
     }, [userInfo]);
 
     useEffect(() => {
@@ -223,15 +221,8 @@ const MyTasks: React.FC = () => {
             result = result.filter((task) => task.createdByUserId === userInfo?.userId);
         } else if (ownershipFilter === 'assigned') {
             result = result.filter((task) => task.assignedToUserId === userInfo?.userId);
-        } else {
-            if (!isManager) {
-                result = result.filter(
-                    (task) =>
-                        task.assignedToUserId === userInfo?.userId ||
-                        task.createdByUserId === userInfo?.userId
-                );
-            }
         }
+        // When ownershipFilter === 'all', show all role-authorized tasks returned by backend API
 
         // 2. Search Query
         if (searchQuery.trim()) {
