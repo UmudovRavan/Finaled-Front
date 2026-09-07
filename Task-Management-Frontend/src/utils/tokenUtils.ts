@@ -83,20 +83,38 @@ export const parseJwtToken = (token: string): UserInfo | null => {
         const tenantName = payload.tenant_name || payload.tenantName;
         const tenantStatus = payload.tenant_status !== undefined && payload.tenant_status !== null ? String(payload.tenant_status) : undefined;
 
-        // Roles claim
-        let rawRoles = payload.roles || payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || [];
+        // Roles claim (supports roles, role, Roles, Role, Microsoft identity schema)
+        let rawRoles =
+            payload.roles ||
+            payload.Roles ||
+            payload.role ||
+            payload.Role ||
+            payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ||
+            [];
         if (typeof rawRoles === 'string') rawRoles = [rawRoles];
         else if (!Array.isArray(rawRoles)) rawRoles = [];
         const roles = rawRoles.filter(Boolean);
 
-        // Permissions claim
-        let rawPerms = payload.permissions || payload.permission || [];
+        // Permissions claim (supports permissions, Permissions, permission, Permission)
+        let rawPerms =
+            payload.permissions ||
+            payload.Permissions ||
+            payload.permission ||
+            payload.Permission ||
+            payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/permission'] ||
+            payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/permission'] ||
+            [];
         if (typeof rawPerms === 'string') rawPerms = [rawPerms];
         else if (!Array.isArray(rawPerms)) rawPerms = [];
         const permissions = rawPerms.filter(Boolean);
 
-        // Modules claim (handles 'tms', 'crm', single string, array, 'modules', 'module')
-        let rawModules = payload.modules || payload.module || [];
+        // Modules claim (handles 'tms', 'crm', single string, array, 'modules', 'module', 'Modules', 'Module')
+        let rawModules =
+            payload.modules ||
+            payload.Modules ||
+            payload.module ||
+            payload.Module ||
+            [];
         if (typeof rawModules === 'string') rawModules = [rawModules];
         else if (!Array.isArray(rawModules)) rawModules = [];
         const modules = rawModules.filter(Boolean).map((m: any) => String(m).trim().toLowerCase());

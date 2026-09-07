@@ -32,8 +32,10 @@ export const UsersPage: React.FC = () => {
         tenantApi.getUsers(),
         tenantApi.getRoles()
       ]);
-      setUsers(usersData);
-      setRoles(rolesData);
+      const rawUsers = Array.isArray(usersData) ? usersData : (usersData as any)?.data || [];
+      const rawRoles = Array.isArray(rolesData) ? rolesData : (rolesData as any)?.data || [];
+      setUsers(rawUsers);
+      setRoles(rawRoles);
     } catch (err: any) {
       showToast('error', err.message || 'Error loading users', 'Error');
     } finally {
@@ -76,35 +78,20 @@ export const UsersPage: React.FC = () => {
         (id) => typeof id === 'string' && id.trim().length > 0
       );
 
-      // Step 1: Create user without roleIds to prevent backend duplicate role creation
-      const createdUser = await tenantApi.createUser({
+      // Create user atomically with assigned roleIds
+      await tenantApi.createUser({
         fullName: newFullName.trim(),
         email: newEmail.trim(),
         password: newPassword,
-        roleIds: undefined
+        roleIds: validRoleIds.length > 0 ? validRoleIds : undefined
       });
-
-      const newUserId =
-        createdUser?.id ||
-        (createdUser as any)?.data?.id ||
-        (createdUser as any)?.userId ||
-        (createdUser as any)?.data?.userId;
-
-      // Step 2: Assign roles via the direct assignRole endpoint
-      if (validRoleIds.length > 0 && newUserId) {
-        await Promise.all(
-          validRoleIds.map((roleId) =>
-            tenantApi.assignRole(newUserId, { roleId })
-          )
-        );
-      }
 
       showToast('success', t('users.userCreated', {}, 'İstifadəçi uğurla yaradıldı!'), 'Success');
       setIsCreateOpen(false);
       setNewFullName('');
       setNewEmail('');
       setSelectedRoleIds([]);
-      loadData();
+      await loadData();
     } catch (err: any) {
       showToast('error', err.message || 'Error creating user', 'Error');
     } finally {
@@ -127,10 +114,10 @@ export const UsersPage: React.FC = () => {
     }
   };
 
-  const filteredUsers = users.filter(
+  const filteredUsers = (Array.isArray(users) ? users : []).filter(
     (u) =>
-      u.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchTerm.toLowerCase())
+      (u?.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalPages = Math.ceil(filteredUsers.length / pageSize) || 1;
@@ -215,9 +202,9 @@ export const UsersPage: React.FC = () => {
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2.5">
                           <div className="w-7 h-7 rounded-full bg-[#27272A] text-white font-bold text-xs flex items-center justify-center border border-[#3F3F46]">
-                            {u.fullName.charAt(0).toUpperCase()}
+                            {(u.fullName || u.email || 'U').charAt(0).toUpperCase()}
                           </div>
-                          <span className="font-bold text-white text-[13px]">{u.fullName}</span>
+                          <span className="font-bold text-white text-[13px]">{u.fullName || u.email}</span>
                         </div>
                       </td>
                       <td className="py-3.5 px-4 text-[#A1A1AA] font-mono text-[11px]">{u.email}</td>
