@@ -70,6 +70,7 @@ export interface UpdateTaskRequest {
     assignedToUserId?: string;
     createdByUserId: string;
     parentTaskId?: string | number | null;
+    files?: File[];
 }
 
 export function normalizeTask(raw: any): TaskResponse {
@@ -423,6 +424,7 @@ export const taskService = {
     },
 
     async updateTask(data: UpdateTaskRequest): Promise<void> {
+        // Always update task metadata with JSON (backend only accepts application/json for UpdateTask)
         await httpClient.put('/Task/UpdateTask', {
             Id: data.id,
             Title: data.title,
@@ -434,6 +436,34 @@ export const taskService = {
             CreatedByUserId: data.createdByUserId,
             ParentTaskId: data.parentTaskId,
         });
+
+        // Upload files separately if any were provided
+        if (data.files && data.files.length > 0) {
+            const formData = new FormData();
+            formData.append('TaskId', String(data.id));
+            data.files.forEach((file) => formData.append('files', file));
+
+            // Try multiple candidate endpoints for file upload
+            const uploadEndpoints = [
+                '/TaskAttachment/Upload',
+                '/TaskAttachment/UploadFiles',
+                '/TaskAttachment/AddAttachment',
+                `/Task/${data.id}/attachments`,
+                `/Task/UploadFiles`,
+                `/Task/AddAttachment`,
+            ];
+
+            for (const ep of uploadEndpoints) {
+                try {
+                    await httpClient.post(ep, formData, {
+                        headers: { 'Content-Type': 'multipart/form-data' },
+                    });
+                    break; // Stop after first success
+                } catch {
+                    // Try next endpoint
+                }
+            }
+        }
     },
 
     async deleteTask(id: string | number): Promise<void> {

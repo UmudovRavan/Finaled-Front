@@ -23,31 +23,49 @@ import {
   TrashIcon,
   ArrowDownTrayIcon,
   DocumentArrowDownIcon,
-  PencilIcon
+  PencilIcon,
+  PaperClipIcon,
+  DocumentIcon,
+  EyeIcon
 } from '@heroicons/react/24/outline';
 import { useLanguage } from '../../context/LanguageContext';
 import { getTaskStatusLabel, getPriorityLabel } from '../../utils/statusUtils';
 import { taskManagementApi, usersApi, getCurrentUser } from '../../services/api';
 
-const STATUSES = ['Backlog', 'Todo', 'In Progress', 'Done', 'Canceled'];
+const formatFileSize = (bytes) => {
+  if (!bytes || bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+};
+
+const STATUSES = ['Pending', 'Assigned', 'In Progress', 'Under Review', 'Completed', 'Expired', 'Canceled'];
 const PRIORITIES = ['Low', 'Medium', 'High'];
 
 const mapStatusIntToString = (s) => {
-  if (s === 0 || s === '0' || s === 'Backlog') return 'Backlog';
-  if (s === 1 || s === '1' || s === 'Todo') return 'Todo';
-  if (s === 2 || s === '2' || s === 'In Progress') return 'In Progress';
-  if (s === 3 || s === '3' || s === 'Done') return 'Done';
-  if (s === 4 || s === '4' || s === 'Canceled') return 'Canceled';
-  return typeof s === 'string' ? s : 'Backlog';
+  if (s === 0 || s === '0' || s === 'Pending') return 'Pending';
+  if (s === 1 || s === '1' || s === 'Assigned') return 'Assigned';
+  if (s === 2 || s === '2' || s === 'In Progress' || s === 'InProgress') return 'In Progress';
+  if (s === 3 || s === '3' || s === 'Under Review' || s === 'UnderReview') return 'Under Review';
+  if (s === 4 || s === '4' || s === 'Completed' || s === 'Done') return 'Completed';
+  if (s === 5 || s === '5' || s === 'Expired') return 'Expired';
+  if (s === 6 || s === '6' || s === 'Canceled') return 'Canceled';
+  return typeof s === 'string' ? s : 'Pending';
 };
 
 const mapStringToStatusInt = (str) => {
   switch (str) {
-    case 'Backlog': return 0;
-    case 'Todo': return 1;
-    case 'In Progress': return 2;
-    case 'Done': return 3;
-    case 'Canceled': return 4;
+    case 'Pending': return 0;
+    case 'Assigned': return 1;
+    case 'In Progress':
+    case 'InProgress': return 2;
+    case 'Under Review':
+    case 'UnderReview': return 3;
+    case 'Completed':
+    case 'Done': return 4;
+    case 'Expired': return 5;
+    case 'Canceled': return 6;
     default: return 0;
   }
 };
@@ -451,6 +469,11 @@ const TasksPage = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [newTaskFiles, setNewTaskFiles] = useState([]);
+  const [editTaskFiles, setEditTaskFiles] = useState([]);
+  const [editTaskAttachments, setEditTaskAttachments] = useState([]);
+  const [previewingId, setPreviewingId] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
 
   const [newTaskForm, setNewTaskForm] = useState({
     title: '',
@@ -458,7 +481,7 @@ const TasksPage = () => {
     priority: 'Low',
     assignedToUserId: '',
     dueDate: '',
-    status: 'Backlog'
+    status: 'Pending'
   });
 
   const [editTaskForm, setEditTaskForm] = useState({
@@ -468,7 +491,7 @@ const TasksPage = () => {
     priority: 'Low',
     assignedToUserId: '',
     dueDate: '',
-    status: 'Backlog',
+    status: 'Pending',
     createdByUserId: ''
   });
 
@@ -544,6 +567,14 @@ const TasksPage = () => {
             formattedDate = `${d.getDate().toString().padStart(2, '0')}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getFullYear()} 00:00:00`;
           }
 
+          const rawAttachments = t.attachments || t.Attachments || t.files || t.Files || t.taskAttachments || t.TaskAttachments || [];
+          const attachments = Array.isArray(rawAttachments) ? rawAttachments.map(a => ({
+            id: a.id || a.Id || a.attachmentId || a.AttachmentId,
+            fileName: a.fileName || a.FileName || 'file',
+            size: a.size || a.Size || 0,
+            contentType: a.contentType || a.ContentType || ''
+          })) : [];
+
           return {
             id: String(t.id || t.Id),
             title: t.title || t.Title || '',
@@ -556,6 +587,7 @@ const TasksPage = () => {
             assignedToUserId: assignedId,
             createdByUserId: t.createdByUserId || t.CreatedByUserId || '',
             assignedInitial: (assignedName || 'U').charAt(0).toUpperCase(),
+            attachments,
             lastModified: t.updatedAt || t.createdAt ? 'Recently' : '1 week ago'
           };
         });
@@ -596,10 +628,40 @@ const TasksPage = () => {
       assignedToUserId: task.assignedToUserId || '',
       dueDate: task.dueDate || '27-08-2026 00:00:00',
       isoDueDate: task.isoDueDate || '',
-      status: task.status || 'Backlog',
+      status: task.status || 'Pending',
       createdByUserId: task.createdByUserId || ''
     });
+    setEditTaskAttachments(task.attachments || []);
+    setEditTaskFiles([]);
     setIsEditModalOpen(true);
+  };
+
+  const handleDownloadAttachment = async (attachmentId, fileName) => {
+    try {
+      setDownloadingId(attachmentId);
+      await taskManagementApi.downloadAttachment(attachmentId, fileName);
+    } catch (err) {
+      showToast(err.message || 'Fayl endirilə bilmədi', 'error');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handlePreviewAttachment = async (attachmentId) => {
+    try {
+      setPreviewingId(attachmentId);
+      const res = await taskManagementApi.getAttachmentPreviewUrl(attachmentId);
+      const url = res?.url || res?.Url || res;
+      if (url && typeof url === 'string') {
+        window.open(url, '_blank');
+      } else {
+        showToast('Önbaxış linki tapılmadı', 'error');
+      }
+    } catch (err) {
+      showToast(err.message || 'Önbaxış açıla bilmədi', 'error');
+    } finally {
+      setPreviewingId(null);
+    }
   };
 
   // Calendar Days Matrix Computation
@@ -973,16 +1035,17 @@ const TasksPage = () => {
         title: newTaskForm.title.trim(),
         description: newTaskForm.description || '',
         difficulty: mapStringToPriorityInt(newTaskForm.priority),
-        status: mapStringToStatusInt(newTaskForm.status),
+        status: 0,
         deadline: newTaskForm.dueDate ? new Date(newTaskForm.dueDate).toISOString() : new Date().toISOString(),
         createdByUserId: currentUserId,
         assignedToUserId: newTaskForm.assignedToUserId || null
       };
 
-      await taskManagementApi.createTask(payload);
+      await taskManagementApi.createTask(payload, newTaskFiles);
       showToast('Tapşırıq uğurla yaradıldı!', 'success');
       setIsCreateModalOpen(false);
-      setNewTaskForm({ title: '', description: '', priority: 'Low', assignedToUserId: '', dueDate: '', status: 'Backlog' });
+      setNewTaskFiles([]);
+      setNewTaskForm({ title: '', description: '', priority: 'Low', assignedToUserId: '', dueDate: '', status: 'Pending' });
       await loadTasksAndUsers();
     } catch (err) {
       showToast(err.message || 'Tapşırıq yaradılarkən xəta baş verdi.', 'error');
@@ -1023,8 +1086,12 @@ const TasksPage = () => {
       };
 
       await taskManagementApi.updateTask(payload);
+      if (editTaskFiles && editTaskFiles.length > 0) {
+        await taskManagementApi.addFilesToTask(editTaskForm.id, editTaskFiles);
+      }
       showToast('Tapşırıq uğurla yeniləndi!', 'success');
       setIsEditModalOpen(false);
+      setEditTaskFiles([]);
       await loadTasksAndUsers();
     } catch (err) {
       showToast(err.message || 'Tapşırıq yenilənərkən xəta baş verdi.', 'error');
@@ -1036,6 +1103,22 @@ const TasksPage = () => {
   // Render Status Icon + Badge
   const renderStatusBadge = (status) => {
     switch (status) {
+      case 'Pending':
+      case 'Backlog':
+        return (
+          <div className="flex items-center gap-2 text-[#E4E4E7] text-xs">
+            <span className="w-3.5 h-3.5 rounded-full border-2 border-dashed border-[#71717A] shrink-0"></span>
+            <span>{getTaskStatusLabel(status, language)}</span>
+          </div>
+        );
+      case 'Assigned':
+      case 'Todo':
+        return (
+          <div className="flex items-center gap-2 text-[#E4E4E7] text-xs">
+            <span className="w-3.5 h-3.5 rounded-full border border-sky-400 shrink-0"></span>
+            <span>{getTaskStatusLabel(status, language)}</span>
+          </div>
+        );
       case 'In Progress':
         return (
           <div className="flex items-center gap-2 text-[#E4E4E7] text-xs">
@@ -1043,13 +1126,14 @@ const TasksPage = () => {
             <span>{getTaskStatusLabel(status, language)}</span>
           </div>
         );
-      case 'Todo':
+      case 'Under Review':
         return (
           <div className="flex items-center gap-2 text-[#E4E4E7] text-xs">
-            <span className="w-3.5 h-3.5 rounded-full border border-[#71717A] shrink-0"></span>
+            <span className="w-3.5 h-3.5 rounded-full border border-purple-400 shrink-0"></span>
             <span>{getTaskStatusLabel(status, language)}</span>
           </div>
         );
+      case 'Completed':
       case 'Done':
         return (
           <div className="flex items-center gap-2 text-[#E4E4E7] text-xs">
@@ -1057,10 +1141,10 @@ const TasksPage = () => {
             <span>{getTaskStatusLabel(status, language)}</span>
           </div>
         );
-      case 'Backlog':
+      case 'Expired':
         return (
           <div className="flex items-center gap-2 text-[#E4E4E7] text-xs">
-            <span className="w-3.5 h-3.5 rounded-full border-2 border-dashed border-[#71717A] shrink-0"></span>
+            <span className="w-3.5 h-3.5 rounded-full border border-orange-400 shrink-0"></span>
             <span>{getTaskStatusLabel(status, language)}</span>
           </div>
         );
@@ -2173,7 +2257,7 @@ const TasksPage = () => {
       {/* CREATE TASK MODAL */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#1F1F22] border border-[#2C2C2E] rounded-3xl shadow-2xl p-6 w-full max-w-xl text-[#E4E4E7] space-y-4 animate-in fade-in duration-150 relative">
+          <div className="bg-[#1F1F22] border border-[#2C2C2E] rounded-3xl shadow-2xl p-6 w-full max-w-xl text-[#E4E4E7] space-y-4 animate-in fade-in duration-150 relative max-h-[90vh] overflow-y-auto custom-scrollbar">
             
             {/* Modal Top Header */}
             <div className="flex items-center justify-between">
@@ -2190,7 +2274,10 @@ const TasksPage = () => {
 
                 <button
                   type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
+                  onClick={() => {
+                    setIsCreateModalOpen(false);
+                    setNewTaskFiles([]);
+                  }}
                   className="p-1.5 rounded-xl bg-[#27272A]/60 hover:bg-[#27272A] text-[#A1A1AA] hover:text-white border border-[#3F3F46]/50 transition-colors cursor-pointer"
                 >
                   <XMarkIcon className="w-4 h-4" />
@@ -2279,8 +2366,8 @@ const TasksPage = () => {
                 </div>
               </div>
 
-              {/* Row 2: Due Date & Status */}
-              <div className="grid grid-cols-2 gap-3.5">
+              {/* Row 2: Due Date */}
+              <div className="grid grid-cols-1 gap-3.5">
                 <div className="space-y-1.5">
                   <label className="text-[#A1A1AA] font-semibold">{language === 'az' ? 'İcra tarixi' : language === 'en' ? 'Due Date' : 'Срок'}</label>
                   <ModalDatePicker
@@ -2292,20 +2379,76 @@ const TasksPage = () => {
                     placeholder={language === 'az' ? 'Tarix seçin' : language === 'en' ? 'Select due date' : 'Выберите дату'}
                   />
                 </div>
+              </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[#A1A1AA] font-semibold">{t('common.status', {}, 'Status')}</label>
-                  <div className="relative flex items-center">
-                    <select
-                      value={newTaskForm.status}
-                      onChange={(e) => setNewTaskForm({ ...newTaskForm, status: e.target.value })}
-                      className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-sky-500 pr-8"
+              {/* File Upload / Dropzone */}
+              <div className="space-y-2 pt-1 border-t border-[#3F3F46]/50">
+                <div className="flex items-center justify-between">
+                  <label className="text-[#A1A1AA] font-semibold flex items-center gap-1.5">
+                    <PaperClipIcon className="w-3.5 h-3.5 text-sky-400" />
+                    <span>{language === 'az' ? 'Fayl əlavə et' : language === 'en' ? 'Attach Files' : 'Прикрепить файлы'}</span>
+                  </label>
+                  {newTaskFiles.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setNewTaskFiles([])}
+                      className="text-[10px] text-red-400 hover:text-red-300 font-medium cursor-pointer"
                     >
-                      {STATUSES.map(s => <option key={s} value={s}>{getTaskStatusLabel(s, language)}</option>)}
-                    </select>
-                    <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-3 pointer-events-none" />
-                  </div>
+                      {language === 'az' ? 'Hamısını sil' : 'Clear all'}
+                    </button>
+                  )}
                 </div>
+
+                <label
+                  htmlFor="tasks_page_new_files"
+                  className="border border-dashed border-[#3F3F46] hover:border-sky-500/70 bg-[#141416]/40 hover:bg-[#141416]/70 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all group"
+                >
+                  <PaperClipIcon className="w-5 h-5 text-[#71717A] group-hover:text-sky-400 transition-colors mb-1" />
+                  <span className="text-[11px] text-[#A1A1AA] group-hover:text-white font-medium">
+                    {language === 'az' ? 'Faylları seçmək üçün klikləyin və ya bura atın' : language === 'en' ? 'Click to select or drag & drop files here' : 'Нажмите для выбора файлов'}
+                  </span>
+                  <span className="text-[10px] text-[#52525B] mt-0.5">
+                    PDF, DOCX, PNG, JPG, ZIP və s.
+                  </span>
+                  <input
+                    id="tasks_page_new_files"
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        const newSelected = Array.from(e.target.files);
+                        setNewTaskFiles(prev => [...prev, ...newSelected]);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                </label>
+
+                {/* Selected Files Preview */}
+                {newTaskFiles.length > 0 && (
+                  <div className="space-y-1.5 max-h-28 overflow-y-auto custom-scrollbar pt-1">
+                    {newTaskFiles.map((file, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between bg-[#141416]/70 border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs"
+                      >
+                        <div className="flex items-center gap-2 min-w-0 pr-2">
+                          <DocumentIcon className="w-4 h-4 text-sky-400 shrink-0" />
+                          <span className="text-white font-medium truncate">{file.name}</span>
+                          <span className="text-[10px] text-[#71717A] shrink-0">({formatFileSize(file.size)})</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setNewTaskFiles(prev => prev.filter((_, i) => i !== idx))}
+                          className="p-1 rounded-lg hover:bg-red-500/10 text-[#71717A] hover:text-red-400 transition-colors cursor-pointer shrink-0"
+                        >
+                          <XMarkIcon className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Bottom Create Button */}
@@ -2323,166 +2466,318 @@ const TasksPage = () => {
         </div>
       )}
 
-      {/* EDIT TASK MODAL */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#1F1F22] border border-[#2C2C2E] rounded-3xl shadow-2xl p-6 w-full max-w-xl text-[#E4E4E7] space-y-4 animate-in fade-in duration-150 relative">
-            
-            {/* Modal Top Header */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-white tracking-tight">{language === 'az' ? 'Tapşırığı redaktə et' : language === 'en' ? 'Edit Task' : 'Редактировать задачу'}</h2>
+      {/* EDIT / VIEW TASK MODAL */}
+      {isEditModalOpen && (() => {
+        const currentUser = getCurrentUser();
+        const currentUserId = String(currentUser?.userId || currentUser?.id || currentUser?.sub || '').toLowerCase();
+        const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
+        const isAdmin = userRoles.some(r => {
+          const roleStr = String(r).toLowerCase();
+          return roleStr === 'admin' || roleStr === 'superadmin' || roleStr === 'administrator' || roleStr === 'manager';
+        });
+        const editTaskCreatorId = String(editTaskForm.createdByUserId || '').toLowerCase();
+        const canEditEditTask = isAdmin || (editTaskCreatorId && editTaskCreatorId === currentUserId) || (!editTaskForm.createdByUserId && !editTaskForm.assignedToUserId);
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-[#1F1F22] border border-[#2C2C2E] rounded-3xl shadow-2xl p-6 w-full max-w-xl text-[#E4E4E7] space-y-4 animate-in fade-in duration-150 relative max-h-[90vh] overflow-y-auto custom-scrollbar">
               
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => showToast(language === 'az' ? 'Lid səhifəsi açılır...' : language === 'en' ? 'Opening lead page...' : 'Открытие лида...', 'info')}
-                  className="px-3.5 py-1 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] text-white text-xs font-medium border border-[#3F3F46]/50 transition-colors cursor-pointer"
-                >
-                  {language === 'az' ? 'Lidi aç' : language === 'en' ? 'Open Lead' : 'Открыть лид'}
-                </button>
+              {/* Modal Top Header */}
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white tracking-tight">
+                  {canEditEditTask
+                    ? (language === 'az' ? 'Tapşırığı redaktə et' : language === 'en' ? 'Edit Task' : 'Редактировать задачу')
+                    : (language === 'az' ? 'Tapşırığa baxış' : language === 'en' ? 'Task Details' : 'Просмотр задачи')}
+                </h2>
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => showToast(language === 'az' ? 'Lid səhifəsi açılır...' : language === 'en' ? 'Opening lead page...' : 'Открытие лида...', 'info')}
+                    className="px-3.5 py-1 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] text-white text-xs font-medium border border-[#3F3F46]/50 transition-colors cursor-pointer"
+                  >
+                    {language === 'az' ? 'Lidi aç' : language === 'en' ? 'Open Lead' : 'Открыть лид'}
+                  </button>
 
-                <button
-                  type="button"
-                  title="Edit Fields Layout"
-                  className="p-1.5 rounded-xl bg-[#27272A]/60 hover:bg-[#27272A] text-[#A1A1AA] hover:text-white border border-[#3F3F46]/50 transition-colors cursor-pointer"
-                >
-                  <PencilSquareIcon className="w-4 h-4" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="p-1.5 rounded-xl bg-[#27272A]/60 hover:bg-[#27272A] text-[#A1A1AA] hover:text-white border border-[#3F3F46]/50 transition-colors cursor-pointer"
-                >
-                  <XMarkIcon className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <form onSubmit={handleUpdateTask} className="space-y-4 text-xs">
-              
-              {/* Title * */}
-              <div className="space-y-1.5">
-                <label className="text-[#A1A1AA] font-semibold flex items-center gap-1">
-                  <span>{language === 'az' ? 'Başlıq' : language === 'en' ? 'Title' : 'Заголовок'}</span>
-                  <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder={language === 'az' ? 'Başlıq' : language === 'en' ? 'Title' : 'Заголовок'}
-                  value={editTaskForm.title}
-                  onChange={(e) => setEditTaskForm({ ...editTaskForm, title: e.target.value })}
-                  className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500 font-semibold"
-                />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditModalOpen(false);
+                      setEditTaskFiles([]);
+                    }}
+                    className="p-1.5 rounded-xl bg-[#27272A]/60 hover:bg-[#27272A] text-[#A1A1AA] hover:text-white border border-[#3F3F46]/50 transition-colors cursor-pointer"
+                  >
+                    <XMarkIcon className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
-              {/* Description */}
-              <div className="space-y-1.5">
-                <label className="text-[#A1A1AA] font-semibold">{language === 'az' ? 'Təsvir' : language === 'en' ? 'Description' : 'Описание'}</label>
-
-                <div className="bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-2xl overflow-hidden">
-                  <div className="flex items-center gap-1.5 px-3 py-2 border-b border-[#3F3F46]/50 text-[#A1A1AA] overflow-x-auto text-xs select-none">
-                    <button type="button" className="font-bold text-white hover:text-white px-1">T</button>
-                    <button type="button" className="font-bold text-[#A1A1AA] hover:text-white px-1">H1</button>
-                    <button type="button" className="font-bold text-[#A1A1AA] hover:text-white px-1">B</button>
-                    <button type="button" className="italic text-[#A1A1AA] hover:text-white px-1">I</button>
-                    <button type="button" className="line-through text-[#A1A1AA] hover:text-white px-1">S</button>
-                    <span className="w-px h-3 bg-[#3F3F46] mx-0.5"></span>
-                    <button type="button" className="hover:text-white px-1"><LinkIcon className="w-3.5 h-3.5" /></button>
-                    <button type="button" className="hover:text-white px-1"><ListBulletIcon className="w-3.5 h-3.5" /></button>
-                    <button type="button" className="hover:text-white px-1"><PhotoIcon className="w-3.5 h-3.5" /></button>
-                    <button type="button" className="hover:text-white px-1"><VideoCameraIcon className="w-3.5 h-3.5" /></button>
-                    <button type="button" className="hover:text-white px-1"><CodeBracketIcon className="w-3.5 h-3.5" /></button>
-                  </div>
-
-                  <textarea
-                    rows={4}
-                    placeholder={language === 'az' ? 'Təsvir' : language === 'en' ? 'Description' : 'Описание'}
-                    value={editTaskForm.description}
-                    onChange={(e) => setEditTaskForm({ ...editTaskForm, description: e.target.value })}
-                    className="w-full bg-transparent px-3.5 py-3 text-xs text-white placeholder:text-[#71717A] focus:outline-none resize-none"
+              <form onSubmit={handleUpdateTask} className="space-y-4 text-xs">
+                
+                {/* Title */}
+                <div className="space-y-1.5">
+                  <label className="text-[#A1A1AA] font-semibold flex items-center gap-1">
+                    <span>{language === 'az' ? 'Başlıq' : language === 'en' ? 'Title' : 'Заголовок'}</span>
+                    {canEditEditTask && <span className="text-red-500">*</span>}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    disabled={!canEditEditTask}
+                    placeholder={language === 'az' ? 'Başlıq' : language === 'en' ? 'Title' : 'Заголовок'}
+                    value={editTaskForm.title}
+                    onChange={(e) => setEditTaskForm({ ...editTaskForm, title: e.target.value })}
+                    className={`w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500 font-semibold ${!canEditEditTask ? 'opacity-80 cursor-default' : ''}`}
                   />
                 </div>
-              </div>
 
-              {/* Row 1: Priority & Assigned To */}
-              <div className="grid grid-cols-2 gap-3.5">
+                {/* Description */}
                 <div className="space-y-1.5">
-                  <label className="text-[#A1A1AA] font-semibold">{language === 'az' ? 'Prioritet' : language === 'en' ? 'Priority' : 'Приоритет'}</label>
-                  <div className="relative flex items-center">
-                    <select
-                      value={editTaskForm.priority}
-                      onChange={(e) => setEditTaskForm({ ...editTaskForm, priority: e.target.value })}
-                      className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-sky-500 pr-8 font-medium"
-                    >
-                      {PRIORITIES.map(p => <option key={p} value={p}>{getPriorityLabel(p, language)}</option>)}
-                    </select>
-                    <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-3 pointer-events-none" />
+                  <label className="text-[#A1A1AA] font-semibold">{language === 'az' ? 'Təsvir' : language === 'en' ? 'Description' : 'Описание'}</label>
+
+                  <div className="bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-2xl overflow-hidden">
+                    {canEditEditTask && (
+                      <div className="flex items-center gap-1.5 px-3 py-2 border-b border-[#3F3F46]/50 text-[#A1A1AA] overflow-x-auto text-xs select-none">
+                        <button type="button" className="font-bold text-white hover:text-white px-1">T</button>
+                        <button type="button" className="font-bold text-[#A1A1AA] hover:text-white px-1">H1</button>
+                        <button type="button" className="font-bold text-[#A1A1AA] hover:text-white px-1">B</button>
+                        <button type="button" className="italic text-[#A1A1AA] hover:text-white px-1">I</button>
+                        <button type="button" className="line-through text-[#A1A1AA] hover:text-white px-1">S</button>
+                        <span className="w-px h-3 bg-[#3F3F46] mx-0.5"></span>
+                        <button type="button" className="hover:text-white px-1"><LinkIcon className="w-3.5 h-3.5" /></button>
+                        <button type="button" className="hover:text-white px-1"><ListBulletIcon className="w-3.5 h-3.5" /></button>
+                        <button type="button" className="hover:text-white px-1"><PhotoIcon className="w-3.5 h-3.5" /></button>
+                        <button type="button" className="hover:text-white px-1"><VideoCameraIcon className="w-3.5 h-3.5" /></button>
+                        <button type="button" className="hover:text-white px-1"><CodeBracketIcon className="w-3.5 h-3.5" /></button>
+                      </div>
+                    )}
+
+                    <textarea
+                      rows={4}
+                      disabled={!canEditEditTask}
+                      placeholder={language === 'az' ? 'Təsvir' : language === 'en' ? 'Description' : 'Описание'}
+                      value={editTaskForm.description}
+                      onChange={(e) => setEditTaskForm({ ...editTaskForm, description: e.target.value })}
+                      className={`w-full bg-transparent px-3.5 py-3 text-xs text-white placeholder:text-[#71717A] focus:outline-none resize-none ${!canEditEditTask ? 'opacity-80 cursor-default' : ''}`}
+                    />
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[#A1A1AA] font-semibold">{language === 'az' ? 'Təyin edilib' : language === 'en' ? 'Assigned To' : 'Назначено'}</label>
-                  <div className="relative flex items-center">
-                    <select
-                      value={editTaskForm.assignedToUserId}
-                      onChange={(e) => setEditTaskForm({ ...editTaskForm, assignedToUserId: e.target.value })}
-                      className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-sky-500 pr-8 font-medium"
-                    >
-                      <option value="">{language === 'az' ? 'Təyin edilib' : language === 'en' ? 'Assigned To' : 'Назначено'}</option>
-                      {usersOptions.map(u => (
-                        <option key={u.id} value={u.id}>{u.name} {u.email ? `(${u.email})` : ''}</option>
+                {/* Row 1: Priority & Assigned To */}
+                <div className="grid grid-cols-2 gap-3.5">
+                  <div className="space-y-1.5">
+                    <label className="text-[#A1A1AA] font-semibold">{language === 'az' ? 'Prioritet' : language === 'en' ? 'Priority' : 'Приоритет'}</label>
+                    <div className="relative flex items-center">
+                      <select
+                        disabled={!canEditEditTask}
+                        value={editTaskForm.priority}
+                        onChange={(e) => setEditTaskForm({ ...editTaskForm, priority: e.target.value })}
+                        className={`w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-sky-500 pr-8 font-medium ${!canEditEditTask ? 'opacity-80 cursor-default pointer-events-none' : ''}`}
+                      >
+                        {PRIORITIES.map(p => <option key={p} value={p}>{getPriorityLabel(p, language)}</option>)}
+                      </select>
+                      {canEditEditTask && <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-3 pointer-events-none" />}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[#A1A1AA] font-semibold">{language === 'az' ? 'Təyin edilib' : language === 'en' ? 'Assigned To' : 'Назначено'}</label>
+                    <div className="relative flex items-center">
+                      <select
+                        disabled={!canEditEditTask}
+                        value={editTaskForm.assignedToUserId}
+                        onChange={(e) => setEditTaskForm({ ...editTaskForm, assignedToUserId: e.target.value })}
+                        className={`w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-sky-500 pr-8 font-medium ${!canEditEditTask ? 'opacity-80 cursor-default pointer-events-none' : ''}`}
+                      >
+                        <option value="">{language === 'az' ? 'Təyin edilib' : language === 'en' ? 'Assigned To' : 'Назначено'}</option>
+                        {usersOptions.map(u => (
+                          <option key={u.id} value={u.id}>{u.name} {u.email ? `(${u.email})` : ''}</option>
+                        ))}
+                      </select>
+                      {canEditEditTask && <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-3 pointer-events-none" />}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Row 2: Due Date (No status dropdown) */}
+                <div className="grid grid-cols-1 gap-3.5">
+                  <div className="space-y-1.5">
+                    <label className="text-[#A1A1AA] font-semibold">{language === 'az' ? 'İcra tarixi' : language === 'en' ? 'Due Date' : 'Срок'}</label>
+                    {!canEditEditTask ? (
+                      <div className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white opacity-80 flex items-center gap-2">
+                        <CalendarIcon className="w-4 h-4 text-[#71717A]" />
+                        <span>{editTaskForm.dueDate || editTaskForm.isoDueDate || (language === 'az' ? 'Təyin edilməyib' : 'Not set')}</span>
+                      </div>
+                    ) : (
+                      <ModalDatePicker
+                        value={editTaskForm.dueDate}
+                        onChange={(val) => setEditTaskForm({ ...editTaskForm, dueDate: val })}
+                        isOpen={isEditDateOpen}
+                        onToggle={() => setIsEditDateOpen(!isEditDateOpen)}
+                        onClose={() => setIsEditDateOpen(false)}
+                        placeholder={language === 'az' ? 'Tarix seçin' : language === 'en' ? 'Select due date' : 'Выберите дату'}
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* Existing Attachments Section */}
+                {editTaskAttachments && editTaskAttachments.length > 0 && (
+                  <div className="space-y-2 pt-1 border-t border-[#3F3F46]/50">
+                    <label className="text-[#A1A1AA] font-semibold flex items-center gap-1.5">
+                      <PaperClipIcon className="w-3.5 h-3.5 text-sky-400" />
+                      <span>{language === 'az' ? 'Mövcud Qoşmalar' : language === 'en' ? 'Existing Attachments' : 'Прикрепленные файлы'}</span>
+                      <span className="text-[10px] text-[#71717A]">({editTaskAttachments.length})</span>
+                    </label>
+                    <div className="space-y-1.5 max-h-36 overflow-y-auto custom-scrollbar">
+                      {editTaskAttachments.map((att) => (
+                        <div
+                          key={att.id}
+                          className="flex items-center justify-between bg-[#141416]/70 border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs"
+                        >
+                          <div className="flex items-center gap-2 min-w-0 pr-2">
+                            <DocumentIcon className="w-4 h-4 text-sky-400 shrink-0" />
+                            <div className="truncate">
+                              <span className="text-white font-medium truncate block">{att.fileName}</span>
+                              {att.size > 0 && (
+                                <span className="text-[10px] text-[#71717A]">{formatFileSize(att.size)}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handlePreviewAttachment(att.id)}
+                              disabled={previewingId === att.id}
+                              className="p-1.5 rounded-lg bg-[#27272A] hover:bg-[#3F3F46] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+                              title={language === 'az' ? 'Önbaxış' : 'Preview'}
+                            >
+                              {previewingId === att.id ? (
+                                <ArrowPathIcon className="w-3.5 h-3.5 animate-spin text-sky-400" />
+                              ) : (
+                                <EyeIcon className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadAttachment(att.id, att.fileName)}
+                              disabled={downloadingId === att.id}
+                              className="p-1.5 rounded-lg bg-[#27272A] hover:bg-[#3F3F46] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+                              title={language === 'az' ? 'Endir' : 'Download'}
+                            >
+                              {downloadingId === att.id ? (
+                                <ArrowPathIcon className="w-3.5 h-3.5 animate-spin text-sky-400" />
+                              ) : (
+                                <ArrowDownTrayIcon className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
                       ))}
-                    </select>
-                    <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-3 pointer-events-none" />
+                    </div>
                   </div>
-                </div>
-              </div>
+                )}
 
-              {/* Row 2: Due Date & Status */}
-              <div className="grid grid-cols-2 gap-3.5">
-                <div className="space-y-1.5">
-                  <label className="text-[#A1A1AA] font-semibold">{language === 'az' ? 'İcra tarixi' : language === 'en' ? 'Due Date' : 'Срок'}</label>
-                  <ModalDatePicker
-                    value={editTaskForm.dueDate}
-                    onChange={(val) => setEditTaskForm({ ...editTaskForm, dueDate: val })}
-                    isOpen={isEditDateOpen}
-                    onToggle={() => setIsEditDateOpen(!isEditDateOpen)}
-                    onClose={() => setIsEditDateOpen(false)}
-                    placeholder={language === 'az' ? 'Tarix seçin' : language === 'en' ? 'Select due date' : 'Выберите дату'}
-                  />
-                </div>
+                {/* New File Upload / Dropzone (only if canEditEditTask) */}
+                {canEditEditTask && (
+                  <div className="space-y-2 pt-1 border-t border-[#3F3F46]/50">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[#A1A1AA] font-semibold flex items-center gap-1.5">
+                        <PaperClipIcon className="w-3.5 h-3.5 text-sky-400" />
+                        <span>{language === 'az' ? 'Fayl əlavə et' : language === 'en' ? 'Attach Files' : 'Прикрепить файлы'}</span>
+                      </label>
+                      {editTaskFiles.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setEditTaskFiles([])}
+                          className="text-[10px] text-red-400 hover:text-red-300 font-medium cursor-pointer"
+                        >
+                          {language === 'az' ? 'Hamısını sil' : 'Clear all'}
+                        </button>
+                      )}
+                    </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[#A1A1AA] font-semibold">{t('common.status', {}, 'Status')}</label>
-                  <div className="relative flex items-center">
-                    <select
-                      value={editTaskForm.status}
-                      onChange={(e) => setEditTaskForm({ ...editTaskForm, status: e.target.value })}
-                      className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-sky-500 pr-8 font-medium"
+                    <label
+                      htmlFor="tasks_page_edit_files"
+                      className="border border-dashed border-[#3F3F46] hover:border-sky-500/70 bg-[#141416]/40 hover:bg-[#141416]/70 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all group"
                     >
-                      {STATUSES.map(s => <option key={s} value={s}>{getTaskStatusLabel(s, language)}</option>)}
-                    </select>
-                    <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-3 pointer-events-none" />
-                  </div>
-                </div>
-              </div>
+                      <PaperClipIcon className="w-5 h-5 text-[#71717A] group-hover:text-sky-400 transition-colors mb-1" />
+                      <span className="text-[11px] text-[#A1A1AA] group-hover:text-white font-medium">
+                        {language === 'az' ? 'Faylları seçmək üçün klikləyin və ya bura atın' : language === 'en' ? 'Click to select or drag & drop files here' : 'Нажмите для выбора файлов'}
+                      </span>
+                      <span className="text-[10px] text-[#52525B] mt-0.5">
+                        PDF, DOCX, PNG, JPG, ZIP və s.
+                      </span>
+                      <input
+                        id="tasks_page_edit_files"
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files.length > 0) {
+                            const newSelected = Array.from(e.target.files);
+                            setEditTaskFiles(prev => [...prev, ...newSelected]);
+                            e.target.value = '';
+                          }
+                        }}
+                      />
+                    </label>
 
-              {/* Bottom Update Button */}
-              <div className="flex items-center justify-end pt-4">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-6 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg transition-colors cursor-pointer disabled:opacity-50"
-                >
-                  {submitting ? (language === 'az' ? 'Yenilənir...' : language === 'en' ? 'Updating...' : 'Обновление...') : t('common.update', {}, 'Update')}
-                </button>
-              </div>
-            </form>
+                    {/* Selected Files Preview */}
+                    {editTaskFiles.length > 0 && (
+                      <div className="space-y-1.5 max-h-28 overflow-y-auto custom-scrollbar pt-1">
+                        {editTaskFiles.map((file, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between bg-[#141416]/70 border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs"
+                          >
+                            <div className="flex items-center gap-2 min-w-0 pr-2">
+                              <DocumentIcon className="w-4 h-4 text-sky-400 shrink-0" />
+                              <span className="text-white font-medium truncate">{file.name}</span>
+                              <span className="text-[10px] text-[#71717A] shrink-0">({formatFileSize(file.size)})</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setEditTaskFiles(prev => prev.filter((_, i) => i !== idx))}
+                              className="p-1 rounded-lg hover:bg-red-500/10 text-[#71717A] hover:text-red-400 transition-colors cursor-pointer shrink-0"
+                            >
+                              <XMarkIcon className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Bottom Actions */}
+                <div className="flex items-center justify-end pt-4">
+                  {!canEditEditTask ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditModalOpen(false);
+                        setEditTaskFiles([]);
+                      }}
+                      className="px-6 py-2.5 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] text-white font-semibold text-xs border border-[#3F3F46]/60 transition-colors cursor-pointer"
+                    >
+                      {language === 'az' ? 'Bağla' : language === 'en' ? 'Close' : 'Закрыть'}
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="px-6 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {submitting ? (language === 'az' ? 'Yenilənir...' : language === 'en' ? 'Updating...' : 'Обновление...') : t('common.update', {}, 'Update')}
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
     </div>
   );

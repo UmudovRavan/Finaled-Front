@@ -14,6 +14,8 @@ import {
     UserIcon,
     CheckIcon,
     ExclamationTriangleIcon,
+    PaperClipIcon,
+    XMarkIcon,
 } from '@heroicons/react/24/outline';
 
 const TaskEdit: React.FC = () => {
@@ -37,6 +39,10 @@ const TaskEdit: React.FC = () => {
     const [difficulty, setDifficulty] = useState<number>(DifficultyLevel.Medium);
     const [deadline, setDeadline] = useState('');
     const [assignedUser, setAssignedUser] = useState<UserResponse | null>(null);
+
+    // File upload state
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Mention state
     const [assignInputValue, setAssignInputValue] = useState('');
@@ -176,6 +182,20 @@ const TaskEdit: React.FC = () => {
         setMentionQuery('');
     };
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        setSelectedFiles((prev) => {
+            const existing = new Set(prev.map((f) => f.name + f.size));
+            return [...prev, ...files.filter((f) => !existing.has(f.name + f.size))];
+        });
+        // Reset input so the same file can be re-selected
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const removeFile = (index: number) => {
+        setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!task) return;
@@ -204,6 +224,7 @@ const TaskEdit: React.FC = () => {
                 deadline: new Date(deadline).toISOString(),
                 assignedToUserId: assignedUser?.id,
                 createdByUserId: task.createdByUserId,
+                files: selectedFiles.length > 0 ? selectedFiles : undefined,
             });
 
             setSuccessMessage('Tapşırıq uğurla yeniləndi');
@@ -373,6 +394,51 @@ const TaskEdit: React.FC = () => {
                                         />
                                     )}
                                 </div>
+                            </div>
+
+                            {/* File Upload */}
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-[#A1A1AA]">Fayl Əlavə Et</label>
+                                <div
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="w-full border border-dashed border-[#3F3F46]/60 rounded-xl px-4 py-3 flex items-center gap-2.5 text-xs text-[#71717A] hover:border-blue-500/50 hover:bg-blue-500/5 transition-colors cursor-pointer"
+                                >
+                                    <PaperClipIcon className="w-4 h-4 shrink-0" />
+                                    <span>Faylları seçin və ya bura sürükləyin</span>
+                                </div>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    multiple
+                                    className="hidden"
+                                    onChange={handleFileChange}
+                                />
+
+                                {selectedFiles.length > 0 && (
+                                    <div className="flex flex-col gap-1.5 mt-2">
+                                        {selectedFiles.map((file, i) => (
+                                            <div
+                                                key={i}
+                                                className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#27272A]/60 border border-[#3F3F46]/40"
+                                            >
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <PaperClipIcon className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                                                    <span className="text-xs text-[#D4D4D8] truncate">{file.name}</span>
+                                                    <span className="text-[10px] text-[#71717A] shrink-0">
+                                                        ({(file.size / 1024).toFixed(1)} KB)
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeFile(i)}
+                                                    className="ml-2 text-[#71717A] hover:text-red-400 transition-colors cursor-pointer"
+                                                >
+                                                    <XMarkIcon className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Buttons */}

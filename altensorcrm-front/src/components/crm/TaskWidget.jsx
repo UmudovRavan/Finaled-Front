@@ -30,25 +30,32 @@ const formatFileSize = (bytes) => {
 };
 
 
-const STATUSES = ['Backlog', 'Todo', 'In Progress', 'Done', 'Canceled'];
+const STATUSES = ['Pending', 'Assigned', 'In Progress', 'Under Review', 'Completed', 'Expired', 'Canceled'];
 const PRIORITIES = ['Low', 'Medium', 'High'];
 
 const mapStatusIntToString = (s) => {
-  if (s === 0 || s === '0' || s === 'Backlog') return 'Backlog';
-  if (s === 1 || s === '1' || s === 'Todo') return 'Todo';
-  if (s === 2 || s === '2' || s === 'In Progress') return 'In Progress';
-  if (s === 3 || s === '3' || s === 'Done') return 'Done';
-  if (s === 4 || s === '4' || s === 'Canceled') return 'Canceled';
-  return typeof s === 'string' ? s : 'Backlog';
+  if (s === 0 || s === '0' || s === 'Pending') return 'Pending';
+  if (s === 1 || s === '1' || s === 'Assigned') return 'Assigned';
+  if (s === 2 || s === '2' || s === 'In Progress' || s === 'InProgress') return 'In Progress';
+  if (s === 3 || s === '3' || s === 'Under Review' || s === 'UnderReview') return 'Under Review';
+  if (s === 4 || s === '4' || s === 'Completed' || s === 'Done') return 'Completed';
+  if (s === 5 || s === '5' || s === 'Expired') return 'Expired';
+  if (s === 6 || s === '6' || s === 'Canceled') return 'Canceled';
+  return typeof s === 'string' ? s : 'Pending';
 };
 
 const mapStringToStatusInt = (str) => {
   switch (str) {
-    case 'Backlog': return 0;
-    case 'Todo': return 1;
-    case 'In Progress': return 2;
-    case 'Done': return 3;
-    case 'Canceled': return 4;
+    case 'Pending': return 0;
+    case 'Assigned': return 1;
+    case 'In Progress':
+    case 'InProgress': return 2;
+    case 'Under Review':
+    case 'UnderReview': return 3;
+    case 'Completed':
+    case 'Done': return 4;
+    case 'Expired': return 5;
+    case 'Canceled': return 6;
     default: return 0;
   }
 };
@@ -71,14 +78,19 @@ const mapStringToPriorityInt = (str) => {
 
 const renderStatusBadge = (status, language = 'az') => {
   const map = {
-    Backlog: 'bg-[#27272A] text-[#A1A1AA]',
-    Todo: 'bg-sky-900/50 text-sky-400',
+    'Pending': 'bg-[#27272A] text-[#A1A1AA]',
+    'Assigned': 'bg-sky-900/50 text-sky-400',
     'In Progress': 'bg-amber-900/40 text-amber-400',
-    Done: 'bg-emerald-900/40 text-emerald-400',
-    Canceled: 'bg-red-900/30 text-red-400'
+    'Under Review': 'bg-purple-900/40 text-purple-400',
+    'Completed': 'bg-emerald-900/40 text-emerald-400',
+    'Done': 'bg-emerald-900/40 text-emerald-400',
+    'Expired': 'bg-orange-900/40 text-orange-400',
+    'Canceled': 'bg-red-900/30 text-red-400',
+    'Backlog': 'bg-[#27272A] text-[#A1A1AA]',
+    'Todo': 'bg-sky-900/50 text-sky-400'
   };
   return (
-    <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold ${map[status] || map.Backlog}`}>
+    <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold ${map[status] || map.Pending}`}>
       {getTaskStatusLabel(status, language)}
     </span>
   );
@@ -438,7 +450,7 @@ const TaskWidget = ({ leadId = null, dealId = null, userId = null }) => {
     priority: 'Low',
     assignedToUserId: '',
     dueDate: '',
-    status: 'Backlog'
+    status: 'Pending'
   });
 
   const [editTaskForm, setEditTaskForm] = useState({
@@ -449,7 +461,7 @@ const TaskWidget = ({ leadId = null, dealId = null, userId = null }) => {
     assignedToUserId: '',
     dueDate: '',
     isoDueDate: '',
-    status: 'Backlog',
+    status: 'Pending',
     createdByUserId: ''
   });
 
@@ -585,7 +597,7 @@ const TaskWidget = ({ leadId = null, dealId = null, userId = null }) => {
       assignedToUserId: task.assignedToUserId || '',
       dueDate: task.dueDate || '',
       isoDueDate: task.isoDueDate || '',
-      status: task.status || 'Backlog',
+      status: task.status || 'Pending',
       createdByUserId: task.createdByUserId || ''
     });
     setEditTaskAttachments(task.attachments || []);
@@ -611,7 +623,7 @@ const TaskWidget = ({ leadId = null, dealId = null, userId = null }) => {
         title: newTaskForm.title.trim(),
         description: desc,
         difficulty: mapStringToPriorityInt(newTaskForm.priority),
-        status: mapStringToStatusInt(newTaskForm.status),
+        status: 0,
         deadline: newTaskForm.dueDate
           ? new Date(newTaskForm.dueDate).toISOString()
           : new Date().toISOString(),
@@ -622,7 +634,7 @@ const TaskWidget = ({ leadId = null, dealId = null, userId = null }) => {
       showToast(language === 'az' ? 'Tapşırıq uğurla yaradıldı!' : 'Task created successfully!', 'success');
       setIsCreateModalOpen(false);
       setNewTaskFiles([]);
-      setNewTaskForm({ title: '', description: '', priority: 'Low', assignedToUserId: '', dueDate: '', status: 'Backlog' });
+      setNewTaskForm({ title: '', description: '', priority: 'Low', assignedToUserId: '', dueDate: '', status: 'Pending' });
       await loadData();
     } catch (err) {
       showToast(err.message || 'Xəta baş verdi.', 'error');
@@ -715,7 +727,9 @@ const TaskWidget = ({ leadId = null, dealId = null, userId = null }) => {
     existingAttachments = [],
     onSubmit,
     title,
-    submitLabel
+    submitLabel,
+    isCreate = false,
+    isReadOnly = false
   }) => {
     if (!isOpen) return null;
     const fileInputId = `task_files_${formData.id || 'new'}`;
@@ -742,15 +756,16 @@ const TaskWidget = ({ leadId = null, dealId = null, userId = null }) => {
             <div className="space-y-1.5">
               <label className="text-[#A1A1AA] font-semibold flex items-center gap-1">
                 <span>{language === 'az' ? 'Başlıq' : language === 'en' ? 'Title' : 'Заголовок'}</span>
-                <span className="text-red-500">*</span>
+                {isCreate && <span className="text-red-500">*</span>}
               </label>
               <input
                 type="text"
                 required
+                disabled={isReadOnly}
                 placeholder={language === 'az' ? 'Başlıq' : language === 'en' ? 'Title' : 'Заголовок'}
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
+                className={`w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500 ${isReadOnly ? 'opacity-80 cursor-default' : ''}`}
               />
             </div>
 
@@ -758,22 +773,25 @@ const TaskWidget = ({ leadId = null, dealId = null, userId = null }) => {
             <div className="space-y-1.5">
               <label className="text-[#A1A1AA] font-semibold">{language === 'az' ? 'Təsvir' : language === 'en' ? 'Description' : 'Описание'}</label>
               <div className="bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-2xl overflow-hidden">
-                <div className="flex items-center gap-1.5 px-3 py-2 border-b border-[#3F3F46]/50 text-[#A1A1AA] text-xs select-none overflow-x-auto">
-                  <button type="button" className="font-bold text-white hover:text-white px-1">T</button>
-                  <button type="button" className="font-bold text-[#A1A1AA] hover:text-white px-1">H1</button>
-                  <button type="button" className="font-bold text-[#A1A1AA] hover:text-white px-1">B</button>
-                  <button type="button" className="italic text-[#A1A1AA] hover:text-white px-1">I</button>
-                  <button type="button" className="line-through text-[#A1A1AA] hover:text-white px-1">S</button>
-                  <span className="w-px h-3 bg-[#3F3F46] mx-0.5"></span>
-                  <button type="button" className="hover:text-white px-1"><LinkIcon className="w-3.5 h-3.5" /></button>
-                  <button type="button" className="hover:text-white px-1"><ListBulletIcon className="w-3.5 h-3.5" /></button>
-                </div>
+                {!isReadOnly && (
+                  <div className="flex items-center gap-1.5 px-3 py-2 border-b border-[#3F3F46]/50 text-[#A1A1AA] text-xs select-none overflow-x-auto">
+                    <button type="button" className="font-bold text-white hover:text-white px-1">T</button>
+                    <button type="button" className="font-bold text-[#A1A1AA] hover:text-white px-1">H1</button>
+                    <button type="button" className="font-bold text-[#A1A1AA] hover:text-white px-1">B</button>
+                    <button type="button" className="italic text-[#A1A1AA] hover:text-white px-1">I</button>
+                    <button type="button" className="line-through text-[#A1A1AA] hover:text-white px-1">S</button>
+                    <span className="w-px h-3 bg-[#3F3F46] mx-0.5"></span>
+                    <button type="button" className="hover:text-white px-1"><LinkIcon className="w-3.5 h-3.5" /></button>
+                    <button type="button" className="hover:text-white px-1"><ListBulletIcon className="w-3.5 h-3.5" /></button>
+                  </div>
+                )}
                 <textarea
                   rows={3}
+                  disabled={isReadOnly}
                   placeholder={language === 'az' ? 'Təsvir' : language === 'en' ? 'Description' : 'Описание'}
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full bg-transparent px-3.5 py-3 text-xs text-white placeholder:text-[#71717A] focus:outline-none resize-none"
+                  className={`w-full bg-transparent px-3.5 py-3 text-xs text-white placeholder:text-[#71717A] focus:outline-none resize-none ${isReadOnly ? 'opacity-80 cursor-default' : ''}`}
                 />
               </div>
             </div>
@@ -784,13 +802,14 @@ const TaskWidget = ({ leadId = null, dealId = null, userId = null }) => {
                 <label className="text-[#A1A1AA] font-semibold">{language === 'az' ? 'Prioritet' : language === 'en' ? 'Priority' : 'Приоритет'}</label>
                 <div className="relative flex items-center">
                   <select
+                    disabled={isReadOnly}
                     value={formData.priority}
                     onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                    className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-sky-500 pr-8"
+                    className={`w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-sky-500 pr-8 ${isReadOnly ? 'opacity-80 cursor-default pointer-events-none' : ''}`}
                   >
                     {PRIORITIES.map(p => <option key={p} value={p}>{getPriorityLabel(p, language)}</option>)}
                   </select>
-                  <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-3 pointer-events-none" />
+                  {!isReadOnly && <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-3 pointer-events-none" />}
                 </div>
               </div>
 
@@ -798,46 +817,40 @@ const TaskWidget = ({ leadId = null, dealId = null, userId = null }) => {
                 <label className="text-[#A1A1AA] font-semibold">{language === 'az' ? 'Təyin edilib' : language === 'en' ? 'Assigned To' : 'Назначено'}</label>
                 <div className="relative flex items-center">
                   <select
+                    disabled={isReadOnly}
                     value={formData.assignedToUserId}
                     onChange={(e) => setFormData({ ...formData, assignedToUserId: e.target.value })}
-                    className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-sky-500 pr-8"
+                    className={`w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-sky-500 pr-8 ${isReadOnly ? 'opacity-80 cursor-default pointer-events-none' : ''}`}
                   >
                     <option value="">{language === 'az' ? 'Təyin edilib' : language === 'en' ? 'Assigned To' : 'Назначено'}</option>
                     {usersOptions.map(u => (
                       <option key={u.id} value={u.id}>{u.name} {u.email ? `(${u.email})` : ''}</option>
                     ))}
                   </select>
-                  <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-3 pointer-events-none" />
+                  {!isReadOnly && <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-3 pointer-events-none" />}
                 </div>
               </div>
             </div>
 
-            {/* Row 2: Due Date & Status */}
-            <div className="grid grid-cols-2 gap-3.5">
+            {/* Row 2: Due Date */}
+            <div className="grid grid-cols-1 gap-3.5">
               <div className="space-y-1.5">
                 <label className="text-[#A1A1AA] font-semibold">{language === 'az' ? 'İcra tarixi' : language === 'en' ? 'Due Date' : 'Срок'}</label>
-                <ModalDatePicker
-                  value={formData.isoDueDate || formData.dueDate}
-                  onChange={(val) => setFormData({ ...formData, isoDueDate: val, dueDate: val })}
-                  isOpen={isWidgetDateOpen}
-                  onToggle={() => setIsWidgetDateOpen(!isWidgetDateOpen)}
-                  onClose={() => setIsWidgetDateOpen(false)}
-                  placeholder={language === 'az' ? 'Tarix seçin' : language === 'en' ? 'Select due date' : 'Выберите дату'}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[#A1A1AA] font-semibold">{t('common.status', {}, 'Status')}</label>
-                <div className="relative flex items-center">
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-sky-500 pr-8"
-                  >
-                    {STATUSES.map(s => <option key={s} value={s}>{getTaskStatusLabel(s, language)}</option>)}
-                  </select>
-                  <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-3 pointer-events-none" />
-                </div>
+                {isReadOnly ? (
+                  <div className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white opacity-80 flex items-center gap-2">
+                    <CalendarIcon className="w-4 h-4 text-[#71717A]" />
+                    <span>{formData.dueDate || formData.isoDueDate || (language === 'az' ? 'Təyin edilməyib' : 'Not set')}</span>
+                  </div>
+                ) : (
+                  <ModalDatePicker
+                    value={formData.isoDueDate || formData.dueDate}
+                    onChange={(val) => setFormData({ ...formData, isoDueDate: val, dueDate: val })}
+                    isOpen={isWidgetDateOpen}
+                    onToggle={() => setIsWidgetDateOpen(!isWidgetDateOpen)}
+                    onClose={() => setIsWidgetDateOpen(false)}
+                    placeholder={language === 'az' ? 'Tarix seçin' : language === 'en' ? 'Select due date' : 'Выберите дату'}
+                  />
+                )}
               </div>
             </div>
 
@@ -898,92 +911,113 @@ const TaskWidget = ({ leadId = null, dealId = null, userId = null }) => {
               </div>
             )}
 
-            {/* New File Upload / Dropzone */}
-            <div className="space-y-2 pt-1 border-t border-[#3F3F46]/50">
-              <div className="flex items-center justify-between">
-                <label className="text-[#A1A1AA] font-semibold flex items-center gap-1.5">
-                  <PaperClipIcon className="w-3.5 h-3.5 text-sky-400" />
-                  <span>{language === 'az' ? 'Fayl əlavə et' : language === 'en' ? 'Attach Files' : 'Прикрепить файлы'}</span>
+            {/* New File Upload / Dropzone (only when not readonly) */}
+            {!isReadOnly && (
+              <div className="space-y-2 pt-1 border-t border-[#3F3F46]/50">
+                <div className="flex items-center justify-between">
+                  <label className="text-[#A1A1AA] font-semibold flex items-center gap-1.5">
+                    <PaperClipIcon className="w-3.5 h-3.5 text-sky-400" />
+                    <span>{language === 'az' ? 'Fayl əlavə et' : language === 'en' ? 'Attach Files' : 'Прикрепить файлы'}</span>
+                  </label>
+                  {files && files.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setFiles([])}
+                      className="text-[10px] text-red-400 hover:text-red-300 font-medium cursor-pointer"
+                    >
+                      {language === 'az' ? 'Hamısını sil' : 'Clear all'}
+                    </button>
+                  )}
+                </div>
+
+                <label
+                  htmlFor={fileInputId}
+                  className="border border-dashed border-[#3F3F46] hover:border-sky-500/70 bg-[#141416]/40 hover:bg-[#141416]/70 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all group"
+                >
+                  <PaperClipIcon className="w-5 h-5 text-[#71717A] group-hover:text-sky-400 transition-colors mb-1" />
+                  <span className="text-[11px] text-[#A1A1AA] group-hover:text-white font-medium">
+                    {language === 'az' ? 'Faylları seçmək üçün klikləyin və ya bura atın' : language === 'en' ? 'Click to select or drag & drop files here' : 'Нажмите для выбора файлов'}
+                  </span>
+                  <span className="text-[10px] text-[#52525B] mt-0.5">
+                    PDF, DOCX, PNG, JPG, ZIP və s.
+                  </span>
+                  <input
+                    id={fileInputId}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        const newSelected = Array.from(e.target.files);
+                        setFiles(prev => [...prev, ...newSelected]);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
                 </label>
+
+                {/* Selected Files Preview */}
                 {files && files.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setFiles([])}
-                    className="text-[10px] text-red-400 hover:text-red-300 font-medium cursor-pointer"
-                  >
-                    {language === 'az' ? 'Hamısını sil' : 'Clear all'}
-                  </button>
+                  <div className="space-y-1.5 max-h-28 overflow-y-auto custom-scrollbar pt-1">
+                    {files.map((file, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between bg-[#141416]/70 border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs"
+                      >
+                        <div className="flex items-center gap-2 min-w-0 pr-2">
+                          <DocumentIcon className="w-4 h-4 text-sky-400 shrink-0" />
+                          <span className="text-white font-medium truncate">{file.name}</span>
+                          <span className="text-[10px] text-[#71717A] shrink-0">({formatFileSize(file.size)})</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setFiles(prev => prev.filter((_, i) => i !== idx))}
+                          className="p-1 rounded-lg hover:bg-red-500/10 text-[#71717A] hover:text-red-400 transition-colors cursor-pointer shrink-0"
+                        >
+                          <XMarkIcon className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
+            )}
 
-              <label
-                htmlFor={fileInputId}
-                className="border border-dashed border-[#3F3F46] hover:border-sky-500/70 bg-[#141416]/40 hover:bg-[#141416]/70 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all group"
-              >
-                <PaperClipIcon className="w-5 h-5 text-[#71717A] group-hover:text-sky-400 transition-colors mb-1" />
-                <span className="text-[11px] text-[#A1A1AA] group-hover:text-white font-medium">
-                  {language === 'az' ? 'Faylları seçmək üçün klikləyin və ya bura atın' : language === 'en' ? 'Click to select or drag & drop files here' : 'Нажмите для выбора файлов'}
-                </span>
-                <span className="text-[10px] text-[#52525B] mt-0.5">
-                  PDF, DOCX, PNG, JPG, ZIP və s.
-                </span>
-                <input
-                  id={fileInputId}
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files.length > 0) {
-                      const newSelected = Array.from(e.target.files);
-                      setFiles(prev => [...prev, ...newSelected]);
-                      e.target.value = '';
-                    }
-                  }}
-                />
-              </label>
-
-              {/* Selected Files Preview */}
-              {files && files.length > 0 && (
-                <div className="space-y-1.5 max-h-28 overflow-y-auto custom-scrollbar pt-1">
-                  {files.map((file, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between bg-[#27272A]/70 border border-[#3F3F46]/50 rounded-xl px-3 py-1.5 text-xs"
-                    >
-                      <div className="flex items-center gap-2 truncate pr-2">
-                        <DocumentIcon className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span className="text-white truncate font-medium">{file.name}</span>
-                        <span className="text-[10px] text-[#71717A] shrink-0">({formatFileSize(file.size)})</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setFiles(files.filter((_, i) => i !== idx))}
-                        className="p-1 rounded-lg hover:bg-red-500/20 text-[#A1A1AA] hover:text-red-400 transition-colors cursor-pointer"
-                        title={language === 'az' ? 'Sil' : 'Remove'}
-                      >
-                        <XMarkIcon className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Submit */}
+            {/* Bottom Actions */}
             <div className="flex items-center justify-end pt-3">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-6 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg transition-colors cursor-pointer disabled:opacity-50"
-              >
-                {submitting ? (language === 'az' ? 'Yüklənir...' : language === 'en' ? 'Loading...' : 'Загрузка...') : submitLabel}
-              </button>
+              {isReadOnly ? (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-6 py-2.5 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] text-white font-semibold text-xs border border-[#3F3F46]/60 transition-colors cursor-pointer"
+                >
+                  {language === 'az' ? 'Bağla' : language === 'en' ? 'Close' : 'Закрыть'}
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-6 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {submitting ? (language === 'az' ? 'Yüklənir...' : language === 'en' ? 'Loading...' : 'Загрузка...') : submitLabel}
+                </button>
+              )}
             </div>
           </form>
         </div>
       </div>
     );
   };
+
+  const currentUser = getCurrentUser();
+  const currentUserId = String(currentUser?.userId || currentUser?.id || currentUser?.sub || '').toLowerCase();
+  const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
+  const isAdmin = userRoles.some(r => {
+    const roleStr = String(r).toLowerCase();
+    return roleStr === 'admin' || roleStr === 'superadmin' || roleStr === 'administrator' || roleStr === 'manager';
+  });
+  const editTaskCreatorId = String(editTaskForm.createdByUserId || '').toLowerCase();
+  const canEditEditTask = isAdmin || (editTaskCreatorId && editTaskCreatorId === currentUserId) || (!editTaskForm.createdByUserId && !editTaskForm.assignedToUserId);
 
   return (
     <div className="space-y-4">
@@ -1135,10 +1169,12 @@ const TaskWidget = ({ leadId = null, dealId = null, userId = null }) => {
         existingAttachments: [],
         onSubmit: handleCreateTask,
         title: language === 'az' ? 'Tapşırıq Yarat' : language === 'en' ? 'Create Task' : 'Создать задачу',
-        submitLabel: t('common.create', {}, 'Create')
+        submitLabel: t('common.create', {}, 'Create'),
+        isCreate: true,
+        isReadOnly: false
       })}
 
-      {/* Edit Modal */}
+      {/* Edit / View Modal */}
       {renderModal({
         isOpen: isEditModalOpen,
         onClose: () => {
@@ -1151,8 +1187,12 @@ const TaskWidget = ({ leadId = null, dealId = null, userId = null }) => {
         setFiles: setEditTaskFiles,
         existingAttachments: editTaskAttachments,
         onSubmit: handleUpdateTask,
-        title: language === 'az' ? 'Tapşırığı redaktə et' : language === 'en' ? 'Edit Task' : 'Редактировать задачу',
-        submitLabel: t('common.save', {}, 'Save')
+        title: canEditEditTask
+          ? (language === 'az' ? 'Tapşırığı redaktə et' : language === 'en' ? 'Edit Task' : 'Редактировать задачу')
+          : (language === 'az' ? 'Tapşırığa baxış' : language === 'en' ? 'Task Details' : 'Просмотр задачи'),
+        submitLabel: t('common.save', {}, 'Save'),
+        isCreate: false,
+        isReadOnly: !canEditEditTask
       })}
     </div>
   );

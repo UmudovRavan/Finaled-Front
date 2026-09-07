@@ -218,11 +218,6 @@ const Sidebar: React.FC<SidebarProps> = ({
             items.push({ path: '/tasks', label: t('tasks.taskList', {}, 'Tapşırıqlar'), icon: CheckCircleIcon });
         }
 
-        // 4. Work Groups
-        if (isAdmin || hasPermission('tms.workgroups.view')) {
-            items.push({ path: '/work-groups', label: t('nav.workgroups', {}, 'İş Qrupları'), icon: UserGroupIcon });
-        }
-
         // 5. Performance & Leaderboard
         if (isAdmin || hasPermission('tms.performance.view')) {
             items.push(

@@ -161,14 +161,17 @@ const LeadsPage = () => {
   const navigateTo = useNavigate();
 
   useEffect(() => {
-    fetchBackendLeads();
-    fetchUsers();
+    const initData = async () => {
+      const users = await fetchUsers();
+      await fetchBackendLeads(users);
+    };
+    initData();
   }, []);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await fetchBackendLeads();
-    await fetchUsers();
+    const users = await fetchUsers();
+    await fetchBackendLeads(users);
     setTimeout(() => setIsRefreshing(false), 400);
   };
 
@@ -177,16 +180,19 @@ const LeadsPage = () => {
       const data = await usersApi.getAll();
       const list = Array.isArray(data) ? data : (data?.items || data?.data || []);
       if (Array.isArray(list) && list.length > 0) {
-        setOwnersList(list.map(u => ({
-          id: u.id,
-          name: u.name || u.email || 'User',
-          initial: (u.name || u.email || 'U').charAt(0).toUpperCase(),
+        const mappedUsers = list.map(u => ({
+          id: u.id || u.Id || u.userId,
+          name: u.name || u.userName || u.fullName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || 'User',
+          initial: (u.name || u.userName || u.fullName || u.firstName || u.email || 'U').charAt(0).toUpperCase(),
           email: u.email || ''
-        })));
+        }));
+        setOwnersList(mappedUsers);
+        return mappedUsers;
       }
     } catch (err) {
       console.warn('Notice fetching users:', err);
     }
+    return [];
   };
 
   // Auto-redirect to first lead's Comments tab when coming from a comment notification
@@ -208,18 +214,57 @@ const LeadsPage = () => {
     }
   }, [location.state]);
 
-  const fetchBackendLeads = async () => {
+  const extractOwnerInfo = (l, activeOwners) => {
+    const rawOwnerName =
+      (typeof l.leadOwnerName === 'string' ? l.leadOwnerName : '') ||
+      (typeof l.LeadOwnerName === 'string' ? l.LeadOwnerName : '') ||
+      (typeof l.leadOwner === 'string' ? l.leadOwner : (l.leadOwner?.name || l.leadOwner?.userName || l.leadOwner?.fullName || '')) ||
+      (typeof l.LeadOwner === 'string' ? l.LeadOwner : (l.LeadOwner?.name || l.LeadOwner?.userName || l.LeadOwner?.fullName || '')) ||
+      (typeof l.assignedTo === 'string' ? l.assignedTo : (l.assignedTo?.name || l.assignedTo?.userName || '')) ||
+      (typeof l.AssignedTo === 'string' ? l.AssignedTo : (l.AssignedTo?.name || l.AssignedTo?.userName || '')) ||
+      (typeof l.assignedUserName === 'string' ? l.assignedUserName : '') ||
+      (typeof l.assignedUser === 'string' ? l.assignedUser : (l.assignedUser?.name || l.assignedUser?.userName || l.assignedUser?.fullName || '')) ||
+      (typeof l.ownerName === 'string' ? l.ownerName : '') ||
+      (typeof l.OwnerName === 'string' ? l.OwnerName : '') ||
+      (typeof l.owner === 'string' ? l.owner : (l.owner?.name || l.owner?.userName || '')) ||
+      '';
+
+    const rawOwnerId =
+      l.leadOwnerId || l.LeadOwnerId ||
+      l.assignedToId || l.AssignedToId ||
+      l.assignedUserId || l.AssignedUserId ||
+      l.ownerId || l.OwnerId ||
+      l.userId || l.UserId ||
+      (typeof l.leadOwner === 'object' ? (l.leadOwner?.id || l.leadOwner?.Id) : null) ||
+      (typeof l.assignedTo === 'object' ? (l.assignedTo?.id || l.assignedTo?.Id) : null) ||
+      (typeof l.assignedUser === 'object' ? (l.assignedUser?.id || l.assignedUser?.Id) : null) ||
+      (typeof l.owner === 'object' ? (l.owner?.id || l.owner?.Id) : null) ||
+      null;
+
+    const matchedById = rawOwnerId ? activeOwners.find(o => String(o.id).toLowerCase() === String(rawOwnerId).toLowerCase()) : null;
+    const matchedByName = rawOwnerName ? activeOwners.find(o => o.name.toLowerCase() === rawOwnerName.toLowerCase()) : null;
+    const ownerObj = matchedById || matchedByName;
+
+    const ownerStr = rawOwnerName || ownerObj?.name || (l.assignedTo && typeof l.assignedTo === 'string' ? l.assignedTo : 'Administrator');
+    const ownerInitial = ownerObj?.initial || (ownerStr ? ownerStr.charAt(0).toUpperCase() : 'A');
+    const ownerEmail = ownerObj?.email || 'admin@altensor.io';
+
+    return { ownerStr, ownerInitial, ownerEmail };
+  };
+
+  const fetchBackendLeads = async (currentOwners = null) => {
     try {
       setLoading(true);
       const data = await leadsApi.getAll();
       if (data && (data.items || Array.isArray(data))) {
         const list = data.items || data;
+        const activeOwners = currentOwners || ownersList;
         if (list.length > 0) {
           const mapped = list.map(l => {
             const fullNameStr = (l.fullName || l.FullName || `${l.salutation || ''} ${l.firstName || ''} ${l.lastName || ''}`.trim() || l.name || l.email || 'Lead').trim();
             const orgStr = (l.companyName || l.organization || '').trim();
             const statusStr = normalizeLeadStatus(l.statusName || l.status);
-            const ownerStr = l.leadOwnerName || l.assignedTo || 'Administrator';
+            const { ownerStr, ownerInitial, ownerEmail } = extractOwnerInfo(l, activeOwners);
             return {
               id: String(l.id || l.Id),
               name: fullNameStr,
@@ -231,12 +276,35 @@ const LeadsPage = () => {
               email: l.email || l.emailAddress || '',
               mobile: l.mobileNo || l.mobile || '',
               assignedTo: ownerStr,
-              assignedInitial: ownerStr.charAt(0).toUpperCase() || 'A',
-              assignedEmail: 'admin@altensor.io',
+              assignedInitial: ownerInitial,
+              assignedEmail: ownerEmail,
               lastModified: 'Just now'
             };
           });
           setLeads(mapped);
+
+          // Enrich with individual getById in background to ensure 100% sync with LeadDetailPage
+          try {
+            const detailPromises = list.map(l => leadsApi.getById(l.id || l.Id).catch(() => null));
+            const details = await Promise.all(detailPromises);
+            let hasUpdates = false;
+            const enriched = mapped.map((m, idx) => {
+              const d = details[idx];
+              if (d) {
+                const { ownerStr: dOwner, ownerInitial: dInit, ownerEmail: dMail } = extractOwnerInfo(d, activeOwners);
+                if (dOwner && dOwner !== 'Administrator' && dOwner !== m.assignedTo) {
+                  hasUpdates = true;
+                  return { ...m, assignedTo: dOwner, assignedInitial: dInit, assignedEmail: dMail };
+                }
+              }
+              return m;
+            });
+            if (hasUpdates) {
+              setLeads(enriched);
+            }
+          } catch (enrichErr) {
+            console.warn('Notice enriching leads owner details:', enrichErr);
+          }
         }
       }
     } catch (err) {
@@ -455,6 +523,8 @@ const LeadsPage = () => {
     const fullName = `${salPrefix}${leadForm.firstName.trim()} ${leadForm.lastName ? leadForm.lastName.trim() : ''}`.trim();
     const orgName = leadForm.organization.trim();
 
+    const matchedOwner = ownersList.find((o) => o.name === leadForm.owner) || (leadForm.ownerId ? ownersList.find(o => o.id === leadForm.ownerId) : null);
+
     const leadObj = {
       id: String(Date.now()),
       name: fullName,
@@ -465,9 +535,9 @@ const LeadsPage = () => {
       source: leadForm.source || 'Website',
       email: leadForm.email ? leadForm.email.trim() : '',
       mobile: leadForm.mobile ? leadForm.mobile.trim() : '',
-      assignedTo: leadForm.owner || 'Administrator',
-      assignedInitial: (leadForm.owner || 'A').charAt(0).toUpperCase(),
-      assignedEmail: 'admin@altensor.io',
+      assignedTo: matchedOwner?.name || leadForm.owner || 'Administrator',
+      assignedInitial: (matchedOwner?.name || leadForm.owner || 'A').charAt(0).toUpperCase(),
+      assignedEmail: matchedOwner?.email || 'admin@altensor.io',
       lastModified: 'Just now'
     };
 
@@ -491,7 +561,7 @@ const LeadsPage = () => {
         annualRevenue: parseFloat(leadForm.annualRevenue) || 0,
         industry: null,
         status: normalizeLeadStatus(leadForm.status || 'New'),
-        leadOwnerId: null
+        leadOwnerId: matchedOwner?.id || null
       };
 
       await leadsApi.create(payload);

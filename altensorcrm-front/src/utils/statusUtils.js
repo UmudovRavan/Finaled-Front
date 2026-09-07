@@ -47,14 +47,19 @@ export const dealStatusMap = {
 
 export const taskStatusMap = {
   'Pending': { az: 'Gözləyir', en: 'Pending', ru: 'В ожидании' },
+  'Assigned': { az: 'Təyin edildi', en: 'Assigned', ru: 'Назначено' },
+  'In Progress': { az: 'İcrada', en: 'In Progress', ru: 'В процессе' },
+  'InProgress': { az: 'İcrada', en: 'In Progress', ru: 'В процессе' },
+  'Under Review': { az: 'Nəzərdən keçirilir', en: 'Under Review', ru: 'На проверке' },
+  'UnderReview': { az: 'Nəzərdən keçirilir', en: 'Under Review', ru: 'На проверке' },
+  'Completed': { az: 'Tamamlandı', en: 'Completed', ru: 'Завершено' },
+  'Done': { az: 'Tamamlandı', en: 'Done', ru: 'Готово' },
+  'Expired': { az: 'Vaxtı keçib', en: 'Expired', ru: 'Просрочено' },
+  'Canceled': { az: 'Ləğv edildi', en: 'Canceled', ru: 'Отменено' },
   'Backlog': { az: 'Gözləmədə', en: 'Backlog', ru: 'Бэклог' },
   'To Do': { az: 'Görüləcək', en: 'To Do', ru: 'Сделать' },
   'ToDo': { az: 'Görüləcək', en: 'To Do', ru: 'Сделать' },
-  'In Progress': { az: 'İcrada', en: 'In Progress', ru: 'В процессе' },
-  'InProgress': { az: 'İcrada', en: 'In Progress', ru: 'В процессе' },
-  'Completed': { az: 'Tamamlandı', en: 'Completed', ru: 'Завершено' },
-  'Done': { az: 'Tamamlandı', en: 'Done', ru: 'Готово' },
-  'Canceled': { az: 'Ləğv edildi', en: 'Canceled', ru: 'Отменено' }
+  'Todo': { az: 'Görüləcək', en: 'To Do', ru: 'Сделать' }
 };
 
 export const priorityMap = {

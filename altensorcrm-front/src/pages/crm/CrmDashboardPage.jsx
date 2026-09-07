@@ -763,7 +763,9 @@ const CrmDashboardPage = () => {
       // Deals By Owner Bar Chart
       const ownerMap = {};
       periodDeals.forEach((d) => {
-        const owner = d.dealOwnerName || 'Administrator';
+        const ownerObj = usersList.find(u => String(u.id) === String(d.dealOwnerId || d.assignedToId || d.ownerId || d.userId)) ||
+                         usersList.find(u => u.name === (d.dealOwnerName || d.assignedTo || d.ownerName));
+        const owner = d.dealOwnerName || d.dealOwner?.name || ownerObj?.name || d.assignedTo || 'Administrator';
         ownerMap[owner] = (ownerMap[owner] || 0) + 1;
       });
       setDealsByOwnerData(Object.entries(ownerMap).map(([owner, count]) => ({ name: owner, count })));

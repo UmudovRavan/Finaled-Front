@@ -205,7 +205,7 @@ const CallLogsPage = () => {
   // Form State
   const [callForm, setCallForm] = useState({
     caller: 'Unknown',
-    receiver: 'Yusif Hashimov',
+    receiver: 'Administrator',
     type: 'Incoming',
     status: 'In Progress',
     duration: '0s',
@@ -429,6 +429,8 @@ const CallLogsPage = () => {
     setIsCreateModalOpen(false);
 
     const durSec = parseInt(String(callForm.duration || '0').replace(/[^0-9]/g, '')) || 0;
+    const matchedReceiver = ownersList.find(o => o.name === (callForm.receiver || 'Administrator'));
+    const matchedCaller = ownersList.find(o => o.name === (callForm.caller || 'Unknown'));
 
     try {
       const payload = {
@@ -437,8 +439,8 @@ const CallLogsPage = () => {
         fromNumber: callForm.fromNumber || '0500000000',
         status: mapCallStatusToEnum(callForm.status),
         durationInSeconds: durSec,
-        callReceivedById: null,
-        callerUserId: null,
+        callReceivedById: matchedReceiver?.id || null,
+        callerUserId: matchedCaller?.id || null,
         leadId: null,
         dealId: null
       };
@@ -453,7 +455,7 @@ const CallLogsPage = () => {
 
     setCallForm({
       caller: 'Unknown',
-      receiver: 'Yusif Hashimov',
+      receiver: 'Administrator',
       type: 'Incoming',
       status: 'In Progress',
       duration: '0s',
@@ -1828,9 +1830,9 @@ const CallLogsPage = () => {
                   <span>{selectedCallDetail.caller || 'Unknown'}</span>
                   <span className="text-[#71717A]">→</span>
                   <span className="w-4.5 h-4.5 rounded-full bg-[#27272A] text-[#A1A1AA] text-[9px] font-bold flex items-center justify-center shrink-0">
-                    {selectedCallDetail.receiverInitial || 'Y'}
+                    {selectedCallDetail.receiverInitial || 'A'}
                   </span>
-                  <span>{selectedCallDetail.receiver || 'Yusif Hashimov'}</span>
+                  <span>{selectedCallDetail.receiver || 'Administrator'}</span>
                 </div>
               </div>
 

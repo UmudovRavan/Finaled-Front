@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { dealsApi, orgsApi, contactsApi, productsApi, dealProductsApi, taskManagementApi, getCurrentUser, usersApi, notesApi, callLogsApi } from '../../services/api';
 import { formatAppDate } from '../../utils/dateUtils';
@@ -29,8 +29,20 @@ import {
   ArrowTopRightOnSquareIcon,
   ChevronRightIcon,
   ComputerDesktopIcon,
-  CameraIcon
+  CameraIcon,
+  DocumentIcon,
+  ArrowDownTrayIcon,
+  EyeIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
+
+const formatFileSize = (bytes) => {
+  if (!bytes || bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+};
 
 const dealStatusList = [
   { name: 'Qualification', color: '#71717A' },
@@ -168,25 +180,25 @@ const DealDetailPage = () => {
 
   const [ownerList, setOwnerList] = useState(initialOwnerList);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const data = await usersApi.getAll();
-        const list = Array.isArray(data) ? data : (data?.items || data?.data || []);
-        if (Array.isArray(list) && list.length > 0) {
-          setOwnerList(list.map(u => ({
-            id: u.id,
-            name: u.name || u.email || 'User',
-            initial: (u.name || u.email || 'U').charAt(0).toUpperCase(),
-            email: u.email || ''
-          })));
-        }
-      } catch (err) {
-        console.warn('Notice fetching users:', err);
+  const fetchUsers = async () => {
+    try {
+      const data = await usersApi.getAll();
+      const list = Array.isArray(data) ? data : (data?.items || data?.data || []);
+      if (Array.isArray(list) && list.length > 0) {
+        const mappedUsers = list.map(u => ({
+          id: u.id || u.Id || u.userId,
+          name: u.name || u.userName || u.fullName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || 'User',
+          initial: (u.name || u.userName || u.fullName || u.firstName || u.email || 'U').charAt(0).toUpperCase(),
+          email: u.email || ''
+        }));
+        setOwnerList(mappedUsers);
+        return mappedUsers;
       }
-    };
-    fetchUsers();
-  }, []);
+    } catch (err) {
+      console.warn('Notice fetching users:', err);
+    }
+    return [];
+  };
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -737,6 +749,9 @@ const DealDetailPage = () => {
   // Real DB Notes & Call Logs State
   const [notesList, setNotesList] = useState([]);
   const [callLogsList, setCallLogsList] = useState([]);
+  const [attachmentsList, setAttachmentsList] = useState([]);
+  const [previewingId, setPreviewingId] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
   const [isNewNoteModalOpen, setIsNewNoteModalOpen] = useState(false);
   const [isNewCallModalOpen, setIsNewCallModalOpen] = useState(false);
   const [openDropdownField, setOpenDropdownField] = useState(null);
@@ -752,15 +767,174 @@ const DealDetailPage = () => {
     toNumber: '0550000000'
   });
 
-  useEffect(() => {
-    fetchProducts();
-    if (id) {
-      fetchDealDetail(id);
-      fetchDealNotesAndCalls();
+  const fetchDealAttachments = async (dealId) => {
+    if (!dealId) return;
+    try {
+      const tasks = await taskManagementApi.getAllTasks();
+      const list = Array.isArray(tasks) ? tasks : (tasks?.items || tasks?.data || []);
+      const dId = String(dealId).toLowerCase();
+      const matchedTasks = list.filter((t) => {
+        const title = (t.title || '').toLowerCase();
+        const desc = (t.description || '').toLowerCase();
+        return title.includes(`deal #${dId}`) ||
+          title.includes(`deal activity task #${dId}`) ||
+          desc.includes(`[deal_id:${dId}]`) ||
+          desc.includes(`deal #${dId}`);
+      });
+
+      const atts = [];
+      matchedTasks.forEach((t) => {
+        const rawAtts = t.attachments || t.Attachments || t.files || t.Files || t.taskAttachments || t.TaskAttachments || [];
+        if (Array.isArray(rawAtts)) {
+          rawAtts.forEach(a => {
+            atts.push({
+              id: a.id || a.Id || a.attachmentId || a.AttachmentId,
+              fileName: a.fileName || a.FileName || 'Attachment',
+              size: a.size || a.Size || a.fileSize || 0,
+              uploadedAt: a.uploadedAt || a.UploadedAt || t.createdAt || new Date().toISOString(),
+              uploadedBy: t.assignedToUser?.userName || t.assignedTo?.userName || 'Administrator'
+            });
+          });
+        }
+      });
+      setAttachmentsList(atts);
+    } catch (err) {
+      console.warn('Attachments load notice:', err);
     }
+  };
+
+  const handleDownloadAttachment = async (attachmentId, fileName) => {
+    try {
+      setDownloadingId(attachmentId);
+      await taskManagementApi.downloadAttachment(attachmentId, fileName);
+    } catch (err) {
+      showToast(err.message || 'Fayl endirilə bilmədi', 'error');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handlePreviewAttachment = async (attachmentId) => {
+    try {
+      setPreviewingId(attachmentId);
+      const res = await taskManagementApi.getAttachmentPreviewUrl(attachmentId);
+      const url = res?.url || res?.Url || res;
+      if (url && typeof url === 'string') {
+        window.open(url, '_blank');
+      } else {
+        showToast('Önbaxış linki tapılmadı', 'error');
+      }
+    } catch (err) {
+      showToast('Önbaxış açıla bilmədi', 'error');
+    } finally {
+      setPreviewingId(null);
+    }
+  };
+
+  const activitiesTimeline = useMemo(() => {
+    const items = [];
+
+    // 1. Comments
+    dealComments.forEach((c) => {
+      const authorName = c.user?.userName || c.userName || 'Administrator';
+      const date = c.createAt || c.createdAt || c.CreateAt || new Date().toISOString();
+      items.push({
+        id: `comment_${c.id || Math.random()}`,
+        type: 'comment',
+        author: authorName,
+        initial: authorName.charAt(0).toUpperCase(),
+        avatarUrl: c.user?.avatarUrl || c.avatarUrl,
+        title: language === 'az' ? 'şərh əlavə etdi' : language === 'en' ? 'added a comment' : 'добавил комментарий',
+        content: c.content || c.Content || '',
+        date: new Date(date).getTime() || 0,
+        dateFormatted: formatAppDate(date)
+      });
+    });
+
+    // 2. Notes
+    notesList.forEach((n) => {
+      const authorName = n.owner || n.createdByName || 'Administrator';
+      const date = n.createdAt || n.createdOn || new Date().toISOString();
+      items.push({
+        id: `note_${n.id || Math.random()}`,
+        type: 'note',
+        author: authorName,
+        initial: authorName.charAt(0).toUpperCase(),
+        title: language === 'az' ? 'qeyd əlavə etdi' : language === 'en' ? 'added a note' : 'добавил заметку',
+        contentTitle: n.title || 'Untitled Note',
+        content: n.content || '',
+        date: new Date(date).getTime() || 0,
+        dateFormatted: formatAppDate(date)
+      });
+    });
+
+    // 3. Calls
+    callLogsList.forEach((cl) => {
+      const callerName = cl.caller || cl.callerUserName || 'Administrator';
+      const date = cl.createdOn || cl.createdAt || new Date().toISOString();
+      items.push({
+        id: `call_${cl.id || Math.random()}`,
+        type: 'call',
+        author: callerName,
+        initial: callerName.charAt(0).toUpperCase(),
+        title: language === 'az' ? 'zəng qeydə aldı' : language === 'en' ? 'logged a call' : 'записал звонок',
+        callType: cl.type || 'Outgoing',
+        callTarget: cl.toNumber || cl.receiver || '',
+        callDuration: cl.durationInSeconds ? `${cl.durationInSeconds}s` : (cl.duration || '30s'),
+        date: new Date(date).getTime() || 0,
+        dateFormatted: formatAppDate(date)
+      });
+    });
+
+    // 4. Attachments
+    attachmentsList.forEach((att) => {
+      const date = att.uploadedAt || att.createdAt || new Date().toISOString();
+      items.push({
+        id: `att_${att.id || Math.random()}`,
+        type: 'attachment',
+        author: att.uploadedBy || 'Administrator',
+        initial: 'A',
+        title: language === 'az' ? 'fayl əlavə etdi' : language === 'en' ? 'attached a file' : 'прикрепил файл',
+        fileName: att.fileName || 'file',
+        fileSize: att.size || 0,
+        attachmentId: att.id,
+        date: new Date(date).getTime() || 0,
+        dateFormatted: formatAppDate(date)
+      });
+    });
+
+    // 5. Deal Creation Event
+    const creationDate = formData.closedDate || formData.createdAt || new Date().toISOString();
+    items.push({
+      id: 'deal_created',
+      type: 'created',
+      author: formData.dealOwner || 'Administrator',
+      initial: (formData.dealOwner || 'A').charAt(0).toUpperCase(),
+      title: language === 'az' ? 'bu sövdələşməni yaratdı' : language === 'en' ? 'created this deal' : 'создал эту сделку',
+      date: new Date(creationDate).getTime() || 0,
+      dateFormatted: formatAppDate(creationDate)
+    });
+
+    // Sort descending by date (newest first)
+    items.sort((a, b) => b.date - a.date);
+
+    return items;
+  }, [dealComments, notesList, callLogsList, attachmentsList, formData, language]);
+
+  useEffect(() => {
+    const initPage = async () => {
+      fetchProducts();
+      const users = await fetchUsers();
+      if (id) {
+        await fetchDealDetail(id, users);
+        await fetchDealNotesAndCalls(id);
+        await fetchDealAttachments(id);
+      }
+    };
+    initPage();
   }, [id]);
 
-  const fetchDealNotesAndCalls = async () => {
+  const fetchDealNotesAndCalls = async (dealId) => {
     try {
       const [allNotes, allCalls] = await Promise.all([
         notesApi.getAll().catch(() => []),
@@ -768,10 +942,12 @@ const DealDetailPage = () => {
       ]);
 
       if (Array.isArray(allNotes)) {
-        setNotesList(allNotes);
+        const dNotes = allNotes.filter(n => String(n.dealId || n.DealId) === String(dealId || id));
+        setNotesList(dNotes.length > 0 ? dNotes : allNotes.filter(n => !n.leadId && !n.LeadId));
       }
       if (Array.isArray(allCalls)) {
-        setCallLogsList(allCalls);
+        const dCalls = allCalls.filter(c => String(c.dealId || c.DealId) === String(dealId || id));
+        setCallLogsList(dCalls.length > 0 ? dCalls : allCalls.filter(c => !c.leadId && !c.LeadId));
       }
     } catch (err) {
       console.warn('Notice fetching deal notes/calls:', err);
@@ -870,11 +1046,16 @@ const DealDetailPage = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const fetchDealDetail = async (dealId) => {
+  const fetchDealDetail = async (dealId, currentOwners = null) => {
     try {
       setLoading(true);
       const data = await dealsApi.getById(dealId);
       if (data) {
+        const activeOwners = currentOwners || ownerList;
+        const ownerObj = activeOwners.find(o => String(o.id) === String(data.dealOwnerId || data.assignedToId || data.ownerId || data.userId)) ||
+                         activeOwners.find(o => o.name === (data.dealOwnerName || data.assignedTo || data.ownerName || data.owner));
+        const resolvedOwner = data.dealOwnerName || data.dealOwner?.name || ownerObj?.name || data.assignedTo || 'Administrator';
+
         setFormData({
           organizationName: data.organizationName || data.name || '',
           website: data.website || '',
@@ -883,7 +1064,7 @@ const DealDetailPage = () => {
           closedDate: data.closedDate || '',
           probability: '25.000%',
           nextStep: data.nextStep || '',
-          dealOwner: data.dealOwnerName || 'Elvin Muzaffarli',
+          dealOwner: resolvedOwner,
           status: data.statusName || data.status || 'Demo/Making',
           contactName: data.contactName || `${data.firstName || ''} ${data.lastName || ''}`.trim() || '',
           primaryEmail: data.primaryEmail || data.email || ''
@@ -900,6 +1081,8 @@ const DealDetailPage = () => {
     const dataToSave = overrideData || formData;
     try {
       setSaving(true);
+      const matchedOwner = ownerList.find(o => o.name === dataToSave.dealOwner);
+
       const payload = {
         id: id,
         chooseExistingOrganization: true,
@@ -917,7 +1100,7 @@ const DealDetailPage = () => {
         annualRevenue: parseFloat((dataToSave.annualRevenue || '0').replace(/[^0-9.]/g, '')) || 0,
         industry: null,
         status: dataToSave.status,
-        dealOwnerId: null,
+        dealOwnerId: matchedOwner?.id || null,
         organizationId: null,
         contactId: null
       };
@@ -1122,29 +1305,131 @@ const DealDetailPage = () => {
           <div className="space-y-6 flex-1">
             {/* 1. ACTIVITY TAB */}
             {activeTab === 'Activity' && (
-              <>
+              <div className="space-y-6">
                 <div className="flex items-center justify-between border-b border-[#2C2C2E]/40 pb-3.5">
                   <h1 className="text-xl font-bold text-white tracking-tight">{language === 'az' ? 'Fəaliyyət' : language === 'en' ? 'Activity' : 'Активность'}</h1>
-                  <button
-                    type="button"
-                    className="flex items-center gap-1.5 bg-[#1C1C1E] border border-[#2C2C2E] hover:border-[#3F3F46] px-3 py-1.5 rounded-xl text-xs font-semibold text-white transition-colors cursor-pointer"
-                  >
-                    <span>+ {language === 'az' ? 'Yeni' : language === 'en' ? 'New' : 'Новый'}</span>
-                    <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A]" />
-                  </button>
-                </div>
-
-                <div className="space-y-4 text-xs">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <UserGroupIcon className="w-4 h-4 text-[#A1A1AA]" />
-                      <span className="font-semibold text-white">Administrator</span>
-                      <span className="text-[#A1A1AA]">{language === 'az' ? 'bu sövdələşməni yaratdı' : language === 'en' ? 'created this deal' : 'создал эту сделку'}</span>
-                    </div>
-                    <span className="text-[11px] text-[#71717A]">{language === 'az' ? 'bayaq' : language === 'en' ? 'just now' : 'только что'}</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('Comments')}
+                      className="flex items-center gap-1.5 bg-[#1C1C1E] border border-[#2C2C2E] hover:border-[#3F3F46] px-3 py-1.5 rounded-xl text-xs font-semibold text-white transition-colors cursor-pointer"
+                    >
+                      <ChatBubbleLeftIcon className="w-3.5 h-3.5 text-sky-400" />
+                      <span>{language === 'az' ? 'Şərh yaz' : language === 'en' ? 'Add Comment' : 'Комментарий'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('Notes')}
+                      className="flex items-center gap-1.5 bg-[#1C1C1E] border border-[#2C2C2E] hover:border-[#3F3F46] px-3 py-1.5 rounded-xl text-xs font-semibold text-white transition-colors cursor-pointer"
+                    >
+                      <DocumentTextIcon className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{language === 'az' ? 'Qeyd yaz' : language === 'en' ? 'Add Note' : 'Заметка'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('Attachments')}
+                      className="flex items-center gap-1.5 bg-[#1C1C1E] border border-[#2C2C2E] hover:border-[#3F3F46] px-3 py-1.5 rounded-xl text-xs font-semibold text-white transition-colors cursor-pointer"
+                    >
+                      <PaperClipIcon className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>{language === 'az' ? 'Fayl əlavə et' : language === 'en' ? 'Attach File' : 'Прикрепить файл'}</span>
+                    </button>
                   </div>
                 </div>
-              </>
+
+                {activitiesTimeline.length === 0 ? (
+                  <div className="py-16 text-center text-[#71717A] text-xs">
+                    {language === 'az' ? 'Hələ ki heç bir fəaliyyət qeydə alınmayıb.' : language === 'en' ? 'No activities recorded yet.' : 'Активностей пока нет.'}
+                  </div>
+                ) : (
+                  <div className="space-y-6 relative pl-6 pr-1">
+                    {/* Vertical Connecting Line */}
+                    <div className="w-px bg-[#27272A] absolute left-2 top-2 bottom-2 -z-0"></div>
+
+                    {activitiesTimeline.map((item) => (
+                      <div key={item.id} className="relative z-10 space-y-2">
+                        {/* Timeline Icon Badge */}
+                        <div className="absolute -left-6 top-0.5 w-4 h-4 rounded-full bg-[#141416] border border-[#3F3F46] flex items-center justify-center text-[#A1A1AA]">
+                          {item.type === 'comment' && <ChatBubbleLeftIcon className="w-2.5 h-2.5 text-sky-400" />}
+                          {item.type === 'attachment' && <PaperClipIcon className="w-2.5 h-2.5 text-emerald-400" />}
+                          {item.type === 'call' && <PhoneIcon className="w-2.5 h-2.5 text-indigo-400" />}
+                          {item.type === 'note' && <DocumentTextIcon className="w-2.5 h-2.5 text-amber-400" />}
+                          {item.type === 'created' && <UserGroupIcon className="w-2.5 h-2.5 text-purple-400" />}
+                        </div>
+
+                        {/* Event Header */}
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2">
+                            {item.avatarUrl ? (
+                              <img src={item.avatarUrl.startsWith('http') ? item.avatarUrl : `https://api-crm.altensor.com${item.avatarUrl}`} alt="" className="w-4 h-4 rounded-full object-cover" />
+                            ) : (
+                              <span className="w-4 h-4 rounded-full bg-[#27272A] text-white text-[9px] font-bold flex items-center justify-center">{item.initial}</span>
+                            )}
+                            <span className="font-semibold text-white">{item.author}</span>
+                            <span className="text-[#A1A1AA]">{item.title}</span>
+                          </div>
+                          <span className="text-[11px] text-[#71717A]">{item.dateFormatted}</span>
+                        </div>
+
+                        {/* Event Content Body */}
+                        {item.type === 'comment' && (
+                          <div className="bg-[#1C1C1E] border border-[#2C2C2E]/60 rounded-2xl p-4 text-xs text-[#E4E4E7] font-medium leading-relaxed whitespace-pre-line shadow-xs">
+                            {item.content}
+                          </div>
+                        )}
+
+                        {item.type === 'attachment' && (
+                          <div className="bg-[#1C1C1E] border border-[#2C2C2E]/60 rounded-2xl p-3 flex items-center justify-between shadow-xs">
+                            <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                              <DocumentIcon className="w-5 h-5 text-emerald-400 shrink-0" />
+                              <div className="truncate">
+                                <span className="text-white font-medium truncate block">{item.fileName}</span>
+                                {item.fileSize > 0 && <span className="text-[10px] text-[#71717A]">{formatFileSize(item.fileSize)}</span>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => handlePreviewAttachment(item.attachmentId)}
+                                disabled={previewingId === item.attachmentId}
+                                className="p-1.5 rounded-lg bg-[#27272A] hover:bg-[#3F3F46] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                                title={language === 'az' ? 'Önbaxış' : 'Preview'}
+                              >
+                                {previewingId === item.attachmentId ? <ArrowPathIcon className="w-3.5 h-3.5 animate-spin text-sky-400" /> : <EyeIcon className="w-3.5 h-3.5" />}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadAttachment(item.attachmentId, item.fileName)}
+                                disabled={downloadingId === item.attachmentId}
+                                className="p-1.5 rounded-lg bg-[#27272A] hover:bg-[#3F3F46] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                                title={language === 'az' ? 'Endir' : 'Download'}
+                              >
+                                {downloadingId === item.attachmentId ? <ArrowPathIcon className="w-3.5 h-3.5 animate-spin text-sky-400" /> : <ArrowDownTrayIcon className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {item.type === 'note' && (
+                          <div className="bg-[#1C1C1E] border border-[#2C2C2E]/60 rounded-2xl p-4 text-xs space-y-1.5 shadow-xs">
+                            <div className="font-bold text-white text-sm">{item.contentTitle}</div>
+                            <div className="text-[#D4D4D8] whitespace-pre-line" dangerouslySetInnerHTML={{ __html: item.content }} />
+                          </div>
+                        )}
+
+                        {item.type === 'call' && (
+                          <div className="bg-[#1C1C1E] border border-[#2C2C2E]/60 rounded-2xl p-3 flex items-center justify-between shadow-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 rounded-full bg-[#27272A] text-sky-400 font-medium text-[10px]">{item.callType}</span>
+                              <span className="text-white">{item.callTarget}</span>
+                            </div>
+                            <span className="text-[#A1A1AA] text-[11px]">{item.callDuration}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
 
             {/* 2. EMAILS TAB */}

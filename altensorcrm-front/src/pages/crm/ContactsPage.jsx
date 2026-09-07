@@ -380,6 +380,8 @@ const mapGenderToEnum = (gen) => {
       orgName = contactForm.existingOrg;
     }
 
+    const ownerObj = ownersList.find((o) => o.name === contactForm.owner) || ownersList[0];
+
     const contactObj = {
       id: String(Date.now()),
       email: contactForm.primaryEmail ? contactForm.primaryEmail.trim() : 'user@example.com',
@@ -407,7 +409,7 @@ const mapGenderToEnum = (gen) => {
         addressId: null,
         address: null,
         organizationId: null,
-        assignedUserId: null
+        assignedUserId: ownerObj?.id || null
       };
 
       console.log('Submitting Contact Payload to Backend:', payload);

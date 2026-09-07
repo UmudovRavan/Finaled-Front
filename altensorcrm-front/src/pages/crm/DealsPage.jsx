@@ -162,14 +162,17 @@ const DealsPage = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
-    fetchBackendDeals();
-    fetchUsers();
+    const initData = async () => {
+      const users = await fetchUsers();
+      await fetchBackendDeals(users);
+    };
+    initData();
   }, []);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await fetchBackendDeals();
-    await fetchUsers();
+    const users = await fetchUsers();
+    await fetchBackendDeals(users);
     setTimeout(() => setIsRefreshing(false), 400);
   };
 
@@ -178,16 +181,19 @@ const DealsPage = () => {
       const data = await usersApi.getAll();
       const list = Array.isArray(data) ? data : (data?.items || data?.data || []);
       if (Array.isArray(list) && list.length > 0) {
-        setOwnersList(list.map(u => ({
-          id: u.id,
-          name: u.name || u.email || 'User',
-          initial: (u.name || u.email || 'U').charAt(0).toUpperCase(),
+        const mappedUsers = list.map(u => ({
+          id: u.id || u.Id || u.userId,
+          name: u.name || u.userName || u.fullName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || 'User',
+          initial: (u.name || u.userName || u.fullName || u.firstName || u.email || 'U').charAt(0).toUpperCase(),
           email: u.email || ''
-        })));
+        }));
+        setOwnersList(mappedUsers);
+        return mappedUsers;
       }
     } catch (err) {
       console.warn('Notice fetching users in DealsPage:', err);
     }
+    return [];
   };
 
   const mapDealStatusToEnum = (statusName) => {
@@ -211,15 +217,54 @@ const DealsPage = () => {
     return 'Qualification';
   };
 
-  const fetchBackendDeals = async () => {
+  const extractDealOwnerInfo = (d, activeOwners) => {
+    const rawOwnerName =
+      (typeof d.dealOwnerName === 'string' ? d.dealOwnerName : '') ||
+      (typeof d.DealOwnerName === 'string' ? d.DealOwnerName : '') ||
+      (typeof d.dealOwner === 'string' ? d.dealOwner : (d.dealOwner?.name || d.dealOwner?.userName || d.dealOwner?.fullName || '')) ||
+      (typeof d.DealOwner === 'string' ? d.DealOwner : (d.DealOwner?.name || d.DealOwner?.userName || d.DealOwner?.fullName || '')) ||
+      (typeof d.assignedTo === 'string' ? d.assignedTo : (d.assignedTo?.name || d.assignedTo?.userName || '')) ||
+      (typeof d.AssignedTo === 'string' ? d.AssignedTo : (d.AssignedTo?.name || d.AssignedTo?.userName || '')) ||
+      (typeof d.assignedUserName === 'string' ? d.assignedUserName : '') ||
+      (typeof d.assignedUser === 'string' ? d.assignedUser : (d.assignedUser?.name || d.assignedUser?.userName || d.assignedUser?.fullName || '')) ||
+      (typeof d.ownerName === 'string' ? d.ownerName : '') ||
+      (typeof d.OwnerName === 'string' ? d.OwnerName : '') ||
+      (typeof d.owner === 'string' ? d.owner : (d.owner?.name || d.owner?.userName || '')) ||
+      '';
+
+    const rawOwnerId =
+      d.dealOwnerId || d.DealOwnerId ||
+      d.assignedToId || d.AssignedToId ||
+      d.assignedUserId || d.AssignedUserId ||
+      d.ownerId || d.OwnerId ||
+      d.userId || d.UserId ||
+      (typeof d.dealOwner === 'object' ? (d.dealOwner?.id || d.dealOwner?.Id) : null) ||
+      (typeof d.assignedTo === 'object' ? (d.assignedTo?.id || d.assignedTo?.Id) : null) ||
+      (typeof d.assignedUser === 'object' ? (d.assignedUser?.id || d.assignedUser?.Id) : null) ||
+      (typeof d.owner === 'object' ? (d.owner?.id || d.owner?.Id) : null) ||
+      null;
+
+    const matchedById = rawOwnerId ? activeOwners.find(o => String(o.id).toLowerCase() === String(rawOwnerId).toLowerCase()) : null;
+    const matchedByName = rawOwnerName ? activeOwners.find(o => o.name.toLowerCase() === rawOwnerName.toLowerCase()) : null;
+    const ownerObj = matchedById || matchedByName;
+
+    const ownerStr = rawOwnerName || ownerObj?.name || (d.assignedTo && typeof d.assignedTo === 'string' ? d.assignedTo : 'Administrator');
+    const ownerInitial = ownerObj?.initial || (ownerStr ? ownerStr.charAt(0).toUpperCase() : 'A');
+    const ownerEmail = ownerObj?.email || 'admin@altensor.io';
+
+    return { ownerStr, ownerInitial, ownerEmail };
+  };
+
+  const fetchBackendDeals = async (currentOwners = null) => {
     try {
       setLoading(true);
       const data = await dealsApi.getAll();
       if (data && (data.items || Array.isArray(data))) {
         const list = data.items || data;
+        const activeOwners = currentOwners || ownersList;
         const mapped = list.map(d => {
           const orgStr = d.organizationName || d.OrganizationName || 'Organization';
-          const ownerStr = d.dealOwnerName || d.assignedTo || 'Administrator';
+          const { ownerStr, ownerInitial, ownerEmail } = extractDealOwnerInfo(d, activeOwners);
           const rawStatus = d.statusName || d.status;
           const statusStr = mapEnumToDealStatusDisplay(rawStatus);
           const revVal = typeof d.annualRevenue === 'number' ? `$ ${d.annualRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : `$ ${d.annualRevenue || '0.00'}`;
@@ -232,12 +277,35 @@ const DealsPage = () => {
             email: d.primaryEmail || d.email || 'user@example.com',
             mobile: d.primaryMobileNo || d.mobile || '0551234567',
             assignedTo: ownerStr,
-            assignedInitial: ownerStr.charAt(0).toUpperCase() || 'A',
-            assignedEmail: 'admin@altensor.io',
+            assignedInitial: ownerInitial,
+            assignedEmail: ownerEmail,
             lastModified: 'Just now'
           };
         });
         setDeals(mapped);
+
+        // Enrich with getById to ensure 100% sync with DealDetailPage
+        try {
+          const detailPromises = list.map(d => dealsApi.getById(d.id || d.Id).catch(() => null));
+          const details = await Promise.all(detailPromises);
+          let hasUpdates = false;
+          const enriched = mapped.map((m, idx) => {
+            const d = details[idx];
+            if (d) {
+              const { ownerStr: dOwner, ownerInitial: dInit, ownerEmail: dMail } = extractDealOwnerInfo(d, activeOwners);
+              if (dOwner && dOwner !== 'Administrator' && dOwner !== m.assignedTo) {
+                hasUpdates = true;
+                return { ...m, assignedTo: dOwner, assignedInitial: dInit, assignedEmail: dMail };
+              }
+            }
+            return m;
+          });
+          if (hasUpdates) {
+            setDeals(enriched);
+          }
+        } catch (enrichErr) {
+          console.warn('Notice enriching deals owner details:', enrichErr);
+        }
       }
     } catch (err) {
       console.warn('Backend API deals fetch notice:', err.message);
@@ -499,7 +567,7 @@ const DealsPage = () => {
         annualRevenue: numRevenue,
         industry: null,
         status: mapDealStatusToEnum(dealForm.status),
-        dealOwnerId: null,
+        dealOwnerId: ownerObj?.id || null,
         sourceLeadId: null,
         organizationId: null,
         contactId: null
