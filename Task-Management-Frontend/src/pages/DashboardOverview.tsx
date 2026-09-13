@@ -6,7 +6,7 @@ import { dashboardService, notificationService, authService } from '../api';
 import type { DashboardOverviewResponse } from '../api/dashboardService';
 import type { TaskResponse, NotificationResponse } from '../dto';
 import { TaskStatus } from '../dto';
-import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
+import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, formatDateTime } from '../utils';
 import type { UserInfo } from '../utils';
 import { useLanguage } from '../context/LanguageContext';
 import {
@@ -581,7 +581,7 @@ const DashboardOverview: React.FC = () => {
                                                     <td className="py-3 text-[#A1A1AA]">
                                                         <div className="flex items-center gap-1">
                                                             <ClockIcon className="w-3.5 h-3.5 text-[#71717A]" />
-                                                            <span>{new Date(tItem.deadline).toLocaleDateString(language === 'ru' ? 'ru-RU' : language === 'en' ? 'en-US' : 'az-AZ')}</span>
+                                                            <span>{formatDateTime(tItem.deadline)}</span>
                                                         </div>
                                                     </td>
                                                     <td className="py-3 pr-1 text-right">

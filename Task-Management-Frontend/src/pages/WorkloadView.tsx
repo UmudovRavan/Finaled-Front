@@ -5,7 +5,7 @@ import KpiCard from '../components/KpiCard';
 import { workloadService, userService, taskService, notificationService, authService } from '../api';
 import type { EmployeeWorkloadDTO, NotificationResponse, TaskResponse, UserResponse } from '../dto';
 import { TaskStatus, Priority } from '../dto';
-import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
+import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, formatDateTime } from '../utils';
 import type { UserInfo } from '../utils';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -68,6 +68,23 @@ const WorkloadView: React.FC = () => {
         fetchWorkloadData();
     }, [navigate]);
 
+    const matchUserTasks = (userId: string, userName?: string, userEmail?: string, tasks: TaskResponse[] = []): TaskResponse[] => {
+        const targetId = String(userId || '').trim().toLowerCase();
+        const targetName = String(userName || '').trim().toLowerCase();
+        const targetEmail = String(userEmail || '').trim().toLowerCase();
+
+        return tasks.filter((t) => {
+            if (!t) return false;
+            const taskUserId = String(t.assignedToUserId || '').trim().toLowerCase();
+            const taskUserName = String(t.assignedToUserName || '').trim().toLowerCase();
+
+            if (targetId && taskUserId && targetId === taskUserId) return true;
+            if (targetName && taskUserName && targetName === taskUserName) return true;
+            if (targetEmail && (taskUserId === targetEmail || taskUserName === targetEmail)) return true;
+            return false;
+        });
+    };
+
     const fetchWorkloadData = async () => {
         try {
             setRefreshing(true);
@@ -80,58 +97,79 @@ const WorkloadView: React.FC = () => {
 
             setNotifications(notifs);
 
-            // If server returned workloads, use them; otherwise compute from users & tasks
-            if (serverWorkloads.length > 0) {
-                // Enrich server workloads with task list if not present
-                const enriched = (serverWorkloads as EmployeeWorkloadDTO[]).map((w: EmployeeWorkloadDTO) => {
-                    const userTasks = (allTasks as TaskResponse[]).filter((t: TaskResponse) => t.assignedToUserId === w.userId);
-                    return {
-                        ...w,
-                        tasks: w.tasks || userTasks,
-                    };
-                });
-                setWorkloads(enriched);
-            } else {
-                // Compute workloads on the client
-                const computed: EmployeeWorkloadDTO[] = (users as UserResponse[]).map((u: UserResponse) => {
-                    const uTasks = (allTasks as TaskResponse[]).filter((t: TaskResponse) => t.assignedToUserId === u.id);
-                    const activeTasks = uTasks.filter((t: TaskResponse) =>
-                        t.status === TaskStatus.InProgress ||
-                        t.status === TaskStatus.Assigned ||
-                        t.status === TaskStatus.Pending ||
-                        t.status === TaskStatus.UnderReview
-                    );
-                    const completedTasks = uTasks.filter((t: TaskResponse) => t.status === TaskStatus.Completed);
-                    const hardTasks = activeTasks.filter((t: TaskResponse) => t.difficulty === 2);
-                    const mediumTasks = activeTasks.filter((t: TaskResponse) => t.difficulty === 1);
-                    const easyTasks = activeTasks.filter((t: TaskResponse) => t.difficulty === 0);
-                    const hasUrgent = activeTasks.some((t: TaskResponse) => t.priority === Priority.Urgent);
-                    const activeCount = activeTasks.length;
-                    const maxActive = 5;
-                    const workloadPercentage = Math.min(100, Math.round((activeCount / maxActive) * 100));
-                    const isOverloaded = activeCount >= 5;
+            const userList: { id: string; name: string; email?: string }[] = [];
+            const seenIds = new Set<string>();
 
-                    return {
-                        userId: u.id,
-                        userName: u.userName || u.email || 'İstifadəçi',
-                        userEmail: u.email,
-                        activeTaskCount: activeCount,
-                        totalTaskCount: uTasks.length,
-                        completedTaskCount: completedTasks.length,
-                        hardTaskCount: hardTasks.length,
-                        mediumTaskCount: mediumTasks.length,
-                        easyTaskCount: easyTasks.length,
-                        workloadPercentage,
-                        isOverloaded,
-                        hasUrgentTasks: hasUrgent,
-                        tasks: uTasks,
-                    };
-                });
+            // First add users from serverWorkloads
+            serverWorkloads.forEach((w) => {
+                const id = String(w.userId || '').trim();
+                if (id && !seenIds.has(id.toLowerCase())) {
+                    seenIds.add(id.toLowerCase());
+                    userList.push({ id: w.userId, name: w.userName || 'İstifadəçi', email: w.userEmail });
+                }
+            });
 
-                // Sort by active tasks descending
-                computed.sort((a, b) => b.activeTaskCount - a.activeTaskCount);
-                setWorkloads(computed);
-            }
+            // Then add remaining from users API
+            users.forEach((u) => {
+                const id = String(u.id || '').trim();
+                if (id && !seenIds.has(id.toLowerCase())) {
+                    seenIds.add(id.toLowerCase());
+                    userList.push({ id: u.id, name: u.userName || u.email || 'İstifadəçi', email: u.email });
+                }
+            });
+
+            // Compute unified workload items with accurately matched tasks
+            const unified: EmployeeWorkloadDTO[] = userList.map((u) => {
+                const serverItem = serverWorkloads.find((sw) => String(sw.userId).toLowerCase() === String(u.id).toLowerCase());
+                const serverTasks = (serverItem?.tasks && Array.isArray(serverItem.tasks) && serverItem.tasks.length > 0)
+                    ? serverItem.tasks
+                    : [];
+
+                const clientMatchedTasks = matchUserTasks(u.id, u.name, u.email, allTasks as TaskResponse[]);
+
+                // Combine tasks removing duplicates
+                const taskMap = new Map<string, TaskResponse>();
+                serverTasks.forEach((t) => t?.id && taskMap.set(String(t.id), t));
+                clientMatchedTasks.forEach((t) => t?.id && taskMap.set(String(t.id), t));
+                const uTasks = Array.from(taskMap.values());
+
+                const activeTasks = uTasks.filter((t) =>
+                    t.status === TaskStatus.InProgress ||
+                    t.status === TaskStatus.Assigned ||
+                    t.status === TaskStatus.Pending ||
+                    t.status === TaskStatus.UnderReview
+                );
+                const completedTasks = uTasks.filter((t) => t.status === TaskStatus.Completed);
+                const hardTasks = activeTasks.filter((t) => Number(t.difficulty) === 2);
+                const mediumTasks = activeTasks.filter((t) => Number(t.difficulty) === 1);
+                const easyTasks = activeTasks.filter((t) => Number(t.difficulty) === 0);
+                const hasUrgent = activeTasks.some((t) => t.priority === Priority.Urgent);
+                const activeCount = activeTasks.length;
+                const maxActive = 5;
+                const workloadPercentage = Math.min(100, Math.round((activeCount / maxActive) * 100));
+                const isOverloaded = activeCount >= 5;
+
+                return {
+                    userId: u.id,
+                    userName: serverItem?.userName || u.name,
+                    userEmail: serverItem?.userEmail || u.email,
+                    avatarUrl: serverItem?.avatarUrl,
+                    activeTaskCount: activeCount,
+                    totalTaskCount: uTasks.length,
+                    completedTaskCount: completedTasks.length,
+                    hardTaskCount: hardTasks.length,
+                    mediumTaskCount: mediumTasks.length,
+                    easyTaskCount: easyTasks.length,
+                    workloadPercentage,
+                    isOverloaded,
+                    hasUrgentTasks: hasUrgent,
+                    tasks: uTasks,
+                };
+            });
+
+            // Sort by active task count descending
+            unified.sort((a, b) => b.activeTaskCount - a.activeTaskCount);
+            setWorkloads(unified);
         } catch (err) {
             console.error('Workload fetch error:', err);
         } finally {
@@ -165,6 +203,40 @@ const WorkloadView: React.FC = () => {
         if (percentage >= 80) return 'bg-rose-500 text-rose-400';
         if (percentage >= 60) return 'bg-amber-500 text-amber-400';
         return 'bg-emerald-500 text-emerald-400';
+    };
+
+    const getStatusBadge = (status: TaskStatus) => {
+        switch (status) {
+            case TaskStatus.Pending:
+                return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20">Gözləmədə</span>;
+            case TaskStatus.Assigned:
+                return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/20">Təyin edilib</span>;
+            case TaskStatus.InProgress:
+                return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">İcrada</span>;
+            case TaskStatus.UnderReview:
+                return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-500/15 text-purple-400 border border-purple-500/20">Yoxlamada</span>;
+            case TaskStatus.Completed:
+                return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">Tamamlandı</span>;
+            case TaskStatus.Expired:
+                return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/20">Gecikib</span>;
+            case TaskStatus.Canceled:
+                return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-zinc-500/15 text-zinc-400 border border-zinc-500/20">Ləğv edilib</span>;
+            default:
+                return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-zinc-500/15 text-zinc-400 border border-zinc-500/20">Status {status}</span>;
+        }
+    };
+
+    const getPriorityBadge = (priority?: Priority) => {
+        if (priority === Priority.Urgent) {
+            return <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">Təcili</span>;
+        }
+        if (priority === Priority.High) {
+            return <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-orange-500/20 text-orange-400 border border-orange-500/30">Yüksək</span>;
+        }
+        if (priority === Priority.Normal || (priority as unknown as number) === 1) {
+            return <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-amber-500/15 text-amber-400/90 border border-amber-500/20">Orta</span>;
+        }
+        return <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-zinc-500/15 text-zinc-400 border border-zinc-500/20">Aşağı</span>;
     };
 
     return (
@@ -374,26 +446,49 @@ const WorkloadView: React.FC = () => {
                                                 </div>
                                             )}
 
-                                            {/* Expanded Active Tasks List */}
+                                            {/* Expanded Tasks List */}
                                             {isExpanded && (
-                                                <div className="mt-3 pt-3 border-t border-[#27272A] space-y-2 max-h-48 overflow-y-auto pr-1 animate-in fade-in duration-150">
-                                                    <span className="text-[10px] font-bold text-[#71717A] uppercase block mb-1">
-                                                        Aktiv Tapşırıqlar ({activeTasks.length})
-                                                    </span>
-                                                    {activeTasks.length === 0 ? (
-                                                        <p className="text-xs text-[#71717A]">Aktiv tapşırıq yoxdur</p>
+                                                <div className="mt-3 pt-3 border-t border-[#27272A] space-y-2 max-h-60 overflow-y-auto pr-1 animate-in fade-in duration-150">
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <span className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider">
+                                                            Tapşırıqlar ({(w.tasks || []).length})
+                                                        </span>
+                                                        <span className="text-[10px] text-amber-400/90 font-medium">
+                                                            {w.activeTaskCount} aktiv
+                                                        </span>
+                                                    </div>
+                                                    {(!w.tasks || w.tasks.length === 0) ? (
+                                                        <p className="text-xs text-[#71717A] py-2 text-center">Bu əməkdaşa təyin olunmuş tapşırıq yoxdur</p>
                                                     ) : (
-                                                        activeTasks.map((t) => (
+                                                        w.tasks.map((t) => (
                                                             <div
                                                                 key={t.id}
                                                                 onClick={() => navigate(`/tasks/${t.id}`)}
-                                                                className="p-2 rounded-lg bg-[#27272A]/50 hover:bg-[#27272A] border border-[#27272A] text-xs text-white cursor-pointer transition-colors flex items-center justify-between gap-2"
+                                                                className="p-2.5 rounded-xl bg-[#27272A]/40 hover:bg-[#27272A] border border-[#27272A] hover:border-[#3F3F46] text-xs text-white cursor-pointer transition-all flex flex-col gap-1.5 group"
                                                             >
-                                                                <span className="truncate">{t.title}</span>
-                                                                {t.priority === Priority.Urgent && (
-                                                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500/20 text-rose-400 flex-shrink-0">
-                                                                        Təcili
+                                                                <div className="flex items-start justify-between gap-2">
+                                                                    <span className="font-medium text-white group-hover:text-amber-400 transition-colors line-clamp-1">
+                                                                        {t.title}
                                                                     </span>
+                                                                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                                        {getPriorityBadge(t.priority)}
+                                                                        {getStatusBadge(t.status)}
+                                                                    </div>
+                                                                </div>
+
+                                                                {(t.projectName || t.deadline) && (
+                                                                    <div className="flex items-center justify-between text-[10px] text-[#71717A]">
+                                                                        {t.projectName ? (
+                                                                            <span className="truncate max-w-[150px] text-[#A1A1AA]">
+                                                                                📁 {t.projectName}
+                                                                            </span>
+                                                                        ) : <span />}
+                                                                        {t.deadline && (
+                                                                            <span>
+                                                                                📅 {formatDateTime(t.deadline)}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         ))

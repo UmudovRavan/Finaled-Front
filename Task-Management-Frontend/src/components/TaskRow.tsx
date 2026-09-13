@@ -3,6 +3,7 @@ import type { TaskResponse } from '../dto';
 import { TaskStatus } from '../dto';
 import TaskStatusBadge from './TaskStatusBadge';
 import DifficultyDots from './DifficultyDots';
+import { formatDateTime } from '../utils';
 
 interface TaskRowProps {
     task: TaskResponse;
@@ -15,12 +16,7 @@ interface TaskRowProps {
 
 const TaskRow: React.FC<TaskRowProps> = ({ task, currentUserId, onEdit, onDelete, onView, onPerformance }) => {
     const formatDate = (dateStr: string): string => {
-        const date = new Date(dateStr);
-        return date.toLocaleDateString('az-AZ', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-        });
+        return formatDateTime(dateStr);
     };
 
     const isOverdue = (): boolean => {

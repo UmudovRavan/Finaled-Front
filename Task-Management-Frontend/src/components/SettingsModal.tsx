@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { authService, userService } from '../api';
+import { authService, userService, tenantSettingsService } from '../api';
 import { parseJwtToken, getPrimaryRole, getProfilePictureUrl } from '../utils';
 import type { UserInfo } from '../utils';
-import type { UserResponse } from '../dto';
+import type { UserResponse, TenantSettingsDTO } from '../dto';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import {
@@ -67,6 +67,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     const [usersLoading, setUsersLoading] = useState(false);
     const [userSearch, setUserSearch] = useState('');
 
+    // Tenant / System Email Notification State
+    const [tenantSettings, setTenantSettings] = useState<TenantSettingsDTO>({
+        overdueTaskNotificationEmail: '',
+        isOverdueNotificationEnabled: true,
+    });
+    const [isEditingNotificationEmail, setIsEditingNotificationEmail] = useState(false);
+    const [emailDraft, setEmailDraft] = useState('');
+    const [savingTenantSettings, setSavingTenantSettings] = useState(false);
+
     // Message Toast
     const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -74,6 +83,40 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     const showToast = (text: string, type: 'success' | 'error' = 'success') => {
         setToastMessage({ text, type });
         setTimeout(() => setToastMessage(null), 3500);
+    };
+
+    const handleSaveEmail = async (overrideEmail?: string) => {
+        setSavingTenantSettings(true);
+        const emailToSave = overrideEmail !== undefined ? overrideEmail : emailDraft;
+        try {
+            const updated = await tenantSettingsService.updateSettings({
+                ...tenantSettings,
+                overdueTaskNotificationEmail: emailToSave,
+            });
+            setTenantSettings(updated);
+            setEmailDraft(updated.overdueTaskNotificationEmail || '');
+            setIsEditingNotificationEmail(false);
+            showToast('E-poçt bildiriş tənzimləməsi uğurla yadda saxlanıldı!', 'success');
+        } catch (err: any) {
+            showToast(err?.response?.data?.message || 'Tənzimləmələri yadda saxlamaq mümkün olmadı', 'error');
+        } finally {
+            setSavingTenantSettings(false);
+        }
+    };
+
+    const handleToggleNotification = async () => {
+        const nextState = !tenantSettings.isOverdueNotificationEnabled;
+        setTenantSettings((prev) => ({ ...prev, isOverdueNotificationEnabled: nextState }));
+        try {
+            const updated = await tenantSettingsService.updateSettings({
+                ...tenantSettings,
+                isOverdueNotificationEnabled: nextState,
+            });
+            setTenantSettings(updated);
+            showToast(nextState ? 'E-poçt bildirişləri aktivləşdirildi' : 'E-poçt bildirişləri deaktiv edildi', 'success');
+        } catch {
+            setTenantSettings((prev) => ({ ...prev, isOverdueNotificationEnabled: !nextState }));
+        }
     };
 
     useEffect(() => {
@@ -86,6 +129,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                     setNewUserName(parsed.userName || '');
                 }
             }
+            tenantSettingsService.getSettings()
+                .then((data) => {
+                    if (data) {
+                        setTenantSettings(data);
+                        setEmailDraft(data.overdueTaskNotificationEmail || '');
+                    }
+                })
+                .catch(() => { });
         }
     }, [isOpen]);
 
@@ -262,11 +313,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
                             <button
                                 onClick={() => setActiveTab('profile')}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                                    activeTab === 'profile'
+                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${activeTab === 'profile'
                                         ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
                                         : 'text-[#D4D4D8] hover:bg-white/5 hover:text-white'
-                                }`}
+                                    }`}
                             >
                                 <div className="w-5 h-5 rounded-md bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center font-bold text-[10px]">
                                     {userInitial}
@@ -276,11 +326,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
                             <button
                                 onClick={() => setActiveTab('preferences')}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                                    activeTab === 'preferences'
+                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${activeTab === 'preferences'
                                         ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
                                         : 'text-[#D4D4D8] hover:bg-white/5 hover:text-white'
-                                }`}
+                                    }`}
                             >
                                 <SwatchIcon className="w-4 h-4 text-[#A1A1AA]" />
                                 <span>{t('settings.preferences', {}, 'Tərcihlər')}</span>
@@ -295,11 +344,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
                             <button
                                 onClick={() => setActiveTab('general')}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                                    activeTab === 'general'
+                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${activeTab === 'general'
                                         ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
                                         : 'text-[#D4D4D8] hover:bg-white/5 hover:text-white'
-                                }`}
+                                    }`}
                             >
                                 <Cog6ToothIcon className="w-4 h-4 text-[#A1A1AA]" />
                                 <span>{t('settings.general', {}, 'Ümumi')}</span>
@@ -307,11 +355,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
                             <button
                                 onClick={() => setActiveTab('dashboard')}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                                    activeTab === 'dashboard'
+                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${activeTab === 'dashboard'
                                         ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
                                         : 'text-[#D4D4D8] hover:bg-white/5 hover:text-white'
-                                }`}
+                                    }`}
                             >
                                 <Squares2X2Icon className="w-4 h-4 text-[#A1A1AA]" />
                                 <span>{t('nav.dashboard', {}, 'Dashboard')}</span>
@@ -319,11 +366,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
                             <button
                                 onClick={() => setActiveTab('brand')}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                                    activeTab === 'brand'
+                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${activeTab === 'brand'
                                         ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
                                         : 'text-[#D4D4D8] hover:bg-white/5 hover:text-white'
-                                }`}
+                                    }`}
                             >
                                 <BuildingOfficeIcon className="w-4 h-4 text-[#A1A1AA]" />
                                 <span>{t('settings.brandLogo', {}, 'Brend & Loqo')}</span>
@@ -339,11 +385,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
                                 <button
                                     onClick={() => setActiveTab('users')}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                                        activeTab === 'users'
+                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${activeTab === 'users'
                                             ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
                                             : 'text-[#D4D4D8] hover:bg-white/5 hover:text-white'
-                                    }`}
+                                        }`}
                                 >
                                     <UserGroupIcon className="w-4 h-4 text-[#A1A1AA]" />
                                     <span>{t('settings.users', {}, 'İstifadəçilər')}</span>
@@ -373,21 +418,21 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                 {activeTab === 'profile'
                                     ? t('settings.profileTab', {}, 'Profil')
                                     : activeTab === 'preferences'
-                                    ? t('settings.preferences', {}, 'Tərcihlər')
-                                    : activeTab === 'users'
-                                    ? t('settings.users', {}, 'İstifadəçilər')
-                                    : activeTab === 'general'
-                                    ? t('settings.generalTab', {}, 'Ümumi Parametrlər')
-                                    : activeTab === 'dashboard'
-                                    ? t('nav.dashboard', {}, 'Dashboard')
-                                    : t('settings.brandLogo', {}, 'Brend Tənzimləmələri')}
+                                        ? t('settings.preferences', {}, 'Tərcihlər')
+                                        : activeTab === 'users'
+                                            ? t('settings.users', {}, 'İstifadəçilər')
+                                            : activeTab === 'general'
+                                                ? t('settings.generalTab', {}, 'Ümumi Parametrlər')
+                                                : activeTab === 'dashboard'
+                                                    ? t('nav.dashboard', {}, 'Dashboard')
+                                                    : t('settings.brandLogo', {}, 'Brend Tənzimləmələri')}
                             </h2>
                             <p className="text-xs text-[#71717A]">
                                 {activeTab === 'profile'
                                     ? t('settings.subtitle', {}, 'Profil və giriş məlumatlarınızı idarə edin.')
                                     : activeTab === 'preferences'
-                                    ? t('settings.preferencesSubtitle', {}, 'Görünüş, dil və bildiriş tərcihlərinizi fərdiləşdirin.')
-                                    : t('settings.generalSubtitle', {}, 'Sistem parametrlərinin idarəsi.')}
+                                        ? t('settings.preferencesSubtitle', {}, 'Görünüş, dil və bildiriş tərcihlərinizi fərdiləşdirin.')
+                                        : t('settings.generalSubtitle', {}, 'Sistem parametrlərinin idarəsi.')}
                             </p>
                         </div>
 
@@ -403,11 +448,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                     {/* Toast Notification */}
                     {toastMessage && (
                         <div
-                            className={`mx-6 mt-4 p-3 rounded-xl text-xs flex items-center gap-2 animate-in fade-in duration-150 ${
-                                toastMessage.type === 'success'
+                            className={`mx-6 mt-4 p-3 rounded-xl text-xs flex items-center gap-2 animate-in fade-in duration-150 ${toastMessage.type === 'success'
                                     ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
                                     : 'bg-rose-500/10 border border-rose-500/20 text-rose-400'
-                            }`}
+                                }`}
                         >
                             {toastMessage.type === 'success' ? (
                                 <CheckIcon className="w-4 h-4 shrink-0" />
@@ -522,14 +566,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                         {/* Row 1: E-poçtlar & İmza */}
                                         <div className="flex items-center justify-between p-4 rounded-xl bg-[#18181B] border border-[#27272A]">
                                             <div className="space-y-0.5">
-                                                <p className="text-xs font-bold text-white">E-poçtlar & İmza</p>
+                                                <p className="text-xs font-bold text-white">E-poçtlar & Gecikmə Bildirişləri</p>
                                                 <p className="text-[11px] text-[#71717A]">
-                                                    Yazışmalar və bildirişlər üçün e-poçt imzanızı tənzimləyin.
+                                                    Gecikmiş tapşırıqların hesabatının göndəriləcəyi e-poçt ünvanını tənzimləyin.
                                                 </p>
                                             </div>
                                             <button
-                                                onClick={() => showToast('İmza tənzimləmələri aktivdir')}
-                                                className="px-3.5 py-1.5 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] text-xs font-semibold text-white transition-colors cursor-pointer"
+                                                onClick={() => setActiveTab('general')}
+                                                className="px-3.5 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-xs font-semibold text-blue-400 transition-colors cursor-pointer"
                                             >
                                                 Quraşdır
                                             </button>
@@ -602,11 +646,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                         {/* 1. Light Theme Card */}
                                         <div
                                             onClick={() => setTheme('light')}
-                                            className={`rounded-2xl p-3 border transition-all cursor-pointer flex flex-col justify-between h-32 ${
-                                                theme === 'light'
+                                            className={`rounded-2xl p-3 border transition-all cursor-pointer flex flex-col justify-between h-32 ${theme === 'light'
                                                     ? 'border-blue-500 bg-[#1C1C1E] shadow-lg ring-1 ring-blue-500/40'
                                                     : 'border-[#27272A] bg-[#141416] hover:border-[#3F3F46]'
-                                            }`}
+                                                }`}
                                         >
                                             <div className="bg-white rounded-lg p-2 h-16 border border-zinc-200 flex flex-col justify-between overflow-hidden shadow-xs">
                                                 <div className="flex items-center gap-1">
@@ -623,9 +666,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                             <div className="flex items-center justify-between pt-2">
                                                 <span className="text-xs text-[#D4D4D8] font-semibold">{t('settings.lightTheme', {}, 'Açıq (Light)')}</span>
                                                 <div
-                                                    className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
-                                                        theme === 'light' ? 'border-blue-500 bg-blue-500' : 'border-[#52525B]'
-                                                    }`}
+                                                    className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${theme === 'light' ? 'border-blue-500 bg-blue-500' : 'border-[#52525B]'
+                                                        }`}
                                                 >
                                                     {theme === 'light' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
                                                 </div>
@@ -635,11 +677,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                         {/* 2. Dark Theme Card (Charcoal) */}
                                         <div
                                             onClick={() => setTheme('dark')}
-                                            className={`rounded-2xl p-3 border transition-all cursor-pointer flex flex-col justify-between h-32 ${
-                                                theme === 'dark'
+                                            className={`rounded-2xl p-3 border transition-all cursor-pointer flex flex-col justify-between h-32 ${theme === 'dark'
                                                     ? 'border-blue-500 bg-[#1C1C1E] shadow-lg ring-1 ring-blue-500/40'
                                                     : 'border-[#27272A] bg-[#141416] hover:border-[#3F3F46]'
-                                            }`}
+                                                }`}
                                         >
                                             <div className="bg-[#18181B] rounded-lg p-2 h-16 border border-[#27272A] flex flex-col justify-between overflow-hidden shadow-xs">
                                                 <div className="flex items-center gap-1">
@@ -656,9 +697,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                             <div className="flex items-center justify-between pt-2">
                                                 <span className="text-xs text-[#D4D4D8] font-semibold">{t('settings.darkTheme', {}, 'Qaranlıq (Dark)')}</span>
                                                 <div
-                                                    className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
-                                                        theme === 'dark' ? 'border-blue-500 bg-blue-500' : 'border-[#52525B]'
-                                                    }`}
+                                                    className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${theme === 'dark' ? 'border-blue-500 bg-blue-500' : 'border-[#52525B]'
+                                                        }`}
                                                 >
                                                     {theme === 'dark' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
                                                 </div>
@@ -668,11 +708,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                         {/* 3. Midnight Theme Card */}
                                         <div
                                             onClick={() => setTheme('midnight')}
-                                            className={`rounded-2xl p-3 border transition-all cursor-pointer flex flex-col justify-between h-32 ${
-                                                theme === 'midnight'
+                                            className={`rounded-2xl p-3 border transition-all cursor-pointer flex flex-col justify-between h-32 ${theme === 'midnight'
                                                     ? 'border-blue-500 bg-[#1C1C1E] shadow-lg ring-1 ring-blue-500/40'
                                                     : 'border-[#27272A] bg-[#141416] hover:border-[#3F3F46]'
-                                            }`}
+                                                }`}
                                         >
                                             <div className="bg-[#0F172A] rounded-lg p-2 h-16 border border-[#334155] flex flex-col justify-between overflow-hidden shadow-xs">
                                                 <div className="flex items-center gap-1">
@@ -689,9 +728,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                             <div className="flex items-center justify-between pt-2">
                                                 <span className="text-xs text-[#D4D4D8] font-semibold">{t('settings.midnightTheme', {}, 'Gecə Mavisi')}</span>
                                                 <div
-                                                    className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
-                                                        theme === 'midnight' ? 'border-blue-500 bg-blue-500' : 'border-[#52525B]'
-                                                    }`}
+                                                    className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${theme === 'midnight' ? 'border-blue-500 bg-blue-500' : 'border-[#52525B]'
+                                                        }`}
                                                 >
                                                     {theme === 'midnight' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
                                                 </div>
@@ -746,17 +784,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                             <div className="flex items-center p-1 rounded-xl bg-[#27272A] border border-[#3F3F46]">
                                                 <button
                                                     onClick={() => setTimeFormat('24h')}
-                                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
-                                                        timeFormat === '24h' ? 'bg-[#18181B] text-white shadow-xs' : 'text-[#71717A] hover:text-white'
-                                                    }`}
+                                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${timeFormat === '24h' ? 'bg-[#18181B] text-white shadow-xs' : 'text-[#71717A] hover:text-white'
+                                                        }`}
                                                 >
                                                     {t('settings.timeFormat24', {}, '24 saatlıq (14:30)')}
                                                 </button>
                                                 <button
                                                     onClick={() => setTimeFormat('12h')}
-                                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
-                                                        timeFormat === '12h' ? 'bg-[#18181B] text-white shadow-xs' : 'text-[#71717A] hover:text-white'
-                                                    }`}
+                                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${timeFormat === '12h' ? 'bg-[#18181B] text-white shadow-xs' : 'text-[#71717A] hover:text-white'
+                                                        }`}
                                                 >
                                                     {t('settings.timeFormat12', {}, '12 saatlıq (02:30 PM)')}
                                                 </button>
@@ -770,26 +806,115 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                     <h3 className="text-sm font-bold text-white tracking-tight">{t('settings.notificationPreferences', {}, 'Bildiriş Tərcihləri')}</h3>
 
                                     <div className="space-y-2.5 text-xs">
-                                        {/* Toggle 1: Email */}
-                                        <div className="flex items-center justify-between p-4 rounded-xl bg-[#18181B] border border-[#27272A]">
-                                            <div className="space-y-0.5">
-                                                <p className="font-bold text-white">{t('settings.emailNotifications', {}, 'E-poçt Bildirişləri')}</p>
-                                                <p className="text-[11px] text-[#71717A]">
-                                                    {t('settings.emailNotificationsSubtitle', {}, 'Yeni tapşırıqlar təyin edildikdə e-poçt bildirişi alın.')}
-                                                </p>
+                                        {/* Toggle 1: Email Notifications with Soft Edit */}
+                                        <div className="p-4 rounded-2xl bg-[#18181B] border border-[#27272A] space-y-3.5 transition-all shadow-xs">
+                                            <div className="flex items-center justify-between">
+                                                <div className="space-y-0.5">
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="font-bold text-white text-xs">{t('settings.emailNotifications', {}, 'E-poçt Bildirişləri')}</p>
+                                                        {tenantSettings.isOverdueNotificationEnabled && (
+                                                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-[11px] text-[#71717A]">
+                                                        Gecikmiş tapşırıqlar və sistem xəbərdarlıqları üçün e-poçt bildirişi alın.
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={handleToggleNotification}
+                                                    className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${tenantSettings.isOverdueNotificationEnabled ? 'bg-blue-600' : 'bg-[#27272A]'
+                                                        }`}
+                                                >
+                                                    <span
+                                                        className={`w-4 h-4 rounded-full bg-white block transition-transform absolute top-1 ${tenantSettings.isOverdueNotificationEnabled ? 'left-6' : 'left-1'
+                                                            }`}
+                                                    ></span>
+                                                </button>
                                             </div>
-                                            <button
-                                                onClick={() => setEmailNotifs(!emailNotifs)}
-                                                className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                                                    emailNotifs ? 'bg-blue-600' : 'bg-[#27272A]'
-                                                }`}
-                                            >
-                                                <span
-                                                    className={`w-4 h-4 rounded-full bg-white block transition-transform absolute top-1 ${
-                                                        emailNotifs ? 'left-6' : 'left-1'
-                                                    }`}
-                                                ></span>
-                                            </button>
+
+                                            {/* Soft Email Configuration Row */}
+                                            <div className="pt-3 border-t border-[#27272A]/80">
+                                                {!isEditingNotificationEmail ? (
+                                                    /* View Mode: Soft & Compact */
+                                                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#121214] border border-[#27272A]/60 transition-all hover:border-[#3F3F46]">
+                                                        <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                                                            <div className="w-7 h-7 rounded-lg bg-blue-600/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+                                                                <EnvelopeIcon className="w-3.5 h-3.5 text-blue-400" />
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className="text-[10px] text-[#71717A] uppercase font-semibold tracking-wider">Bildiriş E-poçtu</p>
+                                                                {tenantSettings.overdueTaskNotificationEmail ? (
+                                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                                        <span className="text-xs font-semibold text-white truncate max-w-[220px]">
+                                                                            {tenantSettings.overdueTaskNotificationEmail}
+                                                                        </span>
+                                                                        <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                                                            Aktiv
+                                                                        </span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <p className="text-xs text-[#71717A] italic mt-0.5">Təyin edilməyib</p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        <button
+                                                            onClick={() => {
+                                                                setEmailDraft(tenantSettings.overdueTaskNotificationEmail || '');
+                                                                setIsEditingNotificationEmail(true);
+                                                            }}
+                                                            className="px-3 py-1.5 rounded-lg bg-[#27272A] hover:bg-[#3F3F46] hover:text-white text-xs font-semibold text-[#D4D4D8] flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+                                                        >
+                                                            <PencilSquareIcon className="w-3.5 h-3.5 text-[#A1A1AA]" />
+                                                            <span>{tenantSettings.overdueTaskNotificationEmail ? 'Dəyiş' : 'Quraşdır'}</span>
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    /* Edit Mode: Soft Inline Input with Auto-close on Save */
+                                                    <div className="p-3.5 rounded-xl bg-[#121214] border border-blue-500/30 space-y-3 animate-in fade-in duration-150 shadow-inner">
+                                                        <div className="flex items-center justify-between">
+                                                            <label className="text-[11px] font-semibold text-white flex items-center gap-1.5">
+                                                                <EnvelopeIcon className="w-3.5 h-3.5 text-blue-400" />
+                                                                Gecikmə Bildirişlərinin Göndəriləcəyi E-poçt
+                                                            </label>
+                                                            <span className="text-[10px] text-[#71717A]">Enter və ya Yadda Saxla</span>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="email"
+                                                                autoFocus
+                                                                value={emailDraft}
+                                                                onChange={(e) => setEmailDraft(e.target.value)}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') handleSaveEmail();
+                                                                    if (e.key === 'Escape') setIsEditingNotificationEmail(false);
+                                                                }}
+                                                                placeholder="nümunə: altensor@gmail.com"
+                                                                className="flex-1 bg-[#18181B] border border-[#3F3F46] focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-[#52525B] focus:outline-none transition-colors"
+                                                            />
+                                                            <button
+                                                                onClick={() => setIsEditingNotificationEmail(false)}
+                                                                className="px-3 py-2 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] text-[#A1A1AA] hover:text-white text-xs font-semibold transition-colors cursor-pointer"
+                                                            >
+                                                                Ləğv et
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleSaveEmail()}
+                                                                disabled={savingTenantSettings}
+                                                                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-colors shrink-0 disabled:opacity-50 cursor-pointer flex items-center gap-1.5 shadow-md"
+                                                            >
+                                                                {savingTenantSettings ? (
+                                                                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                                ) : (
+                                                                    <CheckIcon className="w-3.5 h-3.5" />
+                                                                )}
+                                                                Yadda Saxla
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {/* Toggle 2: Desktop */}
@@ -802,14 +927,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                             </div>
                                             <button
                                                 onClick={() => setDesktopNotifs(!desktopNotifs)}
-                                                className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                                                    desktopNotifs ? 'bg-blue-600' : 'bg-[#27272A]'
-                                                }`}
+                                                className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${desktopNotifs ? 'bg-blue-600' : 'bg-[#27272A]'
+                                                    }`}
                                             >
                                                 <span
-                                                    className={`w-4 h-4 rounded-full bg-white block transition-transform absolute top-1 ${
-                                                        desktopNotifs ? 'left-6' : 'left-1'
-                                                    }`}
+                                                    className={`w-4 h-4 rounded-full bg-white block transition-transform absolute top-1 ${desktopNotifs ? 'left-6' : 'left-1'
+                                                        }`}
                                                 ></span>
                                             </button>
                                         </div>
@@ -824,14 +947,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                             </div>
                                             <button
                                                 onClick={() => setTaskUpdatesNotifs(!taskUpdatesNotifs)}
-                                                className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                                                    taskUpdatesNotifs ? 'bg-blue-600' : 'bg-[#27272A]'
-                                                }`}
+                                                className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${taskUpdatesNotifs ? 'bg-blue-600' : 'bg-[#27272A]'
+                                                    }`}
                                             >
                                                 <span
-                                                    className={`w-4 h-4 rounded-full bg-white block transition-transform absolute top-1 ${
-                                                        taskUpdatesNotifs ? 'left-6' : 'left-1'
-                                                    }`}
+                                                    className={`w-4 h-4 rounded-full bg-white block transition-transform absolute top-1 ${taskUpdatesNotifs ? 'left-6' : 'left-1'
+                                                        }`}
                                                 ></span>
                                             </button>
                                         </div>
@@ -842,7 +963,124 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
                         {/* ─── TAB 3: ÜMUMİ & SİSTEM ─── */}
                         {activeTab === 'general' && (
-                            <div className="space-y-4 max-w-2xl animate-in fade-in duration-150 text-xs">
+                            <div className="space-y-5 max-w-2xl animate-in fade-in duration-150 text-xs">
+                                {/* Email Notifications Card with Soft Edit */}
+                                <div className="p-5 rounded-2xl bg-[#18181B] border border-[#27272A] space-y-4 shadow-lg">
+                                    <div className="flex items-center justify-between pb-3 border-b border-[#27272A]">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="w-8 h-8 rounded-lg bg-blue-600/15 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                                                <EnvelopeIcon className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-sm text-white">Gecikmiş Tapşırıqlar & E-poçt Bildirişləri</h4>
+                                                <p className="text-[11px] text-[#71717A]">Şirkət üzrə vaxtı keçmiş tapşırıqların xəbərdarlıq sistemini idarə edin.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3 pt-1">
+                                        {/* Soft View / Edit Card */}
+                                        {!isEditingNotificationEmail ? (
+                                            <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between transition-all hover:border-[#3F3F46]">
+                                                <div className="space-y-1 min-w-0 pr-3">
+                                                    <p className="text-[10px] uppercase font-semibold text-[#71717A] tracking-wider">
+                                                        Bildirişlərin Göndəriləcəyi E-poçt Ünvanı
+                                                    </p>
+                                                    {tenantSettings.overdueTaskNotificationEmail ? (
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            <span className="text-sm font-semibold text-white truncate">
+                                                                {tenantSettings.overdueTaskNotificationEmail}
+                                                            </span>
+                                                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                                                Qeydə alınıb
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-xs text-[#71717A] italic">Hələ heç bir e-poçt təyin edilməyib</p>
+                                                    )}
+                                                </div>
+
+                                                <button
+                                                    onClick={() => {
+                                                        setEmailDraft(tenantSettings.overdueTaskNotificationEmail || '');
+                                                        setIsEditingNotificationEmail(true);
+                                                    }}
+                                                    className="px-3.5 py-2 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] hover:text-white text-xs font-semibold text-[#D4D4D8] flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+                                                >
+                                                    <PencilSquareIcon className="w-4 h-4 text-[#A1A1AA]" />
+                                                    <span>{tenantSettings.overdueTaskNotificationEmail ? 'Dəyiş' : 'E-poçt əlavə et'}</span>
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="p-4 rounded-xl bg-[#121214] border border-blue-500/30 space-y-3 animate-in fade-in duration-150">
+                                                <div className="flex items-center justify-between">
+                                                    <label className="text-xs font-semibold text-white">
+                                                        Bildirişlərin Göndəriləcəyi E-poçt Ünvanı
+                                                    </label>
+                                                    <span className="text-[10px] text-[#71717A]">Yadda saxlayanda avtomatik bağlanır</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="email"
+                                                        autoFocus
+                                                        value={emailDraft}
+                                                        onChange={(e) => setEmailDraft(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') handleSaveEmail();
+                                                            if (e.key === 'Escape') setIsEditingNotificationEmail(false);
+                                                        }}
+                                                        placeholder="nümunə: altensor@gmail.com"
+                                                        className="flex-1 bg-[#18181B] border border-[#3F3F46] focus:border-blue-500 rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-[#52525B] focus:outline-none transition-colors"
+                                                    />
+                                                    <button
+                                                        onClick={() => setIsEditingNotificationEmail(false)}
+                                                        className="px-3.5 py-2.5 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] text-[#A1A1AA] hover:text-white text-xs font-semibold transition-colors cursor-pointer"
+                                                    >
+                                                        Ləğv et
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleSaveEmail()}
+                                                        disabled={savingTenantSettings}
+                                                        className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-colors flex items-center gap-1.5 shadow-md cursor-pointer disabled:opacity-50"
+                                                    >
+                                                        {savingTenantSettings ? (
+                                                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                        ) : (
+                                                            <CheckIcon className="w-3.5 h-3.5" />
+                                                        )}
+                                                        Yadda Saxla
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#121214] border border-[#27272A]">
+                                            <div className="space-y-0.5">
+                                                <p className="text-xs font-semibold text-white">Avtomatik Gecikmə Bildirişləri</p>
+                                                <p className="text-[10px] text-[#71717A]">Arxa fonda fasiləsiz işləyən xidmət hər saat yoxlama apararaq hesabat göndərsin.</p>
+                                            </div>
+                                            <button
+                                                onClick={handleToggleNotification}
+                                                className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${tenantSettings.isOverdueNotificationEnabled ? 'bg-blue-600' : 'bg-[#27272A]'
+                                                    }`}
+                                            >
+                                                <span
+                                                    className={`w-4 h-4 rounded-full bg-white block transition-transform absolute top-1 ${tenantSettings.isOverdueNotificationEnabled ? 'left-6' : 'left-1'
+                                                        }`}
+                                                ></span>
+                                            </button>
+                                        </div>
+
+                                        {/* Background Job Info */}
+                                        <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[#93C5FD] text-[11px] leading-relaxed flex items-start gap-2">
+                                            <BellAlertIcon className="w-4 h-4 shrink-0 text-blue-400 mt-0.5" />
+                                            <span>
+                                                Arxa fondakı <code className="px-1 py-0.5 rounded bg-blue-500/20 font-mono text-[10px]">OverdueTaskEmailJob</code> xidməti hər saat bazada olan vaxtı keçmiş tapşırıqları aşkar edir və <strong className="text-white">giftcardmessenger@gmail.com</strong> vasitəsilə cədvəl formatında qeyd etdiyiniz ünvana çatdırır.
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div className="p-4 rounded-2xl bg-[#18181B] border border-[#27272A] space-y-3">
                                     <h4 className="font-bold text-white">Sistem Məlumatı</h4>
                                     <div className="space-y-2 text-[#A1A1AA]">

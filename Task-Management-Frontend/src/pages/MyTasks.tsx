@@ -6,7 +6,7 @@ import { taskService, authService, notificationService } from '../api';
 import { signalRService } from '../services/signalRService';
 import type { TaskResponse, NotificationResponse } from '../dto';
 import { TaskStatus, DifficultyLevel, Priority } from '../dto';
-import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, isUserAdmin, isUserManager } from '../utils';
+import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, isUserAdmin, isUserManager, formatDateTime } from '../utils';
 import type { UserInfo } from '../utils';
 import { useLanguage } from '../context/LanguageContext';
 import {
@@ -733,7 +733,7 @@ const MyTasks: React.FC = () => {
                                                         <div className="flex items-center justify-between pt-2 border-t border-[#27272A] text-[10px] text-[#A1A1AA]">
                                                             <div className="flex items-center gap-1">
                                                                 <ClockIcon className="w-3 h-3 text-[#71717A]" />
-                                                                <span>{new Date(t.deadline).toLocaleDateString('az-AZ')}</span>
+                                                                <span>{formatDateTime(t.deadline)}</span>
                                                             </div>
 
                                                             {t.assignedToUserName && (
@@ -845,7 +845,7 @@ const MyTasks: React.FC = () => {
                                                     <td className="py-3.5 px-4 text-[#A1A1AA]">
                                                         <div className="flex items-center gap-1.5">
                                                             <ClockIcon className="w-3.5 h-3.5 text-[#71717A]" />
-                                                            <span>{new Date(t.deadline).toLocaleDateString('az-AZ')}</span>
+                                                            <span>{formatDateTime(t.deadline)}</span>
                                                         </div>
                                                     </td>
                                                     <td className="py-3.5 px-4">

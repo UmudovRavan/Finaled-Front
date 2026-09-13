@@ -6,7 +6,7 @@ import { taskService, authService, notificationService, userService, attachmentS
 import { signalRService } from '../services/signalRService';
 import type { TaskResponse, NotificationResponse, UserResponse, TaskCommentDto } from '../dto';
 import { TaskStatus, DifficultyLevel } from '../dto';
-import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
+import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, formatDateTime } from '../utils';
 import type { UserInfo } from '../utils';
 import { useLanguage } from '../context/LanguageContext';
 import UserSuggestionList from '../components/UserSuggestionList';
@@ -1336,7 +1336,7 @@ const TaskDetail: React.FC = () => {
                                         <span className="text-[#71717A]">Son İcra Tarixi</span>
                                         <div className="flex items-center gap-1.5 text-white font-semibold">
                                             <CalendarIcon className="w-3.5 h-3.5 text-[#71717A]" />
-                                            <span>{new Date(task.deadline).toLocaleDateString('az-AZ')}</span>
+                                            <span>{formatDateTime(task.deadline)}</span>
                                         </div>
                                     </div>
                                 </div>

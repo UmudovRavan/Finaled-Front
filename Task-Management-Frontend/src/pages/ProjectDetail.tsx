@@ -8,7 +8,7 @@ import { normalizeProjectLevel } from '../api/projectLevelService';
 import { normalizeTask } from '../api/taskService';
 import type { ProjectDTO, ProjectLevelDTO, TaskResponse, NotificationResponse, DivisionDTO } from '../dto';
 import { TaskStatus, Priority, DifficultyLevel } from '../dto';
-import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, isUserAdmin, isUserManager } from '../utils';
+import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, isUserAdmin, isUserManager, formatDateTime } from '../utils';
 import type { UserInfo } from '../utils';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -835,7 +835,7 @@ const ProjectDetail: React.FC = () => {
 
                                                             {task.deadline && (
                                                                 <span className="text-[11px] text-[#71717A] hidden md:inline">
-                                                                    {new Date(task.deadline).toLocaleDateString('az-AZ')}
+                                                                    {formatDateTime(task.deadline)}
                                                                 </span>
                                                             )}
 

@@ -18,6 +18,9 @@ import {
     ClipboardDocumentListIcon,
     BuildingOfficeIcon,
     FolderIcon,
+    TrophyIcon,
+    ScaleIcon,
+    ArrowTrendingUpIcon,
 } from '@heroicons/react/24/outline';
 import { authService } from '../api';
 import { useNotifications } from '../context/NotificationContext';
@@ -218,16 +221,16 @@ const Sidebar: React.FC<SidebarProps> = ({
             items.push({ path: '/projects', label: 'Layihələr', icon: FolderIcon });
         }
 
-        // 7. Workload Analysis
+        // 7. Workload Analysis (İş Yükü - Scale / Tərəzi ikonu)
         if (isAdmin || isDirector || isManager || hasPermission('tms.workload.view')) {
-            items.push({ path: '/workload', label: 'İş Yükü', icon: BoltIcon });
+            items.push({ path: '/workload', label: 'İş Yükü', icon: ScaleIcon });
         }
 
-        // 8. Performance & Leaderboard
+        // 8. Performance & Leaderboard (Liderlər - Trophy / Kubok ikonu, Performans - Trending Up)
         if (isAdmin || hasPermission('tms.performance.view')) {
             items.push(
-                { path: '/leaderboard', label: t('nav.leaderboard', {}, 'Liderlər Lövhəsi'), icon: BoltIcon },
-                { path: '/performance', label: t('nav.performance', {}, 'Performans'), icon: ChartBarIcon }
+                { path: '/leaderboard', label: t('nav.leaderboard', {}, 'Liderlər Lövhəsi'), icon: TrophyIcon },
+                { path: '/performance', label: t('nav.performance', {}, 'Performans'), icon: ArrowTrendingUpIcon }
             );
         }
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Sidebar, Header } from '../layout';
 import KpiCard from '../components/KpiCard';
@@ -25,6 +25,8 @@ import {
     TrashIcon,
     EllipsisHorizontalIcon,
     FunnelIcon,
+    ChevronDownIcon,
+    CheckIcon,
 } from '@heroicons/react/24/outline';
 
 const Projects: React.FC = () => {
@@ -45,6 +47,43 @@ const Projects: React.FC = () => {
     const [selectedDivisionId, setSelectedDivisionId] = useState<string>(divisionParam);
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Custom Dropdown Popover States
+    const [isDivisionDropdownOpen, setIsDivisionDropdownOpen] = useState(false);
+    const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+    const divisionDropdownRef = useRef<HTMLDivElement>(null);
+    const statusDropdownRef = useRef<HTMLDivElement>(null);
+
+    // Close custom dropdowns on click outside
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (divisionDropdownRef.current && !divisionDropdownRef.current.contains(e.target as Node)) {
+                setIsDivisionDropdownOpen(false);
+            }
+            if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
+                setIsStatusDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const statusOptions = useMemo(() => [
+        { value: 'all', label: 'Bütün Statuslar', dotColor: 'bg-zinc-400' },
+        { value: 'active', label: 'Aktiv', dotColor: 'bg-sky-400' },
+        { value: 'completed', label: 'Tamamlandı', dotColor: 'bg-emerald-400' },
+        { value: 'onhold', label: 'Dayandırılıb', dotColor: 'bg-amber-400' },
+        { value: 'cancelled', label: 'Ləğv edildi', dotColor: 'bg-rose-400' },
+    ], []);
+
+    const selectedDivisionName = useMemo(() => {
+        if (selectedDivisionId === 'all') return 'Bütün Şöbələr';
+        return divisions.find((d) => String(d.id) === String(selectedDivisionId))?.name || 'Bütün Şöbələr';
+    }, [selectedDivisionId, divisions]);
+
+    const selectedStatusLabel = useMemo(() => {
+        return statusOptions.find((s) => s.value === statusFilter)?.label || 'Bütün Statuslar';
+    }, [statusFilter, statusOptions]);
 
     // Modal state
     const [showModal, setShowModal] = useState(false);
@@ -386,39 +425,118 @@ const Projects: React.FC = () => {
                             />
                         </div>
 
-                        {/* Filter Selects */}
+                        {/* Filter Selects - Soft Custom Popover Dropdowns */}
                         <div className="flex flex-wrap items-center gap-2.5">
-                            {/* Division Filter */}
-                            <div className="flex items-center gap-1.5 bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-2.5 py-1">
-                                <BuildingOfficeIcon className="w-3.5 h-3.5 text-sky-400" />
-                                <select
-                                    value={selectedDivisionId}
-                                    onChange={(e) => handleDivisionFilterChange(e.target.value)}
-                                    className="bg-transparent text-xs text-white focus:outline-none cursor-pointer pr-1"
+                            {/* Division Filter Dropdown */}
+                            <div className="relative" ref={divisionDropdownRef}>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsDivisionDropdownOpen(!isDivisionDropdownOpen);
+                                        setIsStatusDropdownOpen(false);
+                                    }}
+                                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-semibold shadow-xs transition-all cursor-pointer ${
+                                        isDivisionDropdownOpen
+                                            ? 'bg-[#27272A] text-white border-sky-500/50 ring-2 ring-sky-500/20'
+                                            : 'bg-[#27272A] hover:bg-[#323238] border-[#3F3F46]/60 text-white'
+                                    }`}
                                 >
-                                    <option value="all" className="bg-[#18181B]">Bütün Şöbələr</option>
-                                    {divisions.map((d) => (
-                                        <option key={d.id} value={d.id} className="bg-[#18181B]">
-                                            {d.name}
-                                        </option>
-                                    ))}
-                                </select>
+                                    <BuildingOfficeIcon className="w-4 h-4 text-sky-400 shrink-0" />
+                                    <span className="max-w-[140px] truncate">{selectedDivisionName}</span>
+                                    <ChevronDownIcon
+                                        className={`w-3.5 h-3.5 text-[#A1A1AA] transition-transform duration-200 ${
+                                            isDivisionDropdownOpen ? 'rotate-180 text-white' : ''
+                                        }`}
+                                    />
+                                </button>
+
+                                {isDivisionDropdownOpen && (
+                                    <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl bg-[#18181B] border border-[#27272A] shadow-2xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl max-h-64 overflow-y-auto custom-scrollbar">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                handleDivisionFilterChange('all');
+                                                setIsDivisionDropdownOpen(false);
+                                            }}
+                                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
+                                                selectedDivisionId === 'all'
+                                                    ? 'bg-sky-500/15 text-sky-400 font-bold'
+                                                    : 'text-[#D4D4D8] hover:bg-white/[0.06] hover:text-white'
+                                            }`}
+                                        >
+                                            <span>Bütün Şöbələr</span>
+                                            {selectedDivisionId === 'all' && <CheckIcon className="w-4 h-4" />}
+                                        </button>
+                                        {divisions.map((d) => (
+                                            <button
+                                                key={String(d.id)}
+                                                type="button"
+                                                onClick={() => {
+                                                    handleDivisionFilterChange(String(d.id));
+                                                    setIsDivisionDropdownOpen(false);
+                                                }}
+                                                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
+                                                    String(selectedDivisionId) === String(d.id)
+                                                        ? 'bg-sky-500/15 text-sky-400 font-bold'
+                                                        : 'text-[#D4D4D8] hover:bg-white/[0.06] hover:text-white'
+                                                }`}
+                                            >
+                                                <span className="truncate pr-2">{d.name}</span>
+                                                {String(selectedDivisionId) === String(d.id) && <CheckIcon className="w-4 h-4 shrink-0 text-sky-400" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
-                            {/* Status Filter */}
-                            <div className="flex items-center gap-1.5 bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-2.5 py-1">
-                                <FunnelIcon className="w-3.5 h-3.5 text-purple-400" />
-                                <select
-                                    value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="bg-transparent text-xs text-white focus:outline-none cursor-pointer pr-1"
+                            {/* Status Filter Dropdown */}
+                            <div className="relative" ref={statusDropdownRef}>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsStatusDropdownOpen(!isStatusDropdownOpen);
+                                        setIsDivisionDropdownOpen(false);
+                                    }}
+                                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-semibold shadow-xs transition-all cursor-pointer ${
+                                        isStatusDropdownOpen
+                                            ? 'bg-[#27272A] text-white border-purple-500/50 ring-2 ring-purple-500/20'
+                                            : 'bg-[#27272A] hover:bg-[#323238] border-[#3F3F46]/60 text-white'
+                                    }`}
                                 >
-                                    <option value="all" className="bg-[#18181B]">Bütün Statuslar</option>
-                                    <option value="active" className="bg-[#18181B]">Aktiv</option>
-                                    <option value="completed" className="bg-[#18181B]">Tamamlandı</option>
-                                    <option value="onhold" className="bg-[#18181B]">Dayandırılıb</option>
-                                    <option value="cancelled" className="bg-[#18181B]">Ləğv edildi</option>
-                                </select>
+                                    <FunnelIcon className="w-4 h-4 text-purple-400 shrink-0" />
+                                    <span>{selectedStatusLabel}</span>
+                                    <ChevronDownIcon
+                                        className={`w-3.5 h-3.5 text-[#A1A1AA] transition-transform duration-200 ${
+                                            isStatusDropdownOpen ? 'rotate-180 text-white' : ''
+                                        }`}
+                                    />
+                                </button>
+
+                                {isStatusDropdownOpen && (
+                                    <div className="absolute right-0 top-full mt-2 w-48 rounded-2xl bg-[#18181B] border border-[#27272A] shadow-2xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl">
+                                        {statusOptions.map((opt) => (
+                                            <button
+                                                key={opt.value}
+                                                type="button"
+                                                onClick={() => {
+                                                    setStatusFilter(opt.value);
+                                                    setIsStatusDropdownOpen(false);
+                                                }}
+                                                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
+                                                    statusFilter === opt.value
+                                                        ? 'bg-purple-500/15 text-purple-400 font-bold'
+                                                        : 'text-[#D4D4D8] hover:bg-white/[0.06] hover:text-white'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`w-2 h-2 rounded-full ${opt.dotColor}`} />
+                                                    <span>{opt.label}</span>
+                                                </div>
+                                                {statusFilter === opt.value && <CheckIcon className="w-4 h-4 shrink-0 text-purple-400" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

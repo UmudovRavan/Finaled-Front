@@ -5,7 +5,7 @@ import { useNotifications } from '../context';
 import { taskService, authService, notificationService, userService, attachmentService } from '../api';
 import type { TaskResponse, NotificationResponse, UserResponse } from '../dto';
 import { TaskStatus, DifficultyLevel } from '../dto';
-import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
+import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, formatDateTime } from '../utils';
 import type { UserInfo } from '../utils';
 import {
     ArrowLeftIcon,
@@ -283,7 +283,7 @@ const TaskAssignmentDetail: React.FC = () => {
                             <div className="flex items-center gap-4 text-xs text-[#A1A1AA] flex-wrap">
                                 <div className="flex items-center gap-1.5">
                                     <CalendarIcon className="w-4 h-4 text-[#71717A]" />
-                                    <span>İcra tarixi: {new Date(task.deadline).toLocaleDateString('az-AZ')}</span>
+                                    <span>İcra tarixi: {formatDateTime(task.deadline)}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                     <UserIcon className="w-4 h-4 text-[#71717A]" />

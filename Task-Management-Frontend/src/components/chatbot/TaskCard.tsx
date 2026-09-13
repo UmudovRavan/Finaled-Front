@@ -1,5 +1,6 @@
 import React from 'react';
 import type { TaskResult } from '../../dto/ChatbotTypes';
+import { formatDateTime } from '../../utils';
 
 interface TaskCardProps {
     task: TaskResult;
@@ -87,7 +88,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
                             {isOverdue ? 'Passed' : 'Deadline'}
                         </p>
                         <p className={`text-xs font-semibold ${isOverdue ? 'text-red-500' : 'text-slate-700 dark:text-slate-200'}`}>
-                            {task.deadline}
+                            {formatDateTime(task.deadline)}
                         </p>
                     </div>
                 </div>

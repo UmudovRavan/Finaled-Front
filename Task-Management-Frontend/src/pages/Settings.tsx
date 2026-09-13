@@ -196,13 +196,8 @@ const Settings: React.FC = () => {
 
     // System / Tenant Settings Flow
     const [tenantSettings, setTenantSettings] = useState<TenantSettingsDTO>({
-        defaultTaskDeadlineDays: 3,
-        enableEmailNotifications: true,
-        notifyOnTaskAssignment: true,
-        notifyOnTaskStatusChange: true,
-        notifyOnDeadlineApproaching: true,
-        deadlineWarningHours: 24,
-        maxActiveTasksPerEmployee: 5,
+        overdueTaskNotificationEmail: '',
+        isOverdueNotificationEnabled: true,
     });
     const [isSavingSettings, setIsSavingSettings] = useState(false);
     const [settingsSuccess, setSettingsSuccess] = useState('');
@@ -932,93 +927,91 @@ const Settings: React.FC = () => {
                         </Card>
 
                         {/* ── System / Tenant Settings (For Privileged Users) ── */}
+                        {/* ── System / Tenant Settings (For Privileged Users) ── */}
                         {isPrivilegedUser && (
                             <div className="lg:col-span-2">
-                                <Card title="Sistem və Şirkət Tənzimləmələri" icon="tune" isDark={isDark}>
+                                <Card title="Sistem və Bildiriş Tənzimləmələri" icon="mark_email_unread" isDark={isDark}>
                                     <div className="space-y-6">
                                         <p className="text-xs" style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}>
-                                            Şirkət üzrə tapşırıq limitləri, icra müddətləri və avtomatik e-poçt bildirişlərini idarə edin.
+                                            Gecikmiş və icra müddəti ötən tapşırıqlar üzrə avtomatik e-poçt xəbərdarlıq sistemini tənzimləyin.
                                         </p>
 
                                         {settingsSuccess && (
-                                            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs font-semibold">
+                                            <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs font-semibold flex items-center gap-2">
+                                                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>check_circle</span>
                                                 {settingsSuccess}
                                             </div>
                                         )}
                                         {settingsError && (
-                                            <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold">
+                                            <div className="p-3.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold flex items-center gap-2">
+                                                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>error</span>
                                                 {settingsError}
                                             </div>
                                         )}
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                            <Input
-                                                label="Standart İcra Müddəti (Gün)"
-                                                type="number"
-                                                value={String(tenantSettings.defaultTaskDeadlineDays || 3)}
-                                                onChange={(v) => setTenantSettings((prev) => ({ ...prev, defaultTaskDeadlineDays: Number(v) || 3 }))}
-                                                icon="calendar_today"
-                                                isDark={isDark}
-                                            />
-                                            <Input
-                                                label="Maksimum Aktiv Tapşırıq Limiti"
-                                                type="number"
-                                                value={String(tenantSettings.maxActiveTasksPerEmployee || 5)}
-                                                onChange={(v) => setTenantSettings((prev) => ({ ...prev, maxActiveTasksPerEmployee: Number(v) || 5 }))}
-                                                icon="speed"
-                                                isDark={isDark}
-                                            />
-                                            <Input
-                                                label="Gecikmə Xəbərdarlıq Vaxtı (Saat)"
-                                                type="number"
-                                                value={String(tenantSettings.deadlineWarningHours || 24)}
-                                                onChange={(v) => setTenantSettings((prev) => ({ ...prev, deadlineWarningHours: Number(v) || 24 }))}
-                                                icon="timer"
-                                                isDark={isDark}
-                                            />
+                                        {/* Overdue Task Email Input */}
+                                        <div className="space-y-2">
+                                            <label className="block text-xs font-semibold uppercase tracking-wider" style={{ color: isDark ? '#D1D5DB' : '#374151' }}>
+                                                Gecikmiş Tapşırıqların Göndəriləcəyi E-poçt Ünvanı
+                                            </label>
+                                            <div className="relative">
+                                                <input
+                                                    type="email"
+                                                    value={tenantSettings.overdueTaskNotificationEmail || ''}
+                                                    onChange={(e) => setTenantSettings((prev) => ({ ...prev, overdueTaskNotificationEmail: e.target.value }))}
+                                                    placeholder="nümunə: admin@sirket.com və ya rehberlik@sirket.com"
+                                                    className="w-full px-4 py-3 pl-11 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                    style={{
+                                                        background: isDark ? '#1F2937' : '#F9FAFB',
+                                                        border: `1px solid ${isDark ? '#374151' : '#E5E7EB'}`,
+                                                        color: isDark ? '#F9FAFB' : '#111827',
+                                                    }}
+                                                />
+                                                <span
+                                                    className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                                                    style={{ fontSize: 20, color: isDark ? '#9CA3AF' : '#6B7280' }}
+                                                >
+                                                    mail
+                                                </span>
+                                            </div>
+                                            <p className="text-xs" style={{ color: isDark ? '#6B7280' : '#9CA3AF' }}>
+                                                İcra müddəti (Deadline) bitmiş və hələ tamamlanmamış bütün aktiv tapşırıqların siyahısı bu e-poçt ünvanına çatdırılacaq.
+                                            </p>
                                         </div>
 
                                         <div style={{ height: 1, background: isDark ? '#374151' : '#F3F4F6' }} />
 
-                                        {/* Toggles */}
-                                        <div className="space-y-4">
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <p className="text-sm font-semibold" style={{ color: isDark ? '#F9FAFB' : '#111827' }}>E-poçt Bildirişləri</p>
-                                                    <p className="text-xs" style={{ color: isDark ? '#6B7280' : '#9CA3AF' }}>Sistem hadisələrində əməkdaşlara e-poçt göndərilsin</p>
-                                                </div>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={tenantSettings.enableEmailNotifications ?? true}
-                                                    onChange={(e) => setTenantSettings((prev) => ({ ...prev, enableEmailNotifications: e.target.checked }))}
-                                                    className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
-                                                />
+                                        {/* Overdue Notification Toggle */}
+                                        <div className="flex items-center justify-between p-4 rounded-xl" style={{ background: isDark ? '#111827' : '#F8FAFC', border: `1px solid ${isDark ? '#374151' : '#E2E8F0'}` }}>
+                                            <div className="space-y-1 pr-4">
+                                                <p className="text-sm font-semibold" style={{ color: isDark ? '#F9FAFB' : '#111827' }}>
+                                                    Avtomatik Gecikmə Bildirişləri
+                                                </p>
+                                                <p className="text-xs" style={{ color: isDark ? '#6B7280' : '#9CA3AF' }}>
+                                                    Sistem arxa fonda hər saat yoxlama apararaq gecikən tapşırıqlar olduqda bildiriş göndərsin.
+                                                </p>
                                             </div>
+                                            <input
+                                                type="checkbox"
+                                                checked={tenantSettings.isOverdueNotificationEnabled ?? true}
+                                                onChange={(e) => setTenantSettings((prev) => ({ ...prev, isOverdueNotificationEnabled: e.target.checked }))}
+                                                className="w-5 h-5 accent-indigo-600 rounded cursor-pointer shrink-0"
+                                            />
+                                        </div>
 
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <p className="text-sm font-semibold" style={{ color: isDark ? '#F9FAFB' : '#111827' }}>Tapşırıq Təyin Edildikdə Bildiriş</p>
-                                                    <p className="text-xs" style={{ color: isDark ? '#6B7280' : '#9CA3AF' }}>Yeni tapşırıq alan istifadəçiyə dərhal xəbər verilsin</p>
-                                                </div>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={tenantSettings.notifyOnTaskAssignment ?? true}
-                                                    onChange={(e) => setTenantSettings((prev) => ({ ...prev, notifyOnTaskAssignment: e.target.checked }))}
-                                                    className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
-                                                />
-                                            </div>
-
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <p className="text-sm font-semibold" style={{ color: isDark ? '#F9FAFB' : '#111827' }}>Status Dəyişikliyi Bildirişi</p>
-                                                    <p className="text-xs" style={{ color: isDark ? '#6B7280' : '#9CA3AF' }}>Tapşırıq icra edildikdə və ya tamamlandıqda bildiriş göndərilsin</p>
-                                                </div>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={tenantSettings.notifyOnTaskStatusChange ?? true}
-                                                    onChange={(e) => setTenantSettings((prev) => ({ ...prev, notifyOnTaskStatusChange: e.target.checked }))}
-                                                    className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
-                                                />
+                                        {/* Status / Info Card */}
+                                        <div
+                                            className="p-4 rounded-xl flex items-start gap-3 text-xs"
+                                            style={{
+                                                background: 'rgba(99, 102, 241, 0.08)',
+                                                border: '1px solid rgba(99, 102, 241, 0.2)',
+                                                color: isDark ? '#C7D2FE' : '#4338CA',
+                                            }}
+                                        >
+                                            <span className="material-symbols-outlined shrink-0 text-indigo-400" style={{ fontSize: 20 }}>info</span>
+                                            <div>
+                                                <span className="font-semibold block mb-0.5">Avtomatik Email Xidməti haqqında:</span>
+                                                Arxa fonda fasiləsiz işləyən <code className="px-1.5 py-0.5 rounded bg-indigo-500/20 font-mono text-[11px]">OverdueTaskEmailJob</code> xidməti vaxtı keçmiş hər bir tapşırığın adı, layihəsi, bölməsi və təyin olunmuş əməkdaşı haqqında məlumatları cədvəl formatında qeyd olunan ünvana çatdırır.
                                             </div>
                                         </div>
 
