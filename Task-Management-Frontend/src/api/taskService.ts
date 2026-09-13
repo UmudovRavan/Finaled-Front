@@ -53,6 +53,11 @@ export interface CreateTaskRequest {
     description?: string;
     difficulty?: number;
     status?: number;
+    priority?: number;
+    levelId?: string | number | null;
+    projectId?: string | number | null;
+    divisionId?: string | number | null;
+    workGroupId?: string | number | null;
     deadline: string;
     assignedToUserId?: string;
     createdByUserId?: string;
@@ -66,6 +71,11 @@ export interface UpdateTaskRequest {
     description: string;
     difficulty: number;
     status: number;
+    priority?: number;
+    levelId?: string | number | null;
+    projectId?: string | number | null;
+    divisionId?: string | number | null;
+    workGroupId?: string | number | null;
     deadline: string;
     assignedToUserId?: string;
     createdByUserId: string;
@@ -109,9 +119,53 @@ export function normalizeTask(raw: any): TaskResponse {
     }
     const status = typeof st === 'number' && !isNaN(st) ? (st as any) : 0;
 
+    // Priority normalization
+    let pr = raw.priority ?? raw.Priority;
+    let priority: any = 1; // Default Normal
+    if (typeof pr === 'string') {
+        const pLower = pr.toLowerCase();
+        if (pLower === 'low' || pLower === '0') priority = 0;
+        else if (pLower === 'normal' || pLower === '1') priority = 1;
+        else if (pLower === 'high' || pLower === '2') priority = 2;
+        else if (pLower === 'urgent' || pLower === '3') priority = 3;
+        else priority = 1;
+    } else if (typeof pr === 'number' && !isNaN(pr)) {
+        priority = pr;
+    }
+
     const deadline = String(raw.deadline ?? raw.Deadline ?? raw.dueDate ?? raw.DueDate ?? '');
-    const priority = raw.priority ?? raw.Priority ?? undefined;
     const workGroupId = raw.workGroupId ?? raw.WorkGroupId ?? null;
+
+    const levelId = raw.levelId ?? raw.LevelId ?? raw.projectLevelId ?? raw.ProjectLevelId
+        ?? raw.level?.id ?? raw.Level?.Id ?? raw.projectLevel?.id ?? raw.ProjectLevel?.Id
+        ?? raw.level?.levelId ?? raw.Level?.LevelId ?? raw.projectLevel?.projectLevelId ?? raw.ProjectLevel?.ProjectLevelId
+        ?? (typeof raw.level === 'string' || typeof raw.level === 'number' ? raw.level : null)
+        ?? (typeof raw.projectLevel === 'string' || typeof raw.projectLevel === 'number' ? raw.projectLevel : null)
+        ?? null;
+
+    const levelName = raw.levelName ?? raw.LevelName ?? raw.projectLevelName ?? raw.ProjectLevelName
+        ?? raw.level?.name ?? raw.Level?.Name ?? raw.projectLevel?.name ?? raw.ProjectLevel?.Name
+        ?? raw.level?.title ?? raw.Level?.Title ?? raw.projectLevel?.title ?? raw.ProjectLevel?.Title
+        ?? undefined;
+
+    const projectId = raw.projectId ?? raw.ProjectId
+        ?? raw.project?.id ?? raw.Project?.Id ?? raw.project?.projectId ?? raw.Project?.ProjectId
+        ?? (typeof raw.project === 'string' || typeof raw.project === 'number' ? raw.project : null)
+        ?? null;
+
+    const projectName = raw.projectName ?? raw.ProjectName
+        ?? raw.project?.name ?? raw.Project?.Name ?? raw.project?.title ?? raw.Project?.Title
+        ?? undefined;
+
+    const divisionId = raw.divisionId ?? raw.DivisionId
+        ?? raw.division?.id ?? raw.Division?.Id ?? raw.division?.divisionId ?? raw.Division?.DivisionId
+        ?? (typeof raw.division === 'string' || typeof raw.division === 'number' ? raw.division : null)
+        ?? null;
+
+    const divisionName = raw.divisionName ?? raw.DivisionName
+        ?? raw.division?.name ?? raw.Division?.Name ?? raw.division?.title ?? raw.Division?.Title
+        ?? undefined;
+
     const assignedToUserId = raw.assignedToUserId ?? raw.AssignedToUserId ?? raw.assignedToId ?? raw.AssignedToId ?? raw.assignedUserId ?? raw.AssignedUserId ?? undefined;
     const assignedToUserName = raw.assignedToUserName ?? raw.AssignedToUserName ?? raw.assignedUserName ?? raw.AssignedUserName ?? raw.assignedUser?.userName ?? raw.AssignedUser?.UserName ?? undefined;
     const createdByUserId = String(raw.createdByUserId ?? raw.CreatedByUserId ?? raw.createdById ?? raw.CreatedById ?? raw.userId ?? raw.UserId ?? raw.createdUser?.id ?? '');
@@ -209,6 +263,12 @@ export function normalizeTask(raw: any): TaskResponse {
         status,
         deadline,
         priority,
+        levelId,
+        levelName,
+        projectId,
+        projectName,
+        divisionId,
+        divisionName,
         workGroupId,
         assignedToUserId: assignedToUserId ? String(assignedToUserId) : undefined,
         assignedToUserName: assignedToUserName ? String(assignedToUserName) : undefined,
@@ -272,6 +332,83 @@ export const taskService = {
                 } else if (data && typeof data === 'object') {
                     const arr = Object.values(data).find((val) => Array.isArray(val));
                     if (arr) list = arr as any[];
+                }
+
+                if (list.length > 0) {
+                    return list.map(normalizeTask).filter((t) => !isSystemActivityTask(t));
+                }
+            } catch {
+                // Try next endpoint
+            }
+        }
+        return [];
+    },
+
+    async getTasksByProject(projectId: string | number): Promise<TaskResponse[]> {
+        const projId = String(projectId || '').trim();
+        if (!projId) return [];
+
+        const candidateEndpoints = [
+            `/Task/GetByProject/${projId}`,
+            `/Task/GetTasksByProject/${projId}`,
+            `/Task/project/${projId}`,
+            `/Task/by-project/${projId}`,
+            `/Task?projectId=${encodeURIComponent(projId)}`,
+            `/Project/${projId}/tasks`,
+        ];
+
+        for (const ep of candidateEndpoints) {
+            try {
+                const response = await httpClient.get<any>(ep);
+                let list: any[] = [];
+                const data = response.data;
+                if (Array.isArray(data)) {
+                    list = data;
+                } else if (data && Array.isArray(data.data)) {
+                    list = data.data;
+                } else if (data && Array.isArray(data.tasks)) {
+                    list = data.tasks;
+                } else if (data && Array.isArray(data.items)) {
+                    list = data.items;
+                }
+
+                if (list.length > 0) {
+                    return list.map(normalizeTask).filter((t) => !isSystemActivityTask(t));
+                }
+            } catch {
+                // Try next endpoint
+            }
+        }
+        return [];
+    },
+
+    async getTasksByLevel(levelId: string | number): Promise<TaskResponse[]> {
+        const lvlId = String(levelId || '').trim();
+        if (!lvlId) return [];
+
+        const candidateEndpoints = [
+            `/Task/GetByLevel/${lvlId}`,
+            `/Task/GetByProjectLevel/${lvlId}`,
+            `/Task/level/${lvlId}`,
+            `/Task/project-level/${lvlId}`,
+            `/Task?levelId=${encodeURIComponent(lvlId)}`,
+            `/Task?projectLevelId=${encodeURIComponent(lvlId)}`,
+            `/ProjectLevel/${lvlId}/tasks`,
+        ];
+
+        for (const ep of candidateEndpoints) {
+            try {
+                const response = await httpClient.get<any>(ep);
+                let list: any[] = [];
+                const data = response.data;
+                if (Array.isArray(data)) {
+                    list = data;
+                } else if (data && Array.isArray(data.data)) {
+                    list = data.data;
+                } else if (data && Array.isArray(data.tasks)) {
+                    list = data.tasks;
+                } else if (data && Array.isArray(data.items)) {
+                    list = data.items;
                 }
 
                 if (list.length > 0) {
@@ -395,6 +532,22 @@ export const taskService = {
         formData.append('Description', data.description || '');
         formData.append('Difficulty', (data.difficulty ?? 1).toString());
         formData.append('Status', (data.status ?? 0).toString());
+        if (data.priority !== undefined && data.priority !== null) {
+            formData.append('Priority', data.priority.toString());
+        }
+        if (data.levelId !== undefined && data.levelId !== null && String(data.levelId).trim() !== '') {
+            formData.append('LevelId', String(data.levelId).trim());
+            formData.append('ProjectLevelId', String(data.levelId).trim());
+        }
+        if (data.projectId !== undefined && data.projectId !== null && String(data.projectId).trim() !== '') {
+            formData.append('ProjectId', String(data.projectId).trim());
+        }
+        if (data.divisionId !== undefined && data.divisionId !== null && String(data.divisionId).trim() !== '') {
+            formData.append('DivisionId', String(data.divisionId).trim());
+        }
+        if (data.workGroupId !== undefined && data.workGroupId !== null && String(data.workGroupId).trim() !== '') {
+            formData.append('WorkGroupId', String(data.workGroupId).trim());
+        }
         formData.append('Deadline', data.deadline);
         
         if (data.createdByUserId) {
@@ -431,6 +584,12 @@ export const taskService = {
             Description: data.description,
             Difficulty: data.difficulty,
             Status: data.status,
+            Priority: data.priority,
+            LevelId: data.levelId,
+            ProjectLevelId: data.levelId,
+            ProjectId: data.projectId,
+            DivisionId: data.divisionId,
+            WorkGroupId: data.workGroupId,
             Deadline: data.deadline,
             AssignedToUserId: data.assignedToUserId,
             CreatedByUserId: data.createdByUserId,

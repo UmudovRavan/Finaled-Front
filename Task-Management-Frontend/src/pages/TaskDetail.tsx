@@ -878,6 +878,21 @@ const TaskDetail: React.FC = () => {
         }
     };
 
+    const getPriorityBadge = (priority?: any) => {
+        const p = typeof priority === 'number' ? priority : priority === '3' || priority === 'Urgent' ? 3 : priority === '2' || priority === 'High' ? 2 : priority === '0' || priority === 'Low' ? 0 : 1;
+        switch (p) {
+            case 3:
+                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">🔥 Təcili</span>;
+            case 2:
+                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">⚡ Yüksək</span>;
+            case 0:
+                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-slate-500/10 text-slate-400 border border-slate-500/20">Aşağı</span>;
+            case 1:
+            default:
+                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">Normal</span>;
+        }
+    };
+
     const getDifficultyBadge = (diff: number) => {
         switch (diff) {
             case DifficultyLevel.Easy:
@@ -1022,9 +1037,26 @@ const TaskDetail: React.FC = () => {
                         <div className="lg:col-span-2 space-y-6">
                             {/* Task Overview Card */}
                             <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-6 sm:p-8 shadow-xs space-y-4">
-                                <div className="flex items-center gap-2.5">
+                                <div className="flex items-center gap-2.5 flex-wrap">
                                     {getStatusBadge(task.status)}
+                                    {getPriorityBadge(task.priority)}
                                     {getDifficultyBadge(task.difficulty)}
+
+                                    {task.divisionName && (
+                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                                            Şöbə: {task.divisionName}
+                                        </span>
+                                    )}
+                                    {task.projectName && (
+                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                                            Layihə: {task.projectName}
+                                        </span>
+                                    )}
+                                    {task.levelName && (
+                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                            Mərhələ: {task.levelName}
+                                        </span>
+                                    )}
                                 </div>
 
                                 <h1 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight">

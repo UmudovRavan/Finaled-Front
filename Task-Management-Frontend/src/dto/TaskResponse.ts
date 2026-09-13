@@ -18,6 +18,15 @@ export const DifficultyLevel = {
 
 export type DifficultyLevel = typeof DifficultyLevel[keyof typeof DifficultyLevel];
 
+export const Priority = {
+    Low: 0,
+    Normal: 1,
+    High: 2,
+    Urgent: 3,
+} as const;
+
+export type Priority = typeof Priority[keyof typeof Priority];
+
 export interface TaskResponse {
     id: string | number;
     title: string;
@@ -25,7 +34,13 @@ export interface TaskResponse {
     difficulty: DifficultyLevel;
     status: TaskStatus;
     deadline: string;
-    priority?: string;
+    priority?: Priority;
+    levelId?: string | number | null;
+    levelName?: string;
+    projectId?: string | number | null;
+    projectName?: string;
+    divisionId?: string | number | null;
+    divisionName?: string;
     workGroupId?: string | number | null;
     assignedToUserId?: string;
     assignedToUserName?: string;

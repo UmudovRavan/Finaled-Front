@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../layout';
-import { authService, notificationService } from '../api';
-import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
+import { authService, notificationService, tenantSettingsService } from '../api';
+import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, isUserAdmin, isUserDirector, isUserManager } from '../utils';
 import type { UserInfo } from '../utils';
-import type { NotificationResponse } from '../dto';
+import type { NotificationResponse, TenantSettingsDTO } from '../dto';
 import { useLanguage, LANGUAGES } from '../context/LanguageContext';
 
 // ─── theme helpers ────────────────────────────────────────────────────────────
@@ -194,6 +194,25 @@ const Settings: React.FC = () => {
     const [isUploadingPic, setIsUploadingPic] = useState(false);
     const [avatarTimestamp, setAvatarTimestamp] = useState(Date.now());
 
+    // System / Tenant Settings Flow
+    const [tenantSettings, setTenantSettings] = useState<TenantSettingsDTO>({
+        defaultTaskDeadlineDays: 3,
+        enableEmailNotifications: true,
+        notifyOnTaskAssignment: true,
+        notifyOnTaskStatusChange: true,
+        notifyOnDeadlineApproaching: true,
+        deadlineWarningHours: 24,
+        maxActiveTasksPerEmployee: 5,
+    });
+    const [isSavingSettings, setIsSavingSettings] = useState(false);
+    const [settingsSuccess, setSettingsSuccess] = useState('');
+    const [settingsError, setSettingsError] = useState('');
+
+    const isPrivilegedUser = useMemo(() => {
+        if (!userInfo || !userInfo.roles.length) return false;
+        return isUserAdmin(userInfo.roles) || isUserDirector(userInfo.roles) || isUserManager(userInfo.roles);
+    }, [userInfo]);
+
     const displayName = useMemo(() => {
         if (!userInfo) return 'User';
         return userInfo.userName
@@ -224,7 +243,27 @@ const Settings: React.FC = () => {
         setProfileName(parsed.userName || '');
         setProfileEmail(parsed.email || '');
         notificationService.getMyNotifications().then(setNotifications).catch(() => { });
+
+        // Load tenant settings
+        tenantSettingsService.getSettings()
+            .then(setTenantSettings)
+            .catch(() => {});
     }, [navigate]);
+
+    const handleSaveTenantSettings = async () => {
+        setSettingsError('');
+        setSettingsSuccess('');
+        setIsSavingSettings(true);
+        try {
+            const updated = await tenantSettingsService.updateSettings(tenantSettings);
+            setTenantSettings(updated);
+            setSettingsSuccess('Sistem tənzimləmələri uğurla yadda saxlanıldı!');
+        } catch (err: any) {
+            setSettingsError(err?.response?.data?.message || 'Tənzimləmələri yeniləmək mümkün olmadı');
+        } finally {
+            setIsSavingSettings(false);
+        }
+    };
 
     // Apply theme whenever isDark changes
     useEffect(() => { applyTheme(isDark); }, [isDark]);
@@ -891,6 +930,115 @@ const Settings: React.FC = () => {
                                 </div>
                             )}
                         </Card>
+
+                        {/* ── System / Tenant Settings (For Privileged Users) ── */}
+                        {isPrivilegedUser && (
+                            <div className="lg:col-span-2">
+                                <Card title="Sistem və Şirkət Tənzimləmələri" icon="tune" isDark={isDark}>
+                                    <div className="space-y-6">
+                                        <p className="text-xs" style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}>
+                                            Şirkət üzrə tapşırıq limitləri, icra müddətləri və avtomatik e-poçt bildirişlərini idarə edin.
+                                        </p>
+
+                                        {settingsSuccess && (
+                                            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs font-semibold">
+                                                {settingsSuccess}
+                                            </div>
+                                        )}
+                                        {settingsError && (
+                                            <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold">
+                                                {settingsError}
+                                            </div>
+                                        )}
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                            <Input
+                                                label="Standart İcra Müddəti (Gün)"
+                                                type="number"
+                                                value={String(tenantSettings.defaultTaskDeadlineDays || 3)}
+                                                onChange={(v) => setTenantSettings((prev) => ({ ...prev, defaultTaskDeadlineDays: Number(v) || 3 }))}
+                                                icon="calendar_today"
+                                                isDark={isDark}
+                                            />
+                                            <Input
+                                                label="Maksimum Aktiv Tapşırıq Limiti"
+                                                type="number"
+                                                value={String(tenantSettings.maxActiveTasksPerEmployee || 5)}
+                                                onChange={(v) => setTenantSettings((prev) => ({ ...prev, maxActiveTasksPerEmployee: Number(v) || 5 }))}
+                                                icon="speed"
+                                                isDark={isDark}
+                                            />
+                                            <Input
+                                                label="Gecikmə Xəbərdarlıq Vaxtı (Saat)"
+                                                type="number"
+                                                value={String(tenantSettings.deadlineWarningHours || 24)}
+                                                onChange={(v) => setTenantSettings((prev) => ({ ...prev, deadlineWarningHours: Number(v) || 24 }))}
+                                                icon="timer"
+                                                isDark={isDark}
+                                            />
+                                        </div>
+
+                                        <div style={{ height: 1, background: isDark ? '#374151' : '#F3F4F6' }} />
+
+                                        {/* Toggles */}
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-sm font-semibold" style={{ color: isDark ? '#F9FAFB' : '#111827' }}>E-poçt Bildirişləri</p>
+                                                    <p className="text-xs" style={{ color: isDark ? '#6B7280' : '#9CA3AF' }}>Sistem hadisələrində əməkdaşlara e-poçt göndərilsin</p>
+                                                </div>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={tenantSettings.enableEmailNotifications ?? true}
+                                                    onChange={(e) => setTenantSettings((prev) => ({ ...prev, enableEmailNotifications: e.target.checked }))}
+                                                    className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
+                                                />
+                                            </div>
+
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-sm font-semibold" style={{ color: isDark ? '#F9FAFB' : '#111827' }}>Tapşırıq Təyin Edildikdə Bildiriş</p>
+                                                    <p className="text-xs" style={{ color: isDark ? '#6B7280' : '#9CA3AF' }}>Yeni tapşırıq alan istifadəçiyə dərhal xəbər verilsin</p>
+                                                </div>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={tenantSettings.notifyOnTaskAssignment ?? true}
+                                                    onChange={(e) => setTenantSettings((prev) => ({ ...prev, notifyOnTaskAssignment: e.target.checked }))}
+                                                    className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
+                                                />
+                                            </div>
+
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-sm font-semibold" style={{ color: isDark ? '#F9FAFB' : '#111827' }}>Status Dəyişikliyi Bildirişi</p>
+                                                    <p className="text-xs" style={{ color: isDark ? '#6B7280' : '#9CA3AF' }}>Tapşırıq icra edildikdə və ya tamamlandıqda bildiriş göndərilsin</p>
+                                                </div>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={tenantSettings.notifyOnTaskStatusChange ?? true}
+                                                    onChange={(e) => setTenantSettings((prev) => ({ ...prev, notifyOnTaskStatusChange: e.target.checked }))}
+                                                    className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={handleSaveTenantSettings}
+                                            disabled={isSavingSettings}
+                                            className="w-full py-3.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-md transition-all hover:opacity-90 cursor-pointer"
+                                            style={{ background: 'var(--color-primary, #6366F1)' }}
+                                        >
+                                            {isSavingSettings ? (
+                                                <div className="rounded-full border-2 border-white border-t-transparent animate-spin w-4 h-4" />
+                                            ) : (
+                                                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>save</span>
+                                            )}
+                                            Tənzimləmələri Yadda Saxla
+                                        </button>
+                                    </div>
+                                </Card>
+                            </div>
+                        )}
 
                         {/* ── Danger Zone ── */}
                         <Card title="Hesab" icon="manage_accounts" isDark={isDark}>

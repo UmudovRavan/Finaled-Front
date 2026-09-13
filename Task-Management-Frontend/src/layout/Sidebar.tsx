@@ -16,12 +16,14 @@ import {
     ComputerDesktopIcon,
     ChartBarIcon,
     ClipboardDocumentListIcon,
+    BuildingOfficeIcon,
+    FolderIcon,
 } from '@heroicons/react/24/outline';
-import { authService, workGroupService } from '../api';
+import { authService } from '../api';
 import { useNotifications } from '../context/NotificationContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context';
-import { parseJwtToken, isUserAdmin, isUserManager } from '../utils';
+import { parseJwtToken, isUserAdmin, isUserDirector, isUserManager } from '../utils';
 import altensorLogo from '../assets/Altensor-Logo.png';
 import taskManagementLogo from '../assets/Task-Management-Logo.svg';
 import SettingsModal from '../components/SettingsModal';
@@ -92,7 +94,6 @@ const desktopApps = [
 
 const Sidebar: React.FC<SidebarProps> = ({
     userRole: propUserRole,
-    workGroupName: propWorkGroupName,
     notificationCount: propNotificationCount = 0,
     onCollapseChange,
 }) => {
@@ -109,8 +110,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     const [isBrandMenuOpen, setIsBrandMenuOpen] = useState(false);
     const [isAppsSubmenuOpen, setIsAppsSubmenuOpen] = useState(false);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-    const [managerGroupId, setManagerGroupId] = useState<number | string | null>(null);
-    const [managerGroupName, setManagerGroupName] = useState<string>(propWorkGroupName || 'İş Qrupum');
     const brandMenuRef = useRef<HTMLDivElement>(null);
 
     // Global listener for opening settings modal from anywhere (e.g. Header)
@@ -131,26 +130,11 @@ const Sidebar: React.FC<SidebarProps> = ({
     }, [parsedUser, propUserRole]);
 
     const isAdmin = useMemo(() => isUserAdmin(roles), [roles]);
+    const isDirector = useMemo(() => !isAdmin && isUserDirector(roles), [isAdmin, roles]);
     const isManager = useMemo(
-        () => !isAdmin && isUserManager(roles),
-        [isAdmin, roles]
+        () => !isAdmin && !isDirector && isUserManager(roles),
+        [isAdmin, isDirector, roles]
     );
-
-    // If manager, fetch their specific led workgroup ID
-    useEffect(() => {
-        if (isManager && parsedUser?.userId) {
-            workGroupService
-                .getAllWorkGroups()
-                .then((groups) => {
-                    const myGroup = groups.find((g) => g.leaderId === parsedUser.userId);
-                    if (myGroup) {
-                        setManagerGroupId(myGroup.id);
-                        setManagerGroupName(myGroup.name || 'İş Qrupum');
-                    }
-                })
-                .catch(() => {});
-        }
-    }, [isManager, parsedUser?.userId]);
 
     // Save collapse state
     useEffect(() => {
@@ -192,9 +176,10 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     const formattedRole = useMemo(() => {
         if (isAdmin) return 'Admin';
+        if (isDirector) return 'Director';
         if (isManager) return 'Manager';
         return 'Employee';
-    }, [isAdmin, isManager]);
+    }, [isAdmin, isDirector, isManager]);
 
     // Build permission and role-filtered navigation menu items
     const menuItems = useMemo(() => {
@@ -213,12 +198,32 @@ const Sidebar: React.FC<SidebarProps> = ({
         // 2. Dashboard - universally accessible
         items.push({ path: '/dashboard', label: t('nav.dashboard', {}, 'Dashboard'), icon: Squares2X2Icon });
 
-        // 3. Tasks
+        // 3. Director Dashboard (Company-wide)
+        if (isAdmin || isDirector || hasPermission('tms.dashboard.view')) {
+            items.push({ path: '/company-dashboard', label: 'Direktor Paneli', icon: ChartBarIcon });
+        }
+
+        // 4. Tasks
         if (isAdmin || hasPermission('tms.tasks.view')) {
             items.push({ path: '/tasks', label: t('tasks.taskList', {}, 'Tapşırıqlar'), icon: CheckCircleIcon });
         }
 
-        // 5. Performance & Leaderboard
+        // 5. Hierarchy: Şöbələr (Divisions)
+        if (isAdmin || isDirector || isManager || hasPermission('tms.divisions.view')) {
+            items.push({ path: '/divisions', label: 'Şöbələr', icon: BuildingOfficeIcon });
+        }
+
+        // 6. Hierarchy: Layihələr (Projects)
+        if (isAdmin || isDirector || isManager || hasPermission('tms.projects.view')) {
+            items.push({ path: '/projects', label: 'Layihələr', icon: FolderIcon });
+        }
+
+        // 7. Workload Analysis
+        if (isAdmin || isDirector || isManager || hasPermission('tms.workload.view')) {
+            items.push({ path: '/workload', label: 'İş Yükü', icon: BoltIcon });
+        }
+
+        // 8. Performance & Leaderboard
         if (isAdmin || hasPermission('tms.performance.view')) {
             items.push(
                 { path: '/leaderboard', label: t('nav.leaderboard', {}, 'Liderlər Lövhəsi'), icon: BoltIcon },
@@ -227,7 +232,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         }
 
         return items;
-    }, [isAdmin, hasPermission, t]);
+    }, [isAdmin, isDirector, isManager, hasPermission, t]);
 
     return (
         <aside

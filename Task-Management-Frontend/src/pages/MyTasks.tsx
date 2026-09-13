@@ -5,7 +5,7 @@ import CreateTaskModal from '../components/CreateTaskModal';
 import { taskService, authService, notificationService } from '../api';
 import { signalRService } from '../services/signalRService';
 import type { TaskResponse, NotificationResponse } from '../dto';
-import { TaskStatus, DifficultyLevel } from '../dto';
+import { TaskStatus, DifficultyLevel, Priority } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, isUserAdmin, isUserManager } from '../utils';
 import type { UserInfo } from '../utils';
 import { useLanguage } from '../context/LanguageContext';
@@ -44,6 +44,7 @@ const MyTasks: React.FC = () => {
     // Filter states
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [priorityFilter, setPriorityFilter] = useState<string>('all');
     const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
     const [ownershipFilter, setOwnershipFilter] = useState<string>('all');
     const [datePreset, setDatePreset] = useState<string>('all');
@@ -239,12 +240,17 @@ const MyTasks: React.FC = () => {
             result = result.filter((task) => task.status === parseInt(statusFilter));
         }
 
-        // 4. Difficulty Filter
+        // 4. Priority Filter
+        if (priorityFilter !== 'all') {
+            result = result.filter((task) => (task.priority !== undefined ? task.priority : 1) === parseInt(priorityFilter));
+        }
+
+        // 5. Difficulty Filter
         if (difficultyFilter !== 'all') {
             result = result.filter((task) => task.difficulty === parseInt(difficultyFilter));
         }
 
-        // 5. Date Preset Filter
+        // 6. Date Preset Filter
         if (datePreset !== 'all') {
             const now = new Date();
             const todayStr = now.toISOString().split('T')[0];
@@ -262,13 +268,14 @@ const MyTasks: React.FC = () => {
         }
 
         return result;
-    }, [allTasks, userInfo, ownershipFilter, isManager, searchQuery, statusFilter, difficultyFilter, datePreset]);
+    }, [allTasks, userInfo, ownershipFilter, isManager, searchQuery, statusFilter, priorityFilter, difficultyFilter, datePreset]);
 
-    const hasActiveFilters = searchQuery || statusFilter !== 'all' || difficultyFilter !== 'all' || ownershipFilter !== 'all' || datePreset !== 'all';
+    const hasActiveFilters = searchQuery || statusFilter !== 'all' || priorityFilter !== 'all' || difficultyFilter !== 'all' || ownershipFilter !== 'all' || datePreset !== 'all';
 
     const clearAllFilters = () => {
         setSearchQuery('');
         setStatusFilter('all');
+        setPriorityFilter('all');
         setDifficultyFilter('all');
         setOwnershipFilter('all');
         setDatePreset('all');
@@ -553,11 +560,27 @@ const MyTasks: React.FC = () => {
                             {/* Priority Select */}
                             <div className="relative flex items-center">
                                 <select
+                                    value={priorityFilter}
+                                    onChange={(e) => setPriorityFilter(e.target.value)}
+                                    className="bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3 py-1.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-blue-500 pr-7 font-medium"
+                                >
+                                    <option value="all">Bütün Prioritetlər</option>
+                                    <option value={Priority.Urgent}>🔥 Təcili</option>
+                                    <option value={Priority.High}>⚡ Yüksək</option>
+                                    <option value={Priority.Normal}>Normal</option>
+                                    <option value={Priority.Low}>Aşağı</option>
+                                </select>
+                                <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-2.5 pointer-events-none" />
+                            </div>
+
+                            {/* Difficulty Select */}
+                            <div className="relative flex items-center">
+                                <select
                                     value={difficultyFilter}
                                     onChange={(e) => setDifficultyFilter(e.target.value)}
                                     className="bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3 py-1.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-blue-500 pr-7 font-medium"
                                 >
-                                    <option value="all">{t('tasks.filterByPriority', {}, 'Bütün Prioritetlər')}</option>
+                                    <option value="all">Bütün Çətinliklər</option>
                                     <option value={DifficultyLevel.Hard}>{t('difficulties.hard', {}, 'Yüksək (Çətin)')}</option>
                                     <option value={DifficultyLevel.Medium}>{t('difficulties.medium', {}, 'Orta')}</option>
                                     <option value={DifficultyLevel.Easy}>{t('difficulties.easy', {}, 'Aşağı (Asan)')}</option>

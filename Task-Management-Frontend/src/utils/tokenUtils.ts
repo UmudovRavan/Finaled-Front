@@ -166,16 +166,24 @@ export const isUserAdmin = (roles?: string[]): boolean => {
     });
 };
 
+export const isUserDirector = (roles?: string[]): boolean => {
+    if (!roles || !roles.length) return false;
+    return roles.some((r) => {
+        const role = r.toLowerCase().replace(/[^a-z]/g, '');
+        return role.includes('director') || role.includes('tmsdirector');
+    });
+};
+
 export const isUserManager = (roles?: string[]): boolean => {
     if (!roles || !roles.length) return false;
     return roles.some((r) => {
         const role = r.toLowerCase().replace(/[^a-z]/g, '');
-        return role.includes('manager');
+        return role.includes('manager') || role.includes('tmsmanager');
     });
 };
 
 export const hasWorkGroupAccess = (roles?: string[]): boolean => {
-    return isUserAdmin(roles) || isUserManager(roles);
+    return isUserAdmin(roles) || isUserDirector(roles) || isUserManager(roles);
 };
 
 export const getPrimaryRole = (roles: string[]): string => {
@@ -187,21 +195,26 @@ export const getPrimaryRole = (roles: string[]): string => {
         'tenantadmin': 100,
         'tenant_admin': 100,
         'admin': 90,
+        'director': 80,
+        'tmsdirector': 80,
         'manager': 50,
+        'tmsmanager': 50,
         'employee': 10,
+        'tmsemployee': 10,
     };
 
     const sortedRoles = [...roles].sort((a, b) => {
         const keyA = a.toLowerCase().replace(/[^a-z]/g, '');
         const keyB = b.toLowerCase().replace(/[^a-z]/g, '');
-        const priorityA = rolePriority[keyA] || (keyA.includes('admin') ? 100 : keyA.includes('manager') ? 50 : 1);
-        const priorityB = rolePriority[keyB] || (keyB.includes('admin') ? 100 : keyB.includes('manager') ? 50 : 1);
+        const priorityA = rolePriority[keyA] || (keyA.includes('admin') ? 100 : keyA.includes('director') ? 80 : keyA.includes('manager') ? 50 : 1);
+        const priorityB = rolePriority[keyB] || (keyB.includes('admin') ? 100 : keyB.includes('director') ? 80 : keyB.includes('manager') ? 50 : 1);
         return priorityB - priorityA;
     });
 
     const primaryRole = sortedRoles[0];
     const key = primaryRole.toLowerCase().replace(/[^a-z]/g, '');
     if (key.includes('admin') || key.includes('superadmin')) return 'Admin';
+    if (key.includes('director')) return 'Director';
     if (key.includes('manager')) return 'Manager';
     return primaryRole.charAt(0).toUpperCase() + primaryRole.slice(1).toLowerCase();
 };

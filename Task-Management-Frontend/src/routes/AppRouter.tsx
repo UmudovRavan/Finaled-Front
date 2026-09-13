@@ -16,8 +16,11 @@ import {
     Notifications,
     Performance,
     Leaderboard,
-    WorkGroups,
-    WorkGroupRanking,
+    Divisions,
+    Projects,
+    ProjectDetail,
+    WorkloadView,
+    CompanyDashboard,
     EmployeePerformance,
     Settings,
 } from '../pages';
@@ -39,6 +42,11 @@ const AppRouter: React.FC = () => {
                 <Route path="/dashboard" element={<DashboardOverview />} />
                 <Route path="/settings" element={<Settings />} />
 
+                {/* Company Dashboard (Director / Executive Overview) */}
+                <Route element={<ProtectedRoute requiredPermission="tms.dashboard.view" />}>
+                    <Route path="/company-dashboard" element={<CompanyDashboard />} />
+                </Route>
+
                 {/* Tasks Management */}
                 <Route element={<ProtectedRoute requiredPermission="tms.tasks.view" />}>
                     <Route path="/tasks" element={<MyTasks />} />
@@ -50,10 +58,20 @@ const AppRouter: React.FC = () => {
                     <Route path="/tasks/edit/:id" element={<TaskEdit />} />
                 </Route>
 
-                {/* Work Groups */}
-                <Route element={<ProtectedRoute requiredPermission="tms.workgroups.view" />}>
-                    <Route path="/work-groups" element={<WorkGroups />} />
-                    <Route path="/work-groups/:workGroupId" element={<WorkGroupRanking />} />
+                {/* Divisions Hierarchy */}
+                <Route element={<ProtectedRoute requiredPermission="tms.divisions.view" />}>
+                    <Route path="/divisions" element={<Divisions />} />
+                </Route>
+
+                {/* Projects Hierarchy */}
+                <Route element={<ProtectedRoute requiredPermission="tms.projects.view" />}>
+                    <Route path="/projects" element={<Projects />} />
+                    <Route path="/projects/:id" element={<ProjectDetail />} />
+                </Route>
+
+                {/* Workload Analysis */}
+                <Route element={<ProtectedRoute requiredPermission="tms.workload.view" />}>
+                    <Route path="/workload" element={<WorkloadView />} />
                 </Route>
 
                 {/* Performance & Leaderboard */}

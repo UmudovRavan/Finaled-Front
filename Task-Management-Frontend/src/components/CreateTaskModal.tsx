@@ -6,10 +6,14 @@ import {
     ExclamationTriangleIcon,
     ChevronDownIcon,
     UserIcon,
+    BuildingOfficeIcon,
+    FolderIcon,
+    QueueListIcon,
+    ShieldExclamationIcon,
 } from '@heroicons/react/24/outline';
-import { DifficultyLevel } from '../dto';
-import type { UserResponse } from '../dto';
-import { taskService, userService, authService } from '../api';
+import { DifficultyLevel, Priority } from '../dto';
+import type { UserResponse, DivisionDTO, ProjectDTO, ProjectLevelDTO, WorkloadWarningDTO } from '../dto';
+import { taskService, userService, divisionService, projectService, projectLevelService, workloadService, authService } from '../api';
 import { parseJwtToken } from '../utils';
 import { useLanguage } from '../context/LanguageContext';
 import UserSuggestionList from './UserSuggestionList';
@@ -18,22 +22,40 @@ interface CreateTaskModalProps {
     isOpen: boolean;
     onClose: () => void;
     onTaskCreated: () => void;
+    defaultDivisionId?: string | number;
+    defaultProjectId?: string | number;
+    defaultLevelId?: string | number;
 }
 
 const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     isOpen,
     onClose,
     onTaskCreated,
+    defaultDivisionId,
+    defaultProjectId,
+    defaultLevelId,
 }) => {
     const { t } = useLanguage();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [difficulty, setDifficulty] = useState<DifficultyLevel>(DifficultyLevel.Medium);
+    const [priority, setPriority] = useState<Priority>(Priority.Normal);
     const [deadline, setDeadline] = useState('');
     const [assignedUser, setAssignedUser] = useState<UserResponse | null>(null);
     const [files, setFiles] = useState<File[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Hierarchy selection states
+    const [divisions, setDivisions] = useState<DivisionDTO[]>([]);
+    const [selectedDivisionId, setSelectedDivisionId] = useState<string>('');
+    const [projects, setProjects] = useState<ProjectDTO[]>([]);
+    const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+    const [levels, setLevels] = useState<ProjectLevelDTO[]>([]);
+    const [selectedLevelId, setSelectedLevelId] = useState<string>('');
+
+    // Workload warning state
+    const [workloadWarning, setWorkloadWarning] = useState<WorkloadWarningDTO | null>(null);
 
     // Mention logic state
     const [allUsers, setAllUsers] = useState<UserResponse[]>([]);
@@ -43,13 +65,15 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
     const [assignInputValue, setAssignInputValue] = useState('');
     const assignInputRef = useRef<HTMLInputElement>(null);
+    const assignContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (isOpen) {
-            fetchUsers();
+            fetchInitialData();
             setTitle('');
             setDescription('');
             setDifficulty(DifficultyLevel.Medium);
+            setPriority(Priority.Normal);
             setDeadline('');
             setAssignedUser(null);
             setFiles([]);
@@ -57,8 +81,74 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             setAssignInputValue('');
             setShowSuggestions(false);
             setMentionQuery('');
+            setWorkloadWarning(null);
+
+            if (defaultDivisionId) setSelectedDivisionId(String(defaultDivisionId));
+            if (defaultProjectId) setSelectedProjectId(String(defaultProjectId));
+            if (defaultLevelId) setSelectedLevelId(String(defaultLevelId));
         }
-    }, [isOpen]);
+    }, [isOpen, defaultDivisionId, defaultProjectId, defaultLevelId]);
+
+    const fetchInitialData = async () => {
+        try {
+            const [usersData, divsData] = await Promise.all([
+                userService.getAllUsers().catch(() => []),
+                divisionService.getAllDivisions().catch(() => []),
+            ]);
+            setAllUsers(usersData);
+            setDivisions(divsData);
+
+            if (defaultDivisionId) {
+                const projs = await projectService.getProjectsByDivision(defaultDivisionId).catch(() => []);
+                setProjects(projs);
+            } else if (divsData.length > 0) {
+                const projs = await projectService.getAllProjects().catch(() => []);
+                setProjects(projs);
+            }
+
+            if (defaultProjectId) {
+                const lvls = await projectLevelService.getLevelsByProject(defaultProjectId).catch(() => []);
+                setLevels(lvls);
+            }
+        } catch (err) {
+            console.error('Failed to load initial data in CreateTaskModal', err);
+        }
+    };
+
+    // When division changes, update projects
+    const handleDivisionChange = async (divId: string) => {
+        setSelectedDivisionId(divId);
+        setSelectedProjectId('');
+        setSelectedLevelId('');
+        setLevels([]);
+        if (divId) {
+            try {
+                const projs = await projectService.getProjectsByDivision(divId);
+                setProjects(projs);
+            } catch {
+                setProjects([]);
+            }
+        } else {
+            const projs = await projectService.getAllProjects().catch(() => []);
+            setProjects(projs);
+        }
+    };
+
+    // When project changes, update levels
+    const handleProjectChange = async (projId: string) => {
+        setSelectedProjectId(projId);
+        setSelectedLevelId('');
+        if (projId) {
+            try {
+                const lvls = await projectLevelService.getLevelsByProject(projId);
+                setLevels(lvls);
+            } catch {
+                setLevels([]);
+            }
+        } else {
+            setLevels([]);
+        }
+    };
 
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
@@ -70,8 +160,6 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         return () => document.removeEventListener('keydown', handleEscape);
     }, [isOpen, onClose]);
 
-    const assignContainerRef = useRef<HTMLDivElement>(null);
-
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (assignContainerRef.current && !assignContainerRef.current.contains(e.target as Node)) {
@@ -82,22 +170,9 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const fetchUsers = async () => {
-        try {
-            const data = await userService.getAllUsers();
-            setAllUsers(data);
-        } catch (err) {
-            console.error('Failed to fetch users', err);
-        }
-    };
-
     const filteredUsers = useMemo(() => {
-        if (!allUsers || allUsers.length === 0) {
-            return [];
-        }
-        if (!mentionQuery || mentionQuery.trim().length === 0) {
-            return allUsers;
-        }
+        if (!allUsers || allUsers.length === 0) return [];
+        if (!mentionQuery || mentionQuery.trim().length === 0) return allUsers;
         const query = mentionQuery.toLowerCase().trim();
         return allUsers.filter(
             (u) =>
@@ -113,6 +188,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
         if (assignedUser && value !== assignedUser.userName) {
             setAssignedUser(null);
+            setWorkloadWarning(null);
         }
 
         const query = value.startsWith('@') ? value.substring(1) : value;
@@ -126,11 +202,21 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         setSuggestionIndex(0);
     };
 
-    const handleSelectUser = (user: UserResponse) => {
+    const handleSelectUser = async (user: UserResponse) => {
         setAssignedUser(user);
         setAssignInputValue(user.userName || user.email || '');
         setShowSuggestions(false);
         setMentionQuery('');
+
+        // Check workload for this user
+        if (user.id) {
+            try {
+                const warning = await workloadService.checkUserWorkload(user.id);
+                setWorkloadWarning(warning);
+            } catch {
+                // ignore
+            }
+        }
     };
 
     const handleAssignKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -191,22 +277,29 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             const user = token ? parseJwtToken(token) : null;
             const createdByUserId = user?.userId || '';
 
-            const createdTask = await taskService.createTask({
-                title: title.trim(),
-                description: description.trim(),
-                difficulty: typeof difficulty === 'number' ? difficulty : 1,
-                status: assignedUser ? 1 : 0,
-                deadline: new Date(deadline).toISOString(),
-                assignedToUserId: assignedUser?.id || undefined,
-                createdByUserId,
-                files: files.length > 0 ? files : undefined,
-            }, files.length > 0 ? files : undefined);
+            const createdTask = await taskService.createTask(
+                {
+                    title: title.trim(),
+                    description: description.trim(),
+                    difficulty: typeof difficulty === 'number' ? difficulty : 1,
+                    priority: typeof priority === 'number' ? priority : 1,
+                    status: assignedUser ? 1 : 0,
+                    deadline: new Date(deadline).toISOString(),
+                    assignedToUserId: assignedUser?.id || undefined,
+                    divisionId: selectedDivisionId || undefined,
+                    projectId: selectedProjectId || undefined,
+                    levelId: selectedLevelId || undefined,
+                    createdByUserId,
+                    files: files.length > 0 ? files : undefined,
+                },
+                files.length > 0 ? files : undefined
+            );
 
             if (createdTask?.id && assignedUser?.id) {
                 try {
                     await taskService.assignTask(createdTask.id, assignedUser.id);
                 } catch {
-                    // Task already created with AssignedToUserId, assignTask is optional confirmation
+                    // Task already created with AssignedToUserId
                 }
             }
 
@@ -226,14 +319,14 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150 font-sans">
             <div
-                className="w-full max-w-lg bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-[#F4F4F5]"
+                className="w-full max-w-xl bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-[#F4F4F5]"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-[#2C2C2E]">
                     <div className="flex items-center gap-2.5">
                         <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                        <h2 className="text-sm font-bold text-white tracking-tight">{t('tasks.createTask', {}, 'Yeni Tapşırıq Yarat')}</h2>
+                        <h2 className="text-sm font-bold text-white tracking-tight">Yeni Tapşırıq Yarat</h2>
                     </div>
                     <button
                         onClick={onClose}
@@ -254,66 +347,146 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
                     {/* Title */}
                     <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-[#A1A1AA]">{t('tasks.taskTitle', {}, 'Tapşırıq Başlığı')} *</label>
+                        <label className="text-xs font-semibold text-[#A1A1AA]">Tapşırıq Başlığı *</label>
                         <input
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            placeholder={t('tasks.taskTitle', {}, 'Tapşırıq Başlığı...')}
+                            placeholder="Məsələn: API inteqrasiyasını tamamla..."
                             className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium"
                             required
                         />
                     </div>
 
+                    {/* Hierarchy: Division > Project > Level */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#222226] p-3 rounded-xl border border-[#2C2C2E]">
+                        {/* Division */}
+                        <div className="space-y-1">
+                            <label className="text-[11px] font-semibold text-[#A1A1AA] flex items-center gap-1">
+                                <BuildingOfficeIcon className="w-3 h-3 text-sky-400" />
+                                Şöbə
+                            </label>
+                            <select
+                                value={selectedDivisionId}
+                                onChange={(e) => handleDivisionChange(e.target.value)}
+                                className="w-full bg-[#27272A] border border-[#3F3F46]/60 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                            >
+                                <option value="">Şöbəsiz</option>
+                                {divisions.map((d) => (
+                                    <option key={d.id} value={d.id}>
+                                        {d.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Project */}
+                        <div className="space-y-1">
+                            <label className="text-[11px] font-semibold text-[#A1A1AA] flex items-center gap-1">
+                                <FolderIcon className="w-3 h-3 text-purple-400" />
+                                Layihə
+                            </label>
+                            <select
+                                value={selectedProjectId}
+                                onChange={(e) => handleProjectChange(e.target.value)}
+                                className="w-full bg-[#27272A] border border-[#3F3F46]/60 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                            >
+                                <option value="">Layihəsiz</option>
+                                {projects.map((p) => (
+                                    <option key={p.id} value={p.id}>
+                                        {p.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Level */}
+                        <div className="space-y-1">
+                            <label className="text-[11px] font-semibold text-[#A1A1AA] flex items-center gap-1">
+                                <QueueListIcon className="w-3 h-3 text-emerald-400" />
+                                Mərhələ
+                            </label>
+                            <select
+                                value={selectedLevelId}
+                                onChange={(e) => setSelectedLevelId(e.target.value)}
+                                className="w-full bg-[#27272A] border border-[#3F3F46]/60 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                                disabled={!selectedProjectId && levels.length === 0}
+                            >
+                                <option value="">Mərhələsiz</option>
+                                {levels.map((lvl) => (
+                                    <option key={lvl.id} value={lvl.id}>
+                                        {lvl.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
                     {/* Description */}
                     <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-[#A1A1AA]">{t('tasks.taskDesc', {}, 'Təsvir')}</label>
+                        <label className="text-xs font-semibold text-[#A1A1AA]">Təsvir</label>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            placeholder={t('tasks.taskDesc', {}, 'Tapşırıq haqqında ətraflı qeydlər...')}
+                            placeholder="Tapşırıq haqqında ətraflı qeydlər..."
                             rows={3}
                             className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl p-3 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium resize-none"
                         />
                     </div>
 
-                    {/* Row: Difficulty & Deadline */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    {/* Row: Priority & Difficulty & Deadline */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {/* Priority */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-[#A1A1AA]">Prioritet</label>
+                            <div className="relative flex items-center">
+                                <select
+                                    value={priority}
+                                    onChange={(e) => setPriority(Number(e.target.value) as Priority)}
+                                    className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3 py-2 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-blue-500 pr-7 font-medium"
+                                >
+                                    <option value={Priority.Low}>Aşağı</option>
+                                    <option value={Priority.Normal}>Normal</option>
+                                    <option value={Priority.High}>Yüksək</option>
+                                    <option value={Priority.Urgent}>Təcili</option>
+                                </select>
+                                <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-2.5 pointer-events-none" />
+                            </div>
+                        </div>
+
                         {/* Difficulty */}
                         <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.difficulty', {}, 'Prioritet / Çətinlik')}</label>
+                            <label className="text-xs font-semibold text-[#A1A1AA]">Çətinlik</label>
                             <div className="relative flex items-center">
                                 <select
                                     value={difficulty}
                                     onChange={(e) => setDifficulty(Number(e.target.value) as DifficultyLevel)}
-                                    className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-blue-500 pr-8 font-medium"
+                                    className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3 py-2 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-blue-500 pr-7 font-medium"
                                 >
-                                    <option value={DifficultyLevel.Easy}>{t('difficulties.easy', {}, 'Aşağı (Asan)')}</option>
-                                    <option value={DifficultyLevel.Medium}>{t('difficulties.medium', {}, 'Orta')}</option>
-                                    <option value={DifficultyLevel.Hard}>{t('difficulties.hard', {}, 'Yüksək (Çətin)')}</option>
+                                    <option value={DifficultyLevel.Easy}>Asan</option>
+                                    <option value={DifficultyLevel.Medium}>Orta</option>
+                                    <option value={DifficultyLevel.Hard}>Çətin</option>
                                 </select>
-                                <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-3 pointer-events-none" />
+                                <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-2.5 pointer-events-none" />
                             </div>
                         </div>
 
                         {/* Deadline */}
                         <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.dueDate', {}, 'İcra Tarixi')} *</label>
-                            <div className="relative flex items-center">
-                                <input
-                                    type="datetime-local"
-                                    value={deadline}
-                                    onChange={(e) => setDeadline(e.target.value)}
-                                    className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-blue-500 font-medium"
-                                    required
-                                />
-                            </div>
+                            <label className="text-xs font-semibold text-[#A1A1AA]">İcra Tarixi *</label>
+                            <input
+                                type="datetime-local"
+                                value={deadline}
+                                onChange={(e) => setDeadline(e.target.value)}
+                                className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-blue-500 font-medium"
+                                required
+                            />
                         </div>
                     </div>
 
                     {/* Assignee Search / Mention */}
                     <div ref={assignContainerRef} className="space-y-1.5 relative">
-                        <label className="text-xs font-semibold text-[#A1A1AA]">{t('tasks.assignedUser', {}, 'Təyin Edilən Şəxs')}</label>
+                        <label className="text-xs font-semibold text-[#A1A1AA]">Təyin Edilən Şəxs</label>
                         <div className="relative flex items-center">
                             <input
                                 ref={assignInputRef}
@@ -323,7 +496,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                                 onFocus={handleAssignInputFocus}
                                 onClick={handleAssignInputFocus}
                                 onKeyDown={handleAssignKeyDown}
-                                placeholder={t('common.search', {}, '@ istifadəçi axtarın və ya seçin...')}
+                                placeholder="@ istifadəçi axtarın və ya seçin..."
                                 className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium"
                             />
                             <UserIcon className="w-4 h-4 text-[#71717A] absolute left-3 pointer-events-none" />
@@ -337,24 +510,42 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                             />
                         )}
 
-                        {assignedUser && (
-                            <div className="flex items-center gap-2 pt-1 text-xs text-emerald-400">
-                                <span>{t('tasks.assignedUser', {}, 'Təyin edildi')}: <strong>{assignedUser.userName}</strong></span>
+                        {/* Workload Warning Notification */}
+                        {workloadWarning && (
+                            <div
+                                className={`p-2.5 rounded-xl border text-xs flex items-center gap-2 animate-in fade-in ${
+                                    workloadWarning.isOverloaded
+                                        ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                                        : workloadWarning.warningLevel === 'warning'
+                                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                                        : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                                }`}
+                            >
+                                {workloadWarning.isOverloaded ? (
+                                    <ShieldExclamationIcon className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                                ) : (
+                                    <ExclamationTriangleIcon className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                                )}
+                                <span>
+                                    {assignedUser?.userName || 'Bu istifadəçi'} üzərində{' '}
+                                    <strong>{workloadWarning.activeTaskCount} aktiv tapşırıq</strong> var.{' '}
+                                    {workloadWarning.isOverloaded && '(Həddindən artıq yüklənmə tövsiyə edilmir!)'}
+                                </span>
                             </div>
                         )}
                     </div>
 
                     {/* Attachments */}
                     <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-[#A1A1AA]">{t('tasks.attachments', {}, 'Qoşma Fayllar')}</label>
+                        <label className="text-xs font-semibold text-[#A1A1AA]">Qoşma Fayllar</label>
                         <div className="flex items-center gap-2">
                             <label className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] border border-[#3F3F46] text-xs font-medium text-white cursor-pointer transition-colors">
                                 <PaperClipIcon className="w-4 h-4 text-[#A1A1AA]" />
-                                <span>{t('tasks.uploadAttachment', {}, 'Fayl seçin')}</span>
+                                <span>Fayl seçin</span>
                                 <input type="file" multiple onChange={handleFileChange} className="hidden" />
                             </label>
                             <span className="text-[11px] text-[#71717A]">
-                                {files.length > 0 ? `${files.length} ${t('tasks.attachments', {}, 'fayl seçildi')}` : t('common.optional', {}, 'İstəyə görə')}
+                                {files.length > 0 ? `${files.length} fayl seçildi` : 'İstəyə görə'}
                             </span>
                         </div>
 
@@ -379,14 +570,15 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                             onClick={onClose}
                             className="px-4 py-2 rounded-xl bg-transparent hover:bg-white/5 text-xs font-semibold text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
                         >
-                            {t('common.cancel', {}, 'Ləğv et')}
+                            Ləğv et
                         </button>
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="px-5 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg transition-colors cursor-pointer disabled:opacity-50"
+                            className="px-5 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
                         >
-                            {isSubmitting ? t('common.loading', {}, 'Yaradılır...') : t('tasks.createTask', {}, 'Tapşırığı Yarat')}
+                            {isSubmitting && <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />}
+                            <span>{isSubmitting ? 'Yaradılır...' : 'Tapşırığı Yarat'}</span>
                         </button>
                     </div>
                 </form>

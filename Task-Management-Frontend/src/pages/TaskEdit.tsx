@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../layout';
-import { taskService, authService, notificationService, userService } from '../api';
-import type { TaskResponse, NotificationResponse, UserResponse } from '../dto';
-import { TaskStatus, DifficultyLevel } from '../dto';
+import { taskService, authService, notificationService, userService, divisionService, projectService, projectLevelService } from '../api';
+import type { TaskResponse, NotificationResponse, UserResponse, DivisionDTO, ProjectDTO, ProjectLevelDTO } from '../dto';
+import { TaskStatus, DifficultyLevel, Priority } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
 import type { UserInfo } from '../utils';
 import { useLanguage } from '../context/LanguageContext';
@@ -16,12 +16,15 @@ import {
     ExclamationTriangleIcon,
     PaperClipIcon,
     XMarkIcon,
+    BuildingOfficeIcon,
+    FolderIcon,
+    QueueListIcon,
 } from '@heroicons/react/24/outline';
 
 const TaskEdit: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { t, language } = useLanguage();
+    const { t } = useLanguage();
 
     const [task, setTask] = useState<TaskResponse | null>(null);
     const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
@@ -37,8 +40,17 @@ const TaskEdit: React.FC = () => {
     const [description, setDescription] = useState('');
     const [status, setStatus] = useState<number>(TaskStatus.Pending);
     const [difficulty, setDifficulty] = useState<number>(DifficultyLevel.Medium);
+    const [priority, setPriority] = useState<number>(Priority.Normal);
     const [deadline, setDeadline] = useState('');
     const [assignedUser, setAssignedUser] = useState<UserResponse | null>(null);
+
+    // Hierarchy states
+    const [divisions, setDivisions] = useState<DivisionDTO[]>([]);
+    const [selectedDivisionId, setSelectedDivisionId] = useState<string>('');
+    const [projects, setProjects] = useState<ProjectDTO[]>([]);
+    const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+    const [levels, setLevels] = useState<ProjectLevelDTO[]>([]);
+    const [selectedLevelId, setSelectedLevelId] = useState<string>('');
 
     // File upload state
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -52,15 +64,15 @@ const TaskEdit: React.FC = () => {
     const assignInputRef = useRef<HTMLInputElement>(null);
 
     const displayName = useMemo(() => {
-        if (!userInfo) return t('common.user', {}, 'İstifadəçi');
+        if (!userInfo) return 'İstifadəçi';
         if (userInfo.userName) {
             return userInfo.userName.charAt(0).toUpperCase() + userInfo.userName.slice(1);
         }
         if (userInfo.email) {
             return userInfo.email.split('@')[0];
         }
-        return t('common.user', {}, 'İstifadəçi');
-    }, [userInfo, t]);
+        return 'İstifadəçi';
+    }, [userInfo]);
 
     const userRole = useMemo(() => {
         if (!userInfo || !userInfo.roles.length) return 'Employee';
@@ -79,8 +91,8 @@ const TaskEdit: React.FC = () => {
         const query = mentionQuery.toLowerCase();
         return employees.filter(
             (u) =>
-                u.userName.toLowerCase().includes(query) ||
-                u.email.toLowerCase().includes(query)
+                u.userName?.toLowerCase().includes(query) ||
+                u.email?.toLowerCase().includes(query)
         );
     }, [allUsers, mentionQuery]);
 
@@ -110,10 +122,11 @@ const TaskEdit: React.FC = () => {
                 return;
             }
 
-            const [taskData, notificationsData, usersData] = await Promise.all([
+            const [taskData, notificationsData, usersData, divsData] = await Promise.all([
                 taskService.getTaskById(taskId).catch(() => null),
                 notificationService.getMyNotifications().catch(() => []),
                 userService.getAllUsers().catch(() => []),
+                divisionService.getAllDivisions().catch(() => []),
             ]);
 
             if (!taskData) {
@@ -126,6 +139,27 @@ const TaskEdit: React.FC = () => {
             setDescription(taskData.description || '');
             setStatus(taskData.status);
             setDifficulty(taskData.difficulty || DifficultyLevel.Medium);
+            setPriority(typeof taskData.priority === 'number' ? taskData.priority : Priority.Normal);
+            setDivisions(divsData);
+
+            if (taskData.divisionId) {
+                setSelectedDivisionId(String(taskData.divisionId));
+                const projs = await projectService.getProjectsByDivision(taskData.divisionId).catch(() => []);
+                setProjects(projs);
+            } else {
+                const projs = await projectService.getAllProjects().catch(() => []);
+                setProjects(projs);
+            }
+
+            if (taskData.projectId) {
+                setSelectedProjectId(String(taskData.projectId));
+                const lvls = await projectLevelService.getLevelsByProject(taskData.projectId).catch(() => []);
+                setLevels(lvls);
+            }
+
+            if (taskData.levelId) {
+                setSelectedLevelId(String(taskData.levelId));
+            }
 
             if (taskData.deadline) {
                 const date = new Date(taskData.deadline);
@@ -149,6 +183,39 @@ const TaskEdit: React.FC = () => {
             navigate('/tasks');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDivisionChange = async (divId: string) => {
+        setSelectedDivisionId(divId);
+        setSelectedProjectId('');
+        setSelectedLevelId('');
+        setLevels([]);
+        if (divId) {
+            try {
+                const projs = await projectService.getProjectsByDivision(divId);
+                setProjects(projs);
+            } catch {
+                setProjects([]);
+            }
+        } else {
+            const projs = await projectService.getAllProjects().catch(() => []);
+            setProjects(projs);
+        }
+    };
+
+    const handleProjectChange = async (projId: string) => {
+        setSelectedProjectId(projId);
+        setSelectedLevelId('');
+        if (projId) {
+            try {
+                const lvls = await projectLevelService.getLevelsByProject(projId);
+                setLevels(lvls);
+            } catch {
+                setLevels([]);
+            }
+        } else {
+            setLevels([]);
         }
     };
 
@@ -188,7 +255,6 @@ const TaskEdit: React.FC = () => {
             const existing = new Set(prev.map((f) => f.name + f.size));
             return [...prev, ...files.filter((f) => !existing.has(f.name + f.size))];
         });
-        // Reset input so the same file can be re-selected
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
@@ -220,6 +286,10 @@ const TaskEdit: React.FC = () => {
                 title: title.trim(),
                 description: description.trim(),
                 difficulty,
+                priority,
+                divisionId: selectedDivisionId || undefined,
+                projectId: selectedProjectId || undefined,
+                levelId: selectedLevelId || undefined,
                 status,
                 deadline: new Date(deadline).toISOString(),
                 assignedToUserId: assignedUser?.id,
@@ -230,7 +300,7 @@ const TaskEdit: React.FC = () => {
             setSuccessMessage('Tapşırıq uğurla yeniləndi');
             setTimeout(() => {
                 navigate(`/tasks/${task.id}`);
-            }, 1200);
+            }, 1000);
         } catch (err: any) {
             setError(err.response?.data?.message || err.message || 'Tapşırığı yeniləmək mümkün olmadı');
         } finally {
@@ -276,9 +346,9 @@ const TaskEdit: React.FC = () => {
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-xs font-semibold text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
                         >
                             <ArrowLeftIcon className="w-4 h-4" />
-                            <span>{t('common.back', {}, 'Geri')}</span>
+                            <span>Geri</span>
                         </button>
-                        <h1 className="text-base font-bold text-white tracking-tight">{t('tasks.editTask', {}, 'Tapşırığı Redaktə Et')}</h1>
+                        <h1 className="text-base font-bold text-white tracking-tight">Tapşırığı Redaktə Et</h1>
                     </div>
 
                     {/* Form Card */}
@@ -300,7 +370,7 @@ const TaskEdit: React.FC = () => {
                         <form onSubmit={handleSubmit} className="space-y-5">
                             {/* Title */}
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-[#A1A1AA]">{t('tasks.taskTitle', {}, 'Tapşırıq Başlığı')} *</label>
+                                <label className="text-xs font-semibold text-[#A1A1AA]">Tapşırıq Başlığı *</label>
                                 <input
                                     type="text"
                                     value={title}
@@ -310,9 +380,69 @@ const TaskEdit: React.FC = () => {
                                 />
                             </div>
 
+                            {/* Hierarchy: Division > Project > Level */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#222226] p-3.5 rounded-xl border border-[#2C2C2E]">
+                                <div className="space-y-1">
+                                    <label className="text-[11px] font-semibold text-[#A1A1AA] flex items-center gap-1">
+                                        <BuildingOfficeIcon className="w-3 h-3 text-sky-400" />
+                                        Şöbə
+                                    </label>
+                                    <select
+                                        value={selectedDivisionId}
+                                        onChange={(e) => handleDivisionChange(e.target.value)}
+                                        className="w-full bg-[#27272A] border border-[#3F3F46]/60 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                                    >
+                                        <option value="">Şöbəsiz</option>
+                                        {divisions.map((d) => (
+                                            <option key={d.id} value={d.id}>
+                                                {d.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[11px] font-semibold text-[#A1A1AA] flex items-center gap-1">
+                                        <FolderIcon className="w-3 h-3 text-purple-400" />
+                                        Layihə
+                                    </label>
+                                    <select
+                                        value={selectedProjectId}
+                                        onChange={(e) => handleProjectChange(e.target.value)}
+                                        className="w-full bg-[#27272A] border border-[#3F3F46]/60 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                                    >
+                                        <option value="">Layihəsiz</option>
+                                        {projects.map((p) => (
+                                            <option key={p.id} value={p.id}>
+                                                {p.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[11px] font-semibold text-[#A1A1AA] flex items-center gap-1">
+                                        <QueueListIcon className="w-3 h-3 text-emerald-400" />
+                                        Mərhələ
+                                    </label>
+                                    <select
+                                        value={selectedLevelId}
+                                        onChange={(e) => setSelectedLevelId(e.target.value)}
+                                        className="w-full bg-[#27272A] border border-[#3F3F46]/60 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                                    >
+                                        <option value="">Mərhələsiz</option>
+                                        {levels.map((lvl) => (
+                                            <option key={lvl.id} value={lvl.id}>
+                                                {lvl.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
                             {/* Description */}
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-[#A1A1AA]">{t('tasks.taskDesc', {}, 'Təsvir')}</label>
+                                <label className="text-xs font-semibold text-[#A1A1AA]">Təsvir</label>
                                 <textarea
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
@@ -321,38 +451,55 @@ const TaskEdit: React.FC = () => {
                                 />
                             </div>
 
-                            {/* Row: Status & Priority */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* Row: Status, Priority & Difficulty */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.status', {}, 'Status')}</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">Status</label>
                                     <div className="relative flex items-center">
                                         <select
                                             value={status}
                                             onChange={(e) => setStatus(Number(e.target.value))}
                                             className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-blue-500 pr-8 font-medium"
                                         >
-                                            <option value={TaskStatus.Pending}>{t('statuses.pending', {}, 'Gözləmədə')}</option>
-                                            <option value={TaskStatus.Assigned}>{t('statuses.assigned', {}, 'Təyin Edildi')}</option>
-                                            <option value={TaskStatus.InProgress}>{t('statuses.inProgress', {}, 'İcrada')}</option>
-                                            <option value={TaskStatus.UnderReview}>{t('statuses.review', {}, 'Nəzərdən keçirilir')}</option>
-                                            <option value={TaskStatus.Completed}>{t('statuses.completed', {}, 'Tamamlandı')}</option>
-                                            <option value={TaskStatus.Expired}>{t('common.overdue', {}, 'Gecikmiş')}</option>
+                                            <option value={TaskStatus.Pending}>Gözləmədə</option>
+                                            <option value={TaskStatus.Assigned}>Təyin Edildi</option>
+                                            <option value={TaskStatus.InProgress}>İcrada</option>
+                                            <option value={TaskStatus.UnderReview}>Nəzərdən keçirilir</option>
+                                            <option value={TaskStatus.Completed}>Tamamlandı</option>
+                                            <option value={TaskStatus.Expired}>Gecikmiş</option>
                                         </select>
                                         <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-3 pointer-events-none" />
                                     </div>
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.difficulty', {}, 'Prioritet / Çətinlik')}</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">Prioritet</label>
+                                    <div className="relative flex items-center">
+                                        <select
+                                            value={priority}
+                                            onChange={(e) => setPriority(Number(e.target.value))}
+                                            className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-blue-500 pr-8 font-medium"
+                                        >
+                                            <option value={Priority.Low}>Aşağı</option>
+                                            <option value={Priority.Normal}>Normal</option>
+                                            <option value={Priority.High}>Yüksək</option>
+                                            <option value={Priority.Urgent}>Təcili</option>
+                                        </select>
+                                        <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-3 pointer-events-none" />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">Çətinlik</label>
                                     <div className="relative flex items-center">
                                         <select
                                             value={difficulty}
                                             onChange={(e) => setDifficulty(Number(e.target.value))}
                                             className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-blue-500 pr-8 font-medium"
                                         >
-                                            <option value={DifficultyLevel.Easy}>{t('difficulties.easy', {}, 'Aşağı (Asan)')}</option>
-                                            <option value={DifficultyLevel.Medium}>{t('difficulties.medium', {}, 'Orta')}</option>
-                                            <option value={DifficultyLevel.Hard}>{t('difficulties.hard', {}, 'Yüksək (Çətin)')}</option>
+                                            <option value={DifficultyLevel.Easy}>Asan</option>
+                                            <option value={DifficultyLevel.Medium}>Orta</option>
+                                            <option value={DifficultyLevel.Hard}>Çətin</option>
                                         </select>
                                         <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-3 pointer-events-none" />
                                     </div>
@@ -362,7 +509,7 @@ const TaskEdit: React.FC = () => {
                             {/* Row: Deadline & Assignee */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.dueDate', {}, 'İcra Tarixi')} *</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">İcra Tarixi *</label>
                                     <input
                                         type="datetime-local"
                                         value={deadline}
@@ -373,14 +520,14 @@ const TaskEdit: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-1.5 relative">
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('tasks.assignedUser', {}, 'Təyin Edilən Şəxs')}</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">Təyin Edilən Şəxs</label>
                                     <div className="relative flex items-center">
                                         <input
                                             ref={assignInputRef}
                                             type="text"
                                             value={assignInputValue}
                                             onChange={handleAssignInputChange}
-                                            placeholder={t('common.search', {}, '@ istifadəçi axtarın...')}
+                                            placeholder="@ istifadəçi axtarın..."
                                             className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium"
                                         />
                                         <UserIcon className="w-4 h-4 text-[#71717A] absolute left-3 pointer-events-none" />
@@ -448,14 +595,14 @@ const TaskEdit: React.FC = () => {
                                     onClick={() => navigate(`/tasks/${task.id}`)}
                                     className="px-4 py-2 rounded-xl text-xs font-semibold text-[#A1A1AA] hover:text-white"
                                 >
-                                    {t('common.cancel', {}, 'Ləğv et')}
+                                    Ləğv et
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={saving}
                                     className="px-6 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg transition-colors cursor-pointer disabled:opacity-50"
                                 >
-                                    {saving ? t('common.loading', {}, 'Yadda saxlanılır...') : t('common.save', {}, 'Dəyişiklikləri Saxla')}
+                                    {saving ? 'Yadda saxlanılır...' : 'Dəyişiklikləri Saxla'}
                                 </button>
                             </div>
                         </form>
