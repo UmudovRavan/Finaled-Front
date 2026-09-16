@@ -22,6 +22,7 @@ import {
     ScaleIcon,
     ArrowTrendingUpIcon,
 } from '@heroicons/react/24/outline';
+import { BarChart3, Medal } from 'lucide-react';
 import { authService } from '../api';
 import { useNotifications } from '../context/NotificationContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -232,6 +233,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                 { path: '/leaderboard', label: t('nav.leaderboard', {}, 'Liderlər Lövhəsi'), icon: TrophyIcon },
                 { path: '/performance', label: t('nav.performance', {}, 'Performans'), icon: ArrowTrendingUpIcon }
             );
+        }
+
+        // 9. Dəyər-Zərər KPI Sistemi
+        items.push({ path: '/kpi', label: 'KPI Paneli', icon: BarChart3 });
+        if (isAdmin || isDirector || hasPermission('tms.kpi.leaderboard') || hasPermission('tms.performance.view')) {
+            items.push({ path: '/kpi/leaderboard', label: 'KPI Reytinqi', icon: Medal });
         }
 
         return items;

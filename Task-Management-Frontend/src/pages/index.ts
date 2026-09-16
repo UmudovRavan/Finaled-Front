@@ -19,4 +19,6 @@ export { default as CompanyDashboard } from './CompanyDashboard';
 export { default as EmployeePerformance } from './EmployeePerformance';
 export { default as TaskAssignmentDetail } from './TaskAssignmentDetail';
 export { default as Settings } from './Settings';
+export { default as KpiDashboard } from './KpiDashboard';
+export { default as KpiLeaderboard } from './KpiLeaderboard';
 

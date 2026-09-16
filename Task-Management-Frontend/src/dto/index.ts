@@ -31,3 +31,14 @@ export type { ProjectLevelDTO, CreateProjectLevelRequest, UpdateProjectLevelRequ
 export type { EmployeeWorkloadDTO, WorkloadWarningDTO } from './WorkloadResponse';
 export type { TenantSettingsDTO, UpdateTenantSettingsRequest } from './TenantSettingsResponse';
 export type { CompanyDashboardDTO, CompanyDivisionStat } from './CompanyDashboardResponse';
+export type {
+    DailyKpiDTO,
+    EmployeeKpiSummaryDTO,
+    SubordinateKpiStatusDTO,
+    CreateDailyKpiDTO,
+    UpdateDailyKpiDTO,
+    KpiLeaderboardItemDTO,
+    DailyTrendDTO,
+    DivisionKpiAnalyticsDTO,
+    CompanyKpiAnalyticsDTO,
+} from './KpiResponse';

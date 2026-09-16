@@ -23,6 +23,8 @@ import {
     CompanyDashboard,
     EmployeePerformance,
     Settings,
+    KpiDashboard,
+    KpiLeaderboard,
 } from '../pages';
 
 const AppRouter: React.FC = () => {
@@ -80,6 +82,10 @@ const AppRouter: React.FC = () => {
                     <Route path="/leaderboard" element={<Leaderboard />} />
                     <Route path="/employee/:userId" element={<EmployeePerformance />} />
                 </Route>
+
+                {/* Dəyər-Zərər KPI Modulu */}
+                <Route path="/kpi" element={<KpiDashboard />} />
+                <Route path="/kpi/leaderboard" element={<KpiLeaderboard />} />
 
                 {/* Notifications */}
                 <Route element={<ProtectedRoute requiredPermission="tms.notifications.view" />}>
