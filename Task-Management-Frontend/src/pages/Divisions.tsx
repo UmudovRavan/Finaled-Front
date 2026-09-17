@@ -6,6 +6,7 @@ import { divisionService, projectService, taskService, notificationService, user
 import type { DivisionDTO, CreateDivisionRequest, NotificationResponse, UserResponse, ProjectDTO, TaskResponse } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, isUserAdmin, isUserManager } from '../utils';
 import type { UserInfo } from '../utils';
+import CustomSelect from '../components/CustomSelect';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import {
@@ -214,7 +215,7 @@ const Divisions: React.FC = () => {
     };
 
     return (
-        <div className="flex h-screen w-screen overflow-hidden bg-[#121214] font-sans antialiased text-[#F4F4F5]">
+        <div className="flex h-screen w-screen overflow-hidden bg-zinc-50 dark:bg-[#121214] font-sans antialiased text-zinc-900 dark:text-[#F4F4F5]">
             <Sidebar />
 
             <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
@@ -225,16 +226,16 @@ const Divisions: React.FC = () => {
                     notifications={notifications}
                 />
 
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full">
+                <main className="flex-1 p-3 sm:p-6 lg:p-8 pb-24 sm:pb-8 md:pb-8 space-y-6 max-w-7xl mx-auto w-full">
                     {/* Header Controls */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div>
-                            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-                                <BuildingOfficeIcon className="w-7 h-7 text-sky-400" />
-                                Şöbələrin İdarə Edilməsi
+                            <h1 className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-white tracking-tight flex items-center gap-2">
+                                <BuildingOfficeIcon className="w-7 h-7 text-sky-500 dark:text-sky-400" />
+                                {t('divisions.title', {}, 'Şöbələr')}
                             </h1>
-                            <p className="text-xs text-[#A1A1AA] mt-1">
-                                Təşkilat strukturundakı şöbələri və onlara aid layihələri idarə edin
+                            <p className="text-xs text-zinc-500 dark:text-[#A1A1AA] mt-1">
+                                {t('divisions.subtitle', {}, 'Şirkətin struktur bölmələri və onlara aid layihələri idarə edin.')}
                             </p>
                         </div>
 
@@ -242,19 +243,20 @@ const Divisions: React.FC = () => {
                             <button
                                 onClick={fetchData}
                                 disabled={refreshing}
-                                className="p-2 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                                title="Yenilə"
+                                className="p-2.5 rounded-xl bg-white dark:bg-[#18181B] hover:bg-zinc-100 dark:hover:bg-[#27272A] border border-zinc-200 dark:border-[#27272A] text-zinc-600 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white shadow-xs transition-colors cursor-pointer"
+                                title={t('common.refresh', {}, 'Yenilə')}
                             >
-                                <ArrowPathIcon className={`w-4 h-4 ${refreshing ? 'animate-spin text-sky-400' : ''}`} />
+                                <ArrowPathIcon className={`w-4 h-4 ${refreshing ? 'animate-spin text-sky-500' : ''}`} />
                             </button>
 
                             {canCreate && (
                                 <button
                                     onClick={openCreateModal}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg transition-colors cursor-pointer ml-auto sm:ml-0"
+                                    type="button"
+                                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg border border-zinc-200/80 dark:border-transparent transition-colors cursor-pointer ml-auto sm:ml-0"
                                 >
-                                    <PlusIcon className="w-4 h-4 text-black stroke-[3]" />
-                                    Yeni Şöbə
+                                    <PlusIcon className="w-4 h-4 stroke-[2.5]" />
+                                    <span>{t('divisions.newDivision', {}, 'Yeni Şöbə')}</span>
                                 </button>
                             )}
                         </div>
@@ -263,68 +265,69 @@ const Divisions: React.FC = () => {
                     {/* KPI Cards */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                         <KpiCard
-                            title="Ümumi Şöbələr"
+                            title={t('companyDashboard.totalDivisions', {}, 'Ümumi Şöbələr')}
                             value={divisions.length}
-                            badgeText="Struktur"
+                            badgeText={t('divisions.title', {}, 'Struktur')}
                             accentColor="#38BDF8"
                         />
                         <KpiCard
-                            title="Ümumi Layihələr"
+                            title={t('companyDashboard.totalProjects', {}, 'Ümumi Layihələr')}
                             value={totalProjects}
-                            badgeText="Layihələr"
+                            badgeText={t('projects.title', {}, 'Layihələr')}
                             accentColor="#A78BFA"
                         />
                         <KpiCard
-                            title="Ümumi Tapşırıqlar"
+                            title={t('companyDashboard.totalTasks', {}, 'Ümumi Tapşırıqlar')}
                             value={totalTasks}
-                            badgeText="Tapşırıqlar"
+                            badgeText={t('tasks.taskList', {}, 'Tapşırıqlar')}
                             accentColor="#34D399"
                         />
                         <KpiCard
-                            title="İcrada Olanlar"
+                            title={t('companyDashboard.inProgressTasks', {}, 'İcrada Olanlar')}
                             value={activeTasks}
-                            badgeText="Aktiv"
+                            badgeText={t('common.active', {}, 'Aktiv')}
                             accentColor="#FBBF24"
                         />
                     </div>
 
                     {/* Search and Filters */}
-                    <div className="flex items-center justify-between gap-4 bg-[#18181B] border border-[#27272A] rounded-2xl p-3">
+                    <div className="flex items-center justify-between gap-4 bg-white dark:bg-[#18181B] border border-zinc-200/80 dark:border-[#27272A] rounded-2xl p-3 shadow-xs">
                         <div className="relative flex-1 max-w-md">
-                            <MagnifyingGlassIcon className="w-4 h-4 text-[#71717A] absolute left-3 top-1/2 -translate-y-1/2" />
+                            <MagnifyingGlassIcon className="w-4 h-4 text-zinc-400 dark:text-[#71717A] absolute left-3 top-1/2 -translate-y-1/2" />
                             <input
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Şöbə adı və ya rəhbər üzrə axtar..."
-                                className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl pl-9 pr-3.5 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium"
+                                placeholder={t('divisions.searchPlaceholder', {}, 'Şöbələrdə axtarış...')}
+                                className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl pl-9 pr-3.5 py-2 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-sky-500 font-medium transition-all"
                             />
                         </div>
-                        <div className="text-xs text-[#71717A] font-medium hidden sm:block">
-                            Cəmi: <span className="text-white font-bold">{filteredDivisions.length}</span> şöbə
+                        <div className="text-xs text-zinc-500 dark:text-[#71717A] font-medium hidden sm:block">
+                            {t('common.total', {}, 'Cəmi')}: <span className="text-zinc-900 dark:text-white font-bold">{filteredDivisions.length}</span>
                         </div>
                     </div>
 
                     {/* Content / Division Cards Grid */}
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-20">
-                            <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                            <span className="text-xs text-[#71717A] mt-3">Şöbələr yüklənir...</span>
+                            <div className="w-8 h-8 border-3 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+                            <span className="text-xs text-zinc-500 dark:text-[#71717A] mt-3">{t('common.loading', {}, 'Şöbələr yüklənir...')}</span>
                         </div>
                     ) : filteredDivisions.length === 0 ? (
-                        <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-12 text-center">
-                            <BuildingOfficeIcon className="w-12 h-12 text-[#71717A] mx-auto mb-3 opacity-40" />
-                            <p className="text-sm font-semibold text-white">Heç bir şöbə tapılmadı</p>
-                            <p className="text-xs text-[#71717A] mt-1">
-                                {searchQuery ? 'Axtarış sorğunuza uyğun nəticə yoxdur' : 'İlk şöbəni yaratmaq üçün "Yeni Şöbə" düyməsinə klikləyin'}
+                        <div className="rounded-2xl border border-zinc-200/80 dark:border-[#27272A] bg-white dark:bg-[#18181B] p-12 text-center shadow-xs">
+                            <BuildingOfficeIcon className="w-12 h-12 text-zinc-400 dark:text-[#71717A] mx-auto mb-3 opacity-40" />
+                            <p className="text-sm font-semibold text-zinc-900 dark:text-white">{t('divisions.noDivisionsFound', {}, 'Heç bir şöbə tapılmadı')}</p>
+                            <p className="text-xs text-zinc-500 dark:text-[#71717A] mt-1">
+                                {searchQuery ? t('divisions.noDivisionsSubtitle', {}, 'Axtarış sorğunuza uyğun nəticə yoxdur') : t('divisions.noDivisionsSubtitle', {}, 'İlk şöbəni yaratmaq üçün "Yeni Şöbə" düyməsinə klikləyin')}
                             </p>
                             {canCreate && !searchQuery && (
                                 <button
                                     onClick={openCreateModal}
-                                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg transition-colors cursor-pointer"
+                                    type="button"
+                                    className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-600/20 transition-colors cursor-pointer"
                                 >
-                                    <PlusIcon className="w-4 h-4 text-black stroke-[3]" />
-                                    Şöbə Yarat
+                                    <PlusIcon className="w-4 h-4 stroke-[2.5]" />
+                                    <span>{t('divisions.createDivision', {}, 'Şöbə Yarat')}</span>
                                 </button>
                             )}
                         </div>
@@ -338,25 +341,25 @@ const Divisions: React.FC = () => {
                                 return (
                                     <div
                                         key={div.id}
-                                        className="rounded-2xl border border-[#27272A] bg-[#18181B] p-5 shadow-xs hover:border-[#3F3F46] transition-all flex flex-col justify-between group relative"
+                                        className="rounded-2xl border border-zinc-200/80 dark:border-[#27272A] bg-white dark:bg-[#18181B] p-5 shadow-xs hover:shadow-md hover:border-sky-500/40 dark:hover:border-[#3F3F46] transition-all flex flex-col justify-between group relative"
                                     >
                                         <div>
                                             {/* Card Top */}
                                             <div className="flex items-start justify-between gap-3 mb-3">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 group-hover:scale-105 transition-transform">
+                                                    <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-500 dark:text-sky-400 group-hover:scale-105 transition-transform">
                                                         <BuildingOfficeIcon className="w-5 h-5" />
                                                     </div>
                                                     <div>
                                                         <h3
                                                             onClick={() => navigate(`/projects?divisionId=${div.id}`)}
-                                                            className="text-sm font-bold text-white hover:text-sky-400 cursor-pointer transition-colors"
+                                                            className="text-sm font-bold text-zinc-900 dark:text-white hover:text-sky-600 dark:hover:text-sky-400 cursor-pointer transition-colors"
                                                         >
                                                             {div.name}
                                                         </h3>
                                                         {div.managerName && (
-                                                            <div className="flex items-center gap-1.5 text-[11px] text-[#A1A1AA] mt-0.5">
-                                                                <UserIcon className="w-3.5 h-3.5 text-zinc-500" />
+                                                            <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 dark:text-[#A1A1AA] mt-0.5">
+                                                                <UserIcon className="w-3.5 h-3.5 text-zinc-400" />
                                                                 <span>{div.managerName}</span>
                                                             </div>
                                                         )}
@@ -370,14 +373,14 @@ const Divisions: React.FC = () => {
                                                             e.stopPropagation();
                                                             setActionMenuId(actionMenuId === div.id ? null : div.id);
                                                         }}
-                                                        className="p-1.5 rounded-lg text-[#71717A] hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer"
+                                                        className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:text-[#71717A] dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#27272A] transition-colors cursor-pointer"
                                                     >
                                                         <EllipsisHorizontalIcon className="w-4 h-4" />
                                                     </button>
 
                                                     {actionMenuId === div.id && (
                                                         <div
-                                                            className="absolute right-0 top-8 bg-[#1C1C1E] border border-[#2C2C2E] rounded-xl shadow-2xl p-1 z-50 flex flex-col text-xs min-w-[140px] animate-in fade-in duration-100"
+                                                            className="absolute right-0 top-8 bg-white dark:bg-[#1C1C1E] border border-zinc-200 dark:border-[#2C2C2E] rounded-xl shadow-xl p-1 z-50 flex flex-col text-xs min-w-[140px] animate-in fade-in zoom-in-95 duration-100 backdrop-blur-md"
                                                             onClick={(e) => e.stopPropagation()}
                                                         >
                                                             <button
@@ -385,10 +388,10 @@ const Divisions: React.FC = () => {
                                                                     setActionMenuId(null);
                                                                     navigate(`/projects?divisionId=${div.id}`);
                                                                 }}
-                                                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-left text-zinc-300 hover:bg-[#27272A] hover:text-white transition-colors cursor-pointer"
+                                                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-[#27272A] hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
                                                             >
-                                                                <FolderIcon className="w-3.5 h-3.5 text-sky-400" />
-                                                                Layihələr
+                                                                <FolderIcon className="w-3.5 h-3.5 text-sky-500" />
+                                                                {t('projects.title', {}, 'Layihələr')}
                                                             </button>
                                                             {canEdit && (
                                                                 <button
@@ -396,10 +399,10 @@ const Divisions: React.FC = () => {
                                                                         setActionMenuId(null);
                                                                         openEditModal(div);
                                                                     }}
-                                                                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-left text-zinc-300 hover:bg-[#27272A] hover:text-white transition-colors cursor-pointer"
+                                                                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-[#27272A] hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
                                                                 >
-                                                                    <PencilSquareIcon className="w-3.5 h-3.5 text-amber-400" />
-                                                                    Redaktə et
+                                                                    <PencilSquareIcon className="w-3.5 h-3.5 text-amber-500" />
+                                                                    {t('common.edit', {}, 'Düzəliş et')}
                                                                 </button>
                                                             )}
                                                             {canDelete && (
@@ -409,10 +412,10 @@ const Divisions: React.FC = () => {
                                                                         handleDelete(div.id);
                                                                     }}
                                                                     disabled={deletingId === div.id}
-                                                                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-left text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                                                                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-left text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
                                                                 >
                                                                     <TrashIcon className="w-3.5 h-3.5" />
-                                                                    Sil
+                                                                    {t('common.delete', {}, 'Sil')}
                                                                 </button>
                                                             )}
                                                         </div>
@@ -422,55 +425,56 @@ const Divisions: React.FC = () => {
 
                                             {/* Description */}
                                             {div.description && (
-                                                <p className="text-xs text-[#A1A1AA] line-clamp-2 mb-4">
+                                                <p className="text-xs text-zinc-600 dark:text-[#A1A1AA] line-clamp-2 mb-4">
                                                     {div.description}
                                                 </p>
                                             )}
 
                                             {/* Metrics row */}
                                             <div className="grid grid-cols-2 gap-2 mb-4">
-                                                <div className="bg-[#27272A]/50 rounded-xl p-2.5 border border-[#27272A]">
-                                                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#71717A] uppercase">
-                                                        <FolderIcon className="w-3 h-3 text-purple-400" />
-                                                        Layihələr
+                                                <div className="bg-zinc-50 dark:bg-[#27272A]/50 rounded-xl p-2.5 border border-zinc-200/60 dark:border-[#27272A]">
+                                                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 dark:text-[#71717A] uppercase">
+                                                        <FolderIcon className="w-3 h-3 text-purple-500 dark:text-purple-400" />
+                                                        {t('divisions.projectsCount', {}, 'Layihələr')}
                                                     </div>
-                                                    <div className="text-base font-extrabold text-white mt-0.5">
+                                                    <div className="text-base font-extrabold text-zinc-900 dark:text-white mt-0.5">
                                                         {div.projectCount || 0}
                                                     </div>
                                                 </div>
-                                                <div className="bg-[#27272A]/50 rounded-xl p-2.5 border border-[#27272A]">
-                                                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#71717A] uppercase">
-                                                        <ClipboardDocumentListIcon className="w-3 h-3 text-emerald-400" />
-                                                        Tapşırıqlar
+                                                <div className="bg-zinc-50 dark:bg-[#27272A]/50 rounded-xl p-2.5 border border-zinc-200/60 dark:border-[#27272A]">
+                                                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 dark:text-[#71717A] uppercase">
+                                                        <ClipboardDocumentListIcon className="w-3 h-3 text-emerald-500 dark:text-emerald-400" />
+                                                        {t('divisions.tasksCount', {}, 'Tapşırıqlar')}
                                                     </div>
-                                                    <div className="text-base font-extrabold text-white mt-0.5">
+                                                    <div className="text-base font-extrabold text-zinc-900 dark:text-white mt-0.5">
                                                         {div.taskCount || 0}
                                                     </div>
                                                 </div>
                                             </div>
+
+                                            {/* Progress Bar */}
+                                            <div className="space-y-1.5 mb-4">
+                                                <div className="flex items-center justify-between text-xs">
+                                                    <span className="text-zinc-500 dark:text-[#71717A] font-medium">{t('divisions.completionRate', {}, 'Tamamlanma')}</span>
+                                                    <span className="font-bold text-zinc-900 dark:text-white">{progress}%</span>
+                                                </div>
+                                                <div className="relative h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-[#27272A]">
+                                                    <div
+                                                        className="absolute left-0 top-0 h-full rounded-full bg-sky-500 dark:bg-sky-400 transition-all duration-500"
+                                                        style={{ width: `${progress}%` }}
+                                                    ></div>
+                                                </div>
+                                            </div>
                                         </div>
 
-                                        {/* Card Footer: Progress + Navigate button */}
-                                        <div>
-                                            <div className="flex items-center justify-between text-[11px] text-[#71717A] mb-1.5">
-                                                <span>İcra faizi</span>
-                                                <span className="font-bold text-white">{progress}%</span>
-                                            </div>
-                                            <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-[#27272A] mb-4">
-                                                <div
-                                                    className="absolute left-0 top-0 h-full rounded-full bg-emerald-400 transition-all duration-500"
-                                                    style={{ width: `${progress}%` }}
-                                                ></div>
-                                            </div>
-
-                                            <button
-                                                onClick={() => navigate(`/projects?divisionId=${div.id}`)}
-                                                className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#27272A]/80 hover:bg-[#27272A] border border-[#3F3F46]/60 text-xs font-semibold text-white transition-all cursor-pointer group-hover:border-sky-500/40"
-                                            >
-                                                <span>Layihələrə Bax</span>
-                                                <ChevronRightIcon className="w-3.5 h-3.5 text-[#71717A] group-hover:text-white group-hover:translate-x-0.5 transition-all" />
-                                            </button>
-                                        </div>
+                                        {/* Card Footer Action */}
+                                        <button
+                                            onClick={() => navigate(`/projects?divisionId=${div.id}`)}
+                                            className="w-full mt-2 py-2.5 px-3 rounded-xl bg-zinc-50 dark:bg-[#27272A]/60 hover:bg-sky-500/10 hover:text-sky-600 dark:hover:bg-[#27272A] text-zinc-700 dark:text-zinc-300 dark:hover:text-white text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer border border-zinc-200/60 dark:border-[#27272A]"
+                                        >
+                                            <span>{t('divisions.viewProjects', {}, 'Layihələrə bax')}</span>
+                                            <ChevronRightIcon className="w-3.5 h-3.5" />
+                                        </button>
                                     </div>
                                 );
                             })}
@@ -481,21 +485,21 @@ const Divisions: React.FC = () => {
 
             {/* Create/Edit Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-                    <div className="bg-[#18181B] border border-[#27272A] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 bg-black/60 dark:bg-black/70 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-[#18181B] border border-zinc-200 dark:border-[#27272A] rounded-2xl w-full max-w-lg shadow-2xl overflow-visible animate-in zoom-in-95 duration-200">
                         {/* Modal Header */}
-                        <div className="flex items-center justify-between p-5 border-b border-[#27272A]">
+                        <div className="flex items-center justify-between p-5 border-b border-zinc-100 dark:border-[#27272A] rounded-t-2xl">
                             <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+                                <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-500 dark:text-sky-400">
                                     <BuildingOfficeIcon className="w-4 h-4" />
                                 </div>
-                                <h2 className="text-base font-bold text-white">
-                                    {modalMode === 'create' ? 'Yeni Şöbə Yarat' : 'Şöbəni Redaktə Et'}
+                                <h2 className="text-base font-bold text-zinc-900 dark:text-white">
+                                    {modalMode === 'create' ? t('divisions.createDivision', {}, 'Yeni Şöbə Yarat') : t('divisions.editDivision', {}, 'Şöbəni Redaktə Et')}
                                 </h2>
                             </div>
                             <button
                                 onClick={() => setShowModal(false)}
-                                className="p-1 rounded-lg text-[#71717A] hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer"
+                                className="p-1 rounded-lg text-zinc-400 hover:text-zinc-700 dark:text-[#71717A] dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#27272A] transition-colors cursor-pointer"
                             >
                                 <XMarkIcon className="w-5 h-5" />
                             </button>
@@ -504,72 +508,70 @@ const Divisions: React.FC = () => {
                         {/* Modal Form */}
                         <form onSubmit={handleSave} className="p-5 space-y-4">
                             {errorMsg && (
-                                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400 font-medium">
+                                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-500 font-medium">
                                     {errorMsg}
                                 </div>
                             )}
 
                             <div>
-                                <label className="block text-xs font-semibold text-[#A1A1AA] mb-1.5">
-                                    Şöbənin Adı <span className="text-rose-400">*</span>
+                                <label className="block text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA] mb-1.5">
+                                    {t('divisions.divisionName', {}, 'Şöbənin Adı')} <span className="text-rose-500">*</span>
                                 </label>
                                 <input
                                     type="text"
                                     value={formName}
                                     onChange={(e) => setFormName(e.target.value)}
-                                    placeholder="Məsələn: İnformasiya Texnologiyaları"
-                                    className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium"
+                                    placeholder={t('divisions.divisionNamePlaceholder', {}, 'Məsələn: İnformasiya Texnologiyaları')}
+                                    className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-sky-500 font-medium transition-all"
                                     required
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-[#A1A1AA] mb-1.5">
-                                    Təsvir
+                                <label className="block text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA] mb-1.5">
+                                    {t('divisions.description', {}, 'Təsvir')}
                                 </label>
                                 <textarea
                                     value={formDesc}
                                     onChange={(e) => setFormDesc(e.target.value)}
-                                    placeholder="Şöbənin fəaliyyət istiqaməti haqqında qısa məlumat..."
+                                    placeholder={t('divisions.descriptionPlaceholder', {}, 'Şöbənin fəaliyyət istiqaməti haqqında qısa məlumat...')}
                                     rows={3}
-                                    className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium resize-none"
+                                    className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-sky-500 font-medium resize-none transition-all"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-[#A1A1AA] mb-1.5">
-                                    Şöbə Rəhbəri (Menecer)
+                                <label className="block text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA] mb-1.5">
+                                    {t('divisions.manager', {}, 'Şöbə Rəhbəri (Menecer)')}
                                 </label>
-                                <select
+                                <CustomSelect
                                     value={formManagerId}
-                                    onChange={(e) => setFormManagerId(e.target.value)}
-                                    className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-blue-500 font-medium cursor-pointer"
-                                >
-                                    <option value="">Rəhbər seçilməyib</option>
-                                    {users.map((u) => (
-                                        <option key={u.id} value={u.id}>
-                                            {u.userName || u.email}
-                                        </option>
-                                    ))}
-                                </select>
+                                    onChange={(val) => setFormManagerId(String(val))}
+                                    options={[
+                                        { value: '', label: t('divisions.noManager', {}, 'Rəhbər seçilməyib') },
+                                        ...users.map((u) => ({ value: u.id, label: u.userName || u.email }))
+                                    ]}
+                                    placeholder={t('divisions.noManager', {}, 'Rəhbər seçilməyib')}
+                                    size="md"
+                                />
                             </div>
 
                             {/* Modal Footer */}
-                            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#27272A]">
+                            <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-100 dark:border-[#27272A]">
                                 <button
                                     type="button"
                                     onClick={() => setShowModal(false)}
-                                    className="px-4 py-2 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] text-[#A1A1AA] hover:text-white text-xs font-semibold transition-colors cursor-pointer"
+                                    className="px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-[#27272A] dark:hover:bg-[#3F3F46] text-zinc-700 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white text-xs font-semibold transition-colors cursor-pointer"
                                 >
-                                    Ləğv et
+                                    {t('common.cancel', {}, 'Ləğv et')}
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={saving}
-                                    className="px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg transition-colors cursor-pointer flex items-center gap-1.5"
+                                    className="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-600/20 transition-colors cursor-pointer flex items-center gap-1.5"
                                 >
-                                    {saving && <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />}
-                                    {modalMode === 'create' ? 'Yarat' : 'Yadda Saxla'}
+                                    {saving && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                                    {modalMode === 'create' ? t('common.create', {}, 'Yarat') : t('common.save', {}, 'Yadda Saxla')}
                                 </button>
                             </div>
                         </form>

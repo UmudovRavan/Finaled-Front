@@ -255,6 +255,9 @@ export function normalizeTask(raw: any): TaskResponse {
         }
     }
 
+    const rawCreatedAt = raw.createdAt ?? raw.CreatedAt ?? raw.createdDate ?? raw.CreatedDate ?? raw.createDate ?? raw.CreateDate ?? raw.creationDate ?? raw.CreationDate ?? raw.created_at ?? raw.creation_date ?? undefined;
+    const createdAt = rawCreatedAt ? String(rawCreatedAt) : undefined;
+
     return {
         id,
         title,
@@ -276,7 +279,33 @@ export function normalizeTask(raw: any): TaskResponse {
         parentTaskId,
         files,
         taskComments,
+        createdAt,
     };
+}
+
+export function sortTasksNewestFirst(tasks: TaskResponse[]): TaskResponse[] {
+    if (!Array.isArray(tasks)) return [];
+    return [...tasks].sort((a, b) => {
+        if (a.createdAt && b.createdAt) {
+            const timeA = new Date(a.createdAt).getTime();
+            const timeB = new Date(b.createdAt).getTime();
+            if (!isNaN(timeA) && !isNaN(timeB) && timeA !== timeB) {
+                return timeB - timeA;
+            }
+        } else if (b.createdAt && !a.createdAt) {
+            return 1;
+        } else if (a.createdAt && !b.createdAt) {
+            return -1;
+        }
+
+        const numA = Number(a.id);
+        const numB = Number(b.id);
+        if (!isNaN(numA) && !isNaN(numB) && numA !== numB) {
+            return numB - numA;
+        }
+
+        return String(b.id || '').localeCompare(String(a.id || ''));
+    });
 }
 
 export function isSystemActivityTask(rawOrTask: any): boolean {
@@ -305,6 +334,7 @@ export const taskService = {
     saveStoredTaskComment,
     clearStoredTaskComments,
     isSystemActivityTask,
+    sortTasksNewestFirst,
 
     async getAllTasks(): Promise<TaskResponse[]> {
         const candidateEndpoints = [
@@ -335,7 +365,8 @@ export const taskService = {
                 }
 
                 if (list.length > 0) {
-                    return list.map(normalizeTask).filter((t) => !isSystemActivityTask(t));
+                    const normalized = list.map(normalizeTask).filter((t) => !isSystemActivityTask(t));
+                    return sortTasksNewestFirst(normalized);
                 }
             } catch {
                 // Try next endpoint
@@ -373,7 +404,8 @@ export const taskService = {
                 }
 
                 if (list.length > 0) {
-                    return list.map(normalizeTask).filter((t) => !isSystemActivityTask(t));
+                    const normalized = list.map(normalizeTask).filter((t) => !isSystemActivityTask(t));
+                    return sortTasksNewestFirst(normalized);
                 }
             } catch {
                 // Try next endpoint
@@ -412,7 +444,8 @@ export const taskService = {
                 }
 
                 if (list.length > 0) {
-                    return list.map(normalizeTask).filter((t) => !isSystemActivityTask(t));
+                    const normalized = list.map(normalizeTask).filter((t) => !isSystemActivityTask(t));
+                    return sortTasksNewestFirst(normalized);
                 }
             } catch {
                 // Try next endpoint

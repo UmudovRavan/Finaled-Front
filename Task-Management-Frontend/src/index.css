@@ -355,3 +355,35 @@ html.midnight ::-webkit-scrollbar-thumb:hover {
   50% { transform: translateX(100%); }
   100% { transform: translateX(300%); }
 }
+
+/* Mobile & Touch Utilities */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.touch-momentum {
+  -webkit-overflow-scrolling: touch;
+}
+
+.overscroll-contain {
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 768px) {
+  /* Prevent horizontal accidental shift on mobile */
+  body, html {
+    overflow-x: hidden;
+    touch-action: pan-y;
+  }
+}

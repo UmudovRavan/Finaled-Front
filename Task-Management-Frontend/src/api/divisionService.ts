@@ -157,6 +157,10 @@ export const divisionService = {
         }
         throw lastErr || new Error('Failed to delete division');
     },
+
+    getDivisions(): Promise<DivisionDTO[]> {
+        return this.getAllDivisions();
+    },
 };
 
 export default divisionService;

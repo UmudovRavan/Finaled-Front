@@ -1,31 +1,60 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { ChevronDownIcon, CheckIcon } from '@heroicons/react/24/outline';
 
-interface Option {
+export interface SelectOption {
     value: string;
     label: string;
+    icon?: React.ReactNode;
+    badge?: React.ReactNode;
+    color?: string;
+    description?: string;
 }
 
-interface CustomSelectProps {
+export interface CustomSelectProps {
     value: string;
     onChange: (value: string) => void;
-    options: Option[];
-    icon?: string;
+    options: SelectOption[];
     placeholder?: string;
+    icon?: React.ReactNode;
     className?: string;
+    buttonClassName?: string;
+    menuClassName?: string;
+    disabled?: boolean;
+    size?: 'sm' | 'md' | 'lg';
+    align?: 'left' | 'right';
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
     value,
     onChange,
     options,
+    placeholder = 'Seçin...',
     icon,
-    placeholder = 'Select...',
     className = '',
+    buttonClassName = '',
+    menuClassName = '',
+    disabled = false,
+    size = 'sm',
+    align = 'left',
 }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [openUpwards, setOpenUpwards] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const selectedOption = options.find((opt) => opt.value === value);
+
+    useEffect(() => {
+        if (isOpen && dropdownRef.current) {
+            const rect = dropdownRef.current.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
+            if (spaceBelow < 220 && spaceAbove > spaceBelow) {
+                setOpenUpwards(true);
+            } else {
+                setOpenUpwards(false);
+            }
+        }
+    }, [isOpen]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -34,55 +63,99 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             }
         };
 
-        document.addEventListener('mousedown', handleClickOutside);
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, []);
+    }, [isOpen]);
+
+    // Handle escape key
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isOpen) {
+                setIsOpen(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen]);
+
+    const sizeClasses = {
+        sm: 'px-3 py-1.5 text-xs rounded-xl h-[34px]',
+        md: 'px-3.5 py-2 text-xs rounded-xl h-[38px]',
+        lg: 'px-4 py-2.5 text-sm rounded-xl h-[42px]',
+    };
 
     return (
-        <div className={`relative ${className}`} ref={dropdownRef}>
+        <div className={`relative ${className || 'w-full'}`} ref={dropdownRef}>
             <button
                 type="button"
+                disabled={disabled}
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-white dark:bg-[#1a202c] border border-[#dcdfe5] dark:border-gray-700 rounded-lg text-sm font-medium text-[#111318] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 h-[42px]"
+                className={`w-full flex items-center justify-between gap-2 bg-white dark:bg-[#18181B] border border-zinc-200/80 dark:border-[#27272A] text-zinc-800 dark:text-[#F4F4F5] hover:bg-zinc-50 dark:hover:bg-[#27272A] hover:border-zinc-300 dark:hover:border-[#3F3F46] shadow-xs transition-all duration-150 font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${sizeClasses[size]} ${
+                    isOpen ? 'ring-2 ring-blue-500/20 border-blue-500/50 dark:border-blue-500/50' : ''
+                } ${buttonClassName}`}
             >
-                <div className="flex items-center gap-2 truncate">
-                    {icon && (
-                        <span className="material-symbols-outlined text-[#636f88] text-[20px]">
-                            {icon}
-                        </span>
-                    )}
-                    <span className={`truncate ${!selectedOption ? 'text-[#636f88]' : ''}`}>
+                <div className="flex items-center gap-2 truncate min-w-0">
+                    {icon && <span className="shrink-0 text-zinc-400 dark:text-[#71717A]">{icon}</span>}
+                    {selectedOption?.icon && <span className="shrink-0">{selectedOption.icon}</span>}
+                    <span className={`truncate ${!selectedOption ? 'text-zinc-400 dark:text-[#71717A]' : ''}`}>
                         {selectedOption ? selectedOption.label : placeholder}
                     </span>
+                    {selectedOption?.badge && <span className="shrink-0">{selectedOption.badge}</span>}
                 </div>
-                <span className={`material-symbols-outlined text-[#636f88] text-[20px] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
-                    expand_more
-                </span>
+                <ChevronDownIcon
+                    className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ml-1.5 ${
+                        isOpen ? 'rotate-180 text-blue-600 dark:text-blue-400' : 'text-zinc-400 dark:text-[#71717A]'
+                    }`}
+                />
             </button>
 
             {isOpen && (
-                <div className="absolute top-full right-0 mt-2 w-full min-w-[200px] bg-white dark:bg-[#1a202c] border border-[#dcdfe5] dark:border-gray-700 rounded-xl shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 max-h-[300px] overflow-y-auto">
-                    <div className="p-1">
-                        {options.map((option) => (
-                            <button
-                                key={option.value}
-                                onClick={() => {
-                                    onChange(option.value);
-                                    setIsOpen(false);
-                                }}
-                                className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors ${value === option.value
-                                        ? 'bg-primary/10 text-primary font-medium'
-                                        : 'text-[#111318] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800'
+                <div
+                    className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} ${
+                        openUpwards ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+                    } min-w-full w-max max-w-[420px] bg-white/95 dark:bg-[#18181B]/95 border border-zinc-200/90 dark:border-[#27272A] rounded-2xl shadow-2xl backdrop-blur-xl p-1.5 z-[100] animate-in fade-in zoom-in-95 duration-150 max-h-60 overflow-y-auto custom-scrollbar ${menuClassName}`}
+                >
+                    <div className="space-y-0.5">
+                        {options.map((option) => {
+                            const isSelected = value === option.value;
+                            return (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => {
+                                        onChange(option.value);
+                                        setIsOpen(false);
+                                    }}
+                                    className={`w-full flex items-center justify-between gap-2.5 px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer text-left ${
+                                        isSelected
+                                            ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold'
+                                            : 'text-zinc-700 dark:text-[#D4D4D8] hover:bg-zinc-100 dark:hover:bg-[#27272A] hover:text-zinc-900 dark:hover:text-white font-medium'
                                     }`}
-                            >
-                                <span className="truncate text-left">{option.label}</span>
-                                {value === option.value && (
-                                    <span className="material-symbols-outlined text-[16px]">check</span>
-                                )}
-                            </button>
-                        ))}
+                                >
+                                    <div className="flex items-center gap-2 truncate min-w-0">
+                                        {option.icon && <span className="shrink-0">{option.icon}</span>}
+                                        <div className="truncate">
+                                            <span className="truncate block">{option.label}</span>
+                                            {option.description && (
+                                                <span className="text-[10px] text-zinc-400 dark:text-[#71717A] block truncate font-normal">
+                                                    {option.description}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                        {option.badge}
+                                        {isSelected && (
+                                            <CheckIcon className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 stroke-[2.5]" />
+                                        )}
+                                    </div>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
             )}

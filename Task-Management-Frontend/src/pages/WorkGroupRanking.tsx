@@ -286,7 +286,7 @@ const WorkGroupRanking: React.FC = () => {
                     notificationCount={notifications.filter((n) => !n.isRead).length}
                 />
 
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full">
+                <main className="flex-1 p-3 sm:p-6 lg:p-8 pb-24 sm:pb-8 md:pb-8 space-y-6 max-w-7xl mx-auto w-full">
                     {/* Top Header Bar */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#27272A]">
                         <div className="flex items-center gap-3">
@@ -360,7 +360,7 @@ const WorkGroupRanking: React.FC = () => {
                                             filterType === 'high_points' ? 'bg-blue-500/20 text-blue-400 font-bold' : 'text-[#D4D4D8] hover:bg-white/5'
                                         }`}
                                     >
-                                        <span>Ən Çox Xal</span>
+                                        <span>{t('kpi.leaderboard.highestScore', {}, 'Ən Çox Xal')}</span>
                                         {filterType === 'high_points' && <CheckIcon className="w-3.5 h-3.5" />}
                                     </button>
                                     <button
@@ -369,7 +369,7 @@ const WorkGroupRanking: React.FC = () => {
                                             filterType === 'low_points' ? 'bg-blue-500/20 text-blue-400 font-bold' : 'text-[#D4D4D8] hover:bg-white/5'
                                         }`}
                                     >
-                                        <span>Ən Az Xal</span>
+                                        <span>{t('kpi.leaderboard.lowestScore', {}, 'Ən Az Xal')}</span>
                                         {filterType === 'low_points' && <CheckIcon className="w-3.5 h-3.5" />}
                                     </button>
                                 </div>
@@ -382,7 +382,7 @@ const WorkGroupRanking: React.FC = () => {
                         <div className="space-y-3">
                             <div className="flex items-center gap-2">
                                 <TrophyIcon className="w-4 h-4 text-amber-400" />
-                                <h2 className="text-sm font-bold text-white tracking-tight">Ən Yaxşı Performans Göstərənlər</h2>
+                                <h2 className="text-sm font-bold text-white tracking-tight">{t('kpi.leaderboard.topPerformers', {}, 'Ən Yaxşı Performans Göstərənlər')}</h2>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -416,7 +416,7 @@ const WorkGroupRanking: React.FC = () => {
                                                                 {performer.userName}
                                                             </p>
                                                             <p className="text-[10px] text-[#71717A]">
-                                                                {isFirst ? 'Qızıl Rütbə' : isSecond ? 'Gümüş Rütbə' : 'Bürünc Rütbə'}
+                                                                {isFirst ? t('kpi.leaderboard.goldRank', {}, 'Qızıl Rütbə') : isSecond ? t('kpi.leaderboard.silverRank', {}, 'Gümüş Rütbə') : t('kpi.leaderboard.bronzeRank', {}, 'Bürünc Rütbə')}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -424,11 +424,11 @@ const WorkGroupRanking: React.FC = () => {
 
                                                 <div className="flex items-baseline justify-between pt-2">
                                                     <span className="text-2xl font-extrabold text-white tracking-tight">
-                                                        {performer.totalPoints.toLocaleString()} <span className="text-xs text-[#71717A] font-normal">xal</span>
+                                                        {performer.totalPoints.toLocaleString()} <span className="text-xs text-[#71717A] font-normal">{t('common.points', {}, 'xal')}</span>
                                                     </span>
                                                     <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
                                                         <CheckCircleIcon className="w-3.5 h-3.5" />
-                                                        <span>{performer.completedTasks} tapşırıq</span>
+                                                        <span>{performer.completedTasks} {t('common.task', {}, 'tapşırıq')}</span>
                                                     </span>
                                                 </div>
                                             </div>
@@ -450,14 +450,14 @@ const WorkGroupRanking: React.FC = () => {
                     {members.length > 0 && (
                         <div className="space-y-3 pt-2">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                <h2 className="text-sm font-bold text-white tracking-tight">Bütün Qrup Üzvləri</h2>
+                                <h2 className="text-sm font-bold text-white tracking-tight">{t('workgroups.allMembers', {}, 'Bütün Qrup Üzvləri')}</h2>
                                 <div className="relative flex items-center min-w-[200px]">
                                     <MagnifyingGlassIcon className="w-4 h-4 text-[#71717A] absolute left-3 pointer-events-none" />
                                     <input
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder="Üzv axtar..."
+                                        placeholder={t('workgroups.searchMember', {}, 'Üzv axtar...')}
                                         className="w-full bg-[#18181B] border border-[#27272A] rounded-xl pl-9 pr-3.5 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium"
                                     />
                                 </div>
@@ -468,18 +468,18 @@ const WorkGroupRanking: React.FC = () => {
                                     <table className="w-full text-left text-xs">
                                         <thead>
                                             <tr className="border-b border-[#27272A] text-[#71717A] font-semibold bg-[#141416]">
-                                                <th className="py-3.5 px-4 font-medium w-16">Rütbə</th>
-                                                <th className="py-3.5 px-4 font-medium">Əməkdaş</th>
-                                                <th className="py-3.5 px-4 font-medium">Tamamlanmış Tapşırıq</th>
-                                                <th className="py-3.5 px-4 font-medium">Toplam Xal</th>
-                                                <th className="py-3.5 px-4 font-medium">Səmərəlilik</th>
+                                                <th className="py-3.5 px-4 font-medium w-16">{t('kpi.leaderboard.rank', {}, 'Rütbə')}</th>
+                                                <th className="py-3.5 px-4 font-medium">{t('common.employee', {}, 'Əməkdaş')}</th>
+                                                <th className="py-3.5 px-4 font-medium">{t('kpi.dashboard.completedTasks', {}, 'Tamamlanmış Tapşırıq')}</th>
+                                                <th className="py-3.5 px-4 font-medium">{t('common.points', {}, 'Toplam Xal')}</th>
+                                                <th className="py-3.5 px-4 font-medium">{t('common.efficiency', {}, 'Səmərəlilik')}</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-[#27272A]">
                                             {filteredOtherMembers.length === 0 && topPerformers.length === 0 ? (
                                                 <tr>
                                                     <td colSpan={5} className="py-12 text-center text-xs text-[#71717A]">
-                                                        Üzv tapılmadı
+                                                        {t('common.noMembersFound', {}, 'Üzv tapılmadı')}
                                                     </td>
                                                 </tr>
                                             ) : (
@@ -505,10 +505,10 @@ const WorkGroupRanking: React.FC = () => {
                                                             </div>
                                                         </td>
                                                         <td className="py-3.5 px-4 text-[#D4D4D8]">
-                                                            {member.completedTasks} tapşırıq
+                                                            {member.completedTasks} {t('common.task', {}, 'tapşırıq')}
                                                         </td>
                                                         <td className="py-3.5 px-4 font-bold text-amber-400">
-                                                            {member.totalPoints.toLocaleString()} xal
+                                                            {member.totalPoints.toLocaleString()} {t('common.points', {}, 'xal')}
                                                         </td>
                                                         <td className="py-3.5 px-4">
                                                             <div className="flex items-center gap-3">

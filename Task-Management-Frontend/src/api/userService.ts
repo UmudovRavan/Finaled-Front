@@ -74,6 +74,9 @@ const userService = {
 
         return [];
     },
+    getUsers: function(): Promise<UserResponse[]> {
+        return this.getAllUsers();
+    },
 };
 
 export default userService;

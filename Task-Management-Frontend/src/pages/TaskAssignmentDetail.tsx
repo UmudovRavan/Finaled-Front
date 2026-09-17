@@ -243,7 +243,7 @@ const TaskAssignmentDetail: React.FC = () => {
                     notificationCount={notifications.filter((n) => !n.isRead).length}
                 />
 
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-4xl mx-auto w-full">
+                <main className="flex-1 p-3 sm:p-6 lg:p-8 pb-24 sm:pb-8 md:pb-8 space-y-6 max-w-4xl mx-auto w-full">
                     {/* Navigation Bar */}
                     <div className="flex items-center justify-between">
                         <button

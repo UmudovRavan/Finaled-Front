@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../layout';
 import CreateTaskModal from '../components/CreateTaskModal';
+import CustomSelect, { type SelectOption } from '../components/CustomSelect';
 import { taskService, authService, notificationService } from '../api';
 import { signalRService } from '../services/signalRService';
 import type { TaskResponse, NotificationResponse } from '../dto';
@@ -39,7 +40,7 @@ const MyTasks: React.FC = () => {
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 
     // View Mode: 'List' | 'Kanban'
-    const [viewMode, setViewMode] = useState<'List' | 'Kanban'>('Kanban');
+    const [viewMode, setViewMode] = useState<'List' | 'Kanban'>('List');
 
     // Filter states
     const [searchQuery, setSearchQuery] = useState('');
@@ -259,15 +260,15 @@ const MyTasks: React.FC = () => {
             const nextWeek = new Date(now.getTime() + 7 * 86400000);
 
             if (datePreset === 'today') {
-                result = result.filter((t) => t.deadline.startsWith(todayStr));
+                result = result.filter((taskItem) => taskItem.deadline.startsWith(todayStr));
             } else if (datePreset === 'tomorrow') {
-                result = result.filter((t) => t.deadline.startsWith(tomorrowStr));
+                result = result.filter((taskItem) => taskItem.deadline.startsWith(tomorrowStr));
             } else if (datePreset === 'nextWeek') {
-                result = result.filter((t) => new Date(t.deadline) <= nextWeek && new Date(t.deadline) >= now);
+                result = result.filter((taskItem) => new Date(taskItem.deadline) <= nextWeek && new Date(taskItem.deadline) >= now);
             }
         }
 
-        return result;
+        return taskService.sortTasksNewestFirst(result);
     }, [allTasks, userInfo, ownershipFilter, isManager, searchQuery, statusFilter, priorityFilter, difficultyFilter, datePreset]);
 
     const hasActiveFilters = searchQuery || statusFilter !== 'all' || priorityFilter !== 'all' || difficultyFilter !== 'all' || ownershipFilter !== 'all' || datePreset !== 'all';
@@ -418,6 +419,37 @@ const MyTasks: React.FC = () => {
         }
     };
 
+    const priorityOptions = useMemo<SelectOption[]>(() => [
+        { value: 'all', label: 'Bütün Prioritetlər' },
+        { value: Priority.Urgent, label: 'Təcili', icon: <span className="text-xs">🔥</span> },
+        { value: Priority.High, label: 'Yüksək', icon: <span className="text-xs">⚡</span> },
+        { value: Priority.Normal, label: 'Normal', icon: <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> },
+        { value: Priority.Low, label: 'Aşağı', icon: <span className="w-2 h-2 rounded-full bg-zinc-400 inline-block" /> },
+    ], []);
+
+    const difficultyOptions = useMemo<SelectOption[]>(() => [
+        { value: 'all', label: 'Bütün Çətinliklər' },
+        { value: DifficultyLevel.Hard, label: t('difficulties.hard', {}, 'Çətin (Yüksək)'), badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold border border-rose-500/20">30 bal</span> },
+        { value: DifficultyLevel.Medium, label: t('difficulties.medium', {}, 'Orta'), badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/20">20 bal</span> },
+        { value: DifficultyLevel.Easy, label: t('difficulties.easy', {}, 'Asan (Aşağı)'), badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">10 bal</span> },
+    ], [t]);
+
+    const statusOptions = useMemo<SelectOption[]>(() => [
+        { value: 'all', label: t('tasks.filterByStatus', {}, 'Bütün Statuslar') },
+        { value: TaskStatus.Pending, label: t('statuses.pending', {}, 'Gözləmədə'), icon: <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> },
+        { value: TaskStatus.InProgress, label: t('statuses.inProgress', {}, 'İcrada'), icon: <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> },
+        { value: TaskStatus.UnderReview, label: t('statuses.review', {}, 'Yoxlanışda'), icon: <span className="w-2 h-2 rounded-full bg-purple-500 inline-block" /> },
+        { value: TaskStatus.Completed, label: t('statuses.completed', {}, 'Tamamlandı'), icon: <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> },
+        { value: TaskStatus.Expired, label: t('common.overdue', {}, 'Gecikmiş'), icon: <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> },
+    ], [t]);
+
+    const dateOptions = useMemo<SelectOption[]>(() => [
+        { value: 'all', label: t('common.all', {}, 'Bütün Tarixlər') },
+        { value: 'today', label: t('common.today', {}, 'Bugün') },
+        { value: 'tomorrow', label: 'Sabah' },
+        { value: 'nextWeek', label: '+7 Gün' },
+    ], [t]);
+
     if (loading) {
         return (
             <div className="flex h-screen w-screen overflow-hidden bg-[#121214] font-sans antialiased text-[#F4F4F5]">
@@ -436,10 +468,10 @@ const MyTasks: React.FC = () => {
     }
 
     return (
-        <div className="flex h-screen w-screen overflow-hidden bg-[#121214] font-sans antialiased text-[#F4F4F5] selection:bg-fuchsia-500/30">
+        <div className="flex h-screen w-screen overflow-hidden bg-zinc-50 dark:bg-[#121214] font-sans antialiased text-zinc-900 dark:text-[#F4F4F5] selection:bg-fuchsia-500/30">
             <Sidebar userRole={userRole} />
 
-            <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto bg-[#121214] scroll-smooth">
+            <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto bg-zinc-50 dark:bg-[#121214] scroll-smooth">
                 <Header
                     userName={displayName}
                     userRole={userRole}
@@ -448,14 +480,14 @@ const MyTasks: React.FC = () => {
                     notificationCount={notifications.filter((n) => !n.isRead).length}
                 />
 
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full">
+                <main className="flex-1 p-3 sm:p-6 lg:p-8 pb-24 sm:pb-8 md:pb-8 space-y-6 max-w-7xl mx-auto w-full">
                     {/* Top Action Header Bar */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                            <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+                            <h1 className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-white tracking-tight">
                                 {t('tasks.allTasksTitle', {}, 'Tapşırıqlar')}
                             </h1>
-                            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/10 text-white border border-white/15">
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-zinc-200 dark:bg-white/10 text-zinc-800 dark:text-white border border-zinc-300 dark:border-white/15">
                                 {filteredTasks.length}
                             </span>
                         </div>
@@ -466,21 +498,21 @@ const MyTasks: React.FC = () => {
                             <button
                                 onClick={handleRefresh}
                                 disabled={refreshing}
-                                className="p-2 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+                                className="p-2.5 rounded-xl bg-white dark:bg-[#18181B] hover:bg-zinc-100 dark:hover:bg-[#27272A] border border-zinc-200 dark:border-[#27272A] text-zinc-600 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white shadow-xs transition-colors cursor-pointer disabled:opacity-50"
                                 title={t('common.refresh', {}, 'Yenilə')}
                                 type="button"
                             >
-                                <ArrowPathIcon className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                                <ArrowPathIcon className={`w-4 h-4 ${refreshing ? 'animate-spin text-primary-500' : ''}`} />
                             </button>
 
                             {/* View Mode Toggle: Kanban vs List */}
-                            <div className="flex items-center p-1 rounded-xl bg-[#18181B] border border-[#27272A]">
+                            <div className="flex items-center p-1 rounded-xl bg-white dark:bg-[#18181B] border border-zinc-200/80 dark:border-[#27272A] shadow-xs">
                                 <button
                                     onClick={() => setViewMode('Kanban')}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                                         viewMode === 'Kanban'
-                                            ? 'bg-[#27272A] text-white shadow-xs'
-                                            : 'text-[#71717A] hover:text-[#D4D4D8]'
+                                            ? 'bg-zinc-100 dark:bg-[#27272A] text-zinc-900 dark:text-white shadow-xs'
+                                            : 'text-zinc-500 dark:text-[#71717A] hover:text-zinc-900 dark:hover:text-[#D4D4D8]'
                                     }`}
                                     type="button"
                                 >
@@ -491,8 +523,8 @@ const MyTasks: React.FC = () => {
                                     onClick={() => setViewMode('List')}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                                         viewMode === 'List'
-                                            ? 'bg-[#27272A] text-white shadow-xs'
-                                            : 'text-[#71717A] hover:text-[#D4D4D8]'
+                                            ? 'bg-zinc-100 dark:bg-[#27272A] text-zinc-900 dark:text-white shadow-xs'
+                                            : 'text-zinc-500 dark:text-[#71717A] hover:text-zinc-900 dark:hover:text-[#D4D4D8]'
                                     }`}
                                     type="button"
                                 >
@@ -505,7 +537,7 @@ const MyTasks: React.FC = () => {
                             <button
                                 onClick={() => setIsCreateModalOpen(true)}
                                 type="button"
-                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg transition-colors cursor-pointer"
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg border border-zinc-200/80 dark:border-transparent transition-colors cursor-pointer"
                             >
                                 <PlusIcon className="w-4 h-4 stroke-[2.5]" />
                                 <span>{t('tasks.newTask', {}, 'Yeni Tapşırıq')}</span>
@@ -514,27 +546,27 @@ const MyTasks: React.FC = () => {
                     </div>
 
                     {/* CRM Style Unified Filter Bar */}
-                    <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-3 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                    <div className="rounded-2xl border border-zinc-200/80 dark:border-[#27272A] bg-white dark:bg-[#18181B] p-3 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
                         {/* Left Side Filters */}
                         <div className="flex items-center gap-2.5 flex-wrap flex-1">
                             {/* Search Input */}
                             <div className="relative flex items-center min-w-[200px] flex-1 sm:flex-initial">
-                                <MagnifyingGlassIcon className="w-4 h-4 text-[#71717A] absolute left-3 pointer-events-none" />
+                                <MagnifyingGlassIcon className="w-4 h-4 text-zinc-400 dark:text-[#71717A] absolute left-3 pointer-events-none" />
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder={t('tasks.searchTasks', {}, 'Tapşırıq axtar...')}
-                                    className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl pl-9 pr-3.5 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium"
+                                    className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl pl-9 pr-3.5 py-1.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium"
                                 />
                             </div>
 
                             {/* Ownership Pills */}
-                            <div className="flex items-center p-0.5 rounded-xl bg-[#27272A]/80 border border-[#3F3F46]/60 text-xs">
+                            <div className="flex items-center p-0.5 rounded-xl bg-zinc-100 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 text-xs">
                                 <button
                                     onClick={() => setOwnershipFilter('assigned')}
                                     className={`px-2.5 py-1 rounded-lg font-semibold transition-colors cursor-pointer ${
-                                        ownershipFilter === 'assigned' ? 'bg-[#18181B] text-white shadow-xs' : 'text-[#A1A1AA] hover:text-white'
+                                        ownershipFilter === 'assigned' ? 'bg-white dark:bg-[#18181B] text-zinc-900 dark:text-white shadow-xs' : 'text-zinc-500 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white'
                                     }`}
                                 >
                                     {t('tasks.assignedTo', {}, 'Təyin Edilənlər')}
@@ -542,7 +574,7 @@ const MyTasks: React.FC = () => {
                                 <button
                                     onClick={() => setOwnershipFilter('created')}
                                     className={`px-2.5 py-1 rounded-lg font-semibold transition-colors cursor-pointer ${
-                                        ownershipFilter === 'created' ? 'bg-[#18181B] text-white shadow-xs' : 'text-[#A1A1AA] hover:text-white'
+                                        ownershipFilter === 'created' ? 'bg-white dark:bg-[#18181B] text-zinc-900 dark:text-white shadow-xs' : 'text-zinc-500 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white'
                                     }`}
                                 >
                                     {t('tasks.assignedBy', {}, 'Yaratdıqlarım')}
@@ -550,7 +582,7 @@ const MyTasks: React.FC = () => {
                                 <button
                                     onClick={() => setOwnershipFilter('all')}
                                     className={`px-2.5 py-1 rounded-lg font-semibold transition-colors cursor-pointer ${
-                                        ownershipFilter === 'all' ? 'bg-[#18181B] text-white shadow-xs' : 'text-[#A1A1AA] hover:text-white'
+                                        ownershipFilter === 'all' ? 'bg-white dark:bg-[#18181B] text-zinc-900 dark:text-white shadow-xs' : 'text-zinc-500 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white'
                                     }`}
                                 >
                                     {t('common.all', {}, 'Hamısı')}
@@ -558,67 +590,33 @@ const MyTasks: React.FC = () => {
                             </div>
 
                             {/* Priority Select */}
-                            <div className="relative flex items-center">
-                                <select
-                                    value={priorityFilter}
-                                    onChange={(e) => setPriorityFilter(e.target.value)}
-                                    className="bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3 py-1.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-blue-500 pr-7 font-medium"
-                                >
-                                    <option value="all">Bütün Prioritetlər</option>
-                                    <option value={Priority.Urgent}>🔥 Təcili</option>
-                                    <option value={Priority.High}>⚡ Yüksək</option>
-                                    <option value={Priority.Normal}>Normal</option>
-                                    <option value={Priority.Low}>Aşağı</option>
-                                </select>
-                                <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-2.5 pointer-events-none" />
-                            </div>
+                            <CustomSelect
+                                value={priorityFilter}
+                                onChange={setPriorityFilter}
+                                options={priorityOptions}
+                            />
 
                             {/* Difficulty Select */}
-                            <div className="relative flex items-center">
-                                <select
-                                    value={difficultyFilter}
-                                    onChange={(e) => setDifficultyFilter(e.target.value)}
-                                    className="bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3 py-1.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-blue-500 pr-7 font-medium"
-                                >
-                                    <option value="all">Bütün Çətinliklər</option>
-                                    <option value={DifficultyLevel.Hard}>{t('difficulties.hard', {}, 'Yüksək (Çətin)')}</option>
-                                    <option value={DifficultyLevel.Medium}>{t('difficulties.medium', {}, 'Orta')}</option>
-                                    <option value={DifficultyLevel.Easy}>{t('difficulties.easy', {}, 'Aşağı (Asan)')}</option>
-                                </select>
-                                <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-2.5 pointer-events-none" />
-                            </div>
+                            <CustomSelect
+                                value={difficultyFilter}
+                                onChange={setDifficultyFilter}
+                                options={difficultyOptions}
+                            />
 
                             {/* Status Select */}
-                            <div className="relative flex items-center">
-                                <select
-                                    value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3 py-1.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-blue-500 pr-7 font-medium"
-                                >
-                                    <option value="all">{t('tasks.filterByStatus', {}, 'Bütün Statuslar')}</option>
-                                    <option value={TaskStatus.Pending}>{t('statuses.pending', {}, 'Gözləmədə')}</option>
-                                    <option value={TaskStatus.InProgress}>{t('statuses.inProgress', {}, 'İcrada')}</option>
-                                    <option value={TaskStatus.UnderReview}>{t('statuses.review', {}, 'Yoxlanışda')}</option>
-                                    <option value={TaskStatus.Completed}>{t('statuses.completed', {}, 'Tamamlandı')}</option>
-                                    <option value={TaskStatus.Expired}>{t('common.overdue', {}, 'Gecikmiş')}</option>
-                                </select>
-                                <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-2.5 pointer-events-none" />
-                            </div>
+                            <CustomSelect
+                                value={statusFilter}
+                                onChange={setStatusFilter}
+                                options={statusOptions}
+                            />
 
                             {/* Date Presets */}
-                            <div className="relative flex items-center">
-                                <select
-                                    value={datePreset}
-                                    onChange={(e) => setDatePreset(e.target.value)}
-                                    className="bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3 py-1.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-blue-500 pr-7 font-medium"
-                                >
-                                    <option value="all">{t('common.all', {}, 'Bütün Tarixlər')}</option>
-                                    <option value="today">{t('common.today', {}, 'Bugün')}</option>
-                                    <option value="tomorrow">Sabah</option>
-                                    <option value="nextWeek">+7 Gün</option>
-                                </select>
-                                <CalendarIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-2.5 pointer-events-none" />
-                            </div>
+                            <CustomSelect
+                                value={datePreset}
+                                onChange={setDatePreset}
+                                options={dateOptions}
+                                icon={<CalendarIcon className="w-3.5 h-3.5" />}
+                            />
                         </div>
 
                         {/* Right: Clear Filters Button */}
@@ -626,7 +624,7 @@ const MyTasks: React.FC = () => {
                             <button
                                 onClick={clearAllFilters}
                                 type="button"
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold transition-colors cursor-pointer shrink-0"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold transition-colors cursor-pointer shrink-0"
                             >
                                 <XMarkIcon className="w-3.5 h-3.5" />
                                 <span>{t('common.clear', {}, 'Təmizlə')}</span>
@@ -636,22 +634,22 @@ const MyTasks: React.FC = () => {
 
                     {/* VIEW MODE 1: KANBAN BOARD */}
                     {viewMode === 'Kanban' ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-start">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-start">
                             {kanbanColumns.map((col) => {
                                 const columnTasks = filteredTasks.filter((t) => col.statuses.includes(t.status));
 
                                 return (
                                     <div
                                         key={col.id}
-                                        className="flex flex-col rounded-2xl bg-[#18181B] border border-[#27272A] p-3.5 gap-3 min-h-[500px]"
+                                        className="flex flex-col rounded-2xl bg-zinc-100/70 dark:bg-[#18181B] border border-zinc-200/80 dark:border-[#27272A] p-3.5 gap-3 min-h-[400px] sm:min-h-[500px]"
                                     >
                                         {/* Column Header */}
-                                        <div className="flex items-center justify-between pb-2 border-b border-[#27272A]">
+                                        <div className="flex items-center justify-between pb-2 border-b border-zinc-200 dark:border-[#27272A]">
                                             <div className="flex items-center gap-2">
                                                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: col.color }}></span>
-                                                <span className="text-xs font-bold text-white">{col.title}</span>
+                                                <span className="text-xs font-bold text-zinc-900 dark:text-white">{col.title}</span>
                                             </div>
-                                            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#27272A] text-[#A1A1AA]">
+                                            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-zinc-200 dark:bg-[#27272A] text-zinc-700 dark:text-[#A1A1AA]">
                                                 {columnTasks.length}
                                             </span>
                                         </div>
@@ -659,58 +657,58 @@ const MyTasks: React.FC = () => {
                                         {/* Column Cards */}
                                         <div className="flex flex-col gap-2.5">
                                             {columnTasks.length === 0 ? (
-                                                <div className="py-8 text-center text-[11px] text-[#52525B]">
-                                                    Tapşırıq yoxdur
+                                                <div className="py-8 text-center text-[11px] text-zinc-400 dark:text-[#52525B]">
+                                                    {t('tasks.noTasks', {}, 'Tapşırıq yoxdur')}
                                                 </div>
                                             ) : (
-                                                columnTasks.map((t) => (
+                                                columnTasks.map((taskItem) => (
                                                     <div
-                                                        key={t.id}
-                                                        onClick={() => navigate(`/tasks/${t.id}`)}
-                                                        className="rounded-xl border border-[#27272A] bg-[#1C1C1E] p-3.5 flex flex-col gap-2.5 hover:border-[#3F3F46] hover:bg-[#202023] transition-all cursor-pointer group shadow-xs relative"
+                                                        key={taskItem.id}
+                                                        onClick={() => navigate(`/tasks/${taskItem.id}`)}
+                                                        className="rounded-xl border border-zinc-200 dark:border-[#27272A] bg-white dark:bg-[#1C1C1E] p-3.5 flex flex-col gap-2.5 hover:border-zinc-300 dark:hover:border-[#3F3F46] hover:shadow-sm transition-all cursor-pointer group shadow-xs relative"
                                                     >
                                                         {/* Top Row: Priority & Quick Menu */}
                                                         <div className="flex items-center justify-between">
-                                                            {getPriorityBadge(t.difficulty)}
+                                                            {getPriorityBadge(taskItem.difficulty)}
 
                                                             <div className="relative" onClick={(e) => e.stopPropagation()}>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => setOpenActionMenuId(openActionMenuId === t.id ? null : t.id)}
-                                                                    className="p-1 rounded-lg text-[#71717A] hover:text-white hover:bg-white/10 transition-colors"
+                                                                    onClick={() => setOpenActionMenuId(openActionMenuId === taskItem.id ? null : taskItem.id)}
+                                                                    className="p-1 rounded-lg text-zinc-400 dark:text-[#71717A] hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
                                                                 >
                                                                     <EllipsisHorizontalIcon className="w-4 h-4" />
                                                                 </button>
 
-                                                                {openActionMenuId === t.id && (
-                                                                    <div className="absolute right-0 top-full mt-1 w-36 bg-[#18181B] border border-[#2C2C2E] rounded-xl shadow-2xl p-1 z-50 flex flex-col text-xs animate-in fade-in duration-100">
+                                                                {openActionMenuId === taskItem.id && (
+                                                                    <div className="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-[#18181B] border border-zinc-200 dark:border-[#2C2C2E] rounded-xl shadow-2xl p-1 z-50 flex flex-col text-xs animate-in fade-in duration-100">
                                                                         <button
-                                                                            onClick={() => navigate(`/tasks/${t.id}`)}
-                                                                            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[#D4D4D8] hover:bg-white/5 hover:text-white text-left"
+                                                                            onClick={() => navigate(`/tasks/${taskItem.id}`)}
+                                                                            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-700 dark:text-[#D4D4D8] hover:bg-zinc-100 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-white text-left cursor-pointer"
                                                                         >
                                                                             <EyeIcon className="w-3.5 h-3.5" />
-                                                                            <span>Bax</span>
+                                                                            <span>{t('common.view', {}, 'Bax')}</span>
                                                                         </button>
                                                                         <button
-                                                                            onClick={() => navigate(`/tasks/edit/${t.id}`)}
-                                                                            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[#D4D4D8] hover:bg-white/5 hover:text-white text-left"
+                                                                            onClick={() => navigate(`/tasks/edit/${taskItem.id}`)}
+                                                                            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-zinc-700 dark:text-[#D4D4D8] hover:bg-zinc-100 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-white text-left cursor-pointer"
                                                                         >
                                                                             <PencilSquareIcon className="w-3.5 h-3.5" />
-                                                                            <span>Redaktə</span>
+                                                                            <span>{t('common.edit', {}, 'Redaktə')}</span>
                                                                         </button>
                                                                         <button
-                                                                            onClick={(e) => handleQuickStatusChange(t.id, TaskStatus.Completed, e)}
-                                                                            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-emerald-400 hover:bg-emerald-500/10 text-left"
+                                                                            onClick={(e) => handleQuickStatusChange(taskItem.id, TaskStatus.Completed, e)}
+                                                                            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-left cursor-pointer"
                                                                         >
                                                                             <CheckCircleIcon className="w-3.5 h-3.5" />
-                                                                            <span>Tamamla</span>
+                                                                            <span>{t('statuses.completed', {}, 'Tamamla')}</span>
                                                                         </button>
                                                                         <button
-                                                                            onClick={(e) => handleDeleteTask(t.id, e)}
-                                                                            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-rose-400 hover:bg-rose-500/10 text-left"
+                                                                            onClick={(e) => handleDeleteTask(taskItem.id, e)}
+                                                                            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-left cursor-pointer"
                                                                         >
                                                                             <TrashIcon className="w-3.5 h-3.5" />
-                                                                            <span>Sil</span>
+                                                                            <span>{t('common.delete', {}, 'Sil')}</span>
                                                                         </button>
                                                                     </div>
                                                                 )}
@@ -719,73 +717,73 @@ const MyTasks: React.FC = () => {
 
                                                         {/* Card Title & Description */}
                                                         <div>
-                                                            <h4 className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors line-clamp-2">
-                                                                {t.title}
+                                                            <h4 className="text-xs font-bold text-zinc-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors line-clamp-2">
+                                                                {taskItem.title}
                                                             </h4>
-                                                            {t.description && (
-                                                                <p className="text-[11px] text-[#71717A] line-clamp-2 mt-1">
-                                                                    {t.description}
+                                                            {taskItem.description && (
+                                                                <p className="text-[11px] text-zinc-500 dark:text-[#71717A] line-clamp-2 mt-1">
+                                                                    {taskItem.description}
                                                                 </p>
                                                             )}
                                                         </div>
 
                                                         {/* Bottom Row: Due Date & Assignee */}
-                                                        <div className="flex items-center justify-between pt-2 border-t border-[#27272A] text-[10px] text-[#A1A1AA]">
+                                                        <div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-[#27272A] text-[10px] text-zinc-500 dark:text-[#A1A1AA]">
                                                             <div className="flex items-center gap-1">
-                                                                <ClockIcon className="w-3 h-3 text-[#71717A]" />
-                                                                <span>{formatDateTime(t.deadline)}</span>
+                                                                <ClockIcon className="w-3 h-3 text-zinc-400 dark:text-[#71717A]" />
+                                                                <span>{formatDateTime(taskItem.deadline)}</span>
                                                             </div>
 
-                                                            {t.assignedToUserName && (
-                                                                <span className="font-semibold text-white truncate max-w-[90px]">
-                                                                    {t.assignedToUserName}
+                                                            {taskItem.assignedToUserName && (
+                                                                <span className="font-semibold text-zinc-800 dark:text-white truncate max-w-[90px]">
+                                                                    {taskItem.assignedToUserName}
                                                                 </span>
                                                             )}
                                                         </div>
 
                                                         {/* Direct Workflow Actions on Card */}
-                                                        {(t.status === TaskStatus.Assigned || t.status === TaskStatus.Pending) && t.assignedToUserId === userInfo?.userId && (
+                                                        {(taskItem.status === TaskStatus.Assigned || taskItem.status === TaskStatus.Pending) && taskItem.assignedToUserId === userInfo?.userId && (
                                                             <div className="flex items-center gap-1.5 pt-1" onClick={(e) => e.stopPropagation()}>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={(e) => handleAcceptTask(t.id, e)}
+                                                                    onClick={(e) => handleAcceptTask(taskItem.id, e)}
                                                                     className="flex-1 flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] transition-colors shadow-xs cursor-pointer"
                                                                 >
                                                                     <CheckCircleIcon className="w-3.5 h-3.5" />
-                                                                    <span>Qəbul Et</span>
+                                                                    <span>{t('tasks.accept', {}, 'Qəbul Et')}</span>
                                                                 </button>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={(e) => handleRejectTask(t.id, e)}
-                                                                    className="flex items-center justify-center py-1.5 px-2.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-[11px] font-semibold transition-colors cursor-pointer"
+                                                                    onClick={(e) => handleRejectTask(taskItem.id, e)}
+                                                                    className="flex items-center justify-center py-1.5 px-2.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-[11px] font-semibold transition-colors cursor-pointer"
                                                                 >
-                                                                    <span>İmtina</span>
+                                                                    <span>{t('common.cancel', {}, 'İmtina')}</span>
                                                                 </button>
                                                             </div>
                                                         )}
 
-                                                        {t.status === TaskStatus.InProgress && t.assignedToUserId === userInfo?.userId && (
+                                                        {taskItem.status === TaskStatus.InProgress && taskItem.assignedToUserId === userInfo?.userId && (
                                                             <div className="pt-1" onClick={(e) => e.stopPropagation()}>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={(e) => handleFinishTask(t.id, e)}
-                                                                    className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] transition-colors shadow-xs cursor-pointer"
+                                                                    onClick={(e) => handleFinishTask(taskItem.id, e)}
+                                                                    className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white font-bold text-[11px] transition-colors shadow-xs cursor-pointer"
                                                                 >
                                                                     <CheckCircleIcon className="w-3.5 h-3.5" />
-                                                                    <span>İcranı Bitir</span>
+                                                                    <span>{t('tasks.finishExecution', {}, 'İcranı Bitir')}</span>
                                                                 </button>
                                                             </div>
                                                         )}
 
-                                                        {t.status === TaskStatus.UnderReview && (t.createdByUserId === userInfo?.userId || isManager) && t.assignedToUserId !== userInfo?.userId && (
+                                                        {taskItem.status === TaskStatus.UnderReview && (taskItem.createdByUserId === userInfo?.userId || isManager) && taskItem.assignedToUserId !== userInfo?.userId && (
                                                             <div className="pt-1" onClick={(e) => e.stopPropagation()}>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => navigate(`/tasks/${t.id}`)}
-                                                                    className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 font-bold text-[11px] transition-colors cursor-pointer"
+                                                                    onClick={() => navigate(`/tasks/${taskItem.id}`)}
+                                                                    className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-purple-600/10 hover:bg-purple-600/20 text-purple-600 dark:text-purple-300 border border-purple-500/30 font-bold text-[11px] transition-colors cursor-pointer"
                                                                 >
-                                                                    <SparklesIcon className="w-3.5 h-3.5 text-purple-400" />
-                                                                    <span>Xal ver / Yoxla</span>
+                                                                    <SparklesIcon className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
+                                                                    <span>{t('tasks.reviewAndScore', {}, 'Xal ver / Yoxla')}</span>
                                                                 </button>
                                                             </div>
                                                         )}
@@ -799,107 +797,107 @@ const MyTasks: React.FC = () => {
                         </div>
                     ) : (
                         /* VIEW MODE 2: HIGH-DENSITY LIST TABLE */
-                        <div className="rounded-2xl border border-[#27272A] bg-[#18181B] overflow-hidden shadow-xs">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left text-xs">
+                        <div className="rounded-2xl border border-zinc-200 dark:border-[#27272A] bg-white dark:bg-[#18181B] overflow-hidden shadow-xs">
+                            <div className="overflow-x-auto -mx-1 sm:mx-0">
+                                <table className="w-full text-left text-xs min-w-[640px]">
                                     <thead>
-                                        <tr className="border-b border-[#27272A] text-[#71717A] font-semibold bg-[#141416]">
-                                            <th className="py-3.5 px-4 font-medium">Tapşırıq</th>
-                                            <th className="py-3.5 px-4 font-medium">Prioritet</th>
-                                            <th className="py-3.5 px-4 font-medium">Təyin Edilib</th>
-                                            <th className="py-3.5 px-4 font-medium">İcra Tarixi</th>
-                                            <th className="py-3.5 px-4 font-medium">Status</th>
-                                            <th className="py-3.5 px-4 text-right font-medium">Əməliyyatlar</th>
+                                        <tr className="border-b border-zinc-200 dark:border-[#27272A] text-zinc-500 dark:text-[#71717A] font-semibold bg-zinc-50 dark:bg-[#141416]">
+                                            <th className="py-3.5 px-4 font-medium">{t('tasks.taskList', {}, 'Tapşırıq')}</th>
+                                            <th className="py-3.5 px-4 font-medium">{t('tasks.priority', {}, 'Prioritet')}</th>
+                                            <th className="py-3.5 px-4 font-medium">{t('tasks.assignedTo', {}, 'Təyin Edilib')}</th>
+                                            <th className="py-3.5 px-4 font-medium">{t('tasks.deadline', {}, 'İcra Tarixi')}</th>
+                                            <th className="py-3.5 px-4 font-medium">{t('tasks.status', {}, 'Status')}</th>
+                                            <th className="py-3.5 px-4 text-right font-medium">{t('common.actions', {}, 'Əməliyyatlar')}</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-[#27272A]">
+                                    <tbody className="divide-y divide-zinc-200 dark:divide-[#27272A]">
                                         {filteredTasks.length === 0 ? (
                                             <tr>
-                                                <td colSpan={6} className="py-12 text-center text-xs text-[#71717A]">
-                                                    Tapşırıq tapılmadı
+                                                <td colSpan={6} className="py-12 text-center text-xs text-zinc-500 dark:text-[#71717A]">
+                                                    {t('tasks.noTasks', {}, 'Tapşırıq tapılmadı')}
                                                 </td>
                                             </tr>
                                         ) : (
-                                            filteredTasks.map((t) => (
+                                            filteredTasks.map((taskItem) => (
                                                 <tr
-                                                    key={t.id}
-                                                    onClick={() => navigate(`/tasks/${t.id}`)}
-                                                    className="hover:bg-white/[0.02] transition-colors cursor-pointer group"
+                                                    key={taskItem.id}
+                                                    onClick={() => navigate(`/tasks/${taskItem.id}`)}
+                                                    className="hover:bg-zinc-50 dark:hover:bg-white/[0.02] transition-colors cursor-pointer group"
                                                 >
                                                     <td className="py-3.5 px-4 max-w-[280px]">
-                                                        <div className="font-bold text-[#E4E4E7] group-hover:text-white truncate">
-                                                            {t.title}
+                                                        <div className="font-bold text-zinc-900 dark:text-[#E4E4E7] group-hover:text-primary-600 dark:group-hover:text-white truncate">
+                                                            {taskItem.title}
                                                         </div>
-                                                        {t.description && (
-                                                            <div className="text-[11px] text-[#71717A] truncate mt-0.5">
-                                                                {t.description}
+                                                        {taskItem.description && (
+                                                            <div className="text-[11px] text-zinc-500 dark:text-[#71717A] truncate mt-0.5">
+                                                                {taskItem.description}
                                                             </div>
                                                         )}
                                                     </td>
                                                     <td className="py-3.5 px-4">
-                                                        {getPriorityBadge(t.difficulty)}
+                                                        {getPriorityBadge(taskItem.difficulty)}
                                                     </td>
-                                                    <td className="py-3.5 px-4 text-[#D4D4D8] font-medium">
-                                                        {t.assignedToUserName || 'Təyin edilməyib'}
+                                                    <td className="py-3.5 px-4 text-zinc-700 dark:text-[#D4D4D8] font-medium">
+                                                        {taskItem.assignedToUserName || t('tasks.unassigned', {}, 'Təyin edilməyib')}
                                                     </td>
-                                                    <td className="py-3.5 px-4 text-[#A1A1AA]">
+                                                    <td className="py-3.5 px-4 text-zinc-500 dark:text-[#A1A1AA]">
                                                         <div className="flex items-center gap-1.5">
-                                                            <ClockIcon className="w-3.5 h-3.5 text-[#71717A]" />
-                                                            <span>{formatDateTime(t.deadline)}</span>
+                                                            <ClockIcon className="w-3.5 h-3.5 text-zinc-400 dark:text-[#71717A]" />
+                                                            <span>{formatDateTime(taskItem.deadline)}</span>
                                                         </div>
                                                     </td>
                                                     <td className="py-3.5 px-4">
-                                                        {getStatusPill(t.status)}
+                                                        {getStatusPill(taskItem.status)}
                                                     </td>
                                                     <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                                                         <div className="flex items-center justify-end gap-1.5">
                                                             {/* Quick workflow table buttons */}
-                                                            {(t.status === TaskStatus.Assigned || t.status === TaskStatus.Pending) && t.assignedToUserId === userInfo?.userId && (
+                                                            {(taskItem.status === TaskStatus.Assigned || taskItem.status === TaskStatus.Pending) && taskItem.assignedToUserId === userInfo?.userId && (
                                                                 <>
                                                                     <button
-                                                                        onClick={(e) => handleAcceptTask(t.id, e)}
+                                                                        onClick={(e) => handleAcceptTask(taskItem.id, e)}
                                                                         className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] transition-colors cursor-pointer"
                                                                     >
-                                                                        Qəbul Et
+                                                                        {t('tasks.accept', {}, 'Qəbul Et')}
                                                                     </button>
                                                                     <button
-                                                                        onClick={(e) => handleRejectTask(t.id, e)}
-                                                                        className="px-2 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-[11px] font-semibold transition-colors cursor-pointer"
+                                                                        onClick={(e) => handleRejectTask(taskItem.id, e)}
+                                                                        className="px-2 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-[11px] font-semibold transition-colors cursor-pointer"
                                                                     >
-                                                                        İmtina
+                                                                        {t('common.cancel', {}, 'İmtina')}
                                                                     </button>
                                                                 </>
                                                             )}
 
-                                                            {t.status === TaskStatus.InProgress && t.assignedToUserId === userInfo?.userId && (
+                                                            {taskItem.status === TaskStatus.InProgress && taskItem.assignedToUserId === userInfo?.userId && (
                                                                 <button
-                                                                    onClick={(e) => handleFinishTask(t.id, e)}
-                                                                    className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] transition-colors cursor-pointer"
+                                                                    onClick={(e) => handleFinishTask(taskItem.id, e)}
+                                                                    className="px-2.5 py-1 rounded-lg bg-primary-600 hover:bg-primary-500 text-white font-bold text-[11px] transition-colors cursor-pointer"
                                                                 >
-                                                                    İcranı Bitir
+                                                                    {t('tasks.finishExecution', {}, 'İcranı Bitir')}
                                                                 </button>
                                                             )}
 
-                                                            {t.status === TaskStatus.UnderReview && (t.createdByUserId === userInfo?.userId || isManager) && t.assignedToUserId !== userInfo?.userId && (
+                                                            {taskItem.status === TaskStatus.UnderReview && (taskItem.createdByUserId === userInfo?.userId || isManager) && taskItem.assignedToUserId !== userInfo?.userId && (
                                                                 <button
-                                                                    onClick={() => navigate(`/tasks/${t.id}`)}
-                                                                    className="px-2.5 py-1 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 font-bold text-[11px] transition-colors cursor-pointer"
+                                                                    onClick={() => navigate(`/tasks/${taskItem.id}`)}
+                                                                    className="px-2.5 py-1 rounded-lg bg-purple-600/10 hover:bg-purple-600/20 text-purple-600 dark:text-purple-300 border border-purple-500/30 font-bold text-[11px] transition-colors cursor-pointer"
                                                                 >
-                                                                    Xal ver
+                                                                    {t('tasks.score', {}, 'Xal ver')}
                                                                 </button>
                                                             )}
 
                                                             <button
-                                                                onClick={() => navigate(`/tasks/edit/${t.id}`)}
-                                                                className="p-1.5 rounded-lg text-[#71717A] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-                                                                title="Redaktə"
+                                                                onClick={() => navigate(`/tasks/edit/${taskItem.id}`)}
+                                                                className="p-1.5 rounded-lg text-zinc-400 dark:text-[#71717A] hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                                                                title={t('common.edit', {}, 'Redaktə')}
                                                             >
                                                                 <PencilSquareIcon className="w-4 h-4" />
                                                             </button>
                                                             <button
-                                                                onClick={(e) => handleDeleteTask(t.id, e)}
-                                                                className="p-1.5 rounded-lg text-[#71717A] hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                                                                title="Sil"
+                                                                onClick={(e) => handleDeleteTask(taskItem.id, e)}
+                                                                className="p-1.5 rounded-lg text-zinc-400 dark:text-[#71717A] hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
+                                                                title={t('common.delete', {}, 'Sil')}
                                                             >
                                                                 <TrashIcon className="w-4 h-4" />
                                                             </button>

@@ -129,9 +129,9 @@ const Header: React.FC<HeaderProps> = ({
                 </button>
 
                 {/* Search Bar */}
-                <div ref={searchRef} className="relative w-full max-w-md">
+                <div ref={searchRef} className="relative w-full max-w-[160px] xs:max-w-[220px] sm:max-w-md">
                     <div
-                        className={`flex items-center rounded-xl h-9 px-3 transition-all duration-200 ${
+                        className={`flex items-center rounded-xl h-9 px-2.5 sm:px-3 transition-all duration-200 ${
                             isDark
                                 ? searchFocused
                                     ? 'bg-[#1C1C1E] border border-blue-500/50 shadow-sm'
@@ -144,10 +144,10 @@ const Header: React.FC<HeaderProps> = ({
                         <MagnifyingGlassIcon className="w-4 h-4 text-[#71717A] shrink-0" />
                         <input
                             ref={searchInputRef}
-                            className={`flex-1 bg-transparent text-xs outline-none border-none focus:ring-0 px-2.5 ${
+                            className={`flex-1 bg-transparent text-xs outline-none border-none focus:ring-0 px-2 min-w-0 ${
                                 isDark ? 'text-white placeholder:text-[#71717A]' : 'text-slate-900 placeholder:text-slate-400'
                             }`}
-                            placeholder={t('nav.searchPlaceholder', {}, 'Tapşırıqları, iş qruplarını axtar... (⌘K)')}
+                            placeholder={t('nav.searchPlaceholder', {}, 'Axtarış... (⌘K)')}
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}

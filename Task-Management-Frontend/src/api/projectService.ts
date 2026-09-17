@@ -218,6 +218,10 @@ export const projectService = {
         }
         throw lastErr || new Error('Failed to delete project');
     },
+
+    getProjects(): Promise<ProjectDTO[]> {
+        return this.getAllProjects();
+    },
 };
 
 export default projectService;

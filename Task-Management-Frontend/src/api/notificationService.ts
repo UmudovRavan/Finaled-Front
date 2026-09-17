@@ -10,6 +10,10 @@ export const notificationService = {
     async markAsRead(id: number): Promise<void> {
         await httpClient.post(`/Notifications/${id}/read`);
     },
+
+    getNotifications(): Promise<NotificationResponse[]> {
+        return this.getMyNotifications();
+    },
 };
 
 export default notificationService;

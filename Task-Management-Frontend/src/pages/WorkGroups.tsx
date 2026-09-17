@@ -359,7 +359,7 @@ const WorkGroups: React.FC = () => {
                     notificationCount={notifications.filter((n) => !n.isRead).length}
                 />
 
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full">
+                <main className="flex-1 p-3 sm:p-6 lg:p-8 pb-24 sm:pb-8 md:pb-8 space-y-6 max-w-7xl mx-auto w-full">
                     {/* Top Action Header Bar */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
@@ -372,7 +372,7 @@ const WorkGroups: React.FC = () => {
                         </div>
 
                         {/* Top Actions */}
-                        <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-2.5 flex-wrap">
                             <button
                                 onClick={handleRefresh}
                                 disabled={refreshing}
@@ -387,7 +387,7 @@ const WorkGroups: React.FC = () => {
                                 <button
                                     onClick={handleOpenCreateModal}
                                     type="button"
-                                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg transition-colors cursor-pointer"
+                                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg border border-zinc-200/80 dark:border-transparent transition-colors cursor-pointer"
                                 >
                                     <PlusIcon className="w-4 h-4 stroke-[2.5]" />
                                     <span>{t('workgroups.createGroup', {}, 'Yeni İş Qrupu')}</span>
@@ -397,7 +397,7 @@ const WorkGroups: React.FC = () => {
                     </div>
 
                     {/* KPI Cards Row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                         <div className="flex flex-col justify-between rounded-2xl border border-[#27272A] bg-[#18181B] p-5 shadow-xs">
                             <div className="flex items-center justify-between gap-2 mb-3">
                                 <div className="flex items-center gap-2">

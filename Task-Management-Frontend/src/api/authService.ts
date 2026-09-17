@@ -50,81 +50,61 @@ export const authService = {
 
         activeRefreshPromise = (async () => {
             const refreshToken = this.getRefreshToken();
-            const accessToken = this.getAccessToken();
 
-            if (!refreshToken && !accessToken) {
+            if (!refreshToken) {
                 throw new Error('No refresh token available');
             }
 
-            const candidatePayloads = [
-                { refreshToken },
-                { token: accessToken, refreshToken },
-                { accessToken, refreshToken },
-                { RefreshToken: refreshToken },
-            ];
-
             const authBase = import.meta.env.VITE_AUTH_API_URL || 'https://api-info.altensor.com/api';
-            const authEndpoints = ['/Auth/RefreshToken', '/Auth/refresh', '/auth/refresh', '/Auth/refresh-token', '/auth/token/refresh'];
-
-            // 1. First attempt: Auth Service endpoints (clean call without expired Bearer token header)
-            for (const ep of authEndpoints) {
-                for (const payload of candidatePayloads) {
-                    try {
-                        const response = await axios.post<any>(`${authBase}${ep}`, payload, {
-                            headers: { 'Content-Type': 'application/json' },
-                            timeout: 10000,
-                        });
-
-                        const raw = response.data?.data || response.data;
-                        const newAccess = raw?.accessToken || raw?.token || raw?.jwtToken || raw?.jwt;
-                        const newRefresh = raw?.refreshToken || raw?.refresh_token || refreshToken;
-
-                        if (newAccess) {
-                            this.setTokens(newAccess, newRefresh || undefined);
-                            return {
-                                accessToken: newAccess,
-                                refreshToken: newRefresh || '',
-                                tokenType: raw?.tokenType || 'Bearer',
-                                expiresIn: raw?.expiresIn || 900,
-                            };
-                        }
-                    } catch {
-                        // Try next endpoint/payload
-                    }
-                }
-            }
-
-            // 2. Second attempt: TMS local Authorize endpoints
             const tmsBase = import.meta.env.VITE_TMS_API_URL || 'https://api-tms.altensor.com/api';
-            const tmsEndpoints = ['/Authorize/RefreshToken', '/Authorize/Refresh', '/Authorize/refresh'];
-            for (const ep of tmsEndpoints) {
-                for (const payload of candidatePayloads) {
-                    try {
-                        const response = await axios.post<any>(`${tmsBase}${ep}`, payload, {
-                            headers: { 'Content-Type': 'application/json' },
-                            timeout: 10000,
-                        });
 
-                        const raw = response.data?.data || response.data;
-                        const newAccess = raw?.accessToken || raw?.token || raw?.jwtToken || raw?.jwt;
-                        const newRefresh = raw?.refreshToken || raw?.refresh_token || refreshToken;
+            // 1. Primary: Auth Service /auth/refresh endpoint
+            try {
+                const response = await axios.post<any>(`${authBase}/auth/refresh`, { refreshToken }, {
+                    headers: { 'Content-Type': 'application/json' },
+                    timeout: 10000,
+                });
 
-                        if (newAccess) {
-                            this.setTokens(newAccess, newRefresh || undefined);
-                            return {
-                                accessToken: newAccess,
-                                refreshToken: newRefresh || '',
-                                tokenType: raw?.tokenType || 'Bearer',
-                                expiresIn: raw?.expiresIn || 900,
-                            };
-                        }
-                    } catch {
-                        // Try next endpoint/payload
-                    }
+                const raw = response.data?.data || response.data;
+                const newAccess = raw?.accessToken || raw?.token;
+                const newRefresh = raw?.refreshToken || refreshToken;
+
+                if (newAccess) {
+                    this.setTokens(newAccess, newRefresh);
+                    return {
+                        accessToken: newAccess,
+                        refreshToken: newRefresh,
+                        tokenType: raw?.tokenType || 'Bearer',
+                        expiresIn: raw?.expiresIn || 900,
+                    };
                 }
+            } catch (authErr) {
+                // If Auth Service failed, attempt fallback to TMS local auth endpoint
+                try {
+                    const fallbackRes = await axios.post<any>(`${tmsBase}/auth/refresh`, { refreshToken }, {
+                        headers: { 'Content-Type': 'application/json' },
+                        timeout: 10000,
+                    });
+                    const raw = fallbackRes.data?.data || fallbackRes.data;
+                    const newAccess = raw?.accessToken || raw?.token;
+                    const newRefresh = raw?.refreshToken || refreshToken;
+
+                    if (newAccess) {
+                        this.setTokens(newAccess, newRefresh);
+                        return {
+                            accessToken: newAccess,
+                            refreshToken: newRefresh,
+                            tokenType: raw?.tokenType || 'Bearer',
+                            expiresIn: raw?.expiresIn || 900,
+                        };
+                    }
+                } catch {
+                    // rethrow original or fatal error
+                }
+                throw authErr;
             }
 
-            throw new Error('Could not refresh token on any endpoint');
+            throw new Error('Token refresh failed');
         })().finally(() => {
             activeRefreshPromise = null;
         });

@@ -445,7 +445,7 @@ const Settings: React.FC = () => {
                     notifications={notifications}
                 />
 
-                <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8" style={{ background: isDark ? '#111827' : '#F3F4F6' }}>
+                <main className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 pb-24 sm:pb-8 md:pb-8" style={{ background: isDark ? '#111827' : '#F3F4F6' }}>
                     {/* Page header */}
                     <div className="mb-8">
                         <div className="flex items-center gap-3 mb-1">

@@ -49,6 +49,7 @@ export interface TaskResponse {
     taskCommentId?: (string | number)[];
     files?: FileDto[];
     taskComments?: TaskCommentDto[];
+    createdAt?: string;
 }
 
 export interface FileDto {

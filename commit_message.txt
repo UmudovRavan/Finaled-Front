@@ -1,0 +1,14 @@
+feat(tasks, auth): optimize refresh token flow & redesign mention UI to minimalist Linear style
+
+- UI/UX: Set default task view to List mode and order tasks by newest first
+- UI/UX: Unify "Yeni tapşırıq" button styles across Dashboard, Tasks, and Departments
+- UI/UX: Redesign @-mention dropdown (UserSuggestionList) with minimalist Linear/Height aesthetic
+  - Add 5 harmonious desaturated tonal avatar palettes (deterministic per user)
+  - Remove duplicated email rows and format display names cleanly
+  - Apply WCAG AA compliant contrast for keyboard hints and secondary text
+  - Standardize 2-tier radius system (rounded-xl for panels, rounded-md for chips/badges)
+  - Style comment @-mentions as calm, warm amber-toned chips
+- Auth: Optimize Frontend token refresh in authService.ts
+  - Remove redundant 20-combination trial loop
+  - Connect directly to POST /auth/refresh ({ refreshToken })
+  - Retain singleton activeRefreshPromise and Axios interceptor retry queue

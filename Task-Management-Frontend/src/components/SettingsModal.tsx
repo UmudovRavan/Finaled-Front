@@ -5,6 +5,7 @@ import type { UserInfo } from '../utils';
 import type { UserResponse, TenantSettingsDTO } from '../dto';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import CustomSelect from './CustomSelect';
 import {
     XMarkIcon,
     PencilSquareIcon,
@@ -755,18 +756,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                 </p>
                                             </div>
 
-                                            <select
+                                            <CustomSelect
                                                 value={language}
-                                                onChange={(e) => {
-                                                    setLanguage(e.target.value as any);
+                                                onChange={(val) => {
+                                                    setLanguage(val as any);
                                                     showToast(t('settings.savedSuccess', {}, 'Dil tənzimləməsi yadda saxlanıldı!'));
                                                 }}
-                                                className="bg-[#27272A] border border-[#3F3F46] rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer"
-                                            >
-                                                <option value="az">🇦🇿 Azərbaycan dili (AZ)</option>
-                                                <option value="en">🇬🇧 English (EN)</option>
-                                                <option value="ru">🇷🇺 Русский (RU)</option>
-                                            </select>
+                                                options={[
+                                                    { value: 'az', label: '🇦🇿 Azərbaycan dili (AZ)' },
+                                                    { value: 'en', label: '🇬🇧 English (EN)' },
+                                                    { value: 'ru', label: '🇷🇺 Русский (RU)' },
+                                                ]}
+                                                size="sm"
+                                                className="w-48"
+                                            />
                                         </div>
 
                                         {/* Time Format */}

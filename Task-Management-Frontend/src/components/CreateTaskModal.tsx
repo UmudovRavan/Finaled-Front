@@ -17,6 +17,7 @@ import { taskService, userService, divisionService, projectService, projectLevel
 import { parseJwtToken } from '../utils';
 import { useLanguage } from '../context/LanguageContext';
 import UserSuggestionList from './UserSuggestionList';
+import CustomSelect, { type SelectOption } from './CustomSelect';
 
 interface CreateTaskModalProps {
     isOpen: boolean;
@@ -150,19 +151,23 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         }
     };
 
-    useEffect(() => {
-        const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && isOpen) {
-                onClose();
-            }
-        };
-        document.addEventListener('keydown', handleEscape);
-        return () => document.removeEventListener('keydown', handleEscape);
-    }, [isOpen, onClose]);
+    // Check workload when user is assigned
+    const checkUserWorkload = async (userId: string) => {
+        try {
+            const warning = await workloadService.checkWorkloadWarning(userId);
+            setWorkloadWarning(warning);
+        } catch {
+            setWorkloadWarning(null);
+        }
+    };
 
+    // Click outside to close mention dropdown
     useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (assignContainerRef.current && !assignContainerRef.current.contains(e.target as Node)) {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (
+                assignContainerRef.current &&
+                !assignContainerRef.current.contains(event.target as Node)
+            ) {
                 setShowSuggestions(false);
             }
         };
@@ -171,30 +176,32 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     }, []);
 
     const filteredUsers = useMemo(() => {
-        if (!allUsers || allUsers.length === 0) return [];
-        if (!mentionQuery || mentionQuery.trim().length === 0) return allUsers;
-        const query = mentionQuery.toLowerCase().trim();
+        if (!mentionQuery.trim()) return allUsers;
+        const q = mentionQuery.toLowerCase();
         return allUsers.filter(
             (u) =>
-                u.userName?.toLowerCase().includes(query) ||
-                u.email?.toLowerCase().includes(query) ||
-                u.role?.toLowerCase().includes(query)
+                (u.userName && u.userName.toLowerCase().includes(q)) ||
+                (u.email && u.email.toLowerCase().includes(q))
         );
     }, [allUsers, mentionQuery]);
 
     const handleAssignInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        setAssignInputValue(value);
+        const val = e.target.value;
+        setAssignInputValue(val);
 
-        if (assignedUser && value !== assignedUser.userName) {
+        if (val.startsWith('@')) {
+            setMentionQuery(val.slice(1));
+        } else {
+            setMentionQuery(val);
+        }
+
+        setShowSuggestions(true);
+        setSuggestionIndex(0);
+
+        if (!val.trim()) {
             setAssignedUser(null);
             setWorkloadWarning(null);
         }
-
-        const query = value.startsWith('@') ? value.substring(1) : value;
-        setMentionQuery(query);
-        setShowSuggestions(true);
-        setSuggestionIndex(0);
     };
 
     const handleAssignInputFocus = () => {
@@ -202,21 +209,15 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         setSuggestionIndex(0);
     };
 
-    const handleSelectUser = async (user: UserResponse) => {
+    const handleSelectUser = (user: UserResponse) => {
         setAssignedUser(user);
-        setAssignInputValue(user.userName || user.email || '');
+        const isEmailUsername = !user.userName || user.userName.toLowerCase() === user.email?.toLowerCase();
+        const displayName = isEmailUsername
+            ? (user.email ? user.email.split('@')[0] : 'İstifadəçi')
+            : user.userName;
+        setAssignInputValue(displayName);
         setShowSuggestions(false);
-        setMentionQuery('');
-
-        // Check workload for this user
-        if (user.id) {
-            try {
-                const warning = await workloadService.checkUserWorkload(user.id);
-                setWorkloadWarning(warning);
-            } catch {
-                // ignore
-            }
-        }
+        checkUserWorkload(user.id);
     };
 
     const handleAssignKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -254,19 +255,19 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         setError(null);
 
         if (!title.trim()) {
-            setError('Tapşırığın başlığı mütləqdir');
+            setError(t('tasks.titleRequiredError', {}, 'Tapşırığın başlığı mütləqdir'));
             return;
         }
 
         if (!deadline) {
-            setError('İcra tarixi mütləqdir');
+            setError(t('tasks.deadlineRequiredError', {}, 'İcra tarixi mütləqdir'));
             return;
         }
 
         const selectedDate = new Date(deadline);
         const now = new Date();
         if (selectedDate <= now) {
-            setError('İcra tarixi gələcək bir zaman olmalıdır');
+            setError(t('tasks.deadlineFutureError', {}, 'İcra tarixi gələcək bir zaman olmalıdır'));
             return;
         }
 
@@ -308,7 +309,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         } catch (err: any) {
             console.error('Task creation error details:', err?.response?.data || err);
             const serverMsg = err.response?.data?.message || err.response?.data?.Message || (typeof err.response?.data === 'string' ? err.response?.data : null);
-            setError(serverMsg || err.message || 'Tapşırıq yaradılarkən xəta baş verdi');
+            setError(serverMsg || err.message || t('tasks.createError', {}, 'Tapşırıq yaradılarkən xəta baş verdi'));
         } finally {
             setIsSubmitting(false);
         }
@@ -317,20 +318,22 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150 font-sans">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/70 backdrop-blur-sm animate-in fade-in duration-150 font-sans">
             <div
-                className="w-full max-w-xl bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-[#F4F4F5]"
+                className="w-full max-w-xl bg-white dark:bg-[#1C1C1E] border border-zinc-200 dark:border-[#2C2C2E] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-zinc-900 dark:text-[#F4F4F5]"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-[#2C2C2E]">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-[#2C2C2E]">
                     <div className="flex items-center gap-2.5">
-                        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                        <h2 className="text-sm font-bold text-white tracking-tight">Yeni Tapşırıq Yarat</h2>
+                        <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
+                        <h2 className="text-sm font-bold text-zinc-900 dark:text-white tracking-tight">
+                            {t('tasks.createNewTask', {}, 'Yeni Tapşırıq Yarat')}
+                        </h2>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-1 rounded-lg text-[#71717A] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                        className="p-1 rounded-lg text-zinc-400 hover:text-zinc-700 dark:text-[#71717A] dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
                     >
                         <XMarkIcon className="w-5 h-5" />
                     </button>
@@ -339,7 +342,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 {/* Form Container */}
                 <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
                     {error && (
-                        <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-xs flex items-center gap-2 animate-in fade-in">
+                        <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-xs flex items-center gap-2 animate-in fade-in">
                             <ExclamationTriangleIcon className="w-4 h-4 shrink-0" />
                             <span>{error}</span>
                         </div>
@@ -347,90 +350,94 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
                     {/* Title */}
                     <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-[#A1A1AA]">Tapşırıq Başlığı *</label>
+                        <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
+                            {t('tasks.taskTitleRequired', {}, 'Tapşırıq Başlığı *')}
+                        </label>
                         <input
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            placeholder="Məsələn: API inteqrasiyasını tamamla..."
-                            className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium"
+                            placeholder={t('tasks.titlePlaceholder', {}, 'Məsələn: API inteqrasiyasını tamamla...')}
+                            className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium transition-all"
                             required
                         />
                     </div>
 
                     {/* Hierarchy: Division > Project > Level */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#222226] p-3 rounded-xl border border-[#2C2C2E]">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-zinc-50 dark:bg-[#222226] p-3 rounded-xl border border-zinc-200/80 dark:border-[#2C2C2E]">
                         {/* Division */}
                         <div className="space-y-1">
-                            <label className="text-[11px] font-semibold text-[#A1A1AA] flex items-center gap-1">
-                                <BuildingOfficeIcon className="w-3 h-3 text-sky-400" />
-                                Şöbə
+                            <label className="text-[11px] font-semibold text-zinc-600 dark:text-[#A1A1AA] flex items-center gap-1">
+                                <BuildingOfficeIcon className="w-3 h-3 text-sky-500 dark:text-sky-400" />
+                                {t('common.department', {}, 'Şöbə')}
                             </label>
-                            <select
-                                value={selectedDivisionId}
-                                onChange={(e) => handleDivisionChange(e.target.value)}
-                                className="w-full bg-[#27272A] border border-[#3F3F46]/60 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer"
-                            >
-                                <option value="">Şöbəsiz</option>
-                                {divisions.map((d) => (
-                                    <option key={d.id} value={d.id}>
-                                        {d.name}
-                                    </option>
-                                ))}
-                            </select>
+                            <CustomSelect
+                                value={String(selectedDivisionId)}
+                                onChange={handleDivisionChange}
+                                options={[
+                                    { value: '', label: t('tasks.noDivision', {}, 'Şöbəsiz') },
+                                    ...divisions.map((d) => ({
+                                        value: String(d.id),
+                                        label: d.name,
+                                    })),
+                                ]}
+                                className="w-full"
+                            />
                         </div>
 
                         {/* Project */}
                         <div className="space-y-1">
-                            <label className="text-[11px] font-semibold text-[#A1A1AA] flex items-center gap-1">
-                                <FolderIcon className="w-3 h-3 text-purple-400" />
-                                Layihə
+                            <label className="text-[11px] font-semibold text-zinc-600 dark:text-[#A1A1AA] flex items-center gap-1">
+                                <FolderIcon className="w-3 h-3 text-purple-500 dark:text-purple-400" />
+                                {t('projects.title', {}, 'Layihə')}
                             </label>
-                            <select
-                                value={selectedProjectId}
-                                onChange={(e) => handleProjectChange(e.target.value)}
-                                className="w-full bg-[#27272A] border border-[#3F3F46]/60 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer"
-                            >
-                                <option value="">Layihəsiz</option>
-                                {projects.map((p) => (
-                                    <option key={p.id} value={p.id}>
-                                        {p.name}
-                                    </option>
-                                ))}
-                            </select>
+                            <CustomSelect
+                                value={String(selectedProjectId)}
+                                onChange={handleProjectChange}
+                                options={[
+                                    { value: '', label: t('tasks.noProject', {}, 'Layihəsiz') },
+                                    ...projects.map((p) => ({
+                                        value: String(p.id),
+                                        label: p.name,
+                                    })),
+                                ]}
+                                className="w-full"
+                            />
                         </div>
 
                         {/* Level */}
                         <div className="space-y-1">
-                            <label className="text-[11px] font-semibold text-[#A1A1AA] flex items-center gap-1">
-                                <QueueListIcon className="w-3 h-3 text-emerald-400" />
-                                Mərhələ
+                            <label className="text-[11px] font-semibold text-zinc-600 dark:text-[#A1A1AA] flex items-center gap-1">
+                                <QueueListIcon className="w-3 h-3 text-emerald-500 dark:text-emerald-400" />
+                                {t('tasks.stage', {}, 'Mərhələ')}
                             </label>
-                            <select
-                                value={selectedLevelId}
-                                onChange={(e) => setSelectedLevelId(e.target.value)}
-                                className="w-full bg-[#27272A] border border-[#3F3F46]/60 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                            <CustomSelect
+                                value={String(selectedLevelId)}
+                                onChange={setSelectedLevelId}
+                                options={[
+                                    { value: '', label: t('tasks.noStage', {}, 'Mərhələsiz') },
+                                    ...levels.map((lvl) => ({
+                                        value: String(lvl.id),
+                                        label: lvl.name,
+                                    })),
+                                ]}
                                 disabled={!selectedProjectId && levels.length === 0}
-                            >
-                                <option value="">Mərhələsiz</option>
-                                {levels.map((lvl) => (
-                                    <option key={lvl.id} value={lvl.id}>
-                                        {lvl.name}
-                                    </option>
-                                ))}
-                            </select>
+                                className="w-full"
+                            />
                         </div>
                     </div>
 
                     {/* Description */}
                     <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-[#A1A1AA]">Təsvir</label>
+                        <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
+                            {t('common.description', {}, 'Təsvir')}
+                        </label>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Tapşırıq haqqında ətraflı qeydlər..."
+                            placeholder={t('tasks.descriptionPlaceholder', {}, 'Tapşırıq haqqında ətraflı qeydlər...')}
                             rows={3}
-                            className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl p-3 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium resize-none"
+                            className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl p-3 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium resize-none transition-all"
                         />
                     </div>
 
@@ -438,47 +445,49 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         {/* Priority */}
                         <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-[#A1A1AA]">Prioritet</label>
-                            <div className="relative flex items-center">
-                                <select
-                                    value={priority}
-                                    onChange={(e) => setPriority(Number(e.target.value) as Priority)}
-                                    className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3 py-2 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-blue-500 pr-7 font-medium"
-                                >
-                                    <option value={Priority.Low}>Aşağı</option>
-                                    <option value={Priority.Normal}>Normal</option>
-                                    <option value={Priority.High}>Yüksək</option>
-                                    <option value={Priority.Urgent}>Təcili</option>
-                                </select>
-                                <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-2.5 pointer-events-none" />
-                            </div>
+                            <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
+                                {t('common.priority', {}, 'Prioritet')}
+                            </label>
+                            <CustomSelect
+                                value={String(priority)}
+                                onChange={(val) => setPriority(Number(val) as Priority)}
+                                options={[
+                                    { value: String(Priority.Low), label: t('tasks.priorityLow', {}, 'Aşağı'), icon: <span className="w-2 h-2 rounded-full bg-zinc-400 inline-block" /> },
+                                    { value: String(Priority.Normal), label: t('tasks.priorityNormal', {}, 'Normal'), icon: <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> },
+                                    { value: String(Priority.High), label: t('tasks.priorityHigh', {}, 'Yüksək'), icon: <span className="text-xs">⚡</span> },
+                                    { value: String(Priority.Urgent), label: t('tasks.priorityUrgent', {}, 'Təcili'), icon: <span className="text-xs">🔥</span> },
+                                ]}
+                                className="w-full"
+                            />
                         </div>
 
                         {/* Difficulty */}
                         <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-[#A1A1AA]">Çətinlik</label>
-                            <div className="relative flex items-center">
-                                <select
-                                    value={difficulty}
-                                    onChange={(e) => setDifficulty(Number(e.target.value) as DifficultyLevel)}
-                                    className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3 py-2 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-blue-500 pr-7 font-medium"
-                                >
-                                    <option value={DifficultyLevel.Easy}>Asan</option>
-                                    <option value={DifficultyLevel.Medium}>Orta</option>
-                                    <option value={DifficultyLevel.Hard}>Çətin</option>
-                                </select>
-                                <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-2.5 pointer-events-none" />
-                            </div>
+                            <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
+                                {t('common.difficulty', {}, 'Çətinlik')}
+                            </label>
+                            <CustomSelect
+                                value={String(difficulty)}
+                                onChange={(val) => setDifficulty(Number(val) as DifficultyLevel)}
+                                options={[
+                                    { value: String(DifficultyLevel.Easy), label: t('tasks.difficultyEasy', {}, 'Asan (10 bal)'), badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">{t('tasks.pointsBadge', { count: 10 }, '10 bal')}</span> },
+                                    { value: String(DifficultyLevel.Medium), label: t('tasks.difficultyMedium', {}, 'Orta (20 bal)'), badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/20">{t('tasks.pointsBadge', { count: 20 }, '20 bal')}</span> },
+                                    { value: String(DifficultyLevel.Hard), label: t('tasks.difficultyHard', {}, 'Çətin (30 bal)'), badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold border border-rose-500/20">{t('tasks.pointsBadge', { count: 30 }, '30 bal')}</span> },
+                                ]}
+                                className="w-full"
+                            />
                         </div>
 
                         {/* Deadline */}
                         <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-[#A1A1AA]">İcra Tarixi *</label>
+                            <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
+                                {t('tasks.deadlineRequired', {}, 'İcra Tarixi *')}
+                            </label>
                             <input
                                 type="datetime-local"
                                 value={deadline}
                                 onChange={(e) => setDeadline(e.target.value)}
-                                className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-blue-500 font-medium"
+                                className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl px-2.5 py-2.5 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-blue-500 font-medium transition-all"
                                 required
                             />
                         </div>
@@ -486,7 +495,9 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
                     {/* Assignee Search / Mention */}
                     <div ref={assignContainerRef} className="space-y-1.5 relative">
-                        <label className="text-xs font-semibold text-[#A1A1AA]">Təyin Edilən Şəxs</label>
+                        <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
+                            {t('tasks.assignedUser', {}, 'Təyin Edilən Şəxs')}
+                        </label>
                         <div className="relative flex items-center">
                             <input
                                 ref={assignInputRef}
@@ -496,10 +507,10 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                                 onFocus={handleAssignInputFocus}
                                 onClick={handleAssignInputFocus}
                                 onKeyDown={handleAssignKeyDown}
-                                placeholder="@ istifadəçi axtarın və ya seçin..."
-                                className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium"
+                                placeholder={t('tasks.assigneePlaceholder', {}, '@ istifadəçi axtarın və ya seçin...')}
+                                className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium transition-all"
                             />
-                            <UserIcon className="w-4 h-4 text-[#71717A] absolute left-3 pointer-events-none" />
+                            <UserIcon className="w-4 h-4 text-zinc-400 dark:text-[#71717A] absolute left-3 pointer-events-none" />
                         </div>
 
                         {showSuggestions && filteredUsers.length > 0 && (
@@ -515,21 +526,21 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                             <div
                                 className={`p-2.5 rounded-xl border text-xs flex items-center gap-2 animate-in fade-in ${
                                     workloadWarning.isOverloaded
-                                        ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                                        ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-300'
                                         : workloadWarning.warningLevel === 'warning'
-                                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-                                        : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-300'
+                                        : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-300'
                                 }`}
                             >
                                 {workloadWarning.isOverloaded ? (
-                                    <ShieldExclamationIcon className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                                    <ShieldExclamationIcon className="w-4 h-4 text-rose-500 dark:text-rose-400 flex-shrink-0" />
                                 ) : (
-                                    <ExclamationTriangleIcon className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                                    <ExclamationTriangleIcon className="w-4 h-4 text-amber-500 dark:text-amber-400 flex-shrink-0" />
                                 )}
                                 <span>
-                                    {assignedUser?.userName || 'Bu istifadəçi'} üzərində{' '}
-                                    <strong>{workloadWarning.activeTaskCount} aktiv tapşırıq</strong> var.{' '}
-                                    {workloadWarning.isOverloaded && '(Həddindən artıq yüklənmə tövsiyə edilmir!)'}
+                                    {assignedUser?.userName || t('tasks.thisUser', {}, 'Bu istifadəçi')} {t('tasks.activeTasksOnUser', {}, 'üzərində')}{' '}
+                                    <strong>{t('tasks.activeTasksCountLabel', { count: workloadWarning.activeTaskCount }, `${workloadWarning.activeTaskCount} aktiv tapşırıq`)}</strong>.{' '}
+                                    {workloadWarning.isOverloaded && t('tasks.overloadWarning', {}, '(Həddindən artıq yüklənmə tövsiyə edilmir!)')}
                                 </span>
                             </div>
                         )}
@@ -537,24 +548,28 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
                     {/* Attachments */}
                     <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-[#A1A1AA]">Qoşma Fayllar</label>
+                        <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
+                            {t('tasks.attachments', {}, 'Qoşma Fayllar')}
+                        </label>
                         <div className="flex items-center gap-2">
-                            <label className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] border border-[#3F3F46] text-xs font-medium text-white cursor-pointer transition-colors">
-                                <PaperClipIcon className="w-4 h-4 text-[#A1A1AA]" />
-                                <span>Fayl seçin</span>
+                            <label className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-[#27272A] dark:hover:bg-[#3F3F46] border border-zinc-200 dark:border-[#3F3F46] text-xs font-medium text-zinc-800 dark:text-white cursor-pointer transition-colors">
+                                <PaperClipIcon className="w-4 h-4 text-zinc-500 dark:text-[#A1A1AA]" />
+                                <span>{t('tasks.selectFile', {}, 'Fayl seçin')}</span>
                                 <input type="file" multiple onChange={handleFileChange} className="hidden" />
                             </label>
-                            <span className="text-[11px] text-[#71717A]">
-                                {files.length > 0 ? `${files.length} fayl seçildi` : 'İstəyə görə'}
+                            <span className="text-[11px] text-zinc-500 dark:text-[#71717A]">
+                                {files.length > 0
+                                    ? t('tasks.filesSelected', { count: files.length }, `${files.length} fayl seçildi`)
+                                    : t('tasks.optional', {}, 'İstəyə görə')}
                             </span>
                         </div>
 
                         {files.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 pt-2">
                                 {files.map((file, idx) => (
-                                    <div key={idx} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#27272A] text-xs text-[#D4D4D8]">
+                                    <div key={idx} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-[#27272A] text-xs text-zinc-800 dark:text-[#D4D4D8] border border-zinc-200 dark:border-transparent">
                                         <span className="truncate max-w-[150px]">{file.name}</span>
-                                        <button type="button" onClick={() => removeFile(idx)} className="text-[#71717A] hover:text-rose-400">
+                                        <button type="button" onClick={() => removeFile(idx)} className="text-zinc-400 hover:text-rose-500 cursor-pointer">
                                             <XMarkIcon className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
@@ -564,21 +579,21 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                     </div>
 
                     {/* Footer Actions */}
-                    <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#2C2C2E]">
+                    <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-100 dark:border-[#2C2C2E]">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 rounded-xl bg-transparent hover:bg-white/5 text-xs font-semibold text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                            className="px-4 py-2 rounded-xl bg-transparent hover:bg-zinc-100 dark:hover:bg-white/5 text-xs font-semibold text-zinc-600 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
                         >
-                            Ləğv et
+                            {t('common.cancel', {}, 'İmtina')}
                         </button>
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="px-5 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                            className="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 hover:shadow-lg transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
                         >
-                            {isSubmitting && <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />}
-                            <span>{isSubmitting ? 'Yaradılır...' : 'Tapşırığı Yarat'}</span>
+                            {isSubmitting && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                            <span>{isSubmitting ? t('tasks.creating', {}, 'Yaradılır...') : t('tasks.createTaskButton', {}, 'Tapşırığı Yarat')}</span>
                         </button>
                     </div>
                 </form>

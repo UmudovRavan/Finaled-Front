@@ -801,7 +801,8 @@ const TaskDetail: React.FC = () => {
         const cursorPos = commentTextareaRef.current?.selectionStart || mentionStartPosition + mentionQuery.length + 1;
         const afterMention = newComment.substring(cursorPos);
 
-        const newText = `${beforeMention}@${user.userName} ${afterMention}`;
+        const mentionTag = user.userName || (user.email ? user.email.split('@')[0] : 'user');
+        const newText = `${beforeMention}@${mentionTag} ${afterMention}`;
         setNewComment(newText);
         setShowMentionSuggestions(false);
         setMentionQuery('');
@@ -809,7 +810,7 @@ const TaskDetail: React.FC = () => {
 
         setTimeout(() => {
             if (commentTextareaRef.current) {
-                const newCursorPos = beforeMention.length + user.userName.length + 2;
+                const newCursorPos = beforeMention.length + mentionTag.length + 2;
                 commentTextareaRef.current.focus();
                 commentTextareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
             }
@@ -834,10 +835,11 @@ const TaskDetail: React.FC = () => {
         }
     };
 
-    // Render comment content with highlighted mentions
+    // Render comment content with bespoke Linear-style mention chips
     const renderCommentContent = (content: string) => {
-        const mentionRegex = /@(\w+)/g;
-        const parts = [];
+        if (!content) return content;
+        const mentionRegex = /@([a-zA-Z0-9._-]+(?:@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})?)/g;
+        const parts: React.ReactNode[] = [];
         let lastIndex = 0;
         let match;
 
@@ -845,9 +847,14 @@ const TaskDetail: React.FC = () => {
             if (match.index > lastIndex) {
                 parts.push(content.substring(lastIndex, match.index));
             }
+            const tag = match[1];
             parts.push(
-                <span key={match.index} className="text-blue-400 font-semibold">
-                    @{match[1]}
+                <span
+                    key={match.index}
+                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 mx-0.5 rounded-md bg-[#C06E1E]/10 dark:bg-[#D98736]/15 text-[#C06E1E] dark:text-[#E29B52] border border-[#C06E1E]/20 dark:border-[#D98736]/30 font-medium text-[11px] tracking-tight hover:bg-[#C06E1E]/15 dark:hover:bg-[#D98736]/25 transition-colors cursor-default select-all"
+                >
+                    <span className="font-semibold opacity-75">@</span>
+                    <span>{tag}</span>
                 </span>
             );
             lastIndex = match.index + match[0].length;
@@ -941,17 +948,17 @@ const TaskDetail: React.FC = () => {
 
     if (taskError || !task) {
         return (
-            <div className="flex h-screen w-screen overflow-hidden bg-[#121214] font-sans antialiased text-[#F4F4F5]">
+            <div className="flex h-screen w-screen overflow-hidden bg-zinc-50 dark:bg-[#121214] font-sans antialiased text-zinc-900 dark:text-[#F4F4F5]">
                 <Sidebar userRole={userRole} />
                 <div className="flex flex-1 flex-col h-screen overflow-hidden relative">
                     <Header notificationCount={0} userAvatar={avatarSrc} userEmail={userInfo?.email} />
                     <main className="flex-1 flex items-center justify-center p-6">
-                        <div className="flex flex-col items-center gap-4 max-w-md p-8 rounded-2xl bg-[#18181B] border border-[#27272A] text-center shadow-xl">
-                            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-2xl">
+                        <div className="flex flex-col items-center gap-4 max-w-md p-8 rounded-2xl bg-white dark:bg-[#18181B] border border-zinc-200 dark:border-[#27272A] text-center shadow-xl">
+                            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 dark:text-amber-400 flex items-center justify-center text-2xl">
                                 ⚠️
                             </div>
-                            <h2 className="text-lg font-bold text-white">Tapşırıq Açılmadı</h2>
-                            <p className="text-xs text-[#A1A1AA] leading-relaxed">
+                            <h2 className="text-lg font-bold text-zinc-900 dark:text-white">Tapşırıq Açılmadı</h2>
+                            <p className="text-xs text-zinc-500 dark:text-[#A1A1AA] leading-relaxed">
                                 {taskError || 'Bu ID ilə tapşırıq tapılmadı və ya baxış üçün icazəniz yoxdur.'}
                             </p>
                             <div className="flex items-center gap-3 mt-2">
@@ -963,7 +970,7 @@ const TaskDetail: React.FC = () => {
                                 </button>
                                 <button
                                     onClick={() => navigate('/tasks')}
-                                    className="px-4 py-2 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] text-white text-xs font-semibold transition-colors cursor-pointer"
+                                    className="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-[#27272A] hover:bg-zinc-200 dark:hover:bg-[#3F3F46] text-zinc-800 dark:text-white border border-zinc-200 dark:border-transparent text-xs font-semibold transition-colors cursor-pointer"
                                 >
                                     Tapşırıqlara Qayıt
                                 </button>
@@ -979,10 +986,10 @@ const TaskDetail: React.FC = () => {
     const commentsList = comments.length > 0 ? comments : (task.taskComments || (task as any).comments || []);
 
     return (
-        <div className="flex h-screen w-screen overflow-hidden bg-[#121214] font-sans antialiased text-[#F4F4F5] selection:bg-fuchsia-500/30">
+        <div className="flex h-screen w-screen overflow-hidden bg-zinc-50 dark:bg-[#121214] font-sans antialiased text-zinc-900 dark:text-[#F4F4F5] selection:bg-fuchsia-500/30">
             <Sidebar userRole={userRole} />
 
-            <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto bg-[#121214] scroll-smooth">
+            <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto bg-zinc-50 dark:bg-[#121214] scroll-smooth">
                 <Header
                     userName={displayName}
                     userRole={userRole}
@@ -991,19 +998,19 @@ const TaskDetail: React.FC = () => {
                     notificationCount={notifications.filter((n) => !n.isRead).length}
                 />
 
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full">
+                <main className="flex-1 p-3 sm:p-6 lg:p-8 pb-24 sm:pb-8 md:pb-8 space-y-6 max-w-7xl mx-auto w-full">
                     {/* Top Navigation & Action Controls */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={() => navigate('/tasks')}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-xs font-semibold text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#18181B] hover:bg-zinc-100 dark:hover:bg-[#27272A] border border-zinc-200 dark:border-[#27272A] text-xs font-semibold text-zinc-600 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer shadow-xs"
                             >
                                 <ArrowLeftIcon className="w-4 h-4" />
                                 <span>{t('common.back', {}, 'Tapşırıqlara Qayıt')}</span>
                             </button>
 
-                            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#27272A] text-[#D4D4D8]">
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-zinc-100 dark:bg-[#27272A] text-zinc-700 dark:text-[#D4D4D8] border border-zinc-200/80 dark:border-transparent">
                                 {t('tasks.taskDetails', {}, 'Tapşırıq')} #{task.id}
                             </span>
                         </div>
@@ -1014,14 +1021,14 @@ const TaskDetail: React.FC = () => {
                                 <>
                                     <button
                                         onClick={() => navigate(`/tasks/edit/${task.id}`)}
-                                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-xs font-semibold text-white transition-colors cursor-pointer"
+                                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-[#18181B] hover:bg-zinc-100 dark:hover:bg-[#27272A] border border-zinc-200 dark:border-[#27272A] text-xs font-semibold text-zinc-700 dark:text-white transition-colors cursor-pointer shadow-xs"
                                     >
-                                        <PencilSquareIcon className="w-4 h-4 text-[#A1A1AA]" />
+                                        <PencilSquareIcon className="w-4 h-4 text-zinc-500 dark:text-[#A1A1AA]" />
                                         <span>{t('common.edit', {}, 'Redaktə')}</span>
                                     </button>
                                     <button
                                         onClick={handleDelete}
-                                        className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 transition-colors cursor-pointer"
+                                        className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-600 dark:text-rose-400 transition-colors cursor-pointer shadow-xs"
                                         title={t('common.delete', {}, 'Tapşırığı Sil')}
                                     >
                                         <TrashIcon className="w-4 h-4" />
@@ -1036,38 +1043,38 @@ const TaskDetail: React.FC = () => {
                         {/* Left Main Content (2 Cols) */}
                         <div className="lg:col-span-2 space-y-6">
                             {/* Task Overview Card */}
-                            <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-6 sm:p-8 shadow-xs space-y-4">
+                            <div className="rounded-2xl border border-zinc-200/80 dark:border-[#27272A] bg-white dark:bg-[#18181B] p-6 sm:p-8 shadow-xs space-y-4">
                                 <div className="flex items-center gap-2.5 flex-wrap">
                                     {getStatusBadge(task.status)}
                                     {getPriorityBadge(task.priority)}
                                     {getDifficultyBadge(task.difficulty)}
 
                                     {task.divisionName && (
-                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
                                             Şöbə: {task.divisionName}
                                         </span>
                                     )}
                                     {task.projectName && (
-                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
                                             Layihə: {task.projectName}
                                         </span>
                                     )}
                                     {task.levelName && (
-                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                             Mərhələ: {task.levelName}
                                         </span>
                                     )}
                                 </div>
 
-                                <h1 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight">
+                                <h1 className="text-xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight">
                                     {task.title}
                                 </h1>
 
-                                <div className="pt-2 border-t border-[#27272A] space-y-2">
-                                    <h3 className="text-xs uppercase tracking-wider font-bold text-[#71717A]">
+                                <div className="pt-2 border-t border-zinc-100 dark:border-[#27272A] space-y-2">
+                                    <h3 className="text-xs uppercase tracking-wider font-bold text-zinc-400 dark:text-[#71717A]">
                                         {t('common.description', {}, 'Təsvir')}
                                     </h3>
-                                    <p className="text-sm text-[#D4D4D8] leading-relaxed whitespace-pre-wrap">
+                                    <p className="text-sm text-zinc-600 dark:text-[#D4D4D8] leading-relaxed whitespace-pre-wrap">
                                         {task.description || t('tasks.noTasksFound', {}, 'Bu tapşırıq üçün ətraflı təsvir qeyd edilməyib.')}
                                     </p>
                                 </div>
@@ -1075,10 +1082,10 @@ const TaskDetail: React.FC = () => {
 
                             {/* Attachments Section */}
                             {filesList.length > 0 && (
-                                <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-6 shadow-xs space-y-4">
+                                <div className="rounded-2xl border border-zinc-200/80 dark:border-[#27272A] bg-white dark:bg-[#18181B] p-6 shadow-xs space-y-4">
                                     <div className="flex items-center gap-2">
-                                        <PaperClipIcon className="w-4 h-4 text-[#A1A1AA]" />
-                                        <h3 className="text-sm font-bold text-white">
+                                        <PaperClipIcon className="w-4 h-4 text-zinc-500 dark:text-[#A1A1AA]" />
+                                        <h3 className="text-sm font-bold text-zinc-900 dark:text-white">
                                             Əlavələr ({filesList.length})
                                         </h3>
                                     </div>
@@ -1087,7 +1094,7 @@ const TaskDetail: React.FC = () => {
                                         {filesList.map((file: any, index: number) => (
                                             <div
                                                 key={index}
-                                                className="flex items-center justify-between p-3 rounded-xl bg-[#1C1C1E] border border-[#27272A] hover:border-[#3F3F46] transition-colors group"
+                                                className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 dark:bg-[#1C1C1E] border border-zinc-200 dark:border-[#27272A] hover:border-zinc-300 dark:hover:border-[#3F3F46] transition-colors group"
                                             >
                                                 <div
                                                     className="flex items-center gap-2.5 min-w-0 cursor-pointer flex-1"
@@ -1097,10 +1104,10 @@ const TaskDetail: React.FC = () => {
                                                         <PaperClipIcon className="w-4 h-4" />
                                                     </div>
                                                     <div className="min-w-0 flex-1">
-                                                        <p className="text-xs font-semibold text-white truncate hover:text-blue-400 transition-colors">
+                                                        <p className="text-xs font-semibold text-zinc-800 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                                             {file.fileName}
                                                         </p>
-                                                        <p className="text-[10px] text-[#71717A] truncate">
+                                                        <p className="text-[10px] text-zinc-400 dark:text-[#71717A] truncate">
                                                             {file.contentType}
                                                         </p>
                                                     </div>
@@ -1111,14 +1118,14 @@ const TaskDetail: React.FC = () => {
                                                         <>
                                                             <button
                                                                 onClick={() => handlePreviewAttachment(file.id)}
-                                                                className="p-1.5 rounded-lg text-[#71717A] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                                                                className="p-1.5 rounded-lg text-zinc-400 dark:text-[#71717A] hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-200/60 dark:hover:bg-white/10 transition-colors cursor-pointer"
                                                                 title="Önizləmə"
                                                             >
                                                                 <EyeIcon className="w-4 h-4" />
                                                             </button>
                                                             <button
                                                                 onClick={() => handleDownloadAttachment(file.id, file.fileName)}
-                                                                className="p-1.5 rounded-lg text-[#71717A] hover:text-blue-400 hover:bg-blue-500/10 transition-colors cursor-pointer"
+                                                                className="p-1.5 rounded-lg text-zinc-400 dark:text-[#71717A] hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors cursor-pointer"
                                                                 title="Yüklə"
                                                             >
                                                                 <ArrowDownTrayIcon className="w-4 h-4" />
@@ -1133,16 +1140,16 @@ const TaskDetail: React.FC = () => {
                             )}
 
                             {/* Activity / Comments Section */}
-                            <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-6 shadow-xs space-y-4">
+                            <div className="rounded-2xl border border-zinc-200/80 dark:border-[#27272A] bg-white dark:bg-[#18181B] p-6 shadow-xs space-y-4">
                                 <div className="flex items-center gap-2">
-                                    <ChatBubbleLeftRightIcon className="w-4 h-4 text-[#A1A1AA]" />
-                                    <h3 className="text-sm font-bold text-white">Fəaliyyət və Müzakirə</h3>
+                                    <ChatBubbleLeftRightIcon className="w-4 h-4 text-zinc-500 dark:text-[#A1A1AA]" />
+                                    <h3 className="text-sm font-bold text-zinc-900 dark:text-white">Fəaliyyət və Müzakirə</h3>
                                 </div>
 
                                 {/* Comments List */}
                                 <div className="space-y-3 pt-1">
                                     {commentsList.length === 0 ? (
-                                        <div className="py-8 text-center text-xs text-[#71717A]">
+                                        <div className="py-8 text-center text-xs text-zinc-400 dark:text-[#71717A]">
                                             Hələlik şərh yoxdur. İlk şərh yazan siz olun!
                                         </div>
                                     ) : (
@@ -1164,23 +1171,23 @@ const TaskDetail: React.FC = () => {
                                                         key={comment.id}
                                                         className={`p-3.5 rounded-xl border flex items-start gap-3 transition-colors ${
                                                             isRevisionComment
-                                                                ? 'bg-amber-950/20 border-amber-500/30 text-amber-200'
+                                                                ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-500/30 text-amber-900 dark:text-amber-200'
                                                                 : isFinishComment
-                                                                ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-200'
+                                                                ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-500/30 text-emerald-900 dark:text-emerald-200'
                                                                 : isRejectComment
-                                                                ? 'bg-rose-950/20 border-rose-500/30 text-rose-200'
-                                                                : 'bg-purple-950/20 border-purple-500/30 text-purple-200'
+                                                                ? 'bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-500/30 text-rose-900 dark:text-rose-200'
+                                                                : 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-500/30 text-purple-900 dark:text-purple-200'
                                                         }`}
                                                     >
                                                         <div
                                                             className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
                                                                 isRevisionComment
-                                                                    ? 'bg-amber-500/20 text-amber-400'
+                                                                    ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
                                                                     : isFinishComment
-                                                                    ? 'bg-emerald-500/20 text-emerald-400'
+                                                                    ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
                                                                     : isRejectComment
-                                                                    ? 'bg-rose-500/20 text-rose-400'
-                                                                    : 'bg-purple-500/20 text-purple-400'
+                                                                    ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
+                                                                    : 'bg-purple-500/20 text-purple-600 dark:text-purple-400'
                                                             }`}
                                                         >
                                                             {isRevisionComment ? (
@@ -1196,28 +1203,28 @@ const TaskDetail: React.FC = () => {
                                                         <div className="flex flex-col gap-1 min-w-0 flex-1">
                                                             <div className="flex items-center justify-between gap-2 flex-wrap">
                                                                 <div className="flex items-center gap-2">
-                                                                    <span className="text-xs font-bold text-white">
+                                                                    <span className="text-xs font-bold text-zinc-900 dark:text-white">
                                                                         {authorName}
                                                                     </span>
                                                                     <span
                                                                         className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
                                                                             isRevisionComment
-                                                                                ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                                                                                ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20'
                                                                                 : isFinishComment
-                                                                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                                                                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
                                                                                 : isRejectComment
-                                                                                ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                                                                                : 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                                                                                ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20'
+                                                                                : 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20'
                                                                         }`}
                                                                     >
                                                                         {isRevisionComment ? 'Geri Qaytarıldı' : isFinishComment ? 'Bitirildi' : isRejectComment ? 'İmtina Edildi' : 'Təsdiqləndi'}
                                                                     </span>
                                                                 </div>
-                                                                <span className="text-[10px] text-[#71717A]">
+                                                                <span className="text-[10px] text-zinc-400 dark:text-[#71717A]">
                                                                     {formatCommentDate(comment.createdAt)}
                                                                 </span>
                                                             </div>
-                                                            <p className="text-xs text-[#E4E4E7] leading-relaxed whitespace-pre-wrap font-medium">
+                                                            <p className="text-xs text-zinc-700 dark:text-[#E4E4E7] leading-relaxed whitespace-pre-wrap font-medium">
                                                                 {renderCommentContent(comment.content)}
                                                             </p>
                                                         </div>
@@ -1226,7 +1233,7 @@ const TaskDetail: React.FC = () => {
                                             }
 
                                             return (
-                                                <div key={comment.id} className="p-3.5 rounded-xl bg-[#1C1C1E] border border-[#27272A] flex items-start gap-3">
+                                                <div key={comment.id} className="p-3.5 rounded-xl bg-zinc-50 dark:bg-[#1C1C1E] border border-zinc-200 dark:border-[#27272A] flex items-start gap-3">
                                                     <div
                                                         className="w-8 h-8 rounded-lg bg-cover bg-center bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5"
                                                         style={{
@@ -1237,14 +1244,14 @@ const TaskDetail: React.FC = () => {
                                                     </div>
                                                     <div className="flex flex-col gap-1 min-w-0 flex-1">
                                                         <div className="flex items-center justify-between">
-                                                            <span className="text-xs font-bold text-white">
+                                                            <span className="text-xs font-bold text-zinc-900 dark:text-white">
                                                                 {authorName}
                                                             </span>
-                                                            <span className="text-[10px] text-[#71717A]">
+                                                            <span className="text-[10px] text-zinc-400 dark:text-[#71717A]">
                                                                 {formatCommentDate(comment.createdAt)}
                                                             </span>
                                                         </div>
-                                                        <p className="text-xs text-[#D4D4D8] leading-relaxed whitespace-pre-wrap">
+                                                        <p className="text-xs text-zinc-600 dark:text-[#D4D4D8] leading-relaxed whitespace-pre-wrap">
                                                             {renderCommentContent(comment.content)}
                                                         </p>
                                                     </div>
@@ -1255,12 +1262,12 @@ const TaskDetail: React.FC = () => {
                                 </div>
 
                                 {/* Comment Input with @mention */}
-                                <div className="relative pt-2 border-t border-[#27272A]">
+                                <div className="relative pt-2 border-t border-zinc-100 dark:border-[#27272A]">
                                     {showMentionSuggestions && filteredMentionUsers.length > 0 && (
                                         <UserSuggestionList
                                             users={filteredMentionUsers}
                                             onSelect={handleMentionSelect}
-                                            position={{ top: -filteredMentionUsers.length * 48 - 10, left: 0 }}
+                                            placement="top"
                                             selectedIndex={mentionIndex}
                                         />
                                     )}
@@ -1274,7 +1281,7 @@ const TaskDetail: React.FC = () => {
                                             onBlur={() => setTimeout(() => setShowMentionSuggestions(false), 200)}
                                             placeholder="Şərh yazın... komanda üzvlərini qeyd etmək üçün @ işarəsindən istifadə edin"
                                             rows={3}
-                                            className="w-full bg-[#1C1C1E] border border-[#27272A] rounded-xl p-3 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 resize-none font-sans"
+                                            className="w-full bg-zinc-50 dark:bg-[#1C1C1E] border border-zinc-200 dark:border-[#27272A] rounded-xl p-3 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 resize-none font-sans"
                                             disabled={submittingComment}
                                         />
 
@@ -1292,7 +1299,7 @@ const TaskDetail: React.FC = () => {
                                                         commentTextareaRef.current?.setSelectionRange(cursorPos + 1, cursorPos + 1);
                                                     }, 0);
                                                 }}
-                                                className="flex items-center gap-1 text-[11px] text-[#71717A] hover:text-blue-400 transition-colors cursor-pointer"
+                                                className="flex items-center gap-1 text-[11px] text-zinc-500 dark:text-[#71717A] hover:text-blue-500 transition-colors cursor-pointer"
                                                 title="Komanda üzvünü qeyd et"
                                             >
                                                 <AtSymbolIcon className="w-3.5 h-3.5" />
@@ -1302,7 +1309,7 @@ const TaskDetail: React.FC = () => {
                                             <button
                                                 onClick={handleSubmitComment}
                                                 disabled={!newComment.trim() || submittingComment}
-                                                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg transition-colors cursor-pointer disabled:opacity-50"
+                                                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-500/10 transition-colors cursor-pointer disabled:opacity-50"
                                             >
                                                 <PaperAirplaneIcon className="w-3.5 h-3.5" />
                                                 <span>{submittingComment ? 'Göndərilir...' : 'Şərh yaz'}</span>
@@ -1316,26 +1323,26 @@ const TaskDetail: React.FC = () => {
                         {/* Right Sidebar (1 Col) */}
                         <div className="space-y-6">
                             {/* Properties Card */}
-                            <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-6 shadow-xs space-y-4">
-                                <h3 className="text-xs uppercase tracking-wider font-bold text-[#71717A]">
+                            <div className="rounded-2xl border border-zinc-200/80 dark:border-[#27272A] bg-white dark:bg-[#18181B] p-6 shadow-xs space-y-4">
+                                <h3 className="text-xs uppercase tracking-wider font-bold text-zinc-400 dark:text-[#71717A]">
                                     Xüsusiyyətlər
                                 </h3>
 
                                 <div className="space-y-3.5 text-xs">
-                                    <div className="flex items-center justify-between pb-3 border-b border-[#27272A]">
-                                        <span className="text-[#71717A]">Status</span>
+                                    <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-[#27272A]">
+                                        <span className="text-zinc-500 dark:text-[#71717A]">Status</span>
                                         {getStatusBadge(task.status)}
                                     </div>
 
-                                    <div className="flex items-center justify-between pb-3 border-b border-[#27272A]">
-                                        <span className="text-[#71717A]">Çətinlik</span>
+                                    <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-[#27272A]">
+                                        <span className="text-zinc-500 dark:text-[#71717A]">Çətinlik</span>
                                         {getDifficultyBadge(task.difficulty)}
                                     </div>
 
-                                    <div className="flex items-center justify-between pb-3 border-b border-[#27272A]">
-                                        <span className="text-[#71717A]">Son İcra Tarixi</span>
-                                        <div className="flex items-center gap-1.5 text-white font-semibold">
-                                            <CalendarIcon className="w-3.5 h-3.5 text-[#71717A]" />
+                                    <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-[#27272A]">
+                                        <span className="text-zinc-500 dark:text-[#71717A]">Son İcra Tarixi</span>
+                                        <div className="flex items-center gap-1.5 text-zinc-900 dark:text-white font-semibold">
+                                            <CalendarIcon className="w-3.5 h-3.5 text-zinc-400 dark:text-[#71717A]" />
                                             <span>{formatDateTime(task.deadline)}</span>
                                         </div>
                                     </div>
@@ -1344,13 +1351,13 @@ const TaskDetail: React.FC = () => {
                                 {/* Finish Task Button - Show for assigned user when status is InProgress */}
                                 {canFinishTask && (
                                     <div className="pt-2">
-                                        <p className="text-[11px] text-[#A1A1AA] mb-2.5">
+                                        <p className="text-[11px] text-zinc-500 dark:text-[#A1A1AA] mb-2.5">
                                             Tapşırığı bitirdinizsə, yaradanın nəzərdən keçirməsi üçün göndərin.
                                         </p>
                                         <button
                                             onClick={handleFinishTask}
                                             disabled={processingFinish}
-                                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs shadow-lg transition-colors cursor-pointer disabled:opacity-50"
+                                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-blue-500/10 transition-colors cursor-pointer disabled:opacity-50"
                                         >
                                             <CheckCircleIcon className="w-4 h-4" />
                                             <span>{processingFinish ? 'Göndərilir...' : 'Tapşırığı Bitir'}</span>
@@ -1361,14 +1368,14 @@ const TaskDetail: React.FC = () => {
 
                             {/* Accept/Reject Task Banner - Show for assigned user when status is Assigned */}
                             {canAcceptReject && (
-                                <div className="rounded-2xl border border-blue-500/30 bg-blue-950/10 p-6 shadow-xs space-y-4">
-                                    <div className="flex items-center gap-2 text-blue-400">
+                                <div className="rounded-2xl border border-blue-500/30 bg-blue-50 dark:bg-blue-950/10 p-6 shadow-xs space-y-4">
+                                    <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
                                         <ShieldCheckIcon className="w-5 h-5" />
-                                        <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                                        <h4 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
                                             Tapşırığı Cavablayın
                                         </h4>
                                     </div>
-                                    <p className="text-xs text-[#A1A1AA]">
+                                    <p className="text-xs text-zinc-600 dark:text-[#A1A1AA]">
                                         Bu tapşırıq sizə təyin edilmişdir. İcraya başlamaq üçün qəbul edin və ya imtina edin.
                                     </p>
 
@@ -1376,7 +1383,7 @@ const TaskDetail: React.FC = () => {
                                         <button
                                             onClick={handleAcceptTask}
                                             disabled={processingAccept || processingReject}
-                                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-lg transition-colors cursor-pointer disabled:opacity-50"
+                                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-emerald-500/10 transition-colors cursor-pointer disabled:opacity-50"
                                         >
                                             <CheckCircleIcon className="w-4 h-4" />
                                             <span>{processingAccept ? 'Qəbul edilir...' : 'Tapşırığı Qəbul Et'}</span>
@@ -1384,7 +1391,7 @@ const TaskDetail: React.FC = () => {
                                         <button
                                             onClick={() => setShowRejectModal(true)}
                                             disabled={processingAccept || processingReject}
-                                            className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-rose-600/10 hover:bg-rose-600/20 text-rose-400 border border-rose-600/20 rounded-xl font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
+                                            className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-rose-600/10 hover:bg-rose-600/20 text-rose-600 dark:text-rose-400 border border-rose-600/20 rounded-xl font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
                                         >
                                             <XCircleIcon className="w-4 h-4" />
                                             <span>Tapşırığı Rədd Et</span>
@@ -1395,15 +1402,15 @@ const TaskDetail: React.FC = () => {
 
                             {/* Performance Points Section - For UnderReview tasks reviewable by creator/manager */}
                             {canAddPerformance && (
-                                <div className="rounded-2xl border border-purple-500/30 bg-purple-950/10 p-6 shadow-xs space-y-4">
-                                    <div className="flex items-center gap-2 text-purple-400">
+                                <div className="rounded-2xl border border-purple-500/30 bg-purple-50 dark:bg-purple-950/10 p-6 shadow-xs space-y-4">
+                                    <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
                                         <SparklesIcon className="w-5 h-5" />
-                                        <h3 className="text-xs uppercase tracking-wider font-bold text-white">
+                                        <h3 className="text-xs uppercase tracking-wider font-bold text-zinc-900 dark:text-white">
                                             Performans Xalı Əlavə et
                                         </h3>
                                     </div>
 
-                                    <p className="text-xs text-[#A1A1AA]">
+                                    <p className="text-xs text-zinc-600 dark:text-[#A1A1AA]">
                                         Tamamlanmış tapşırıq haqqında fikirlərinizi bölüşün. Xallar çətinliyə əsasən avtomatik hesablanacaq.
                                     </p>
 
@@ -1413,15 +1420,15 @@ const TaskDetail: React.FC = () => {
                                             onChange={(e) => setPerformanceReason(e.target.value)}
                                             placeholder="Bu tamamlanmış tapşırıq haqqında rəy və fikirlərinizi yazın..."
                                             rows={3}
-                                            className="w-full bg-[#1C1C1E] border border-[#27272A] rounded-xl p-3 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-purple-500 resize-none font-sans"
+                                            className="w-full bg-white dark:bg-[#1C1C1E] border border-zinc-200 dark:border-[#27272A] rounded-xl p-3 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-purple-500 resize-none font-sans"
                                             disabled={submittingPerformance}
                                         />
 
-                                        <div className="flex items-center justify-between text-[11px] text-[#A1A1AA]">
+                                        <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-[#A1A1AA]">
                                             <span>
                                                 Xallar: {task.difficulty === DifficultyLevel.Easy ? '10' : task.difficulty === DifficultyLevel.Medium ? '20' : '30'} xal
                                             </span>
-                                            <span className="font-semibold text-purple-300">
+                                            <span className="font-semibold text-purple-600 dark:text-purple-300">
                                                 {task.difficulty === DifficultyLevel.Easy ? 'Asan' : task.difficulty === DifficultyLevel.Medium ? 'Orta' : 'Çətin'} Tapşırıq
                                             </span>
                                         </div>
@@ -1429,7 +1436,7 @@ const TaskDetail: React.FC = () => {
                                         <button
                                             onClick={handleSubmitPerformance}
                                             disabled={!performanceReason.trim() || submittingPerformance}
-                                            className="w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl shadow-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                                            className="w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-purple-500/10 transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                                         >
                                             <SparklesIcon className="w-4 h-4" />
                                             <span>{submittingPerformance ? 'Xallar əlavə edilir...' : 'Təsdiqlə və Tamamla'}</span>
@@ -1439,7 +1446,7 @@ const TaskDetail: React.FC = () => {
                                         <button
                                             onClick={() => setShowReturnModal(true)}
                                             disabled={submittingPerformance || processingReturn}
-                                            className="w-full py-2 px-4 bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 border border-amber-600/20 text-xs font-bold rounded-xl transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                                            className="w-full py-2 px-4 bg-amber-600/10 hover:bg-amber-600/20 text-amber-600 dark:text-amber-400 border border-amber-600/20 text-xs font-bold rounded-xl transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                                         >
                                             <ArrowPathIcon className="w-4 h-4" />
                                             <span>Yenidən İşlə Göndər</span>
@@ -1449,28 +1456,28 @@ const TaskDetail: React.FC = () => {
                             )}
                             {/* Under Review Notice for Assignee */}
                             {task.status === TaskStatus.UnderReview && task.assignedToUserId && String(task.assignedToUserId).toLowerCase() === String(userInfo?.userId).toLowerCase() && (
-                                <div className="rounded-2xl border border-amber-500/30 bg-amber-950/10 p-5 shadow-xs space-y-2">
-                                    <div className="flex items-center gap-2 text-amber-400">
+                                <div className="rounded-2xl border border-amber-500/30 bg-amber-50 dark:bg-amber-950/10 p-5 shadow-xs space-y-2">
+                                    <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
                                         <ClockIcon className="w-5 h-5" />
-                                        <h3 className="text-xs uppercase tracking-wider font-bold text-white">
+                                        <h3 className="text-xs uppercase tracking-wider font-bold text-zinc-900 dark:text-white">
                                             Nəzərdən Keçirilir
                                         </h3>
                                     </div>
-                                    <p className="text-xs text-[#A1A1AA] leading-relaxed">
+                                    <p className="text-xs text-zinc-600 dark:text-[#A1A1AA] leading-relaxed">
                                         Tapşırıq üzrə işinizi tamamlamısınız. Hazırda tapşırığı yaradan və ya rəhbər tərəfindən nəzərdən keçirilməsi və təsdiqlənməsi gözlənilir.
                                     </p>
                                 </div>
                             )}
 
                             {/* Assignee Card */}
-                            <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-6 shadow-xs space-y-4">
-                                <h3 className="text-xs uppercase tracking-wider font-bold text-[#71717A]">
+                            <div className="rounded-2xl border border-zinc-200/80 dark:border-[#27272A] bg-white dark:bg-[#18181B] p-6 shadow-xs space-y-4">
+                                <h3 className="text-xs uppercase tracking-wider font-bold text-zinc-400 dark:text-[#71717A]">
                                     İcraçı
                                 </h3>
                                 {assignedUser ? (
                                     <div className="flex items-center gap-3">
                                         <div
-                                            className="w-10 h-10 rounded-xl bg-cover bg-center bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center font-bold text-sm shrink-0 ring-1 ring-white/10"
+                                            className="w-10 h-10 rounded-xl bg-cover bg-center bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center font-bold text-sm shrink-0 ring-1 ring-black/5 dark:ring-white/10"
                                             style={{
                                                 backgroundImage: getProfilePictureUrl(assignedUser.id, assignedUser.profilePictureUrl)
                                                     ? `url("${getProfilePictureUrl(assignedUser.id, assignedUser.profilePictureUrl)}")`
@@ -1480,20 +1487,20 @@ const TaskDetail: React.FC = () => {
                                             {!assignedUser.profilePictureUrl && assignedUser.userName.charAt(0).toUpperCase()}
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="text-xs font-bold text-white truncate">{assignedUser.userName}</p>
-                                            <p className="text-[11px] text-[#71717A] truncate">{assignedUser.email}</p>
+                                            <p className="text-xs font-bold text-zinc-900 dark:text-white truncate">{assignedUser.userName}</p>
+                                            <p className="text-[11px] text-zinc-500 dark:text-[#71717A] truncate">{assignedUser.email}</p>
                                         </div>
                                     </div>
                                 ) : (
-                                    <p className="text-xs text-[#71717A]">Heç kim təyin edilməyib</p>
+                                    <p className="text-xs text-zinc-500 dark:text-[#71717A]">Heç kim təyin edilməyib</p>
                                 )}
 
                                 {createdByUser && (
-                                    <div className="mt-4 pt-4 border-t border-[#27272A]">
-                                        <h4 className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider mb-2">Yaradan</h4>
+                                    <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-[#27272A]">
+                                        <h4 className="text-[10px] font-bold text-zinc-400 dark:text-[#71717A] uppercase tracking-wider mb-2">Yaradan</h4>
                                         <div className="flex items-center gap-2.5">
                                             <div
-                                                className="w-7 h-7 rounded-lg bg-cover bg-center bg-[#27272A] text-white flex items-center justify-center font-bold text-xs"
+                                                className="w-7 h-7 rounded-lg bg-cover bg-center bg-zinc-200 dark:bg-[#27272A] text-zinc-900 dark:text-white flex items-center justify-center font-bold text-xs"
                                                 style={{
                                                     backgroundImage: getProfilePictureUrl(createdByUser.id, createdByUser.profilePictureUrl)
                                                         ? `url("${getProfilePictureUrl(createdByUser.id, createdByUser.profilePictureUrl)}")`
@@ -1502,7 +1509,7 @@ const TaskDetail: React.FC = () => {
                                             >
                                                 {!createdByUser.profilePictureUrl && createdByUser.userName.charAt(0).toUpperCase()}
                                             </div>
-                                            <span className="text-xs font-semibold text-white truncate">{createdByUser.userName}</span>
+                                            <span className="text-xs font-semibold text-zinc-800 dark:text-white truncate">{createdByUser.userName}</span>
                                         </div>
                                     </div>
                                 )}
@@ -1519,33 +1526,33 @@ const TaskDetail: React.FC = () => {
                     onClick={() => setShowRejectModal(false)}
                 >
                     <div
-                        className="w-full max-w-md bg-[#18181B] border border-[#27272A] rounded-2xl shadow-2xl p-6 space-y-4"
+                        className="w-full max-w-md bg-white dark:bg-[#18181B] border border-zinc-200 dark:border-[#27272A] rounded-2xl shadow-2xl p-6 space-y-4"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-rose-400">
+                            <div className="flex items-center gap-2 text-rose-500 dark:text-rose-400">
                                 <ExclamationTriangleIcon className="w-5 h-5" />
-                                <h3 className="text-sm font-bold text-white">Tapşırığı Rədd Et</h3>
+                                <h3 className="text-sm font-bold text-zinc-900 dark:text-white">Tapşırığı Rədd Et</h3>
                             </div>
                             <button
                                 onClick={() => {
                                     setShowRejectModal(false);
                                     setRejectReason('');
                                 }}
-                                className="p-1 rounded-lg text-[#71717A] hover:text-white hover:bg-white/10"
+                                className="p-1 rounded-lg text-zinc-400 dark:text-[#71717A] hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/10"
                             >
                                 <XMarkIcon className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <p className="text-xs text-[#A1A1AA]">Rədd səbəbini qeyd edin:</p>
+                        <p className="text-xs text-zinc-500 dark:text-[#A1A1AA]">Rədd səbəbini qeyd edin:</p>
 
                         <textarea
                             value={rejectReason}
                             onChange={(e) => setRejectReason(e.target.value)}
                             placeholder="Niyə bu tapşırığı rədd edirsiniz?"
                             rows={3}
-                            className="w-full bg-[#1C1C1E] border border-[#27272A] rounded-xl p-3 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-rose-500 resize-none font-sans"
+                            className="w-full bg-zinc-50 dark:bg-[#1C1C1E] border border-zinc-200 dark:border-[#27272A] rounded-xl p-3 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-rose-500 resize-none font-sans"
                             disabled={processingReject}
                             autoFocus
                         />
@@ -1557,7 +1564,7 @@ const TaskDetail: React.FC = () => {
                                     setRejectReason('');
                                 }}
                                 disabled={processingReject}
-                                className="px-4 py-2 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] text-white text-xs font-semibold cursor-pointer"
+                                className="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-[#27272A] hover:bg-zinc-200 dark:hover:bg-[#3F3F46] text-zinc-700 dark:text-white text-xs font-semibold cursor-pointer"
                             >
                                 Ləğv et
                             </button>
@@ -1580,33 +1587,33 @@ const TaskDetail: React.FC = () => {
                     onClick={() => setShowReturnModal(false)}
                 >
                     <div
-                        className="w-full max-w-md bg-[#18181B] border border-[#27272A] rounded-2xl shadow-2xl p-6 space-y-4"
+                        className="w-full max-w-md bg-white dark:bg-[#18181B] border border-zinc-200 dark:border-[#27272A] rounded-2xl shadow-2xl p-6 space-y-4"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-amber-400">
+                            <div className="flex items-center gap-2 text-amber-500 dark:text-amber-400">
                                 <ArrowPathIcon className="w-5 h-5" />
-                                <h3 className="text-sm font-bold text-white">Yenidən İşlə Göndər</h3>
+                                <h3 className="text-sm font-bold text-zinc-900 dark:text-white">Yenidən İşlə Göndər</h3>
                             </div>
                             <button
                                 onClick={() => {
                                     setShowReturnModal(false);
                                     setReturnReason('');
                                 }}
-                                className="p-1 rounded-lg text-[#71717A] hover:text-white hover:bg-white/10"
+                                className="p-1 rounded-lg text-zinc-400 dark:text-[#71717A] hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/10"
                             >
                                 <XMarkIcon className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <p className="text-xs text-[#A1A1AA]">Niyə tapşırığı geri göndərirsiniz?</p>
+                        <p className="text-xs text-zinc-500 dark:text-[#A1A1AA]">Niyə tapşırığı geri göndərirsiniz?</p>
 
                         <textarea
                             value={returnReason}
                             onChange={(e) => setReturnReason(e.target.value)}
                             placeholder="Tapşırığın niyə yenidən işlənməli olduğunu izah edin..."
                             rows={3}
-                            className="w-full bg-[#1C1C1E] border border-[#27272A] rounded-xl p-3 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-amber-500 resize-none font-sans"
+                            className="w-full bg-zinc-50 dark:bg-[#1C1C1E] border border-zinc-200 dark:border-[#27272A] rounded-xl p-3 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-amber-500 resize-none font-sans"
                             disabled={processingReturn}
                             autoFocus
                         />
@@ -1618,7 +1625,7 @@ const TaskDetail: React.FC = () => {
                                     setReturnReason('');
                                 }}
                                 disabled={processingReturn}
-                                className="px-4 py-2 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] text-white text-xs font-semibold cursor-pointer"
+                                className="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-[#27272A] hover:bg-zinc-200 dark:hover:bg-[#3F3F46] text-zinc-700 dark:text-white text-xs font-semibold cursor-pointer"
                             >
                                 Ləğv et
                             </button>

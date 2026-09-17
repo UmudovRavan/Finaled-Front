@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface KpiScoreBadgeProps {
     score: number | null | undefined;
@@ -15,6 +16,8 @@ export const KpiScoreBadge: React.FC<KpiScoreBadgeProps> = ({
     showLabel = false,
     className = '',
 }) => {
+    const { t } = useLanguage();
+
     if (score === null || score === undefined) {
         return (
             <span
@@ -28,7 +31,7 @@ export const KpiScoreBadge: React.FC<KpiScoreBadgeProps> = ({
                         : 'px-2.5 py-0.5 text-xs'
                 } ${className}`}
             >
-                Qiymətləndirilməyib
+                {t('kpi.scoreNotEvaluated', {}, 'Qiymətləndirilməyib')}
             </span>
         );
     }
@@ -38,7 +41,7 @@ export const KpiScoreBadge: React.FC<KpiScoreBadgeProps> = ({
         text: 'text-[#A1A1AA]',
         border: 'border-[#3F3F46]',
         glow: '',
-        label: 'Neytral',
+        label: t('kpi.scoreNeutral', {}, 'Neytral'),
         sign: '0',
     };
 
@@ -48,7 +51,7 @@ export const KpiScoreBadge: React.FC<KpiScoreBadgeProps> = ({
             text: 'text-emerald-400',
             border: 'border-emerald-500/30',
             glow: 'shadow-xs shadow-emerald-500/20',
-            label: 'Mükəmməl',
+            label: t('kpi.scoreExcellent', {}, 'Mükəmməl'),
             sign: `+${score}`,
         };
     } else if (score === 1) {
@@ -57,7 +60,7 @@ export const KpiScoreBadge: React.FC<KpiScoreBadgeProps> = ({
             text: 'text-sky-400',
             border: 'border-sky-500/30',
             glow: 'shadow-xs shadow-sky-500/20',
-            label: 'Yaxşı',
+            label: t('kpi.scoreGood', {}, 'Yaxşı'),
             sign: '+1',
         };
     } else if (score === 0) {
@@ -66,7 +69,7 @@ export const KpiScoreBadge: React.FC<KpiScoreBadgeProps> = ({
             text: 'text-[#D4D4D8]',
             border: 'border-[#3F3F46]',
             glow: '',
-            label: 'Kafi',
+            label: t('kpi.scoreSatisfactory', {}, 'Kafi'),
             sign: '0',
         };
     } else {
@@ -75,7 +78,7 @@ export const KpiScoreBadge: React.FC<KpiScoreBadgeProps> = ({
             text: 'text-rose-400',
             border: 'border-rose-500/30',
             glow: 'shadow-xs shadow-rose-500/20',
-            label: 'Cərimə',
+            label: t('kpi.scorePenalty', {}, 'Cərimə'),
             sign: `${score}`,
         };
     }

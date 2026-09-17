@@ -271,7 +271,7 @@ const DashboardOverview: React.FC = () => {
                     notificationCount={notifications.filter((n) => !n.isRead).length}
                 />
 
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full">
+                <main className="flex-1 p-3 sm:p-6 lg:p-8 pb-24 sm:pb-8 md:pb-8 space-y-6 max-w-7xl mx-auto w-full">
                     {/* Top Action Header Bar */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#27272A]">
                         <div className="flex flex-col gap-1">
@@ -299,7 +299,7 @@ const DashboardOverview: React.FC = () => {
                         </div>
 
                         {/* Action Buttons: Period Filter & Create Task */}
-                        <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-2.5 flex-wrap">
                             {/* Refresh Button */}
                             <button
                                 onClick={handleRefresh}
@@ -350,7 +350,7 @@ const DashboardOverview: React.FC = () => {
                             <button
                                 onClick={() => navigate('/tasks')}
                                 type="button"
-                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg transition-colors cursor-pointer"
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg border border-zinc-200/80 dark:border-transparent transition-colors cursor-pointer"
                             >
                                 <PlusIcon className="w-4 h-4 stroke-[2.5]" />
                                 <span>{t('tasks.newTask', {}, 'Yeni Tapşırıq')}</span>
@@ -359,7 +359,7 @@ const DashboardOverview: React.FC = () => {
                     </div>
 
                     {/* KPI Cards Row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                         <KpiCard
                             title={t('dashboard.inProgressTasks', {}, 'Aktiv Tapşırıqlar')}
                             value={overview?.activeTasks ?? 0}

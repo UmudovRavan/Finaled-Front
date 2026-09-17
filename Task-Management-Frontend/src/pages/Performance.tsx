@@ -304,7 +304,7 @@ const Performance: React.FC = () => {
                     notificationCount={notifications.filter((n) => !n.isRead).length}
                 />
 
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full">
+                <main className="flex-1 p-3 sm:p-6 lg:p-8 pb-24 sm:pb-8 md:pb-8 space-y-6 max-w-7xl mx-auto w-full">
                     {/* Top Action Header Bar */}
                     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[#27272A]">
                         <div>
@@ -394,10 +394,10 @@ const Performance: React.FC = () => {
                             <div className="flex items-center justify-between gap-2 mb-3">
                                 <div className="flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-                                    <span className="text-xs font-semibold text-[#A1A1AA]">Ümumi Xallar</span>
+                                    <span className="text-xs font-semibold text-[#A1A1AA]">{t('performance.totalPoints', {}, 'Ümumi Xallar')}</span>
                                 </div>
                                 <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                    Top Xal
+                                    {t('common.points', {}, 'Top Xal')}
                                 </span>
                             </div>
                             <div className="flex items-baseline justify-between">
@@ -405,7 +405,7 @@ const Performance: React.FC = () => {
                                     {totalPoints.toLocaleString()}
                                 </span>
                                 <span className="text-xs font-semibold text-emerald-400">
-                                    +{performanceMetrics.trend.percentage}% artım
+                                    +{performanceMetrics.trend.percentage}%
                                 </span>
                             </div>
                         </div>
@@ -415,10 +415,10 @@ const Performance: React.FC = () => {
                             <div className="flex items-center justify-between gap-2 mb-3">
                                 <div className="flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                                    <span className="text-xs font-semibold text-[#A1A1AA]">Tamamlanma Faizi</span>
+                                    <span className="text-xs font-semibold text-[#A1A1AA]">{t('performance.completionRate', {}, 'Tamamlanma Faizi')}</span>
                                 </div>
                                 <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                    Nəticə
+                                    {t('common.success', {}, 'Nəticə')}
                                 </span>
                             </div>
                             <div>
@@ -427,7 +427,7 @@ const Performance: React.FC = () => {
                                         {performanceMetrics.completionRate}%
                                     </span>
                                     <span className="text-xs text-[#71717A] font-medium">
-                                        {performanceMetrics.tasksCompleted} / {performanceMetrics.totalAssigned} tapşırıq
+                                        {performanceMetrics.tasksCompleted} / {performanceMetrics.totalAssigned} {t('projects.tasksCount', {}, 'tapşırıq')}
                                     </span>
                                 </div>
                                 <div className="w-full bg-[#27272A] rounded-full h-1.5 overflow-hidden">
@@ -444,17 +444,17 @@ const Performance: React.FC = () => {
                             <div className="flex items-center justify-between gap-2 mb-3">
                                 <div className="flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full bg-sky-400"></span>
-                                    <span className="text-xs font-semibold text-[#A1A1AA]">İcra Edilən</span>
+                                    <span className="text-xs font-semibold text-[#A1A1AA]">{t('dashboard.completedTasks', {}, 'İcra Edilən')}</span>
                                 </div>
                                 <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                                    Status
+                                    {t('common.status', {}, 'Status')}
                                 </span>
                             </div>
                             <div className="flex items-baseline justify-between">
                                 <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                                     {performanceMetrics.tasksCompleted}
                                 </span>
-                                <span className="text-xs text-[#A1A1AA]">tamamlanmış</span>
+                                <span className="text-xs text-[#A1A1AA]">{t('statuses.completed', {}, 'tamamlanmış')}</span>
                             </div>
                         </div>
 
@@ -463,17 +463,17 @@ const Performance: React.FC = () => {
                             <div className="flex items-center justify-between gap-2 mb-3">
                                 <div className="flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full bg-purple-400"></span>
-                                    <span className="text-xs font-semibold text-[#A1A1AA]">Səmərəlilik</span>
+                                    <span className="text-xs font-semibold text-[#A1A1AA]">{t('leaderboard.efficiencyRating', {}, 'Səmərəlilik')}</span>
                                 </div>
                                 <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                                    Yüksək
+                                    {t('priorities.high', {}, 'Yüksək')}
                                 </span>
                             </div>
                             <div className="flex items-baseline justify-between">
                                 <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                                     {Math.min(98, Math.max(75, 75 + Math.floor(totalPoints / 50)))}%
                                 </span>
-                                <span className="text-xs text-purple-400 font-semibold">optimal</span>
+                                <span className="text-xs text-purple-400 font-semibold">{t('workload.optimalLoad', {}, 'optimal')}</span>
                             </div>
                         </div>
                     </div>
@@ -483,9 +483,9 @@ const Performance: React.FC = () => {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                                <h3 className="text-sm font-bold text-white tracking-tight">Performans Trendi</h3>
+                                <h3 className="text-sm font-bold text-white tracking-tight">{t('performance.title', {}, 'Performans Trendi')}</h3>
                             </div>
-                            <span className="text-xs text-[#71717A] font-medium">Həftəlik dinamika</span>
+                            <span className="text-xs text-[#71717A] font-medium">{t('dashboard.weeklyOverview', {}, 'Həftəlik dinamika')}</span>
                         </div>
 
                         <div className="h-64 w-full">
@@ -518,10 +518,10 @@ const Performance: React.FC = () => {
                         <div className="p-5 border-b border-[#27272A] flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-                                <h3 className="text-sm font-bold text-white tracking-tight">Çətinliyə görə töhfə</h3>
+                                <h3 className="text-sm font-bold text-white tracking-tight">{t('common.difficulty', {}, 'Çətinliyə görə töhfə')}</h3>
                             </div>
                             <span className="text-xs text-[#71717A]">
-                                Toplam: <strong className="text-white">{totalPointsFromBreakdown} xal</strong>
+                                {t('common.total', {}, 'Toplam')}: <strong className="text-white">{totalPointsFromBreakdown} {t('common.points', {}, 'xal')}</strong>
                             </span>
                         </div>
 
@@ -529,10 +529,10 @@ const Performance: React.FC = () => {
                             <table className="w-full text-left text-xs">
                                 <thead>
                                     <tr className="border-b border-[#27272A] text-[#71717A] font-semibold bg-[#141416]">
-                                        <th className="py-3.5 px-6 font-medium">Tapşırıq Çətinliyi</th>
-                                        <th className="py-3.5 px-6 font-medium text-center">Xal / Tapşırıq</th>
-                                        <th className="py-3.5 px-6 font-medium text-center">Tamamlanmış Tapşırıqlar</th>
-                                        <th className="py-3.5 px-6 font-medium text-right">Qazanılan Xallar</th>
+                                        <th className="py-3.5 px-6 font-medium">{t('common.difficulty', {}, 'Tapşırıq Çətinliyi')}</th>
+                                        <th className="py-3.5 px-6 font-medium text-center">{t('common.points', {}, 'Xal / Tapşırıq')}</th>
+                                        <th className="py-3.5 px-6 font-medium text-center">{t('dashboard.completedTasks', {}, 'Tamamlanmış Tapşırıqlar')}</th>
+                                        <th className="py-3.5 px-6 font-medium text-right">{t('leaderboard.totalPointsEarned', {}, 'Qazanılan Xallar')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#27272A]">
@@ -541,17 +541,19 @@ const Performance: React.FC = () => {
                                             <td className="py-3.5 px-6">
                                                 <div className="flex items-center gap-2.5">
                                                     <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></span>
-                                                    <span className="font-bold text-white">{item.label} Tapşırıqlar</span>
+                                                    <span className="font-bold text-white">
+                                                        {item.difficultyLevel === 0 ? t('difficulties.easy', {}, 'Asan') : item.difficultyLevel === 1 ? t('difficulties.medium', {}, 'Orta') : t('difficulties.hard', {}, 'Çətin')} {t('projects.tasksCount', {}, 'Tapşırıqlar')}
+                                                    </span>
                                                 </div>
                                             </td>
                                             <td className="py-3.5 px-6 text-center text-[#A1A1AA]">
-                                                {item.pointsPerTask} xal
+                                                {item.pointsPerTask} {t('common.points', {}, 'xal')}
                                             </td>
                                             <td className="py-3.5 px-6 text-center font-semibold text-white">
                                                 {item.tasksCompleted}
                                             </td>
                                             <td className="py-3.5 px-6 text-right font-extrabold text-amber-400">
-                                                {item.pointsEarned} xal
+                                                {item.pointsEarned} {t('common.points', {}, 'xal')}
                                             </td>
                                         </tr>
                                     ))}
@@ -559,14 +561,14 @@ const Performance: React.FC = () => {
                                     {/* Total Summary Row */}
                                     <tr className="bg-[#141416] font-bold">
                                         <td className="py-3.5 px-6 text-white uppercase text-[11px] tracking-wider">
-                                            Ümumi Töhfə
+                                            {t('common.total', {}, 'Ümumi Töhfə')}
                                         </td>
                                         <td className="py-3.5 px-6 text-center text-[#71717A]">-</td>
                                         <td className="py-3.5 px-6 text-center text-white font-extrabold">
                                             {performanceMetrics.tasksCompleted}
                                         </td>
                                         <td className="py-3.5 px-6 text-right text-amber-400 font-extrabold">
-                                            {totalPointsFromBreakdown} xal
+                                            {totalPointsFromBreakdown} {t('common.points', {}, 'xal')}
                                         </td>
                                     </tr>
                                 </tbody>

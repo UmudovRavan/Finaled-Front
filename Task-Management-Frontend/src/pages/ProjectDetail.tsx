@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Sidebar, Header } from '../layout';
 import KpiCard from '../components/KpiCard';
 import CreateTaskModal from '../components/CreateTaskModal';
+import CustomSelect, { type SelectOption } from '../components/CustomSelect';
 import { projectService, projectLevelService, taskService, divisionService, notificationService, authService } from '../api';
 import { normalizeProjectLevel } from '../api/projectLevelService';
 import { normalizeTask } from '../api/taskService';
@@ -51,7 +52,7 @@ const ProjectDetail: React.FC = () => {
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 
     // View Mode: 'Kanban' | 'List'
-    const [viewMode, setViewMode] = useState<'Kanban' | 'List'>('Kanban');
+    const [viewMode, setViewMode] = useState<'Kanban' | 'List'>('List');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedLevelId, setSelectedLevelId] = useState<string>('all');
 
@@ -71,7 +72,6 @@ const ProjectDetail: React.FC = () => {
 
     // Action Menus
     const [openLevelMenuId, setOpenLevelMenuId] = useState<string | number | null>(null);
-    const [openTaskMenuId, setOpenTaskMenuId] = useState<string | number | null>(null);
 
     const canCreateLevel = hasPermission('tms.levels.create') || isUserAdmin(userInfo?.roles) || isUserManager(userInfo?.roles);
     const canEditLevel = hasPermission('tms.levels.update') || isUserAdmin(userInfo?.roles);
@@ -228,7 +228,7 @@ const ProjectDetail: React.FC = () => {
     const handleSaveLevel = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!levelName.trim()) {
-            setLevelError('Mərhələ adı mütləq daxil edilməlidir');
+            setLevelError(t('projects.stageNameRequired', {}, 'Mərhələ adı mütləq daxil edilməlidir'));
             return;
         }
         if (!id) return;
@@ -275,29 +275,29 @@ const ProjectDetail: React.FC = () => {
             setShowLevelModal(false);
             if (id) fetchProjectData(id);
         } catch (err: any) {
-            setLevelError(err?.response?.data?.message || err.message || 'Xəta baş verdi');
+            setLevelError(err?.response?.data?.message || err.message || t('common.error', {}, 'Xəta baş verdi'));
         } finally {
             setSavingLevel(false);
         }
     };
 
     const handleDeleteLevel = async (lvlId: string | number) => {
-        if (!confirm('Bu mərhələni silmək istədiyinizə əminsiniz?')) return;
+        if (!confirm(t('projects.deleteStageConfirm', {}, 'Bu mərhələni silmək istədiyinizə əminsiniz?'))) return;
         try {
             await projectLevelService.deleteLevel(lvlId);
             setLevels((prev) => prev.filter((l) => l.id !== lvlId));
         } catch (err: any) {
-            alert(err?.response?.data?.message || 'Mərhələni silmək mümkün olmadı');
+            alert(err?.response?.data?.message || t('projects.deleteStageError', {}, 'Mərhələni silmək mümkün olmadı'));
         }
     };
 
     const handleDeleteTask = async (taskId: string | number) => {
-        if (!confirm('Bu tapşırığı silmək istədiyinizə əminsiniz?')) return;
+        if (!confirm(t('tasks.deleteConfirm', {}, 'Bu tapşırığı silmək istədiyinizə əminsiniz?'))) return;
         try {
             await taskService.deleteTask(taskId);
             setAllTasks((prev) => prev.filter((t) => t.id !== taskId));
         } catch (err: any) {
-            alert('Tapşırığı silmək mümkün olmadı');
+            alert(t('tasks.deleteError', {}, 'Tapşırığı silmək mümkün olmadı'));
         }
     };
 
@@ -305,28 +305,28 @@ const ProjectDetail: React.FC = () => {
         switch (priority) {
             case Priority.Urgent:
                 return (
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center gap-1">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 flex items-center gap-1">
                         <ExclamationTriangleIcon className="w-3 h-3" />
-                        Təcili
+                        {t('priorities.urgent', {}, 'Təcili')}
                     </span>
                 );
             case Priority.High:
                 return (
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                        Yüksək
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                        {t('priorities.high', {}, 'Yüksək')}
                     </span>
                 );
             case Priority.Low:
                 return (
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-500/10 text-slate-400 border border-slate-500/20">
-                        Aşağı
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20">
+                        {t('priorities.low', {}, 'Aşağı')}
                     </span>
                 );
             case Priority.Normal:
             default:
                 return (
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                        Normal
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                        {t('priorities.medium', {}, 'Normal')}
                     </span>
                 );
         }
@@ -335,32 +335,33 @@ const ProjectDetail: React.FC = () => {
     const getStatusBadge = (status: TaskStatus) => {
         switch (status) {
             case TaskStatus.Completed:
-                return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Tamamlandı</span>;
+                return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">{t('statuses.completed', {}, 'Tamamlandı')}</span>;
             case TaskStatus.InProgress:
-                return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">İcrada</span>;
+                return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">{t('statuses.inProgress', {}, 'İcrada')}</span>;
             case TaskStatus.UnderReview:
-                return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">Yoxlanışda</span>;
+                return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">{t('statuses.review', {}, 'Yoxlanışda')}</span>;
             case TaskStatus.Assigned:
-                return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20">Təyin edildi</span>;
+                return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">{t('statuses.assigned', {}, 'Təyin edildi')}</span>;
             default:
-                return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-500/10 text-zinc-400 border border-zinc-500/20">Gözləmədə</span>;
+                return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/20">{t('statuses.pending', {}, 'Gözləmədə')}</span>;
         }
     };
 
     // Filter tasks based on search & level selector
     const filteredTasks = useMemo(() => {
-        return allTasks.filter((t) => {
-            if (selectedLevelId !== 'all' && String(t.levelId) !== selectedLevelId) return false;
+        const result = allTasks.filter((taskItem) => {
+            if (selectedLevelId !== 'all' && String(taskItem.levelId) !== selectedLevelId) return false;
             if (searchQuery.trim()) {
                 const q = searchQuery.toLowerCase();
                 return (
-                    t.title.toLowerCase().includes(q) ||
-                    (t.description && t.description.toLowerCase().includes(q)) ||
-                    (t.assignedToUserName && t.assignedToUserName.toLowerCase().includes(q))
+                    taskItem.title.toLowerCase().includes(q) ||
+                    (taskItem.description && taskItem.description.toLowerCase().includes(q)) ||
+                    (taskItem.assignedToUserName && taskItem.assignedToUserName.toLowerCase().includes(q))
                 );
             }
             return true;
         });
+        return taskService.sortTasksNewestFirst(result);
     }, [allTasks, selectedLevelId, searchQuery]);
 
     const totalTasksCount = allTasks.length;
@@ -369,7 +370,7 @@ const ProjectDetail: React.FC = () => {
     const completionRate = totalTasksCount > 0 ? Math.round((completedTasksCount / totalTasksCount) * 100) : 0;
 
     return (
-        <div className="flex h-screen w-screen overflow-hidden bg-[#121214] font-sans antialiased text-[#F4F4F5]">
+        <div className="flex h-screen w-screen overflow-hidden bg-zinc-50 dark:bg-[#121214] font-sans antialiased text-zinc-900 dark:text-[#F4F4F5]">
             <Sidebar />
 
             <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
@@ -382,72 +383,72 @@ const ProjectDetail: React.FC = () => {
 
                 <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full">
                     {/* Back button & Breadcrumb */}
-                    <div className="flex items-center gap-2 text-xs text-[#71717A] flex-wrap">
+                    <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-[#71717A] flex-wrap">
                         <button
                             onClick={() => navigate('/projects')}
-                            className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
+                            className="flex items-center gap-1 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
                         >
                             <ArrowLeftIcon className="w-3.5 h-3.5" />
-                            <span>Layihələr</span>
+                            <span>{t('projects.title', {}, 'Layihələr')}</span>
                         </button>
                         <span>/</span>
                         {division && (
                             <>
                                 <Link
                                     to={`/projects?divisionId=${division.id}`}
-                                    className="hover:text-white transition-colors flex items-center gap-1"
+                                    className="hover:text-zinc-900 dark:hover:text-white transition-colors flex items-center gap-1"
                                 >
-                                    <BuildingOfficeIcon className="w-3 h-3 text-sky-400" />
+                                    <BuildingOfficeIcon className="w-3 h-3 text-sky-500 dark:text-sky-400" />
                                     {division.name}
                                 </Link>
                                 <span>/</span>
                             </>
                         )}
-                        <span className="text-white font-semibold flex items-center gap-1">
-                            <FolderIcon className="w-3 h-3 text-purple-400" />
+                        <span className="text-zinc-900 dark:text-white font-semibold flex items-center gap-1">
+                            <FolderIcon className="w-3 h-3 text-purple-500 dark:text-purple-400" />
                             {project?.name || '...'}
                         </span>
                     </div>
 
                     {/* Project Header Banner */}
-                    <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-6 shadow-xs relative overflow-hidden">
+                    <div className="rounded-2xl border border-zinc-200/80 dark:border-[#27272A] bg-white dark:bg-[#18181B] p-6 shadow-xs relative overflow-hidden">
                         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
                             <div className="space-y-2 max-w-2xl">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+                                    <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500 dark:text-purple-400">
                                         <FolderIcon className="w-6 h-6" />
                                     </div>
                                     <div>
-                                        <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                                        <h1 className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">
                                             {project?.name}
                                         </h1>
                                         {division && (
-                                            <p className="text-xs text-[#A1A1AA] flex items-center gap-1 mt-0.5">
-                                                <BuildingOfficeIcon className="w-3.5 h-3.5 text-sky-400" />
-                                                Şöbə: <span className="text-white font-medium">{division.name}</span>
+                                            <p className="text-xs text-zinc-500 dark:text-[#A1A1AA] flex items-center gap-1 mt-0.5">
+                                                <BuildingOfficeIcon className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400" />
+                                                {t('projects.division', {}, 'Şöbə')}: <span className="text-zinc-900 dark:text-white font-medium">{division.name}</span>
                                             </p>
                                         )}
                                     </div>
                                 </div>
 
                                 {project?.description && (
-                                    <p className="text-xs text-[#A1A1AA] leading-relaxed pt-1">
+                                    <p className="text-xs text-zinc-600 dark:text-[#A1A1AA] leading-relaxed pt-1">
                                         {project.description}
                                     </p>
                                 )}
 
-                                <div className="flex items-center gap-4 text-xs text-[#71717A] pt-2 flex-wrap">
+                                <div className="flex items-center gap-4 text-xs text-zinc-500 dark:text-[#71717A] pt-2 flex-wrap">
                                     {project?.managerName && (
                                         <div className="flex items-center gap-1.5">
                                             <UserIcon className="w-4 h-4 text-zinc-400" />
-                                            <span>Rəhbər: <span className="text-white font-medium">{project.managerName}</span></span>
+                                            <span>{t('projects.manager', {}, 'Rəhbər')}: <span className="text-zinc-900 dark:text-white font-medium">{project.managerName}</span></span>
                                         </div>
                                     )}
                                     {(project?.startDate || project?.endDate) && (
                                         <div className="flex items-center gap-1.5">
                                             <CalendarIcon className="w-4 h-4 text-zinc-400" />
                                             <span>
-                                                {project.startDate ? new Date(project.startDate).toLocaleDateString('az-AZ') : '—'} - {project.endDate ? new Date(project.endDate).toLocaleDateString('az-AZ') : 'Müddətsiz'}
+                                                {project.startDate ? new Date(project.startDate).toLocaleDateString(language === 'az' ? 'az-AZ' : language === 'ru' ? 'ru-RU' : 'en-US') : '—'} - {project.endDate ? new Date(project.endDate).toLocaleDateString(language === 'az' ? 'az-AZ' : language === 'ru' ? 'ru-RU' : 'en-US') : t('common.all', {}, 'Müddətsiz')}
                                             </span>
                                         </div>
                                     )}
@@ -460,19 +461,19 @@ const ProjectDetail: React.FC = () => {
                                     <button
                                         onClick={() => id && fetchProjectData(id)}
                                         disabled={refreshing}
-                                        className="p-2.5 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                                        title="Yenilə"
+                                        className="p-2.5 rounded-xl bg-zinc-100 dark:bg-[#27272A] hover:bg-zinc-200 dark:hover:bg-[#3F3F46] text-zinc-600 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
+                                        title={t('common.refresh', {}, 'Yenilə')}
                                     >
-                                        <ArrowPathIcon className={`w-4 h-4 ${refreshing ? 'animate-spin text-purple-400' : ''}`} />
+                                        <ArrowPathIcon className={`w-4 h-4 ${refreshing ? 'animate-spin text-purple-500' : ''}`} />
                                     </button>
 
                                     {canCreateLevel && (
                                         <button
                                             onClick={handleCreateLevelClick}
-                                            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] border border-[#3F3F46] text-white font-semibold text-xs transition-colors cursor-pointer"
+                                            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-[#27272A] dark:hover:bg-[#3F3F46] border border-zinc-200 dark:border-[#3F3F46] text-zinc-900 dark:text-white font-semibold text-xs transition-colors cursor-pointer"
                                         >
-                                            <QueueListIcon className="w-4 h-4 text-purple-400" />
-                                            Yeni Mərhələ
+                                            <QueueListIcon className="w-4 h-4 text-purple-500 dark:text-purple-400" />
+                                            {t('projects.newStage', {}, 'Yeni Mərhələ')}
                                         </button>
                                     )}
 
@@ -482,20 +483,21 @@ const ProjectDetail: React.FC = () => {
                                                 setDefaultLevelForTask(levels[0]?.id);
                                                 setIsCreateTaskOpen(true);
                                             }}
-                                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg transition-colors cursor-pointer"
+                                            type="button"
+                                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg border border-zinc-200/80 dark:border-transparent transition-colors cursor-pointer"
                                         >
-                                            <PlusIcon className="w-4 h-4 text-black stroke-[3]" />
-                                            Tapşırıq Əlavə Et
+                                            <PlusIcon className="w-4 h-4 stroke-[2.5]" />
+                                            <span>{t('tasks.createTask', {}, 'Tapşırıq Əlavə Et')}</span>
                                         </button>
                                     )}
                                 </div>
 
-                                <div className="w-full sm:w-48 bg-[#27272A]/60 rounded-xl p-3 border border-[#27272A]">
+                                <div className="w-full sm:w-48 bg-zinc-50 dark:bg-[#27272A]/60 rounded-xl p-3 border border-zinc-200/80 dark:border-[#27272A]">
                                     <div className="flex items-center justify-between text-xs mb-1.5">
-                                        <span className="text-[#A1A1AA]">Ümumi İcra</span>
-                                        <span className="font-bold text-white">{completionRate}%</span>
+                                        <span className="text-zinc-500 dark:text-[#A1A1AA]">{t('projects.progress', {}, 'Ümumi İcra')}</span>
+                                        <span className="font-bold text-zinc-900 dark:text-white">{completionRate}%</span>
                                     </div>
-                                    <div className="relative h-2 w-full overflow-hidden rounded-full bg-[#18181B]">
+                                    <div className="relative h-2 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-[#18181B]">
                                         <div
                                             className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-purple-500 to-emerald-400 transition-all duration-500"
                                             style={{ width: `${completionRate}%` }}
@@ -509,82 +511,81 @@ const ProjectDetail: React.FC = () => {
                     {/* KPI Metric Cards */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                         <KpiCard
-                            title="Mərhələlər"
+                            title={t('projects.stages', {}, 'Mərhələlər')}
                             value={levels.length}
-                            badgeText="Struktur"
+                            badgeText={t('common.total', {}, 'Struktur')}
                             accentColor="#A78BFA"
                         />
                         <KpiCard
-                            title="Ümumi Tapşırıqlar"
+                            title={t('dashboard.totalTasks', {}, 'Ümumi Tapşırıqlar')}
                             value={totalTasksCount}
-                            badgeText="Bütün"
+                            badgeText={t('common.all', {}, 'Bütün')}
                             accentColor="#38BDF8"
                         />
                         <KpiCard
-                            title="İcrada Olanlar"
+                            title={t('dashboard.inProgressTasks', {}, 'İcrada Olanlar')}
                             value={activeTasksCount}
-                            badgeText="Aktiv"
+                            badgeText={t('common.active', {}, 'Aktiv')}
                             accentColor="#FBBF24"
                         />
                         <KpiCard
-                            title="Tamamlanmış"
+                            title={t('dashboard.completedTasks', {}, 'Tamamlanmış')}
                             value={completedTasksCount}
-                            badgeText="Nəticə"
+                            badgeText={t('common.success', {}, 'Nəticə')}
                             accentColor="#34D399"
                         />
                     </div>
 
                     {/* Toolbar: Search, Level selector & Kanban/List View Switch */}
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#18181B] border border-[#27272A] rounded-2xl p-3">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-[#18181B] border border-zinc-200/80 dark:border-[#27272A] rounded-2xl p-3 shadow-xs">
                         <div className="flex items-center gap-3 flex-1 max-w-md">
                             <div className="relative flex-1">
-                                <MagnifyingGlassIcon className="w-4 h-4 text-[#71717A] absolute left-3 top-1/2 -translate-y-1/2" />
+                                <MagnifyingGlassIcon className="w-4 h-4 text-zinc-400 dark:text-[#71717A] absolute left-3 top-1/2 -translate-y-1/2" />
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Bu layihədə tapşırıq axtar..."
-                                    className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl pl-9 pr-3.5 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-purple-500 font-medium"
+                                    placeholder={t('projects.searchPlaceholder', {}, 'Bu layihədə tapşırıq axtar...')}
+                                    className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl pl-9 pr-3.5 py-2 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-purple-500 font-medium transition-all"
                                 />
                             </div>
 
-                            <select
+                            <CustomSelect
                                 value={selectedLevelId}
-                                onChange={(e) => setSelectedLevelId(e.target.value)}
-                                className="bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none cursor-pointer"
-                            >
-                                <option value="all">Bütün Mərhələlər</option>
-                                {levels.map((lvl) => (
-                                    <option key={lvl.id} value={lvl.id}>
-                                        {lvl.name}
-                                    </option>
-                                ))}
-                            </select>
+                                onChange={setSelectedLevelId}
+                                options={[
+                                    { value: 'all', label: t('projects.allStages', {}, 'Bütün Mərhələlər') },
+                                    ...levels.map((lvl) => ({
+                                        value: String(lvl.id),
+                                        label: lvl.name,
+                                    })),
+                                ]}
+                            />
                         </div>
 
                         {/* View Mode Switcher */}
-                        <div className="flex items-center gap-1 bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl p-1 self-end sm:self-auto">
+                        <div className="flex items-center gap-1 bg-zinc-100 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl p-1 self-end sm:self-auto">
                             <button
                                 onClick={() => setViewMode('Kanban')}
-                                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                                     viewMode === 'Kanban'
-                                        ? 'bg-[#18181B] text-white shadow-xs'
-                                        : 'text-[#A1A1AA] hover:text-white'
+                                        ? 'bg-white dark:bg-[#18181B] text-zinc-900 dark:text-white shadow-xs'
+                                        : 'text-zinc-600 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white'
                                 }`}
                             >
                                 <Squares2X2Icon className="w-4 h-4" />
-                                <span>Kanban</span>
+                                <span>{t('projects.kanbanView', {}, 'Kanban')}</span>
                             </button>
                             <button
                                 onClick={() => setViewMode('List')}
-                                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                                     viewMode === 'List'
-                                        ? 'bg-[#18181B] text-white shadow-xs'
-                                        : 'text-[#A1A1AA] hover:text-white'
+                                        ? 'bg-white dark:bg-[#18181B] text-zinc-900 dark:text-white shadow-xs'
+                                        : 'text-zinc-600 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white'
                                 }`}
                             >
                                 <ListBulletIcon className="w-4 h-4" />
-                                <span>Siyahı</span>
+                                <span>{t('projects.listView', {}, 'Siyahı')}</span>
                             </button>
                         </div>
                     </div>
@@ -593,22 +594,23 @@ const ProjectDetail: React.FC = () => {
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-20">
                             <div className="w-8 h-8 border-3 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                            <span className="text-xs text-[#71717A] mt-3">Layihə məlumatları yüklənir...</span>
+                            <span className="text-xs text-zinc-500 dark:text-[#71717A] mt-3">{t('common.loading', {}, 'Layihə məlumatları yüklənir...')}</span>
                         </div>
                     ) : levels.length === 0 ? (
-                        <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-12 text-center">
-                            <QueueListIcon className="w-12 h-12 text-[#71717A] mx-auto mb-3 opacity-40" />
-                            <p className="text-sm font-semibold text-white">Bu layihədə hələ heç bir mərhələ yoxdur</p>
-                            <p className="text-xs text-[#71717A] mt-1">
-                                Tapşırıqları təşkil etmək üçün ilk mərhələni yaradın (məs: "Planlaşdırma", "Dizayn", "İcra", "Test")
+                        <div className="rounded-2xl border border-zinc-200/80 dark:border-[#27272A] bg-white dark:bg-[#18181B] p-12 text-center shadow-xs">
+                            <QueueListIcon className="w-12 h-12 text-zinc-400 dark:text-[#71717A] mx-auto mb-3 opacity-40" />
+                            <p className="text-sm font-semibold text-zinc-900 dark:text-white">{t('projects.noStages', {}, 'Bu layihədə hələ heç bir mərhələ yoxdur')}</p>
+                            <p className="text-xs text-zinc-500 dark:text-[#71717A] mt-1">
+                                {t('projects.noStagesSubtitle', {}, 'Tapşırıqları təşkil etmək üçün ilk mərhələni yaradın')}
                             </p>
                             {canCreateLevel && (
                                 <button
                                     onClick={handleCreateLevelClick}
-                                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg transition-colors cursor-pointer"
+                                    type="button"
+                                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg border border-zinc-200/80 dark:border-transparent transition-colors cursor-pointer"
                                 >
-                                    <PlusIcon className="w-4 h-4 text-black stroke-[3]" />
-                                    İlk Mərhələni Əlavə Et
+                                    <PlusIcon className="w-4 h-4 stroke-[2.5]" />
+                                    <span>{t('projects.newStage', {}, 'İlk Mərhələni Əlavə Et')}</span>
                                 </button>
                             )}
                         </div>
@@ -617,21 +619,20 @@ const ProjectDetail: React.FC = () => {
                         <div className="flex gap-4 overflow-x-auto pb-6 items-start">
                             {levels.map((lvl) => {
                                 const lvlTasks = filteredTasks.filter((t) => String(t.levelId) === String(lvl.id));
-                                const lvlCompleted = lvlTasks.filter((t) => t.status === TaskStatus.Completed).length;
 
                                 return (
                                     <div
                                         key={lvl.id}
-                                        className="w-80 flex-shrink-0 bg-[#18181B] border border-[#27272A] rounded-2xl p-4 flex flex-col max-h-[calc(100vh-320px)]"
+                                        className="w-80 flex-shrink-0 bg-zinc-100/70 dark:bg-[#18181B] border border-zinc-200/80 dark:border-[#27272A] rounded-2xl p-4 flex flex-col max-h-[calc(100vh-320px)] shadow-xs"
                                     >
                                         {/* Column Header */}
-                                        <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#27272A]">
+                                        <div className="flex items-center justify-between mb-3 pb-2 border-b border-zinc-200 dark:border-[#27272A]">
                                             <div className="flex items-center gap-2">
-                                                <span className="w-2 h-2 rounded-full bg-purple-400"></span>
-                                                <h3 className="text-xs font-bold text-white truncate max-w-[170px]" title={lvl.name}>
+                                                <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                                                <h3 className="text-xs font-bold text-zinc-900 dark:text-white truncate max-w-[170px]" title={lvl.name}>
                                                     {lvl.name}
                                                 </h3>
-                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#27272A] text-[#A1A1AA]">
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-200 dark:bg-[#27272A] text-zinc-700 dark:text-[#A1A1AA]">
                                                     {lvlTasks.length}
                                                 </span>
                                             </div>
@@ -640,23 +641,23 @@ const ProjectDetail: React.FC = () => {
                                             <div className="relative">
                                                 <button
                                                     onClick={() => setOpenLevelMenuId(openLevelMenuId === lvl.id ? null : lvl.id)}
-                                                    className="p-1 rounded-lg text-[#71717A] hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer"
+                                                    className="p-1 rounded-lg text-zinc-400 hover:text-zinc-700 dark:text-[#71717A] dark:hover:text-white hover:bg-zinc-200 dark:hover:bg-[#27272A] transition-colors cursor-pointer"
                                                 >
                                                     <EllipsisHorizontalIcon className="w-4 h-4" />
                                                 </button>
 
                                                 {openLevelMenuId === lvl.id && (
-                                                    <div className="absolute right-0 top-6 bg-[#1C1C1E] border border-[#2C2C2E] rounded-xl shadow-2xl p-1 z-50 flex flex-col text-xs min-w-[130px]">
+                                                    <div className="absolute right-0 top-6 bg-white dark:bg-[#1C1C1E] border border-zinc-200 dark:border-[#2C2C2E] rounded-xl shadow-xl p-1 z-50 flex flex-col text-xs min-w-[130px] backdrop-blur-md">
                                                         {canEditLevel && (
                                                             <button
                                                                 onClick={() => {
                                                                     setOpenLevelMenuId(null);
                                                                     handleEditLevelClick(lvl);
                                                                 }}
-                                                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-left text-zinc-300 hover:bg-[#27272A] hover:text-white cursor-pointer"
+                                                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-[#27272A] hover:text-zinc-900 dark:hover:text-white cursor-pointer"
                                                             >
-                                                                <PencilSquareIcon className="w-3.5 h-3.5 text-amber-400" />
-                                                                Redaktə et
+                                                                <PencilSquareIcon className="w-3.5 h-3.5 text-amber-500" />
+                                                                {t('common.edit', {}, 'Redaktə et')}
                                                             </button>
                                                         )}
                                                         {canDeleteLevel && (
@@ -665,10 +666,10 @@ const ProjectDetail: React.FC = () => {
                                                                     setOpenLevelMenuId(null);
                                                                     handleDeleteLevel(lvl.id);
                                                                 }}
-                                                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-left text-rose-400 hover:bg-rose-500/10 cursor-pointer"
+                                                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-left text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 cursor-pointer"
                                                             >
                                                                 <TrashIcon className="w-3.5 h-3.5" />
-                                                                Mərhələni sil
+                                                                {t('projects.deleteConfirm', {}, 'Mərhələni sil')}
                                                             </button>
                                                         )}
                                                     </div>
@@ -679,36 +680,36 @@ const ProjectDetail: React.FC = () => {
                                         {/* Tasks inside Column */}
                                         <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
                                             {lvlTasks.length === 0 ? (
-                                                <div className="text-center py-8 text-xs text-[#71717A] border border-dashed border-[#27272A] rounded-xl p-4">
-                                                    Bu mərhələdə tapşırıq yoxdur
+                                                <div className="text-center py-8 text-xs text-zinc-400 dark:text-[#71717A] border border-dashed border-zinc-300 dark:border-[#27272A] rounded-xl p-4">
+                                                    {t('common.noData', {}, 'Bu mərhələdə tapşırıq yoxdur')}
                                                 </div>
                                             ) : (
                                                 lvlTasks.map((task) => (
                                                     <div
                                                         key={task.id}
                                                         onClick={() => navigate(`/tasks/${task.id}`)}
-                                                        className="rounded-xl border border-[#27272A] bg-[#222226] p-3 hover:border-purple-500/40 transition-all cursor-pointer group shadow-xs"
+                                                        className="rounded-xl border border-zinc-200/80 dark:border-[#27272A] bg-white dark:bg-[#222226] p-3 hover:border-purple-500/40 transition-all cursor-pointer group shadow-2xs"
                                                     >
                                                         <div className="flex items-start justify-between gap-2 mb-2">
-                                                            <span className="text-xs font-bold text-white group-hover:text-purple-400 transition-colors line-clamp-2">
+                                                            <span className="text-xs font-bold text-zinc-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors line-clamp-2">
                                                                 {task.title}
                                                             </span>
                                                             {getPriorityBadge(task.priority)}
                                                         </div>
 
                                                         {task.description && (
-                                                            <p className="text-[11px] text-[#A1A1AA] line-clamp-2 mb-3">
+                                                            <p className="text-[11px] text-zinc-500 dark:text-[#A1A1AA] line-clamp-2 mb-3">
                                                                 {task.description}
                                                             </p>
                                                         )}
 
-                                                        <div className="flex items-center justify-between pt-2 border-t border-[#27272A] text-[10px] text-[#71717A]">
+                                                        <div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-[#27272A] text-[10px] text-zinc-500 dark:text-[#71717A]">
                                                             <div className="flex items-center gap-1.5">
                                                                 {getStatusBadge(task.status)}
                                                             </div>
                                                             {task.assignedToUserName && (
-                                                                <div className="flex items-center gap-1 text-zinc-300 font-medium">
-                                                                    <UserIcon className="w-3 h-3 text-zinc-500" />
+                                                                <div className="flex items-center gap-1 text-zinc-700 dark:text-zinc-300 font-medium">
+                                                                    <UserIcon className="w-3 h-3 text-zinc-400" />
                                                                     <span className="truncate max-w-[80px]">{task.assignedToUserName}</span>
                                                                 </div>
                                                             )}
@@ -725,10 +726,10 @@ const ProjectDetail: React.FC = () => {
                                                     setDefaultLevelForTask(lvl.id);
                                                     setIsCreateTaskOpen(true);
                                                 }}
-                                                className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#27272A]/60 hover:bg-[#27272A] border border-dashed border-[#3F3F46]/40 text-xs text-[#A1A1AA] hover:text-white font-medium transition-all cursor-pointer"
+                                                className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-white hover:bg-zinc-50 dark:bg-[#27272A]/60 dark:hover:bg-[#27272A] border border-dashed border-zinc-300 dark:border-[#3F3F46]/40 text-xs text-zinc-700 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white font-medium transition-all cursor-pointer shadow-2xs"
                                             >
                                                 <PlusIcon className="w-3.5 h-3.5" />
-                                                <span>Tapşırıq əlavə et</span>
+                                                <span>{t('tasks.createTask', {}, 'Tapşırıq əlavə et')}</span>
                                             </button>
                                         )}
                                     </div>
@@ -744,22 +745,22 @@ const ProjectDetail: React.FC = () => {
                                 return (
                                     <div
                                         key={lvl.id}
-                                        className="rounded-2xl border border-[#27272A] bg-[#18181B] p-5 shadow-xs"
+                                        className="rounded-2xl border border-zinc-200/80 dark:border-[#27272A] bg-white dark:bg-[#18181B] p-5 shadow-xs"
                                     >
-                                        <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#27272A]">
+                                        <div className="flex items-center justify-between mb-4 pb-3 border-b border-zinc-100 dark:border-[#27272A]">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+                                                <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500 dark:text-purple-400">
                                                     <QueueListIcon className="w-4 h-4" />
                                                 </div>
                                                 <div>
-                                                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                                                    <h3 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
                                                         {lvl.name}
-                                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#27272A] text-[#A1A1AA]">
-                                                            {lvlTasks.length} tapşırıq
+                                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 dark:bg-[#27272A] text-zinc-700 dark:text-[#A1A1AA]">
+                                                            {lvlTasks.length} {t('projects.tasksCount', {}, 'tapşırıq')}
                                                         </span>
                                                     </h3>
                                                     {lvl.description && (
-                                                        <p className="text-xs text-[#71717A] mt-0.5">{lvl.description}</p>
+                                                        <p className="text-xs text-zinc-500 dark:text-[#71717A] mt-0.5">{lvl.description}</p>
                                                     )}
                                                 </div>
                                             </div>
@@ -771,17 +772,17 @@ const ProjectDetail: React.FC = () => {
                                                             setDefaultLevelForTask(lvl.id);
                                                             setIsCreateTaskOpen(true);
                                                         }}
-                                                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] text-xs font-semibold text-white transition-colors cursor-pointer"
+                                                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-[#27272A] dark:hover:bg-[#3F3F46] text-xs font-semibold text-zinc-900 dark:text-white transition-colors cursor-pointer"
                                                     >
                                                         <PlusIcon className="w-3.5 h-3.5" />
-                                                        <span>Əlavə et</span>
+                                                        <span>{t('common.add', {}, 'Əlavə et')}</span>
                                                     </button>
                                                 )}
                                                 {canEditLevel && (
                                                     <button
                                                         onClick={() => handleEditLevelClick(lvl)}
-                                                        className="p-1.5 rounded-lg text-[#71717A] hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer"
-                                                        title="Redaktə et"
+                                                        className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:text-[#71717A] dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#27272A] transition-colors cursor-pointer"
+                                                        title={t('common.edit', {}, 'Redaktə et')}
                                                     >
                                                         <PencilSquareIcon className="w-4 h-4" />
                                                     </button>
@@ -789,8 +790,8 @@ const ProjectDetail: React.FC = () => {
                                                 {canDeleteLevel && (
                                                     <button
                                                         onClick={() => handleDeleteLevel(lvl.id)}
-                                                        className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                                                        title="Sil"
+                                                        className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
+                                                        title={t('common.delete', {}, 'Sil')}
                                                     >
                                                         <TrashIcon className="w-4 h-4" />
                                                     </button>
@@ -799,25 +800,25 @@ const ProjectDetail: React.FC = () => {
                                         </div>
 
                                         {lvlTasks.length === 0 ? (
-                                            <div className="text-center py-6 text-xs text-[#71717A]">
-                                                Bu mərhələdə heç bir tapşırıq yoxdur
+                                            <div className="text-center py-6 text-xs text-zinc-400 dark:text-[#71717A]">
+                                                {t('common.noData', {}, 'Bu mərhələdə heç bir tapşırıq yoxdur')}
                                             </div>
                                         ) : (
-                                            <div className="divide-y divide-[#27272A]">
+                                            <div className="divide-y divide-zinc-100 dark:divide-[#27272A]">
                                                 {lvlTasks.map((task) => (
                                                     <div
                                                         key={task.id}
                                                         onClick={() => navigate(`/tasks/${task.id}`)}
-                                                        className="py-3 flex items-center justify-between gap-4 hover:bg-[#27272A]/30 px-3 rounded-xl transition-colors cursor-pointer"
+                                                        className="py-3 flex items-center justify-between gap-4 hover:bg-zinc-50 dark:hover:bg-[#27272A]/30 px-3 rounded-xl transition-colors cursor-pointer"
                                                     >
                                                         <div className="flex items-center gap-3 min-w-0 flex-1">
                                                             <div>{getStatusBadge(task.status)}</div>
                                                             <div className="min-w-0 flex-1">
-                                                                <h4 className="text-xs font-bold text-white truncate">
+                                                                <h4 className="text-xs font-bold text-zinc-900 dark:text-white truncate">
                                                                     {task.title}
                                                                 </h4>
                                                                 {task.description && (
-                                                                    <p className="text-[11px] text-[#71717A] truncate">
+                                                                    <p className="text-[11px] text-zinc-500 dark:text-[#71717A] truncate">
                                                                         {task.description}
                                                                     </p>
                                                                 )}
@@ -828,13 +829,13 @@ const ProjectDetail: React.FC = () => {
                                                             {getPriorityBadge(task.priority)}
 
                                                             {task.assignedToUserName && (
-                                                                <span className="text-[11px] text-zinc-300 font-medium hidden sm:inline">
+                                                                <span className="text-[11px] text-zinc-700 dark:text-zinc-300 font-medium hidden sm:inline">
                                                                     {task.assignedToUserName}
                                                                 </span>
                                                             )}
 
                                                             {task.deadline && (
-                                                                <span className="text-[11px] text-[#71717A] hidden md:inline">
+                                                                <span className="text-[11px] text-zinc-500 dark:text-[#71717A] hidden md:inline">
                                                                     {formatDateTime(task.deadline)}
                                                                 </span>
                                                             )}
@@ -844,8 +845,8 @@ const ProjectDetail: React.FC = () => {
                                                                     e.stopPropagation();
                                                                     handleDeleteTask(task.id);
                                                                 }}
-                                                                className="p-1 rounded-lg text-rose-400 hover:bg-rose-500/10 transition-colors"
-                                                                title="Sil"
+                                                                className="p-1 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                                                                title={t('common.delete', {}, 'Sil')}
                                                             >
                                                                 <TrashIcon className="w-4 h-4" />
                                                             </button>
@@ -864,20 +865,20 @@ const ProjectDetail: React.FC = () => {
 
             {/* Create/Edit Level Modal */}
             {showLevelModal && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-                    <div className="bg-[#18181B] border border-[#27272A] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="flex items-center justify-between p-5 border-b border-[#27272A]">
+                <div className="fixed inset-0 bg-black/60 dark:bg-black/70 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-[#18181B] border border-zinc-200 dark:border-[#27272A] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between p-5 border-b border-zinc-100 dark:border-[#27272A]">
                             <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+                                <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500 dark:text-purple-400">
                                     <QueueListIcon className="w-4 h-4" />
                                 </div>
-                                <h2 className="text-base font-bold text-white">
-                                    {levelModalMode === 'create' ? 'Yeni Mərhələ Yarat' : 'Mərhələni Redaktə Et'}
+                                <h2 className="text-base font-bold text-zinc-900 dark:text-white">
+                                    {levelModalMode === 'create' ? t('projects.newStage', {}, 'Yeni Mərhələ Yarat') : t('common.edit', {}, 'Mərhələni Redaktə Et')}
                                 </h2>
                             </div>
                             <button
                                 onClick={() => setShowLevelModal(false)}
-                                className="p-1 rounded-lg text-[#71717A] hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer"
+                                className="p-1 rounded-lg text-zinc-400 hover:text-zinc-700 dark:text-[#71717A] dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#27272A] transition-colors cursor-pointer"
                             >
                                 <XMarkIcon className="w-5 h-5" />
                             </button>
@@ -885,65 +886,65 @@ const ProjectDetail: React.FC = () => {
 
                         <form onSubmit={handleSaveLevel} className="p-5 space-y-4">
                             {levelError && (
-                                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400 font-medium">
+                                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-500 font-medium">
                                     {levelError}
                                 </div>
                             )}
 
                             <div>
-                                <label className="block text-xs font-semibold text-[#A1A1AA] mb-1.5">
-                                    Mərhələnin Adı <span className="text-rose-400">*</span>
+                                <label className="block text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA] mb-1.5">
+                                    {t('projects.stageName', {}, 'Mərhələnin Adı')} <span className="text-rose-500">*</span>
                                 </label>
                                 <input
                                     type="text"
                                     value={levelName}
                                     onChange={(e) => setLevelName(e.target.value)}
-                                    placeholder="Məsələn: Dizayn və Prototip"
-                                    className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-purple-500 font-medium"
+                                    placeholder={t('projects.stageNamePlaceholder', {}, 'Məsələn: Dizayn və Prototip')}
+                                    className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-purple-500 font-medium transition-all"
                                     required
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-[#A1A1AA] mb-1.5">
-                                    Təsvir
+                                <label className="block text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA] mb-1.5">
+                                    {t('common.description', {}, 'Təsvir')}
                                 </label>
                                 <textarea
                                     value={levelDesc}
                                     onChange={(e) => setLevelDesc(e.target.value)}
-                                    placeholder="Mərhələdə icra olunacaq işlərin qısa xülasəsi..."
+                                    placeholder={t('common.description', {}, 'Mərhələdə icra olunacaq işlərin qısa xülasəsi...')}
                                     rows={2}
-                                    className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-purple-500 font-medium resize-none"
+                                    className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-purple-500 font-medium resize-none transition-all"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-[#A1A1AA] mb-1.5">
-                                    Sıra Nömrəsi (Order Index)
+                                <label className="block text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA] mb-1.5">
+                                    {t('common.sort', {}, 'Sıra Nömrəsi (Order Index)')}
                                 </label>
                                 <input
                                     type="number"
                                     value={levelOrder}
                                     onChange={(e) => setLevelOrder(Number(e.target.value))}
-                                    className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500 font-medium"
+                                    className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-purple-500 font-medium transition-all"
                                 />
                             </div>
 
-                            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#27272A]">
+                            <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-100 dark:border-[#27272A]">
                                 <button
                                     type="button"
                                     onClick={() => setShowLevelModal(false)}
-                                    className="px-4 py-2 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] text-[#A1A1AA] hover:text-white text-xs font-semibold transition-colors cursor-pointer"
+                                    className="px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-[#27272A] dark:hover:bg-[#3F3F46] text-zinc-700 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white text-xs font-semibold transition-colors cursor-pointer"
                                 >
-                                    Ləğv et
+                                    {t('common.cancel', {}, 'İmtina')}
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={savingLevel}
-                                    className="px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg transition-colors cursor-pointer flex items-center gap-1.5"
+                                    className="px-5 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 hover:shadow-lg transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                                 >
-                                    {savingLevel && <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />}
-                                    {levelModalMode === 'create' ? 'Yarat' : 'Yadda Saxla'}
+                                    {savingLevel && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                                    {levelModalMode === 'create' ? t('common.create', {}, 'Yarat') : t('common.save', {}, 'Yadda Saxla')}
                                 </button>
                             </div>
                         </form>

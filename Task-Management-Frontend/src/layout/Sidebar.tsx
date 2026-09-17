@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
     BellIcon,
     Squares2X2Icon,
@@ -21,6 +21,7 @@ import {
     TrophyIcon,
     ScaleIcon,
     ArrowTrendingUpIcon,
+    XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { BarChart3, Medal } from 'lucide-react';
 import { authService } from '../api';
@@ -31,6 +32,7 @@ import { parseJwtToken, isUserAdmin, isUserDirector, isUserManager } from '../ut
 import altensorLogo from '../assets/Altensor-Logo.png';
 import taskManagementLogo from '../assets/Task-Management-Logo.svg';
 import SettingsModal from '../components/SettingsModal';
+import MobileBottomNav from './MobileBottomNav';
 
 interface SidebarProps {
     userName?: string;
@@ -102,11 +104,13 @@ const Sidebar: React.FC<SidebarProps> = ({
     onCollapseChange,
 }) => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { logout, hasPermission } = useAuth();
     const { unreadCount: contextUnreadCount } = useNotifications();
     const { t } = useLanguage();
     const unreadNotificationsCount = contextUnreadCount !== undefined ? contextUnreadCount : propNotificationCount;
 
+    const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(() => {
         const saved = localStorage.getItem('sidebarCollapsed');
         return saved === 'true';
@@ -115,6 +119,28 @@ const Sidebar: React.FC<SidebarProps> = ({
     const [isAppsSubmenuOpen, setIsAppsSubmenuOpen] = useState(false);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const brandMenuRef = useRef<HTMLDivElement>(null);
+
+    // Close mobile drawer on route changes
+    useEffect(() => {
+        setIsMobileOpen(false);
+    }, [location.pathname]);
+
+    // Mobile sidebar toggle listeners
+    useEffect(() => {
+        const handleToggle = () => setIsMobileOpen((prev) => !prev);
+        const handleOpen = () => setIsMobileOpen(true);
+        const handleClose = () => setIsMobileOpen(false);
+
+        window.addEventListener('toggle-mobile-sidebar', handleToggle);
+        window.addEventListener('open-mobile-sidebar', handleOpen);
+        window.addEventListener('close-mobile-sidebar', handleClose);
+
+        return () => {
+            window.removeEventListener('toggle-mobile-sidebar', handleToggle);
+            window.removeEventListener('open-mobile-sidebar', handleOpen);
+            window.removeEventListener('close-mobile-sidebar', handleClose);
+        };
+    }, []);
 
     // Global listener for opening settings modal from anywhere (e.g. Header)
     useEffect(() => {
@@ -179,11 +205,11 @@ const Sidebar: React.FC<SidebarProps> = ({
     };
 
     const formattedRole = useMemo(() => {
-        if (isAdmin) return 'Admin';
-        if (isDirector) return 'Director';
-        if (isManager) return 'Manager';
-        return 'Employee';
-    }, [isAdmin, isDirector, isManager]);
+        if (isAdmin) return t('nav.roleAdmin', {}, 'Admin');
+        if (isDirector) return t('nav.roleDirector', {}, 'Director');
+        if (isManager) return t('nav.roleManager', {}, 'Manager');
+        return t('nav.roleEmployee', {}, 'Employee');
+    }, [isAdmin, isDirector, isManager, t]);
 
     // Build permission and role-filtered navigation menu items
     const menuItems = useMemo(() => {
@@ -204,7 +230,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         // 3. Director Dashboard (Company-wide)
         if (isAdmin || isDirector || hasPermission('tms.dashboard.view')) {
-            items.push({ path: '/company-dashboard', label: 'Direktor Paneli', icon: ChartBarIcon });
+            items.push({ path: '/company-dashboard', label: t('nav.companyDashboard', {}, 'Direktor Paneli'), icon: ChartBarIcon });
         }
 
         // 4. Tasks
@@ -214,17 +240,17 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         // 5. Hierarchy: Şöbələr (Divisions)
         if (isAdmin || isDirector || isManager || hasPermission('tms.divisions.view')) {
-            items.push({ path: '/divisions', label: 'Şöbələr', icon: BuildingOfficeIcon });
+            items.push({ path: '/divisions', label: t('nav.divisions', {}, 'Şöbələr'), icon: BuildingOfficeIcon });
         }
 
         // 6. Hierarchy: Layihələr (Projects)
         if (isAdmin || isDirector || isManager || hasPermission('tms.projects.view')) {
-            items.push({ path: '/projects', label: 'Layihələr', icon: FolderIcon });
+            items.push({ path: '/projects', label: t('nav.projects', {}, 'Layihələr'), icon: FolderIcon });
         }
 
         // 7. Workload Analysis (İş Yükü - Scale / Tərəzi ikonu)
         if (isAdmin || isDirector || isManager || hasPermission('tms.workload.view')) {
-            items.push({ path: '/workload', label: 'İş Yükü', icon: ScaleIcon });
+            items.push({ path: '/workload', label: t('nav.workload', {}, 'İş Yükü'), icon: ScaleIcon });
         }
 
         // 8. Performance & Leaderboard (Liderlər - Trophy / Kubok ikonu, Performans - Trending Up)
@@ -236,240 +262,299 @@ const Sidebar: React.FC<SidebarProps> = ({
         }
 
         // 9. Dəyər-Zərər KPI Sistemi
-        items.push({ path: '/kpi', label: 'KPI Paneli', icon: BarChart3 });
+        items.push({ path: '/kpi', label: t('nav.kpi', {}, 'KPI Paneli'), icon: BarChart3 });
         if (isAdmin || isDirector || hasPermission('tms.kpi.leaderboard') || hasPermission('tms.performance.view')) {
-            items.push({ path: '/kpi/leaderboard', label: 'KPI Reytinqi', icon: Medal });
+            items.push({ path: '/kpi/leaderboard', label: t('nav.kpiLeaderboard', {}, 'KPI Reytinqi'), icon: Medal });
         }
 
         return items;
     }, [isAdmin, isDirector, isManager, hasPermission, t]);
 
-    return (
-        <aside
-            className={`${
-                isCollapsed ? 'w-16' : 'w-56'
-            } bg-[#18181B] text-[#A1A1AA] border-r border-[#27272A] min-h-screen h-full flex flex-col justify-between p-2.5 transition-all duration-200 select-none z-40 selection:bg-fuchsia-500/30 shrink-0 font-sans`}
-        >
-            {/* Top Section */}
-            <div className="flex flex-col gap-3">
-                {/* Brand Card with Dropdown */}
-                <div className="relative" ref={brandMenuRef}>
-                    <div
-                        onClick={() => setIsBrandMenuOpen(!isBrandMenuOpen)}
-                        className={`flex items-center justify-between p-2 rounded-xl hover:bg-white/[0.06] transition-all cursor-pointer ${
-                            isBrandMenuOpen ? 'bg-white/[0.08]' : ''
-                        } ${isCollapsed ? 'justify-center p-1.5' : ''}`}
-                    >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                            {/* iOS Magenta / Gradient Squircle Icon with Task Management Logo */}
-                            <div className="w-7 h-7 rounded-lg bg-[#D946EF] text-white flex items-center justify-center shadow-md shadow-fuchsia-500/20 shrink-0 overflow-hidden p-1">
-                                <img src={taskManagementLogo} alt="Logo" className="w-full h-full object-contain filter brightness-200" />
+    const renderNavItems = (isDrawer = false) => (
+        <nav className="flex flex-col gap-0.5">
+            {menuItems.map((item) => {
+                const Icon = item.icon;
+                const isNotificationItem = item.isNotification;
+
+                if (isNotificationItem) {
+                    return (
+                        <NavLink
+                            key={item.path}
+                            to={item.path}
+                            onClick={() => isDrawer && setIsMobileOpen(false)}
+                            className={({ isActive }) =>
+                                `flex items-center gap-3 px-2.5 py-2 rounded-xl text-[13.5px] font-normal transition-colors relative w-full text-left cursor-pointer ${
+                                    !isDrawer && isCollapsed ? 'justify-center px-0 py-2' : ''
+                                } ${
+                                    isActive
+                                        ? 'bg-[#27272A] text-white font-medium shadow-xs'
+                                        : 'text-[#A1A1AA] hover:bg-white/[0.04] hover:text-white'
+                                }`
+                            }
+                            title={!isDrawer && isCollapsed ? item.label : undefined}
+                        >
+                            <div className="relative shrink-0">
+                                <Icon className="w-[18px] h-[18px] stroke-[1.75] text-[#A1A1AA]" />
+                                {unreadNotificationsCount > 0 && !isDrawer && isCollapsed && (
+                                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-fuchsia-500 animate-pulse"></span>
+                                )}
                             </div>
 
-                            {!isCollapsed && (
-                                <div className="flex flex-col text-left min-w-0">
-                                    <span className="font-bold text-white text-[13.5px] leading-snug tracking-tight truncate">
-                                        Task Management
-                                    </span>
-                                    <span className="text-[11px] text-[#A1A1AA] font-normal leading-none truncate">
-                                        {formattedRole}
-                                    </span>
+                            {(isDrawer || !isCollapsed) && (
+                                <div className="flex items-center justify-between w-full min-w-0">
+                                    <span className="truncate">{item.label}</span>
+                                    {unreadNotificationsCount > 0 && (
+                                        <span className="px-1.5 py-0.2 rounded-full bg-fuchsia-500/20 text-fuchsia-400 text-[10px] font-bold border border-fuchsia-500/30">
+                                            {unreadNotificationsCount}
+                                        </span>
+                                    )}
                                 </div>
                             )}
+                        </NavLink>
+                    );
+                }
+
+                return (
+                    <NavLink
+                        key={item.path}
+                        to={item.path}
+                        onClick={() => isDrawer && setIsMobileOpen(false)}
+                        className={({ isActive }) =>
+                            `flex items-center gap-3 px-2.5 py-2 rounded-xl text-[13.5px] font-normal transition-colors relative ${
+                                !isDrawer && isCollapsed ? 'justify-center px-0 py-2' : ''
+                            } ${
+                                isActive
+                                    ? 'bg-[#27272A] text-white font-medium shadow-xs'
+                                    : 'text-[#A1A1AA] hover:bg-white/[0.04] hover:text-white'
+                            }`
+                        }
+                        title={!isDrawer && isCollapsed ? item.label : undefined}
+                    >
+                        <div className="relative shrink-0">
+                            <Icon className="w-[18px] h-[18px] stroke-[1.75] text-[#A1A1AA]" />
                         </div>
 
-                        {!isCollapsed && <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0 ml-1" />}
-                    </div>
+                        {(isDrawer || !isCollapsed) && (
+                            <div className="flex items-center justify-between w-full min-w-0">
+                                <span className="truncate">{item.label}</span>
+                            </div>
+                        )}
+                    </NavLink>
+                );
+            })}
+        </nav>
+    );
 
-                    {/* Main Brand Dropdown Menu */}
-                    {isBrandMenuOpen && (
-                        <div className="absolute top-11 left-0 w-52 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-50 flex flex-col text-[13px] text-[#D4D4D8] animate-in fade-in duration-150">
-                            {/* Apps Menu Item with Flyout Submenu */}
-                            <div
-                                className="relative"
-                                onMouseEnter={() => setIsAppsSubmenuOpen(true)}
-                                onMouseLeave={() => setIsAppsSubmenuOpen(false)}
-                            >
-                                <div
-                                    onClick={() => setIsAppsSubmenuOpen(!isAppsSubmenuOpen)}
-                                    className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-[#2C2C2E] hover:text-white transition-colors cursor-pointer"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <Squares2X2Icon className="w-4 h-4 text-[#A1A1AA]" />
-                                        <span>{t('common.applications', {}, 'Tətbiqlər')}</span>
-                                    </div>
-                                    <ChevronRightIcon className="w-3.5 h-3.5 text-[#71717A]" />
+    return (
+        <>
+            {/* Desktop Sidebar */}
+            <aside
+                className={`${
+                    isCollapsed ? 'w-16' : 'w-56'
+                } hidden md:flex bg-[#18181B] text-[#A1A1AA] border-r border-[#27272A] min-h-screen h-full flex-col justify-between p-2.5 transition-all duration-200 select-none z-30 selection:bg-fuchsia-500/30 shrink-0 font-sans`}
+            >
+                {/* Top Section */}
+                <div className="flex flex-col gap-3">
+                    {/* Brand Card with Dropdown */}
+                    <div className="relative" ref={brandMenuRef}>
+                        <div
+                            onClick={() => setIsBrandMenuOpen(!isBrandMenuOpen)}
+                            className={`flex items-center justify-between p-2 rounded-xl hover:bg-white/[0.06] transition-all cursor-pointer ${
+                                isBrandMenuOpen ? 'bg-white/[0.08]' : ''
+                            } ${isCollapsed ? 'justify-center p-1.5' : ''}`}
+                        >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="w-7 h-7 rounded-lg bg-[#D946EF] text-white flex items-center justify-center shadow-md shadow-fuchsia-500/20 shrink-0 overflow-hidden p-1">
+                                    <img src={taskManagementLogo} alt="Logo" className="w-full h-full object-contain filter brightness-200" />
                                 </div>
 
-                                {/* Submenu Flyout for Desktop Apps */}
-                                {isAppsSubmenuOpen && (
-                                    <div className="absolute top-0 left-full ml-1.5 w-48 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 flex flex-col gap-0.5 animate-in fade-in duration-150">
-                                        {desktopApps.map((app) => (
-                                            <div
-                                                key={app.id}
-                                                onClick={() => handleAppSelect(app.route)}
-                                                className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl hover:bg-[#2C2C2E] text-[#D4D4D8] hover:text-white transition-colors cursor-pointer text-[13px]"
-                                            >
-                                                {app.iconElement}
-                                                <span className="truncate">{app.name}</span>
-                                            </div>
-                                        ))}
+                                {!isCollapsed && (
+                                    <div className="flex flex-col text-left min-w-0">
+                                        <span className="font-bold text-white text-[13.5px] leading-snug tracking-tight truncate">
+                                            Task Management
+                                        </span>
+                                        <span className="text-[11px] text-[#A1A1AA] font-normal leading-none truncate">
+                                            {formattedRole}
+                                        </span>
                                     </div>
                                 )}
                             </div>
 
-                            {/* Settings */}
+                            {!isCollapsed && <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0 ml-1" />}
+                        </div>
+
+                        {/* Main Brand Dropdown Menu */}
+                        {isBrandMenuOpen && (
+                            <div className="absolute top-11 left-0 w-52 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-50 flex flex-col text-[13px] text-[#D4D4D8] animate-in fade-in duration-150">
+                                <div
+                                    className="relative"
+                                    onMouseEnter={() => setIsAppsSubmenuOpen(true)}
+                                    onMouseLeave={() => setIsAppsSubmenuOpen(false)}
+                                >
+                                    <div
+                                        onClick={() => setIsAppsSubmenuOpen(!isAppsSubmenuOpen)}
+                                        className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-[#2C2C2E] hover:text-white transition-colors cursor-pointer"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <Squares2X2Icon className="w-4 h-4 text-[#A1A1AA]" />
+                                            <span>{t('common.applications', {}, 'Tətbiqlər')}</span>
+                                        </div>
+                                        <ChevronRightIcon className="w-3.5 h-3.5 text-[#71717A]" />
+                                    </div>
+
+                                    {isAppsSubmenuOpen && (
+                                        <div className="absolute top-0 left-full ml-1.5 w-48 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 flex flex-col gap-0.5 animate-in fade-in duration-150">
+                                            {desktopApps.map((app) => (
+                                                <div
+                                                    key={app.id}
+                                                    onClick={() => handleAppSelect(app.route)}
+                                                    className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl hover:bg-[#2C2C2E] text-[#D4D4D8] hover:text-white transition-colors cursor-pointer text-[13px]"
+                                                >
+                                                    {app.iconElement}
+                                                    <span className="truncate">{app.name}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <button
+                                    onClick={() => {
+                                        setIsBrandMenuOpen(false);
+                                        setIsSettingsModalOpen(true);
+                                    }}
+                                    className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#2C2C2E] hover:text-white transition-colors text-left w-full cursor-pointer"
+                                >
+                                    <Cog6ToothIcon className="w-4 h-4 text-[#A1A1AA]" />
+                                    <span>{t('nav.settings', {}, 'Tənzimləmələr')}</span>
+                                </button>
+
+                                <button
+                                    onClick={() => setIsBrandMenuOpen(false)}
+                                    className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#2C2C2E] hover:text-white transition-colors text-left w-full cursor-pointer"
+                                >
+                                    <InformationCircleIcon className="w-4 h-4 text-[#A1A1AA]" />
+                                    <span>{t('common.about', {}, 'Haqqında')}</span>
+                                </button>
+
+                                <div className="h-px bg-[#2C2C2E] my-1"></div>
+
+                                <button
+                                    onClick={handleLogout}
+                                    className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-rose-500/10 hover:text-rose-400 transition-colors text-left w-full text-[#A1A1AA] cursor-pointer"
+                                >
+                                    <ArrowRightOnRectangleIcon className="w-4 h-4" />
+                                    <span>{t('nav.logout', {}, 'Çıxış et')}</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {renderNavItems(false)}
+                </div>
+
+                {/* Bottom Actions (Collapse) */}
+                <div className="flex flex-col gap-0.5 pt-2 border-t border-[#27272A]/70">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            const nextState = !isCollapsed;
+                            setIsCollapsed(nextState);
+                        }}
+                        className={`flex items-center gap-3 px-2.5 py-1.5 rounded-lg text-[13px] font-normal text-[#A1A1AA] hover:bg-white/[0.04] hover:text-white transition-colors cursor-pointer ${
+                            isCollapsed ? 'justify-center px-0 py-2' : ''
+                        }`}
+                        title={isCollapsed ? t('common.expandMenu', {}, 'Menyunu genişləndir') : t('common.collapseMenu', {}, 'Menyunu kiçilt')}
+                    >
+                        {isCollapsed ? (
+                            <ChevronRightIcon className="w-[18px] h-[18px] stroke-[1.75] shrink-0" />
+                        ) : (
+                            <>
+                                <ChevronLeftIcon className="w-[18px] h-[18px] stroke-[1.75] shrink-0" />
+                                <span>{t('common.collapseMenu', {}, 'Menyunu kiçilt')}</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+            </aside>
+
+            {/* Mobile Slide-Over Drawer */}
+            {isMobileOpen && (
+                <div className="fixed inset-0 z-50 md:hidden flex animate-in fade-in duration-200">
+                    {/* Backdrop */}
+                    <div
+                        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+                        onClick={() => setIsMobileOpen(false)}
+                        aria-hidden="true"
+                    />
+
+                    {/* Drawer Content */}
+                    <aside
+                        className="relative w-72 max-w-[85vw] bg-[#18181B] text-[#A1A1AA] border-r border-[#27272A] min-h-screen h-full flex flex-col justify-between p-3.5 shadow-2xl z-50 animate-in slide-in-from-left duration-200 select-none overflow-y-auto overscroll-contain pb-safe"
+                    >
+                        <div className="flex flex-col gap-4">
+                            {/* Drawer Header */}
+                            <div className="flex items-center justify-between pb-3 border-b border-[#27272A]">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="w-8 h-8 rounded-xl bg-[#D946EF] text-white flex items-center justify-center shadow-md shadow-fuchsia-500/20 shrink-0 p-1.5">
+                                        <img src={taskManagementLogo} alt="Logo" className="w-full h-full object-contain filter brightness-200" />
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="font-bold text-white text-sm leading-snug truncate">Task Management</span>
+                                        <span className="text-[11px] text-[#A1A1AA] truncate">{formattedRole}</span>
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setIsMobileOpen(false)}
+                                    className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer"
+                                    aria-label="Menyunu bağla"
+                                >
+                                    <XMarkIcon className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            {/* Drawer Nav Items */}
+                            {renderNavItems(true)}
+                        </div>
+
+                        {/* Drawer Bottom Actions */}
+                        <div className="flex flex-col gap-2 pt-3 border-t border-[#27272A]/70">
                             <button
+                                type="button"
                                 onClick={() => {
-                                    setIsBrandMenuOpen(false);
+                                    setIsMobileOpen(false);
                                     setIsSettingsModalOpen(true);
                                 }}
-                                className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#2C2C2E] hover:text-white transition-colors text-left w-full cursor-pointer"
+                                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-zinc-300 hover:bg-[#27272A] hover:text-white transition-colors cursor-pointer w-full text-left"
                             >
                                 <Cog6ToothIcon className="w-4 h-4 text-[#A1A1AA]" />
                                 <span>{t('nav.settings', {}, 'Tənzimləmələr')}</span>
                             </button>
 
-                            {/* About */}
                             <button
-                                onClick={() => {
-                                    setIsBrandMenuOpen(false);
-                                }}
-                                className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#2C2C2E] hover:text-white transition-colors text-left w-full cursor-pointer"
-                            >
-                                <InformationCircleIcon className="w-4 h-4 text-[#A1A1AA]" />
-                                <span>{t('common.about', {}, 'Haqqında')}</span>
-                            </button>
-
-                            <div className="h-px bg-[#2C2C2E] my-1"></div>
-
-                            {/* Log out */}
-                            <button
+                                type="button"
                                 onClick={handleLogout}
-                                className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-rose-500/10 hover:text-rose-400 transition-colors text-left w-full text-[#A1A1AA] cursor-pointer"
+                                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer w-full text-left"
                             >
                                 <ArrowRightOnRectangleIcon className="w-4 h-4" />
                                 <span>{t('nav.logout', {}, 'Çıxış et')}</span>
                             </button>
                         </div>
-                    )}
+                    </aside>
                 </div>
+            )}
 
-                {/* Navigation List */}
-                <nav className="flex flex-col gap-0.5">
-                    {menuItems.map((item) => {
-                        const Icon = item.icon;
-                        const isNotificationItem = item.isNotification;
-
-                        if (isNotificationItem) {
-                            return (
-                                <NavLink
-                                    key={item.path}
-                                    to={item.path}
-                                    className={({ isActive }) =>
-                                        `flex items-center gap-3 px-2.5 py-1.5 rounded-lg text-[13.5px] font-normal transition-colors relative w-full text-left cursor-pointer ${
-                                            isCollapsed ? 'justify-center px-0 py-2' : ''
-                                        } ${
-                                            isActive
-                                                ? 'bg-[#27272A] text-white font-medium shadow-xs'
-                                                : 'text-[#A1A1AA] hover:bg-white/[0.04] hover:text-white'
-                                        }`
-                                    }
-                                    title={isCollapsed ? item.label : undefined}
-                                >
-                                    <div className="relative shrink-0">
-                                        <Icon className="w-[18px] h-[18px] stroke-[1.75] text-[#A1A1AA]" />
-                                        {unreadNotificationsCount > 0 && isCollapsed && (
-                                            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-fuchsia-500 animate-pulse"></span>
-                                        )}
-                                    </div>
-
-                                    {!isCollapsed && (
-                                        <div className="flex items-center justify-between w-full min-w-0">
-                                            <span className="truncate">{item.label}</span>
-                                            {unreadNotificationsCount > 0 && (
-                                                <span className="px-1.5 py-0.2 rounded-full bg-fuchsia-500/20 text-fuchsia-400 text-[10px] font-bold border border-fuchsia-500/30">
-                                                    {unreadNotificationsCount}
-                                                </span>
-                                            )}
-                                        </div>
-                                    )}
-                                </NavLink>
-                            );
-                        }
-
-                        return (
-                            <NavLink
-                                key={item.path}
-                                to={item.path}
-                                className={({ isActive }) =>
-                                    `flex items-center gap-3 px-2.5 py-1.5 rounded-lg text-[13.5px] font-normal transition-colors relative ${
-                                        isCollapsed ? 'justify-center px-0 py-2' : ''
-                                    } ${
-                                        isActive
-                                            ? 'bg-[#27272A] text-white font-medium shadow-xs'
-                                            : 'text-[#A1A1AA] hover:bg-white/[0.04] hover:text-white'
-                                    }`
-                                }
-                                title={isCollapsed ? item.label : undefined}
-                            >
-                                <div className="relative shrink-0">
-                                    <Icon className="w-[18px] h-[18px] stroke-[1.75] text-[#A1A1AA]" />
-                                </div>
-
-                                {!isCollapsed && (
-                                    <div className="flex items-center justify-between w-full min-w-0">
-                                        <span className="truncate">{item.label}</span>
-                                    </div>
-                                )}
-                            </NavLink>
-                        );
-                    })}
-                </nav>
-            </div>
-
-            {/* Bottom Actions (Help & Collapse) */}
-            <div className="flex flex-col gap-0.5 pt-2 border-t border-[#27272A]/70">
-                <button
-                    type="button"
-                    onClick={() => setIsSettingsModalOpen(true)}
-                    className={`flex items-center gap-3 px-2.5 py-1.5 rounded-lg text-[13px] font-normal text-[#A1A1AA] hover:bg-white/[0.04] hover:text-white transition-colors cursor-pointer ${
-                        isCollapsed ? 'justify-center px-0 py-2' : ''
-                    }`}
-                    title={isCollapsed ? t('common.helpSupport', {}, 'Kömək & Dəstək') : undefined}
-                >
-                    <QuestionMarkCircleIcon className="w-[18px] h-[18px] stroke-[1.75] shrink-0" />
-                    {!isCollapsed && <span>{t('common.helpSupport', {}, 'Kömək & Dəstək')}</span>}
-                </button>
-
-                <button
-                    type="button"
-                    onClick={() => {
-                        const nextState = !isCollapsed;
-                        setIsCollapsed(nextState);
-                    }}
-                    className={`flex items-center gap-3 px-2.5 py-1.5 rounded-lg text-[13px] font-normal text-[#A1A1AA] hover:bg-white/[0.04] hover:text-white transition-colors cursor-pointer ${
-                        isCollapsed ? 'justify-center px-0 py-2' : ''
-                    }`}
-                    title={isCollapsed ? t('common.expandMenu', {}, 'Menyunu genişləndir') : t('common.collapseMenu', {}, 'Menyunu kiçilt')}
-                >
-                    {isCollapsed ? (
-                        <ChevronRightIcon className="w-[18px] h-[18px] stroke-[1.75] shrink-0" />
-                    ) : (
-                        <>
-                            <ChevronLeftIcon className="w-[18px] h-[18px] stroke-[1.75] shrink-0" />
-                            <span>{t('common.collapseMenu', {}, 'Menyunu kiçilt')}</span>
-                        </>
-                    )}
-                </button>
-            </div>
+            {/* Mobile Bottom Navigation Bar */}
+            <MobileBottomNav />
 
             {/* Global CRM Settings Modal */}
             <SettingsModal
                 isOpen={isSettingsModalOpen}
                 onClose={() => setIsSettingsModalOpen(false)}
             />
-        </aside>
+        </>
     );
 };
 

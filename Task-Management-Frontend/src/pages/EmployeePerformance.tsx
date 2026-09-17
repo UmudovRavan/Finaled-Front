@@ -346,7 +346,7 @@ const EmployeePerformance: React.FC = () => {
                     notificationCount={notifications.filter((n) => !n.isRead).length}
                 />
 
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full">
+                <main className="flex-1 p-3 sm:p-6 lg:p-8 pb-24 sm:pb-8 md:pb-8 space-y-6 max-w-7xl mx-auto w-full">
                     {/* Top Header Bar */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#27272A]">
                         <div className="flex items-center gap-3">
@@ -425,17 +425,17 @@ const EmployeePerformance: React.FC = () => {
                             <div className="flex items-center justify-between gap-2 mb-3">
                                 <div className="flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                                    <span className="text-xs font-semibold text-[#A1A1AA]">Tamamlanmış</span>
+                                    <span className="text-xs font-semibold text-[#A1A1AA]">{t('dashboard.completedTasks', {}, 'Tamamlanmış')}</span>
                                 </div>
                                 <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                    Uğur
+                                    {t('common.success', {}, 'Uğur')}
                                 </span>
                             </div>
                             <div className="flex items-baseline justify-between">
                                 <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                                     {employeeData.completedTasks}
                                 </span>
-                                <span className="text-xs text-[#71717A]">tapşırıq bitdi</span>
+                                <span className="text-xs text-[#71717A]">{t('statuses.completed', {}, 'tapşırıq bitdi')}</span>
                             </div>
                         </div>
 
@@ -443,17 +443,17 @@ const EmployeePerformance: React.FC = () => {
                             <div className="flex items-center justify-between gap-2 mb-3">
                                 <div className="flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full bg-sky-400"></span>
-                                    <span className="text-xs font-semibold text-[#A1A1AA]">İcrada / Gözləmədə</span>
+                                    <span className="text-xs font-semibold text-[#A1A1AA]">{t('dashboard.inProgressTasks', {}, 'İcrada / Gözləmədə')}</span>
                                 </div>
                                 <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                                    Aktiv
+                                    {t('common.active', {}, 'Aktiv')}
                                 </span>
                             </div>
                             <div className="flex items-baseline justify-between">
                                 <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                                     {employeeData.inProgressTasks + employeeData.pendingTasks}
                                 </span>
-                                <span className="text-xs text-[#A1A1AA]">davam edən</span>
+                                <span className="text-xs text-[#A1A1AA]">{t('statuses.inProgress', {}, 'davam edən')}</span>
                             </div>
                         </div>
 
@@ -461,10 +461,10 @@ const EmployeePerformance: React.FC = () => {
                             <div className="flex items-center justify-between gap-2 mb-3">
                                 <div className="flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full bg-purple-400"></span>
-                                    <span className="text-xs font-semibold text-[#A1A1AA]">Tamamlanma Dərəcəsi</span>
+                                    <span className="text-xs font-semibold text-[#A1A1AA]">{t('performance.completionRate', {}, 'Tamamlanma Dərəcəsi')}</span>
                                 </div>
                                 <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                                    Nəticə
+                                    {t('common.success', {}, 'Nəticə')}
                                 </span>
                             </div>
                             <div>
@@ -490,9 +490,9 @@ const EmployeePerformance: React.FC = () => {
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                                    <h3 className="text-sm font-bold text-white tracking-tight">Xal Artım Dinamikası</h3>
+                                    <h3 className="text-sm font-bold text-white tracking-tight">{t('performance.monthlyTrends', {}, 'Xal Artım Dinamikası')}</h3>
                                 </div>
-                                <span className="text-xs text-[#71717A] font-medium">{trendRange === '7d' ? 'Həftəlik' : 'Aylıq'}</span>
+                                <span className="text-xs text-[#71717A] font-medium">{trendRange === '7d' ? t('dashboard.last7Days', {}, 'Həftəlik') : t('dashboard.last30Days', {}, 'Aylıq')}</span>
                             </div>
 
                             <div className="h-64 w-full">
@@ -510,7 +510,7 @@ const EmployeePerformance: React.FC = () => {
                                         <Area
                                             type="monotone"
                                             dataKey="points"
-                                            name="Xallar"
+                                            name={t('common.points', {}, 'Xallar')}
                                             stroke="#818CF8"
                                             strokeWidth={2}
                                             fillOpacity={1}
@@ -526,14 +526,14 @@ const EmployeePerformance: React.FC = () => {
                             <div>
                                 <div className="flex items-center gap-2 mb-4">
                                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                    <h3 className="text-sm font-bold text-white tracking-tight">Çətinlik Bölgüsü</h3>
+                                    <h3 className="text-sm font-bold text-white tracking-tight">{t('common.difficulty', {}, 'Çətinlik Bölgüsü')}</h3>
                                 </div>
 
                                 <div className="space-y-4 text-xs">
                                     {/* Easy */}
                                     <div className="space-y-1.5">
                                         <div className="flex items-center justify-between font-semibold">
-                                            <span className="text-[#D4D4D8]">Asan Tapşırıqlar</span>
+                                            <span className="text-[#D4D4D8]">{t('difficulties.easy', {}, 'Asan')} {t('projects.tasksCount', {}, 'Tapşırıqlar')}</span>
                                             <span className="text-emerald-400">{difficultyDist.easy}%</span>
                                         </div>
                                         <div className="w-full bg-[#27272A] rounded-full h-1.5 overflow-hidden">
@@ -544,7 +544,7 @@ const EmployeePerformance: React.FC = () => {
                                     {/* Medium */}
                                     <div className="space-y-1.5">
                                         <div className="flex items-center justify-between font-semibold">
-                                            <span className="text-[#D4D4D8]">Orta Tapşırıqlar</span>
+                                            <span className="text-[#D4D4D8]">{t('difficulties.medium', {}, 'Orta')} {t('projects.tasksCount', {}, 'Tapşırıqlar')}</span>
                                             <span className="text-amber-400">{difficultyDist.medium}%</span>
                                         </div>
                                         <div className="w-full bg-[#27272A] rounded-full h-1.5 overflow-hidden">
@@ -555,7 +555,7 @@ const EmployeePerformance: React.FC = () => {
                                     {/* Hard */}
                                     <div className="space-y-1.5">
                                         <div className="flex items-center justify-between font-semibold">
-                                            <span className="text-[#D4D4D8]">Çətin Tapşırıqlar</span>
+                                            <span className="text-[#D4D4D8]">{t('difficulties.hard', {}, 'Çətin')} {t('projects.tasksCount', {}, 'Tapşırıqlar')}</span>
                                             <span className="text-rose-400">{difficultyDist.hard}%</span>
                                         </div>
                                         <div className="w-full bg-[#27272A] rounded-full h-1.5 overflow-hidden">
@@ -566,12 +566,12 @@ const EmployeePerformance: React.FC = () => {
                             </div>
 
                             <div className="p-3 rounded-xl bg-[#141416] border border-[#27272A] mt-6 text-xs text-[#71717A]">
-                                💡 Ən çox icra edilən kateqoriya: <strong className="text-white">
+                                💡 {t('performance.strengths', {}, 'Ən çox icra edilən kateqoriya')}: <strong className="text-white">
                                     {difficultyDist.easy >= difficultyDist.medium && difficultyDist.easy >= difficultyDist.hard
-                                        ? 'Asan'
+                                        ? t('difficulties.easy', {}, 'Asan')
                                         : difficultyDist.medium >= difficultyDist.hard
-                                        ? 'Orta'
-                                        : 'Çətin'}
+                                        ? t('difficulties.medium', {}, 'Orta')
+                                        : t('difficulties.hard', {}, 'Çətin')}
                                 </strong>
                             </div>
                         </div>
@@ -582,10 +582,10 @@ const EmployeePerformance: React.FC = () => {
                         <div className="p-5 border-b border-[#27272A] flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-sky-500"></span>
-                                <h3 className="text-sm font-bold text-white tracking-tight">Son Tapşırıq Tarixçəsi</h3>
+                                <h3 className="text-sm font-bold text-white tracking-tight">{t('dashboard.recentActivity', {}, 'Son Tapşırıq Tarixçəsi')}</h3>
                             </div>
                             <span className="text-xs text-[#71717A]">
-                                {taskHistory.length} qeyd
+                                {taskHistory.length} {t('projects.tasksCount', {}, 'qeyd')}
                             </span>
                         </div>
 
@@ -593,18 +593,18 @@ const EmployeePerformance: React.FC = () => {
                             <table className="w-full text-left text-xs">
                                 <thead>
                                     <tr className="border-b border-[#27272A] text-[#71717A] font-semibold bg-[#141416]">
-                                        <th className="py-3.5 px-6 font-medium">Tapşırıq</th>
-                                        <th className="py-3.5 px-6 font-medium">Çətinlik</th>
-                                        <th className="py-3.5 px-6 font-medium">İcra Tarixi</th>
-                                        <th className="py-3.5 px-6 font-medium">Status</th>
-                                        <th className="py-3.5 px-6 font-medium text-right">Qazanılan Xal</th>
+                                        <th className="py-3.5 px-6 font-medium">{t('tasks.taskTitle', {}, 'Tapşırıq')}</th>
+                                        <th className="py-3.5 px-6 font-medium">{t('common.difficulty', {}, 'Çətinlik')}</th>
+                                        <th className="py-3.5 px-6 font-medium">{t('common.dueDate', {}, 'İcra Tarixi')}</th>
+                                        <th className="py-3.5 px-6 font-medium">{t('common.status', {}, 'Status')}</th>
+                                        <th className="py-3.5 px-6 font-medium text-right">{t('leaderboard.totalPointsEarned', {}, 'Qazanılan Xal')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#27272A]">
                                     {taskHistory.length === 0 ? (
                                         <tr>
                                             <td colSpan={5} className="py-8 text-center text-xs text-[#71717A]">
-                                                Tapşırıq tarixçəsi yoxdur
+                                                {t('common.noData', {}, 'Tapşırıq tarixçəsi yoxdur')}
                                             </td>
                                         </tr>
                                     ) : (
@@ -625,7 +625,7 @@ const EmployeePerformance: React.FC = () => {
                                                             ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                                                             : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                                                     }`}>
-                                                        {task.difficulty === 'Hard' ? 'Çətin' : task.difficulty === 'Medium' ? 'Orta' : 'Asan'}
+                                                        {task.difficulty === 'Hard' ? t('difficulties.hard', {}, 'Çətin') : task.difficulty === 'Medium' ? t('difficulties.medium', {}, 'Orta') : t('difficulties.easy', {}, 'Asan')}
                                                     </span>
                                                 </td>
                                                 <td className="py-3.5 px-6 text-[#A1A1AA]">
@@ -638,11 +638,11 @@ const EmployeePerformance: React.FC = () => {
                                                             : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                                                     }`}>
                                                         <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-                                                        <span>{task.status === 'Completed' ? 'Tamamlandı' : 'İcrada'}</span>
+                                                        <span>{task.status === 'Completed' ? t('statuses.completed', {}, 'Tamamlandı') : t('statuses.inProgress', {}, 'İcrada')}</span>
                                                     </span>
                                                 </td>
                                                 <td className="py-3.5 px-6 text-right font-extrabold text-amber-400">
-                                                    +{task.points} xal
+                                                    +{task.points} {t('common.points', {}, 'xal')}
                                                 </td>
                                             </tr>
                                         ))

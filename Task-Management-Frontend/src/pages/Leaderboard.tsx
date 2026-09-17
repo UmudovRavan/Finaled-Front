@@ -306,7 +306,7 @@ const Leaderboard: React.FC = () => {
                     notificationCount={notifications.filter((n) => !n.isRead).length}
                 />
 
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8 max-w-6xl mx-auto w-full">
+                <main className="flex-1 p-3 sm:p-6 lg:p-8 pb-24 sm:pb-8 md:pb-8 space-y-8 max-w-6xl mx-auto w-full">
                     {/* Top Action Header Bar */}
                     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[#27272A]">
                         <div>
@@ -415,13 +415,13 @@ const Leaderboard: React.FC = () => {
                                         <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors">
                                             {topThree.second.userName}
                                         </h3>
-                                        <p className="text-xs text-[#71717A]">Komanda Üzvü</p>
+                                        <p className="text-xs text-[#71717A]">{t('workgroups.memberCount', {}, 'Komanda Üzvü')}</p>
                                     </div>
 
                                     <div className="flex items-center gap-1 text-amber-400 font-extrabold text-xl pt-1">
                                         <BoltIcon className="w-5 h-5 stroke-[2.5]" />
                                         <span>{topThree.second.totalPoints.toLocaleString()}</span>
-                                        <span className="text-xs text-[#71717A] font-medium">pts</span>
+                                        <span className="text-xs text-[#71717A] font-medium">{t('common.points', {}, 'pts')}</span>
                                     </div>
                                 </div>
                             )}
@@ -450,13 +450,13 @@ const Leaderboard: React.FC = () => {
                                     <h3 className="text-lg font-black text-white group-hover:text-amber-400 transition-colors">
                                         {topThree.first.userName}
                                     </h3>
-                                    <p className="text-xs text-[#71717A]">Komanda Lideri</p>
+                                    <p className="text-xs text-[#71717A]">{t('workgroups.topGroup', {}, 'Komanda Lideri')}</p>
                                 </div>
 
                                 <div className="flex items-center gap-1 text-amber-400 font-black text-3xl pt-1">
                                     <BoltIcon className="w-6 h-6 stroke-[2.5]" />
                                     <span>{topThree.first.totalPoints.toLocaleString()}</span>
-                                    <span className="text-xs text-[#71717A] font-medium">pts</span>
+                                    <span className="text-xs text-[#71717A] font-medium">{t('common.points', {}, 'pts')}</span>
                                 </div>
                             </div>
 
@@ -484,20 +484,20 @@ const Leaderboard: React.FC = () => {
                                         <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors">
                                             {topThree.third.userName}
                                         </h3>
-                                        <p className="text-xs text-[#71717A]">Komanda Üzvü</p>
+                                        <p className="text-xs text-[#71717A]">{t('workgroups.memberCount', {}, 'Komanda Üzvü')}</p>
                                     </div>
 
                                     <div className="flex items-center gap-1 text-amber-400 font-extrabold text-xl pt-1">
                                         <BoltIcon className="w-5 h-5 stroke-[2.5]" />
                                         <span>{topThree.third.totalPoints.toLocaleString()}</span>
-                                        <span className="text-[11px] text-[#71717A] font-medium">pts</span>
+                                        <span className="text-[11px] text-[#71717A] font-medium">{t('common.points', {}, 'pts')}</span>
                                     </div>
                                 </div>
                             )}
                         </div>
                     ) : (
                         <div className="py-16 text-center text-xs text-[#71717A] rounded-2xl border border-[#27272A] bg-[#18181B]">
-                            Liderlər lövhəsi məlumatı tapılmadı
+                            {t('common.noData', {}, 'Liderlər lövhəsi məlumatı tapılmadı')}
                         </div>
                     )}
 
@@ -508,11 +508,11 @@ const Leaderboard: React.FC = () => {
                                 <table className="w-full text-left text-xs">
                                     <thead>
                                         <tr className="border-b border-[#27272A] text-[#71717A] font-semibold bg-[#141416]">
-                                            <th className="py-3.5 px-6 text-center w-20">Rütbə</th>
-                                            <th className="py-3.5 px-6">İstifadəçi</th>
-                                            <th className="py-3.5 px-6">Şöbə</th>
-                                            <th className="py-3.5 px-6 text-right">Səmərəlilik</th>
-                                            <th className="py-3.5 px-6 text-right">Ümumi Xallar</th>
+                                            <th className="py-3.5 px-6 text-center w-20">{t('common.rank', {}, 'Rütbə')}</th>
+                                            <th className="py-3.5 px-6">{t('common.user', {}, 'İstifadəçi')}</th>
+                                            <th className="py-3.5 px-6">{t('common.department', {}, 'Şöbə')}</th>
+                                            <th className="py-3.5 px-6 text-right">{t('leaderboard.efficiencyRating', {}, 'Səmərəlilik')}</th>
+                                            <th className="py-3.5 px-6 text-right">{t('performance.totalPoints', {}, 'Ümumi Xallar')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[#27272A]">
@@ -545,9 +545,9 @@ const Leaderboard: React.FC = () => {
                                                             />
                                                             <div>
                                                                 <p className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">
-                                                                    {user.userName} {isCurrentUser && <span className="text-blue-400 font-semibold">(Siz)</span>}
+                                                                    {user.userName} {isCurrentUser && <span className="text-blue-400 font-semibold">({t('dashboard.personal', {}, 'Siz')})</span>}
                                                                 </p>
-                                                                <p className="text-[10px] text-[#71717A]">Komanda Üzvü</p>
+                                                                <p className="text-[10px] text-[#71717A]">{t('workgroups.memberCount', {}, 'Komanda Üzvü')}</p>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -571,7 +571,7 @@ const Leaderboard: React.FC = () => {
                                                     </td>
                                                     <td className="py-4 px-6 text-right">
                                                         <p className="text-xs font-extrabold text-amber-400">
-                                                            {user.totalPoints.toLocaleString()} <span className="text-[10px] text-[#71717A] font-normal">xal</span>
+                                                            {user.totalPoints.toLocaleString()} <span className="text-[10px] text-[#71717A] font-normal">{t('common.points', {}, 'xal')}</span>
                                                         </p>
                                                     </td>
                                                 </tr>
@@ -585,9 +585,7 @@ const Leaderboard: React.FC = () => {
                             {remainingUsers.length > pageSize && (
                                 <div className="border-t border-[#27272A] px-6 py-3.5 flex items-center justify-between bg-[#141416] text-xs">
                                     <p className="text-[#71717A]">
-                                        Göstərilir: <span className="font-bold text-white">{remainingUsers.length}</span> nəticədən{' '}
-                                        <span className="font-bold text-white">{(currentPage - 1) * pageSize + 1}</span> -{' '}
-                                        <span className="font-bold text-white">{Math.min(currentPage * pageSize, remainingUsers.length)}</span> arası
+                                        {remainingUsers.length} {t('common.total', {}, 'nəticədən')} {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, remainingUsers.length)}
                                     </p>
                                     <div className="flex items-center gap-2">
                                         <button

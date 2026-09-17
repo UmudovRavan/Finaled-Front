@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { Sidebar, Header } from '../layout';
 import { kpiService, divisionService, authService, getKpiErrorMessage } from '../api';
+import { useLanguage } from '../context/LanguageContext';
 import type {
     DailyKpiDTO,
     EmployeeKpiSummaryDTO,
@@ -55,6 +56,7 @@ import {
 type ActiveTab = 'employee' | 'manager' | 'analytics';
 
 export const KpiDashboard: React.FC = () => {
+    const { t, language } = useLanguage();
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
     const [activeTab, setActiveTab] = useState<ActiveTab>('employee');
 
@@ -254,26 +256,60 @@ export const KpiDashboard: React.FC = () => {
     };
 
     // Months list for dropdown
-    const months = [
-        { value: 1, label: 'Yanvar' },
-        { value: 2, label: 'Fevral' },
-        { value: 3, label: 'Mart' },
-        { value: 4, label: 'Aprel' },
-        { value: 5, label: 'May' },
-        { value: 6, label: 'İyun' },
-        { value: 7, label: 'İyul' },
-        { value: 8, label: 'Avqust' },
-        { value: 9, label: 'Sentyabr' },
-        { value: 10, label: 'Oktyabr' },
-        { value: 11, label: 'Noyabr' },
-        { value: 12, label: 'Dekabr' },
-    ];
+    const months = useMemo(() => {
+        if (language === 'en') {
+            return [
+                { value: 1, label: 'January' },
+                { value: 2, label: 'February' },
+                { value: 3, label: 'March' },
+                { value: 4, label: 'April' },
+                { value: 5, label: 'May' },
+                { value: 6, label: 'June' },
+                { value: 7, label: 'July' },
+                { value: 8, label: 'August' },
+                { value: 9, label: 'September' },
+                { value: 10, label: 'October' },
+                { value: 11, label: 'November' },
+                { value: 12, label: 'December' },
+            ];
+        }
+        if (language === 'ru') {
+            return [
+                { value: 1, label: 'Январь' },
+                { value: 2, label: 'Февраль' },
+                { value: 3, label: 'Март' },
+                { value: 4, label: 'Апрель' },
+                { value: 5, label: 'Май' },
+                { value: 6, label: 'Июнь' },
+                { value: 7, label: 'Июль' },
+                { value: 8, label: 'Август' },
+                { value: 9, label: 'Сентябрь' },
+                { value: 10, label: 'Октябрь' },
+                { value: 11, label: 'Ноябрь' },
+                { value: 12, label: 'Декабрь' },
+            ];
+        }
+        return [
+            { value: 1, label: 'Yanvar' },
+            { value: 2, label: 'Fevral' },
+            { value: 3, label: 'Mart' },
+            { value: 4, label: 'Aprel' },
+            { value: 5, label: 'May' },
+            { value: 6, label: 'İyun' },
+            { value: 7, label: 'İyul' },
+            { value: 8, label: 'Avqust' },
+            { value: 9, label: 'Sentyabr' },
+            { value: 10, label: 'Oktyabr' },
+            { value: 11, label: 'Noyabr' },
+            { value: 12, label: 'Dekabr' },
+        ];
+    }, [language]);
 
-    const currentMonthLabel = months.find((m) => m.value === selectedMonth)?.label || 'Bu ay';
+    const currentMonthLabel = months.find((m) => m.value === selectedMonth)?.label || t('kpi.thisMonth', {}, 'Bu ay');
     const currentDivisionLabel =
         selectedDivisionId === 'all'
-            ? 'Bütün Şöbələr'
-            : divisions.find((d) => String(d.id) === selectedDivisionId)?.name || 'Seçilmiş Şöbə';
+            ? t('kpi.allDivisions', {}, 'Bütün Şöbələr')
+            : divisions.find((d) => String(d.id) === selectedDivisionId)?.name || t('kpi.division', {}, 'Şöbə');
 
     // Subordinate Stats calculation
     const managerStats = useMemo(() => {
@@ -303,7 +339,7 @@ export const KpiDashboard: React.FC = () => {
                     userAvatar={avatarSrc}
                 />
 
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full">
+                <main className="flex-1 p-3 sm:p-6 lg:p-8 pb-24 sm:pb-8 md:pb-8 space-y-6 max-w-7xl mx-auto w-full">
                     {/* Page Header */}
                     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[#27272A]">
                         <div>
@@ -312,11 +348,11 @@ export const KpiDashboard: React.FC = () => {
                                     <BarChart3 className="w-4 h-4" />
                                 </div>
                                 <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-                                    Dəyər-Zərər KPI Paneli
+                                    {t('kpi.title', {}, 'Dəyər-Zərər KPI Paneli')}
                                 </h1>
                             </div>
                             <p className="text-xs text-[#A1A1AA] mt-1">
-                                Günlük "Vəzifə Öhdəliyi", "İntizam Pozuntusu" və "Bonus" göstəricilərinin vahid idarəetmə mərkəzi
+                                {t('kpi.subtitle', {}, 'Günlük "Vəzifə Öhdəliyi", "İntizam Pozuntusu" və "Bonus" göstəricilərinin vahid idarəetmə mərkəzi')}
                             </p>
                         </div>
 
@@ -329,39 +365,39 @@ export const KpiDashboard: React.FC = () => {
                                 className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-xs font-semibold text-white transition-colors cursor-pointer disabled:opacity-50"
                             >
                                 <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-blue-400' : 'text-[#A1A1AA]'}`} />
-                                <span className="hidden sm:inline">Yenilə</span>
+                                <span className="hidden sm:inline">{t('common.refresh', {}, 'Yenilə')}</span>
                             </button>
                         </div>
                     </div>
 
                     {/* Navigation Tabs (if Manager or Admin) */}
                     {(canViewManagerTab || canViewAnalyticsTab) && (
-                        <div className="flex items-center gap-2 p-1 rounded-xl bg-[#18181B] border border-[#27272A] max-w-fit">
+                        <div className="flex items-center gap-2 p-1 rounded-xl bg-[#18181B] border border-[#27272A] max-w-fit overflow-x-auto">
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('employee')}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                                     activeTab === 'employee'
                                         ? 'bg-blue-600 text-white shadow-sm'
                                         : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
                                 }`}
                             >
                                 <Zap className="w-3.5 h-3.5" />
-                                <span>Şəxsi KPI</span>
+                                <span>{t('kpi.personalKpi', {}, 'Şəxsi KPI')}</span>
                             </button>
 
                             {canViewManagerTab && (
                                 <button
                                     type="button"
                                     onClick={() => setActiveTab('manager')}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer relative ${
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer relative whitespace-nowrap ${
                                         activeTab === 'manager'
                                             ? 'bg-blue-600 text-white shadow-sm'
                                             : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
                                     }`}
                                 >
                                     <Users className="w-3.5 h-3.5" />
-                                    <span>Menecer Qiymətləndirməsi</span>
+                                    <span>{t('kpi.managerEvaluation', {}, 'Menecer Qiymətləndirməsi')}</span>
                                     {managerStats.pending > 0 && (
                                         <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                                     )}
@@ -372,14 +408,14 @@ export const KpiDashboard: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => setActiveTab('analytics')}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                                         activeTab === 'analytics'
                                             ? 'bg-blue-600 text-white shadow-sm'
                                             : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
                                     }`}
                                 >
                                     <Building2 className="w-3.5 h-3.5" />
-                                    <span>Şirkət Analitikası</span>
+                                    <span>{t('kpi.companyAnalytics', {}, 'Şirkət Analitikası')}</span>
                                 </button>
                             )}
                         </div>
@@ -391,11 +427,11 @@ export const KpiDashboard: React.FC = () => {
                     {activeTab === 'employee' && (
                         <div className="space-y-6 animate-in fade-in duration-200">
                             {/* 4 Metric Cards */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                                 {/* Card 1: Today Score */}
                                 <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-5 hover:border-[#3F3F46] transition-all shadow-xs flex flex-col justify-between">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs font-bold text-[#A1A1AA] uppercase tracking-wider">Bugünkü Bal</span>
+                                        <span className="text-xs font-bold text-[#A1A1AA] uppercase tracking-wider">{t('kpi.todayScore', {}, 'Bugünkü Bal')}</span>
                                         <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center">
                                             <Zap className="w-4 h-4" />
                                         </div>
@@ -407,7 +443,7 @@ export const KpiDashboard: React.FC = () => {
                                                     <span className="text-2xl font-extrabold text-white">
                                                         {mySummary.todayScore.totalScore > 0 ? `+${mySummary.todayScore.totalScore}` : mySummary.todayScore.totalScore}
                                                     </span>
-                                                    <span className="text-xs text-[#71717A] ml-1.5 font-medium">bal</span>
+                                                    <span className="text-xs text-[#71717A] ml-1.5 font-medium">{t('common.points', {}, 'bal')}</span>
                                                 </div>
                                                 <div className="text-right">
                                                     <KpiScoreBadge score={mySummary.todayScore.totalScore} size="sm" showLabel />
@@ -417,12 +453,12 @@ export const KpiDashboard: React.FC = () => {
                                             <>
                                                 <div>
                                                     <span className="text-2xl font-extrabold text-[#71717A]">—</span>
-                                                    <span className="text-xs text-[#71717A] ml-1.5 font-medium">bal</span>
+                                                    <span className="text-xs text-[#71717A] ml-1.5 font-medium">{t('common.points', {}, 'bal')}</span>
                                                 </div>
                                                 <div className="text-right">
                                                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 font-semibold border border-amber-500/20 text-xs">
                                                         <Clock3 className="w-3.5 h-3.5" />
-                                                        Qiymət gözləyir
+                                                        {t('kpi.waitingEvaluation', {}, 'Qiymət gözləyir')}
                                                     </span>
                                                 </div>
                                             </>
@@ -433,7 +469,7 @@ export const KpiDashboard: React.FC = () => {
                                 {/* Card 2: Weekly Total & Average */}
                                 <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-5 hover:border-[#3F3F46] transition-all shadow-xs flex flex-col justify-between">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs font-bold text-[#A1A1AA] uppercase tracking-wider">Həftəlik Statistika</span>
+                                        <span className="text-xs font-bold text-[#A1A1AA] uppercase tracking-wider">{t('kpi.weeklyStats', {}, 'Həftəlik Statistika')}</span>
                                         <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
                                             <TrendingUp className="w-4 h-4" />
                                         </div>
@@ -446,13 +482,13 @@ export const KpiDashboard: React.FC = () => {
                                                     return val > 0 ? `+${val}` : val;
                                                 })()}
                                             </span>
-                                            <span className="text-xs text-[#71717A] ml-1.5 font-medium">cəm bal</span>
+                                            <span className="text-xs text-[#71717A] ml-1.5 font-medium">{t('common.total', {}, 'cəm')} {t('common.points', {}, 'bal')}</span>
                                         </div>
                                         <div className="text-right">
                                             <span className="text-xs font-bold text-emerald-400">
                                                 {(mySummary?.weeklyAverageScore ?? mySummary?.weeklyAverage ?? 0).toFixed(2)}
                                             </span>
-                                            <span className="text-[10px] text-[#71717A] block">orta / gün</span>
+                                            <span className="text-[10px] text-[#71717A] block">{t('kpi.dailyAvg', {}, 'orta / gün')}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -460,7 +496,7 @@ export const KpiDashboard: React.FC = () => {
                                 {/* Card 3: Monthly Total & Days */}
                                 <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-5 hover:border-[#3F3F46] transition-all shadow-xs flex flex-col justify-between">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs font-bold text-[#A1A1AA] uppercase tracking-wider">Aylıq Yekun</span>
+                                        <span className="text-xs font-bold text-[#A1A1AA] uppercase tracking-wider">{t('kpi.monthlyTotal', {}, 'Aylıq Yekun')}</span>
                                         <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center">
                                             <CalendarDays className="w-4 h-4" />
                                         </div>
@@ -473,13 +509,13 @@ export const KpiDashboard: React.FC = () => {
                                                     return val > 0 ? `+${val}` : val;
                                                 })()}
                                             </span>
-                                            <span className="text-xs text-[#71717A] ml-1.5 font-medium">cəm</span>
+                                            <span className="text-xs text-[#71717A] ml-1.5 font-medium">{t('common.total', {}, 'cəm')}</span>
                                         </div>
                                         <div className="text-right">
                                             <span className="text-xs font-bold text-purple-400">
                                                 {(mySummary?.monthlyAverageScore ?? mySummary?.monthlyAverage ?? 0).toFixed(2)}
                                             </span>
-                                            <span className="text-[10px] text-[#71717A] block">orta / gün</span>
+                                            <span className="text-[10px] text-[#71717A] block">{t('kpi.dailyAvg', {}, 'orta / gün')}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -487,7 +523,7 @@ export const KpiDashboard: React.FC = () => {
                                 {/* Card 4: Penalties & Warnings */}
                                 <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-5 hover:border-[#3F3F46] transition-all shadow-xs flex flex-col justify-between">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs font-bold text-[#A1A1AA] uppercase tracking-wider">İntizam Pozuntuları</span>
+                                        <span className="text-xs font-bold text-[#A1A1AA] uppercase tracking-wider">{t('kpi.disciplineViolations', {}, 'İntizam Pozuntuları')}</span>
                                         <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center">
                                             <ShieldAlert className="w-4 h-4" />
                                         </div>
@@ -497,13 +533,13 @@ export const KpiDashboard: React.FC = () => {
                                             <span className={`text-2xl font-extrabold ${(mySummary?.disciplineViolationsCount ?? mySummary?.disciplinePenaltyCount ?? 0) > 0 ? 'text-rose-400' : 'text-white'}`}>
                                                 {mySummary?.disciplineViolationsCount ?? mySummary?.disciplinePenaltyCount ?? 0}
                                             </span>
-                                            <span className="text-xs text-[#71717A] ml-1.5 font-medium">cərimə</span>
+                                            <span className="text-xs text-[#71717A] ml-1.5 font-medium">{t('kpi.totalPenalties', {}, 'cərimə')}</span>
                                         </div>
                                         <div className="text-right">
                                             <span className="text-xs font-bold text-amber-400">
                                                 +{mySummary?.bonusCount || 0}
                                             </span>
-                                            <span className="text-[10px] text-[#71717A] block">bonus</span>
+                                            <span className="text-[10px] text-[#71717A] block">{t('kpi.bonus', {}, 'bonus')}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -517,7 +553,7 @@ export const KpiDashboard: React.FC = () => {
                                     <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 space-y-3 animate-in fade-in duration-200">
                                         <div className="flex items-center gap-2 text-rose-400 text-xs font-bold">
                                             <ShieldAlert className="w-4 h-4 shrink-0" />
-                                            <span>Son Dövr İntizam Qeydləri və Cərimələr</span>
+                                            <span>{t('kpi.recentPenalties', {}, 'Son Dövr İntizam Qeydləri və Cərimələr')}</span>
                                         </div>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                             {negList.map((neg) => (
@@ -528,7 +564,7 @@ export const KpiDashboard: React.FC = () => {
                                                     <div>
                                                         <span className="text-[#A1A1AA] text-[11px] block">{neg.evaluationDate || neg.date}</span>
                                                         <p className="text-rose-300 font-medium mt-0.5">
-                                                            {neg.disciplinePenaltyReason || 'İntizam pozuntusu qeydə alınıb'}
+                                                            {neg.disciplinePenaltyReason || t('kpi.disciplinePenalty', {}, 'İntizam pozuntusu qeydə alınıb')}
                                                         </p>
                                                     </div>
                                                     <KpiScoreBadge score={neg.totalScore} size="sm" />
@@ -544,7 +580,7 @@ export const KpiDashboard: React.FC = () => {
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div className="flex items-center gap-2">
                                         <Calendar className="w-4 h-4 text-blue-400" />
-                                        <h3 className="text-sm font-bold text-white tracking-tight">KPI Tarixçəsi</h3>
+                                        <h3 className="text-sm font-bold text-white tracking-tight">{t('kpi.kpiHistory', {}, 'KPI Tarixçəsi')}</h3>
                                     </div>
 
                                     {/* Date Range Selector */}
@@ -558,7 +594,7 @@ export const KpiDashboard: React.FC = () => {
                                                     : 'text-[#A1A1AA] hover:text-white'
                                             }`}
                                         >
-                                            Son 7 gün
+                                            {t('kpi.last7Days', {}, 'Son 7 gün')}
                                         </button>
                                         <button
                                             type="button"
@@ -569,7 +605,7 @@ export const KpiDashboard: React.FC = () => {
                                                     : 'text-[#A1A1AA] hover:text-white'
                                             }`}
                                         >
-                                            Son 30 gün
+                                            {t('kpi.last30Days', {}, 'Son 30 gün')}
                                         </button>
                                         <button
                                             type="button"
@@ -580,7 +616,7 @@ export const KpiDashboard: React.FC = () => {
                                                     : 'text-[#A1A1AA] hover:text-white'
                                             }`}
                                         >
-                                            Hamısı
+                                            {t('kpi.allHistory', {}, 'Hamısı')}
                                         </button>
                                     </div>
                                 </div>
@@ -604,28 +640,28 @@ export const KpiDashboard: React.FC = () => {
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl border border-[#27272A] bg-[#18181B]">
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                                     <div>
-                                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase">Tabeçilikdə</span>
-                                        <p className="text-xl font-extrabold text-white mt-0.5">{managerStats.total} nəfər</p>
+                                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase">{t('kpi.subordinatesCount', {}, 'Tabeçilikdə')}</span>
+                                        <p className="text-xl font-extrabold text-white mt-0.5">{managerStats.total}</p>
                                     </div>
                                     <div>
-                                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase">Qiymətləndirildi</span>
+                                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase">{t('kpi.evaluatedCount', {}, 'Qiymətləndirildi')}</span>
                                         <p className="text-xl font-extrabold text-emerald-400 mt-0.5">{managerStats.evaluated}</p>
                                     </div>
                                     <div>
-                                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase">Gözləyir</span>
+                                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase">{t('kpi.pendingCount', {}, 'Gözləyir')}</span>
                                         <p className={`text-xl font-extrabold mt-0.5 ${managerStats.pending > 0 ? 'text-amber-400' : 'text-white'}`}>
                                             {managerStats.pending}
                                         </p>
                                     </div>
                                     <div>
-                                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase">Günlük Orta</span>
+                                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase">{t('kpi.dailyAvg', {}, 'Günlük Orta')}</span>
                                         <p className="text-xl font-extrabold text-blue-400 mt-0.5">{managerStats.avgToday}</p>
                                     </div>
                                 </div>
 
                                 {/* Evaluation Date Control */}
                                 <div className="flex items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-[#27272A]">
-                                    <span className="text-xs text-[#A1A1AA] font-semibold">Tarix:</span>
+                                    <span className="text-xs text-[#A1A1AA] font-semibold">{t('kpi.evaluationDate', {}, 'Tarix')}:</span>
                                     <input
                                         type="date"
                                         value={selectedDate}
@@ -640,10 +676,10 @@ export const KpiDashboard: React.FC = () => {
                                 <div className="p-4 border-b border-[#27272A] flex items-center justify-between">
                                     <h3 className="text-sm font-bold text-white flex items-center gap-2">
                                         <Users className="w-4 h-4 text-blue-400" />
-                                        Əməkdaşların Günlük Qiymətləndirmə Vəziyyəti
+                                        {t('kpi.subordinateStatus', {}, 'Əməkdaşların Günlük Qiymətləndirmə Vəziyyəti')}
                                     </h3>
                                     <span className="text-xs text-[#A1A1AA]">
-                                        Tarix: <b className="text-white">{selectedDate}</b>
+                                        {t('kpi.evaluationDate', {}, 'Tarix')}: <b className="text-white">{selectedDate}</b>
                                     </span>
                                 </div>
 
@@ -651,26 +687,26 @@ export const KpiDashboard: React.FC = () => {
                                     <table className="w-full text-left text-xs border-collapse">
                                         <thead>
                                             <tr className="border-b border-[#27272A] bg-[#1C1C1E]/70 text-[#A1A1AA] font-bold">
-                                                <th className="py-3.5 px-4 sm:px-5">Əməkdaş</th>
-                                                <th className="py-3.5 px-3">Şöbə</th>
-                                                <th className="py-3.5 px-3">Vəzifə Öhdəliyi</th>
-                                                <th className="py-3.5 px-3">İntizam</th>
-                                                <th className="py-3.5 px-3">Bonus</th>
-                                                <th className="py-3.5 px-3">Bugünkü Nəticə</th>
-                                                <th className="py-3.5 px-4 text-right">Əməliyyat</th>
+                                                <th className="py-3.5 px-4 sm:px-5">{t('kpi.employee', {}, 'Əməkdaş')}</th>
+                                                <th className="py-3.5 px-3">{t('kpi.division', {}, 'Şöbə')}</th>
+                                                <th className="py-3.5 px-3">{t('kpi.dutyObligation', {}, 'Vəzifə Öhdəliyi')}</th>
+                                                <th className="py-3.5 px-3">{t('kpi.discipline', {}, 'İntizam')}</th>
+                                                <th className="py-3.5 px-3">{t('kpi.bonus', {}, 'Bonus')}</th>
+                                                <th className="py-3.5 px-3">{t('kpi.todayResult', {}, 'Bugünkü Nəticə')}</th>
+                                                <th className="py-3.5 px-4 text-right">{t('kpi.actions', {}, 'Əməliyyat')}</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-[#27272A]/70 text-[#D4D4D8]">
                                             {subordinates.length === 0 ? (
                                                 <tr>
                                                     <td colSpan={7} className="py-8 text-center text-[#71717A]">
-                                                        Tabeçilikdə heç bir əməkdaş tapılmadı.
+                                                        {t('kpi.noSubordinates', {}, 'Tabeçilikdə heç bir əməkdaş tapılmadı.')}
                                                     </td>
                                                 </tr>
                                             ) : (
                                                 subordinates.map((sub) => {
                                                     const subId = sub.employeeId || sub.id || sub.userId || '';
-                                                    const subName = sub.employeeName || 'Əməkdaş';
+                                                    const subName = sub.employeeName || t('kpi.employee', {}, 'Əməkdaş');
                                                     const subEmail = sub.employeeEmail || sub.email || '';
                                                     const initials = (subName.charAt(0) || 'U').toUpperCase();
 
@@ -713,11 +749,11 @@ export const KpiDashboard: React.FC = () => {
                                                                 {sub.todayKpi ? (
                                                                     sub.todayKpi.jobDutiesScore === 1 ? (
                                                                         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20 text-[11px]">
-                                                                            <Check className="w-3 h-3" /> İcra olundu (+1)
+                                                                            <Check className="w-3 h-3" /> {t('kpi.dutyFulfilled', {}, 'İcra olundu (+1)')}
                                                                         </span>
                                                                     ) : (
                                                                         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-400 font-semibold border border-zinc-700 text-[11px]">
-                                                                            İcra olunmadı (0)
+                                                                            {t('kpi.dutyNotFulfilled', {}, 'İcra olunmadı (0)')}
                                                                         </span>
                                                                     )
                                                                 ) : (
@@ -730,13 +766,13 @@ export const KpiDashboard: React.FC = () => {
                                                                 {sub.todayKpi ? (
                                                                     sub.todayKpi.disciplineScore === -1 ? (
                                                                         <span
-                                                                            title={sub.todayKpi.disciplinePenaltyReason || 'İntizam cəriməsi'}
+                                                                            title={sub.todayKpi.disciplinePenaltyReason || t('kpi.disciplinePenalty', {}, 'İntizam cəriməsi')}
                                                                             className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 font-semibold border border-rose-500/20 text-[11px] cursor-help"
                                                                         >
-                                                                            <ShieldAlert className="w-3 h-3" /> Cərimə (-1)
+                                                                            <ShieldAlert className="w-3 h-3" /> {t('kpi.disciplinePenalty', {}, 'Cərimə (-1)')}
                                                                         </span>
                                                                     ) : (
-                                                                        <span className="text-[#A1A1AA] text-[11px] font-medium">Qaydasında (0)</span>
+                                                                        <span className="text-[#A1A1AA] text-[11px] font-medium">{t('kpi.disciplineNormal', {}, 'Qaydasında (0)')}</span>
                                                                     )
                                                                 ) : (
                                                                     <span className="text-[#71717A] text-xs">—</span>
@@ -748,10 +784,10 @@ export const KpiDashboard: React.FC = () => {
                                                                 {sub.todayKpi ? (
                                                                     sub.todayKpi.bonusScore === 1 ? (
                                                                         <span
-                                                                            title={sub.todayKpi.bonusReason || 'Bonus səbəbi'}
+                                                                            title={sub.todayKpi.bonusReason || 'Bonus'}
                                                                             className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 font-semibold border border-amber-500/20 text-[11px] cursor-help"
                                                                         >
-                                                                            <Star className="w-3 h-3 text-amber-400 fill-amber-400/20" /> Bonus (+1)
+                                                                            <Star className="w-3 h-3 text-amber-400 fill-amber-400/20" /> {t('kpi.bonusGranted', {}, 'Bonus (+1)')}
                                                                         </span>
                                                                     ) : (
                                                                         <span className="text-[#71717A] text-[11px]">0</span>
@@ -771,7 +807,7 @@ export const KpiDashboard: React.FC = () => {
                                                                 ) : (
                                                                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 font-semibold border border-amber-500/20 text-[11px]">
                                                                         <Clock3 className="w-3 h-3" />
-                                                                        Gözləyir
+                                                                        {t('kpi.waitingEvaluation', {}, 'Gözləyir')}
                                                                     </span>
                                                                 )}
                                                             </td>
@@ -788,7 +824,7 @@ export const KpiDashboard: React.FC = () => {
                                                                     }`}
                                                                 >
                                                                     <PenLine className="w-3.5 h-3.5" />
-                                                                    <span>{sub.isEvaluatedToday ? 'Düzəliş et' : 'Qiymətləndir'}</span>
+                                                                    <span>{sub.isEvaluatedToday ? t('kpi.editEvaluation', {}, 'Düzəliş et') : t('kpi.evaluate', {}, 'Qiymətləndir')}</span>
                                                                 </button>
                                                             </td>
                                                         </tr>
@@ -812,10 +848,10 @@ export const KpiDashboard: React.FC = () => {
                                 <div>
                                     <h3 className="text-sm font-bold text-white flex items-center gap-2">
                                         <Building2 className="w-4 h-4 text-purple-400" />
-                                        Şirkət KPI Analitika və Trendləri
+                                        {t('companyDashboard.divisionsOverview', {}, 'Şirkət KPI Analitika və Trendləri')}
                                     </h3>
                                     <p className="text-xs text-[#A1A1AA] mt-0.5">
-                                        Şöbələr üzrə müqayisə və günlük dinamika
+                                        {t('kpi.divisionComparison', {}, 'Şöbələr üzrə müqayisə və günlük dinamika')}
                                     </p>
                                 </div>
 
@@ -881,7 +917,7 @@ export const KpiDashboard: React.FC = () => {
                                                             : 'text-[#D4D4D8] hover:bg-white/5 hover:text-white'
                                                     }`}
                                                 >
-                                                    <span>Bütün Şöbələr</span>
+                                                    <span>{t('kpi.allDivisions', {}, 'Bütün Şöbələr')}</span>
                                                     {selectedDivisionId === 'all' && <Check className="w-3.5 h-3.5" />}
                                                 </div>
                                                 {divisions.map((div) => (
@@ -910,31 +946,31 @@ export const KpiDashboard: React.FC = () => {
                             {/* Analytics Summary Stats */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                                 <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-4">
-                                    <span className="text-[11px] font-bold text-[#A1A1AA] uppercase">Şirkət Orta Bal</span>
+                                    <span className="text-[11px] font-bold text-[#A1A1AA] uppercase">{t('kpi.companyAvgScore', {}, 'Şirkət Orta Bal')}</span>
                                     <p className="text-2xl font-extrabold text-blue-400 mt-1">
                                         {(analytics?.companyAverageDailyScore ?? analytics?.companyAverageScore ?? 0).toFixed(2)}
                                     </p>
                                 </div>
                                 <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-4">
-                                    <span className="text-[11px] font-bold text-[#A1A1AA] uppercase">Toplam Qiymətləndirmə</span>
+                                    <span className="text-[11px] font-bold text-[#A1A1AA] uppercase">{t('kpi.totalEvaluations', {}, 'Toplam Qiymətləndirmə')}</span>
                                     <p className="text-2xl font-extrabold text-white mt-1">
                                         {analytics?.totalEvaluationsCount ?? analytics?.totalEvaluations ?? 0}
                                     </p>
                                 </div>
                                 <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-4">
-                                    <span className="text-[11px] font-bold text-[#A1A1AA] uppercase">Aktiv Əməkdaşlar</span>
+                                    <span className="text-[11px] font-bold text-[#A1A1AA] uppercase">{t('kpi.activeEmployees', {}, 'Aktiv Əməkdaşlar')}</span>
                                     <p className="text-2xl font-extrabold text-purple-400 mt-1">
-                                        {analytics?.evaluatedEmployeesCount || 0} nəfər
+                                        {analytics?.evaluatedEmployeesCount || 0}
                                     </p>
                                 </div>
                                 <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-4">
-                                    <span className="text-[11px] font-bold text-[#A1A1AA] uppercase">Cərimələr</span>
+                                    <span className="text-[11px] font-bold text-[#A1A1AA] uppercase">{t('kpi.totalPenalties', {}, 'Cərimələr')}</span>
                                     <p className="text-2xl font-extrabold text-rose-400 mt-1">
                                         {analytics?.totalDisciplineViolationsCount ?? analytics?.totalDisciplinePenalties ?? 0}
                                     </p>
                                 </div>
                                 <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-4">
-                                    <span className="text-[11px] font-bold text-[#A1A1AA] uppercase">Bonuslar</span>
+                                    <span className="text-[11px] font-bold text-[#A1A1AA] uppercase">{t('kpi.totalBonuses', {}, 'Bonuslar')}</span>
                                     <p className="text-2xl font-extrabold text-amber-400 mt-1">
                                         +{analytics?.totalBonusCount ?? analytics?.totalBonuses ?? 0}
                                     </p>
@@ -947,7 +983,7 @@ export const KpiDashboard: React.FC = () => {
                                 <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-5">
                                     <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
                                         <TrendingUp className="w-4 h-4 text-blue-400" />
-                                        Günlük Orta KPI Bal Trendi
+                                        {t('kpi.dailyTrend', {}, 'Günlük Orta KPI Bal Trendi')}
                                     </h4>
                                     <div className="h-64 w-full">
                                         {analytics?.dailyTrends && analytics.dailyTrends.length > 0 ? (
@@ -969,10 +1005,10 @@ export const KpiDashboard: React.FC = () => {
                                                                 const val = payload[0].value as number;
                                                                 return (
                                                                     <div className="bg-[#18181B] border border-[#27272A] rounded-xl px-3.5 py-2.5 shadow-2xl backdrop-blur-md">
-                                                                        <p className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider mb-1">Tarix: {label}</p>
+                                                                        <p className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider mb-1">{t('kpi.evaluationDate', {}, 'Tarix')}: {label}</p>
                                                                         <div className="flex items-center gap-2">
                                                                             <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-xs shadow-blue-500/50" />
-                                                                            <span className="text-xs font-medium text-[#D4D4D8]">Günlük Orta Bal:</span>
+                                                                            <span className="text-xs font-medium text-[#D4D4D8]">{t('kpi.dailyAvg', {}, 'Günlük Orta Bal')}:</span>
                                                                             <span className={`text-xs font-black ${val > 0 ? 'text-blue-400' : val < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>
                                                                                 {val > 0 ? `+${val}` : val}
                                                                             </span>
@@ -990,13 +1026,13 @@ export const KpiDashboard: React.FC = () => {
                                                         strokeWidth={2.5}
                                                         fill="url(#blueLineGrad)"
                                                         activeDot={{ r: 5, fill: '#3B82F6', stroke: '#18181B', strokeWidth: 2 }}
-                                                        name="Orta Bal"
+                                                        name={t('kpi.companyAvgScore', {}, 'Orta Bal')}
                                                     />
                                                 </AreaChart>
                                             </ResponsiveContainer>
                                         ) : (
                                             <div className="h-full flex items-center justify-center text-xs text-[#71717A]">
-                                                Qrafik üçün kifayət qədər günlük məlumat yoxdur
+                                                {t('common.noData', {}, 'Qrafik üçün kifayət qədər günlük məlumat yoxdur')}
                                             </div>
                                         )}
                                     </div>
@@ -1006,7 +1042,7 @@ export const KpiDashboard: React.FC = () => {
                                 <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-5">
                                     <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
                                         <Building2 className="w-4 h-4 text-purple-400" />
-                                        Şöbələr Üzrə Orta KPI Nəticələri
+                                        {t('kpi.divisionComparison', {}, 'Şöbələr Üzrə Orta KPI Nəticələri')}
                                     </h4>
                                     <div className="h-64 w-full">
                                         {analytics?.divisionBreakdown && analytics.divisionBreakdown.length > 0 ? (
@@ -1034,7 +1070,7 @@ export const KpiDashboard: React.FC = () => {
                                                                         </p>
                                                                         <div className="flex items-center gap-2 pt-1 border-t border-[#27272A]">
                                                                             <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-xs shadow-purple-500/50" />
-                                                                            <span className="text-xs font-medium text-[#A1A1AA]">Orta KPI Balı:</span>
+                                                                            <span className="text-xs font-medium text-[#A1A1AA]">{t('kpi.companyAvgScore', {}, 'Orta KPI Balı')}:</span>
                                                                             <span className={`text-xs font-black ${val > 0 ? 'text-purple-300' : val < 0 ? 'text-rose-400' : 'text-zinc-300'}`}>
                                                                                 {val > 0 ? `+${val}` : val}
                                                                             </span>
@@ -1050,13 +1086,13 @@ export const KpiDashboard: React.FC = () => {
                                                         fill="url(#purpleBarGrad)"
                                                         radius={[8, 8, 0, 0]}
                                                         maxBarSize={56}
-                                                        name="Orta Bal"
+                                                        name={t('kpi.companyAvgScore', {}, 'Orta Bal')}
                                                     />
                                                 </BarChart>
                                             </ResponsiveContainer>
                                         ) : (
                                             <div className="h-full flex items-center justify-center text-xs text-[#71717A]">
-                                                Şöbə müqayisəsi üçün məlumat tapılmadı
+                                                {t('common.noData', {}, 'Şöbə müqayisəsi üçün məlumat tapılmadı')}
                                             </div>
                                         )}
                                     </div>
@@ -1067,7 +1103,7 @@ export const KpiDashboard: React.FC = () => {
                             <div className="space-y-3">
                                 <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
                                     <ShieldAlert className="w-4 h-4 text-rose-400" />
-                                    Son İntizam Pozuntuları və Tətbiq Edilən Cərimələr
+                                    {t('kpi.recentPenaltiesTitle', {}, 'Son İntizam Pozuntuları və Tətbiq Edilən Cərimələr')}
                                 </h4>
 
                                 <div className="rounded-2xl border border-[#27272A] bg-[#18181B] overflow-hidden shadow-xs">
@@ -1075,12 +1111,12 @@ export const KpiDashboard: React.FC = () => {
                                         <table className="w-full text-left text-xs border-collapse">
                                             <thead>
                                                 <tr className="border-b border-[#27272A] bg-[#1C1C1E]/70 text-[#A1A1AA] font-bold">
-                                                    <th className="py-3.5 px-4 sm:px-5">Tarix</th>
-                                                    <th className="py-3.5 px-3">Əməkdaş</th>
-                                                    <th className="py-3.5 px-3">Şöbə</th>
-                                                    <th className="py-3.5 px-4">Pozuntu Səbəbi</th>
-                                                    <th className="py-3.5 px-3 text-center">Yekun Bal</th>
-                                                    {isAdmin && <th className="py-3.5 px-4 text-right">Audit Redaktə</th>}
+                                                    <th className="py-3.5 px-4 sm:px-5">{t('kpi.evaluationDate', {}, 'Tarix')}</th>
+                                                    <th className="py-3.5 px-3">{t('kpi.employee', {}, 'Əməkdaş')}</th>
+                                                    <th className="py-3.5 px-3">{t('kpi.division', {}, 'Şöbə')}</th>
+                                                    <th className="py-3.5 px-4">{t('kpi.violationReason', {}, 'Pozuntu Səbəbi')}</th>
+                                                    <th className="py-3.5 px-3 text-center">{t('kpi.finalScore', {}, 'Yekun Bal')}</th>
+                                                    {isAdmin && <th className="py-3.5 px-4 text-right">{t('kpi.auditEdit', {}, 'Audit Redaktə')}</th>}
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-[#27272A]/70 text-[#D4D4D8]">
@@ -1097,7 +1133,7 @@ export const KpiDashboard: React.FC = () => {
                                                                 {v.divisionName || '—'}
                                                             </td>
                                                             <td className="py-3.5 px-4 text-rose-400 font-medium max-w-sm">
-                                                                {v.disciplinePenaltyReason || 'İntizam qayda pozuntusu'}
+                                                                {v.disciplinePenaltyReason || t('kpi.disciplinePenalty', {}, 'İntizam qayda pozuntusu')}
                                                             </td>
                                                             <td className="py-3.5 px-3 text-center whitespace-nowrap">
                                                                 <KpiScoreBadge score={v.totalScore} size="sm" />
@@ -1110,7 +1146,7 @@ export const KpiDashboard: React.FC = () => {
                                                                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#27272A] hover:bg-purple-600/20 hover:text-purple-300 text-xs font-semibold text-[#A1A1AA] transition-colors cursor-pointer border border-[#3F3F46]/60"
                                                                     >
                                                                         <FilePenLine className="w-3 h-3" />
-                                                                        <span>Düzəliş</span>
+                                                                        <span>{t('common.edit', {}, 'Düzəliş')}</span>
                                                                     </button>
                                                                 </td>
                                                             )}
@@ -1119,7 +1155,7 @@ export const KpiDashboard: React.FC = () => {
                                                 ) : (
                                                     <tr>
                                                         <td colSpan={6} className="py-8 text-center text-[#71717A]">
-                                                            Qeydə alınmış heç bir intizam pozuntusu yoxdur.
+                                                            {t('kpi.noViolations', {}, 'Qeydə alınmış heç bir intizam pozuntusu yoxdur.')}
                                                         </td>
                                                     </tr>
                                                 )}
