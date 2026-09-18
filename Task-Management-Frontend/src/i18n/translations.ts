@@ -16,6 +16,7 @@ export interface TranslationSchema {
   workload: { [key: string]: any };
   companyDashboard: { [key: string]: any };
   kpi: { [key: string]: any };
+  auth: { [key: string]: any };
 }
 
 export const translations: { az: TranslationSchema; en: TranslationSchema; ru: TranslationSchema } = {

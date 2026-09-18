@@ -419,31 +419,31 @@ const MyTasks: React.FC = () => {
         }
     };
 
-    const priorityOptions = useMemo<SelectOption[]>(() => [
+    const priorityOptions = useMemo<SelectOption<string>[]>(() => [
         { value: 'all', label: 'Bütün Prioritetlər' },
-        { value: Priority.Urgent, label: 'Təcili', icon: <span className="text-xs">🔥</span> },
-        { value: Priority.High, label: 'Yüksək', icon: <span className="text-xs">⚡</span> },
-        { value: Priority.Normal, label: 'Normal', icon: <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> },
-        { value: Priority.Low, label: 'Aşağı', icon: <span className="w-2 h-2 rounded-full bg-zinc-400 inline-block" /> },
+        { value: String(Priority.Urgent), label: 'Təcili', icon: <span className="text-xs">🔥</span> },
+        { value: String(Priority.High), label: 'Yüksək', icon: <span className="text-xs">⚡</span> },
+        { value: String(Priority.Normal), label: 'Normal', icon: <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> },
+        { value: String(Priority.Low), label: 'Aşağı', icon: <span className="w-2 h-2 rounded-full bg-zinc-400 inline-block" /> },
     ], []);
 
-    const difficultyOptions = useMemo<SelectOption[]>(() => [
+    const difficultyOptions = useMemo<SelectOption<string>[]>(() => [
         { value: 'all', label: 'Bütün Çətinliklər' },
-        { value: DifficultyLevel.Hard, label: t('difficulties.hard', {}, 'Çətin (Yüksək)'), badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold border border-rose-500/20">30 bal</span> },
-        { value: DifficultyLevel.Medium, label: t('difficulties.medium', {}, 'Orta'), badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/20">20 bal</span> },
-        { value: DifficultyLevel.Easy, label: t('difficulties.easy', {}, 'Asan (Aşağı)'), badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">10 bal</span> },
+        { value: String(DifficultyLevel.Hard), label: t('difficulties.hard', {}, 'Çətin (Yüksək)'), badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold border border-rose-500/20">30 bal</span> },
+        { value: String(DifficultyLevel.Medium), label: t('difficulties.medium', {}, 'Orta'), badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/20">20 bal</span> },
+        { value: String(DifficultyLevel.Easy), label: t('difficulties.easy', {}, 'Asan (Aşağı)'), badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">10 bal</span> },
     ], [t]);
 
-    const statusOptions = useMemo<SelectOption[]>(() => [
+    const statusOptions = useMemo<SelectOption<string>[]>(() => [
         { value: 'all', label: t('tasks.filterByStatus', {}, 'Bütün Statuslar') },
-        { value: TaskStatus.Pending, label: t('statuses.pending', {}, 'Gözləmədə'), icon: <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> },
-        { value: TaskStatus.InProgress, label: t('statuses.inProgress', {}, 'İcrada'), icon: <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> },
-        { value: TaskStatus.UnderReview, label: t('statuses.review', {}, 'Yoxlanışda'), icon: <span className="w-2 h-2 rounded-full bg-purple-500 inline-block" /> },
-        { value: TaskStatus.Completed, label: t('statuses.completed', {}, 'Tamamlandı'), icon: <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> },
-        { value: TaskStatus.Expired, label: t('common.overdue', {}, 'Gecikmiş'), icon: <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> },
+        { value: String(TaskStatus.Pending), label: t('statuses.pending', {}, 'Gözləmədə'), icon: <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> },
+        { value: String(TaskStatus.InProgress), label: t('statuses.inProgress', {}, 'İcrada'), icon: <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> },
+        { value: String(TaskStatus.UnderReview), label: t('statuses.review', {}, 'Yoxlanışda'), icon: <span className="w-2 h-2 rounded-full bg-purple-500 inline-block" /> },
+        { value: String(TaskStatus.Completed), label: t('statuses.completed', {}, 'Tamamlandı'), icon: <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> },
+        { value: String(TaskStatus.Expired), label: t('common.overdue', {}, 'Gecikmiş'), icon: <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> },
     ], [t]);
 
-    const dateOptions = useMemo<SelectOption[]>(() => [
+    const dateOptions = useMemo<SelectOption<string>[]>(() => [
         { value: 'all', label: t('common.all', {}, 'Bütün Tarixlər') },
         { value: 'today', label: t('common.today', {}, 'Bugün') },
         { value: 'tomorrow', label: 'Sabah' },

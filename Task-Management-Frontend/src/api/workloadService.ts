@@ -126,6 +126,10 @@ export const workloadService = {
             warningLevel: 'none',
         };
     },
+
+    async checkWorkloadWarning(userId: string): Promise<WorkloadWarningDTO> {
+        return this.checkUserWorkload(userId);
+    },
 };
 
 export default workloadService;

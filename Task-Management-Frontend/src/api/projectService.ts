@@ -144,16 +144,14 @@ export const projectService = {
         const payload = {
             Name: data.name,
             Description: data.description || '',
-            DivisionId: data.divisionId,
+            DivisionId: data.divisionId || null,
             ManagerId: data.managerId || null,
-            StartDate: data.startDate || null,
-            EndDate: data.endDate || null,
         };
 
         const candidateEndpoints = [
+            '/Project',
             '/Project/Create',
             '/Project/CreateProject',
-            '/Project',
         ];
 
         let lastErr: any = null;
@@ -162,28 +160,29 @@ export const projectService = {
                 const res = await httpClient.post<any>(ep, payload);
                 const raw = res.data?.data || res.data?.project || res.data;
                 return normalizeProject(raw);
-            } catch (err) {
+            } catch (err: any) {
                 lastErr = err;
+                if (err?.response?.status === 400 || err?.response?.status === 403 || err?.response?.status === 401) {
+                    throw err;
+                }
             }
         }
         throw lastErr || new Error('Failed to create project');
     },
 
     async updateProject(data: UpdateProjectRequest): Promise<void> {
+        const projId = String(data.id || '').trim();
         const payload = {
-            Id: data.id,
             Name: data.name,
             Description: data.description || '',
-            DivisionId: data.divisionId,
+            DivisionId: data.divisionId || null,
             ManagerId: data.managerId || null,
-            StartDate: data.startDate || null,
-            EndDate: data.endDate || null,
-            Status: data.status !== undefined ? data.status : 0,
         };
 
         const candidateEndpoints = [
-            '/Project/Update',
-            '/Project/UpdateProject',
+            `/Project/${projId}`,
+            `/Project/Update/${projId}`,
+            `/Project/Update`,
             '/Project',
         ];
 
@@ -192,8 +191,11 @@ export const projectService = {
             try {
                 await httpClient.put(ep, payload);
                 return;
-            } catch (err) {
+            } catch (err: any) {
                 lastErr = err;
+                if (err?.response?.status === 400 || err?.response?.status === 403 || err?.response?.status === 401) {
+                    throw err;
+                }
             }
         }
         throw lastErr || new Error('Failed to update project');
@@ -202,9 +204,9 @@ export const projectService = {
     async deleteProject(id: string | number): Promise<void> {
         const projId = String(id || '').trim();
         const candidateEndpoints = [
+            `/Project/${projId}`,
             `/Project/Delete/${projId}`,
             `/Project/DeleteProject/${projId}`,
-            `/Project/${projId}`,
         ];
 
         let lastErr: any = null;
@@ -212,8 +214,11 @@ export const projectService = {
             try {
                 await httpClient.delete(ep);
                 return;
-            } catch (err) {
+            } catch (err: any) {
                 lastErr = err;
+                if (err?.response?.status === 400 || err?.response?.status === 403 || err?.response?.status === 401) {
+                    throw err;
+                }
             }
         }
         throw lastErr || new Error('Failed to delete project');

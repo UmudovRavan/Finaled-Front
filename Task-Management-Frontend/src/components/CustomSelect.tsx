@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDownIcon, CheckIcon } from '@heroicons/react/24/outline';
 
-export interface SelectOption {
-    value: string;
+export interface SelectOption<T = string | number> {
+    value: T;
     label: string;
     icon?: React.ReactNode;
     badge?: React.ReactNode;
@@ -10,10 +10,10 @@ export interface SelectOption {
     description?: string;
 }
 
-export interface CustomSelectProps {
-    value: string;
-    onChange: (value: string) => void;
-    options: SelectOption[];
+export interface CustomSelectProps<T = string | number> {
+    value: T;
+    onChange: (value: T) => void;
+    options: SelectOption<T>[];
     placeholder?: string;
     icon?: React.ReactNode;
     className?: string;
@@ -24,7 +24,7 @@ export interface CustomSelectProps {
     align?: 'left' | 'right';
 }
 
-const CustomSelect: React.FC<CustomSelectProps> = ({
+function CustomSelect<T extends string | number = string>({
     value,
     onChange,
     options,
@@ -36,7 +36,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     disabled = false,
     size = 'sm',
     align = 'left',
-}) => {
+}: CustomSelectProps<T>) {
     const [isOpen, setIsOpen] = useState(false);
     const [openUpwards, setOpenUpwards] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);

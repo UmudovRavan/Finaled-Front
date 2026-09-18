@@ -39,7 +39,7 @@ import {
 const ProjectDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const { hasPermission } = useAuth();
 
     const [project, setProject] = useState<ProjectDTO | null>(null);
