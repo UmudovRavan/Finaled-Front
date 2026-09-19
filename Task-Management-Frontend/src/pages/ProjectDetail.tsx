@@ -865,8 +865,14 @@ const ProjectDetail: React.FC = () => {
 
             {/* Create/Edit Level Modal */}
             {showLevelModal && (
-                <div className="fixed inset-0 bg-black/60 dark:bg-black/70 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-[#18181B] border border-zinc-200 dark:border-[#27272A] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                <div
+                    className="fixed inset-0 bg-black/60 dark:bg-black/70 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200"
+                    onClick={(e) => { if (e.target === e.currentTarget) setShowLevelModal(false); }}
+                >
+                    <div
+                        className="bg-white dark:bg-[#18181B] border border-zinc-200 dark:border-[#27272A] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[92vh] sm:max-h-[85vh] my-auto flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <div className="flex items-center justify-between p-5 border-b border-zinc-100 dark:border-[#27272A]">
                             <div className="flex items-center gap-2.5">
                                 <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500 dark:text-purple-400">

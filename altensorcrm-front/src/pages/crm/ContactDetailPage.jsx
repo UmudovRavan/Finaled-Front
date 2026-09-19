@@ -252,8 +252,8 @@ const ContactDetailPage = () => {
       )}
 
       {/* 1. TOP BREADCRUMB BAR */}
-      <div className="px-6 py-3 border-b border-[#2C2C2E]/60 bg-[#121214] flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2 text-xs font-medium text-[#A1A1AA]">
+      <div className="px-3 sm:px-6 py-3 border-b border-[#2C2C2E]/60 bg-[#121214] flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2 text-xs font-medium text-[#A1A1AA] flex-wrap">
           <Link to="/crm/contacts" className="hover:text-white transition-colors">{language === 'az' ? 'Əlaqələr' : language === 'en' ? 'Contacts' : 'Контакты'}</Link>
           <span>/</span>
           <Link to="/crm/contacts" className="hover:text-white transition-colors">{language === 'az' ? 'Siyahı' : language === 'en' ? 'List' : 'Список'}</Link>
@@ -265,7 +265,7 @@ const ContactDetailPage = () => {
       {/* 2. MAIN TWO-COLUMN CONTENT BODY */}
       <div className="flex-1 flex flex-col lg:flex-row min-w-0">
         {/* LEFT PANEL: AVATAR, DELETE BUTTON & DETAILS FORM */}
-        <div className="w-full lg:w-80 shrink-0 border-r border-[#2C2C2E]/60 bg-[#121214] p-6 space-y-6 text-xs overflow-y-auto custom-scrollbar">
+        <div className="w-full lg:w-80 shrink-0 border-b lg:border-b-0 lg:border-r border-[#2C2C2E]/60 bg-[#121214] p-4 sm:p-6 space-y-6 text-xs overflow-y-auto custom-scrollbar">
           {/* Avatar & Contact Name Header */}
           <div className="flex items-center gap-3">
             <div className="w-14 h-14 rounded-full bg-[#27272A] border border-[#3F3F46] flex items-center justify-center text-white font-bold text-xl shrink-0">

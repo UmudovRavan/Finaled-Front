@@ -298,9 +298,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150 font-sans select-none">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-150 font-sans select-none"
+            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
             <div
-                className="w-full max-w-4xl bg-[#121214] border border-[#27272A] rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] text-[#F4F4F5]"
+                className="w-full max-w-4xl bg-[#121214] border border-[#27272A] rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[94vh] md:max-h-[90vh] my-auto text-[#F4F4F5]"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* ─── Left Sidebar Navigation ─── */}
@@ -1162,8 +1165,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
             {/* ─── Inner Password Reset Modal ─── */}
             {showPasswordModal && (
-                <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
-                    <div className="w-full max-w-md bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl p-6 shadow-2xl space-y-4 text-[#F4F4F5]">
+                <div
+                    className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in"
+                    onClick={(e) => { if (e.target === e.currentTarget) setShowPasswordModal(false); }}
+                >
+                    <div
+                        className="w-full max-w-md bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl p-6 shadow-2xl space-y-4 my-auto max-h-[92vh] sm:max-h-[85vh] overflow-y-auto text-[#F4F4F5]"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <div className="flex items-center justify-between border-b border-[#2C2C2E] pb-3">
                             <div className="flex items-center gap-2">
                                 <KeyIcon className="w-5 h-5 text-blue-400" />

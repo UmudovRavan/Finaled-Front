@@ -744,8 +744,14 @@ const Projects: React.FC = () => {
 
             {/* Create/Edit Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/60 dark:bg-black/70 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-[#18181B] border border-zinc-200 dark:border-[#27272A] rounded-2xl w-full max-w-lg shadow-2xl overflow-visible animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+                <div
+                    className="fixed inset-0 bg-black/60 dark:bg-black/70 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200"
+                    onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}
+                >
+                    <div
+                        className="bg-white dark:bg-[#18181B] border border-zinc-200 dark:border-[#27272A] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[92vh] sm:max-h-[85vh] my-auto flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         {/* Modal Header */}
                         <div className="flex items-center justify-between p-5 border-b border-zinc-100 dark:border-[#27272A] flex-shrink-0">
                             <div className="flex items-center gap-2.5">

@@ -55,7 +55,14 @@ const TaskDetail: React.FC = () => {
 
     // Performance Points state
     const [performanceReason, setPerformanceReason] = useState('');
+    const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel>(DifficultyLevel.Medium);
     const [submittingPerformance, setSubmittingPerformance] = useState(false);
+
+    useEffect(() => {
+        if (task && typeof task.difficulty === 'number') {
+            setSelectedDifficulty(task.difficulty);
+        }
+    }, [task?.id, task?.difficulty]);
 
     // Accept/Reject state
     const [showRejectModal, setShowRejectModal] = useState(false);
@@ -437,6 +444,18 @@ const TaskDetail: React.FC = () => {
 
         setSubmittingPerformance(true);
         try {
+            // Update task status to Completed and persist selected difficulty
+            await taskService.updateTask({
+                id: task.id,
+                title: task.title,
+                description: task.description,
+                difficulty: selectedDifficulty,
+                status: TaskStatus.Completed,
+                deadline: task.deadline,
+                assignedToUserId: task.assignedToUserId,
+                createdByUserId: task.createdByUserId,
+            });
+
             // Add performance points
             await performanceService.addPerformancePoint({
                 userId: task.assignedToUserId,
@@ -445,20 +464,8 @@ const TaskDetail: React.FC = () => {
                 senderId: task.createdByUserId || userInfo.userId
             });
 
-            // Update task status to Completed
-            await taskService.updateTask({
-                id: task.id,
-                title: task.title,
-                description: task.description,
-                difficulty: task.difficulty,
-                status: TaskStatus.Completed,
-                deadline: task.deadline,
-                assignedToUserId: task.assignedToUserId,
-                createdByUserId: task.createdByUserId,
-            });
-
-            // Immediately reflect Completed status in state
-            setTask((prev) => (prev ? { ...prev, status: TaskStatus.Completed } : prev));
+            // Immediately reflect Completed status & updated difficulty in state
+            setTask((prev) => (prev ? { ...prev, status: TaskStatus.Completed, difficulty: selectedDifficulty } : prev));
 
             // Add system comment for completion and performance
             const approvalComment = `✨ [Sistem / Təsdiqləndi]: Tapşırıq rəhbər tərəfindən təsdiqləndi və tamamlandı.${performanceReason.trim() ? ` Performans qeydi: "${performanceReason.trim()}"` : ''}`;
@@ -468,7 +475,7 @@ const TaskDetail: React.FC = () => {
             // Reload task to get updated status
             const updatedTask = await taskService.getTaskById(task.id).catch(() => null);
             if (updatedTask) {
-                setTask({ ...updatedTask, status: TaskStatus.Completed });
+                setTask({ ...updatedTask, status: TaskStatus.Completed, difficulty: selectedDifficulty });
             }
             const updatedComments = taskService.getStoredTaskComments(task.id);
             if (updatedComments.length > 0) {
@@ -889,14 +896,14 @@ const TaskDetail: React.FC = () => {
         const p = typeof priority === 'number' ? priority : priority === '3' || priority === 'Urgent' ? 3 : priority === '2' || priority === 'High' ? 2 : priority === '0' || priority === 'Low' ? 0 : 1;
         switch (p) {
             case 3:
-                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">🔥 Təcili</span>;
+                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">🔥 {t('tasks.priorityUrgent', {}, 'Təcili')}</span>;
             case 2:
-                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">⚡ Yüksək</span>;
+                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">⚡ {t('tasks.priorityHigh', {}, 'Yüksək')}</span>;
             case 0:
-                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-slate-500/10 text-slate-400 border border-slate-500/20">Aşağı</span>;
+                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20">{t('tasks.priorityLow', {}, 'Aşağı')}</span>;
             case 1:
             default:
-                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">Normal</span>;
+                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">{t('tasks.priorityNormal', {}, 'Normal')}</span>;
         }
     };
 
@@ -1047,7 +1054,6 @@ const TaskDetail: React.FC = () => {
                                 <div className="flex items-center gap-2.5 flex-wrap">
                                     {getStatusBadge(task.status)}
                                     {getPriorityBadge(task.priority)}
-                                    {getDifficultyBadge(task.difficulty)}
 
                                     {task.divisionName && (
                                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
@@ -1335,8 +1341,8 @@ const TaskDetail: React.FC = () => {
                                     </div>
 
                                     <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-[#27272A]">
-                                        <span className="text-zinc-500 dark:text-[#71717A]">Çətinlik</span>
-                                        {getDifficultyBadge(task.difficulty)}
+                                        <span className="text-zinc-500 dark:text-[#71717A]">{t('common.priority', {}, 'Prioritet')}</span>
+                                        {getPriorityBadge(task.priority)}
                                     </div>
 
                                     <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-[#27272A]">
@@ -1415,6 +1421,53 @@ const TaskDetail: React.FC = () => {
                                     </p>
 
                                     <div className="space-y-3">
+                                        {/* Interactive Difficulty Selection */}
+                                        <div className="space-y-1.5">
+                                            <label className="text-[11px] font-semibold text-zinc-700 dark:text-[#A1A1AA]">
+                                                Tapşırığın Çətinlik Səviyyəsi
+                                            </label>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedDifficulty(DifficultyLevel.Easy)}
+                                                    className={`py-2 px-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer flex flex-col items-center gap-0.5 ${
+                                                        selectedDifficulty === DifficultyLevel.Easy
+                                                            ? 'bg-emerald-500/15 border-emerald-500 text-emerald-600 dark:text-emerald-400 ring-2 ring-emerald-500/20 shadow-sm'
+                                                            : 'bg-white dark:bg-[#1C1C1E] border-zinc-200 dark:border-[#27272A] text-zinc-600 dark:text-[#A1A1AA] hover:border-emerald-500/50'
+                                                    }`}
+                                                >
+                                                    <span>Asan</span>
+                                                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">10 bal</span>
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedDifficulty(DifficultyLevel.Medium)}
+                                                    className={`py-2 px-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer flex flex-col items-center gap-0.5 ${
+                                                        selectedDifficulty === DifficultyLevel.Medium
+                                                            ? 'bg-amber-500/15 border-amber-500 text-amber-600 dark:text-amber-400 ring-2 ring-amber-500/20 shadow-sm'
+                                                            : 'bg-white dark:bg-[#1C1C1E] border-zinc-200 dark:border-[#27272A] text-zinc-600 dark:text-[#A1A1AA] hover:border-amber-500/50'
+                                                    }`}
+                                                >
+                                                    <span>Orta</span>
+                                                    <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">20 bal</span>
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedDifficulty(DifficultyLevel.Hard)}
+                                                    className={`py-2 px-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer flex flex-col items-center gap-0.5 ${
+                                                        selectedDifficulty === DifficultyLevel.Hard
+                                                            ? 'bg-rose-500/15 border-rose-500 text-rose-600 dark:text-rose-400 ring-2 ring-rose-500/20 shadow-sm'
+                                                            : 'bg-white dark:bg-[#1C1C1E] border-zinc-200 dark:border-[#27272A] text-zinc-600 dark:text-[#A1A1AA] hover:border-rose-500/50'
+                                                    }`}
+                                                >
+                                                    <span>Çətin</span>
+                                                    <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400">30 bal</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
                                         <textarea
                                             value={performanceReason}
                                             onChange={(e) => setPerformanceReason(e.target.value)}
@@ -1424,12 +1477,12 @@ const TaskDetail: React.FC = () => {
                                             disabled={submittingPerformance}
                                         />
 
-                                        <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-[#A1A1AA]">
+                                        <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-[#A1A1AA] bg-purple-500/5 dark:bg-purple-950/20 p-2.5 rounded-xl border border-purple-500/15">
                                             <span>
-                                                Xallar: {task.difficulty === DifficultyLevel.Easy ? '10' : task.difficulty === DifficultyLevel.Medium ? '20' : '30'} xal
+                                                Təyin ediləcək xal: <strong className="text-zinc-900 dark:text-white">{selectedDifficulty === DifficultyLevel.Easy ? '10' : selectedDifficulty === DifficultyLevel.Medium ? '20' : '30'} xal</strong>
                                             </span>
                                             <span className="font-semibold text-purple-600 dark:text-purple-300">
-                                                {task.difficulty === DifficultyLevel.Easy ? 'Asan' : task.difficulty === DifficultyLevel.Medium ? 'Orta' : 'Çətin'} Tapşırıq
+                                                {selectedDifficulty === DifficultyLevel.Easy ? 'Asan' : selectedDifficulty === DifficultyLevel.Medium ? 'Orta' : 'Çətin'} Tapşırıq
                                             </span>
                                         </div>
 
@@ -1522,11 +1575,11 @@ const TaskDetail: React.FC = () => {
             {/* Reject Modal */}
             {showRejectModal && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+                    className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200"
                     onClick={() => setShowRejectModal(false)}
                 >
                     <div
-                        className="w-full max-w-md bg-white dark:bg-[#18181B] border border-zinc-200 dark:border-[#27272A] rounded-2xl shadow-2xl p-6 space-y-4"
+                        className="w-full max-w-md bg-white dark:bg-[#18181B] border border-zinc-200 dark:border-[#27272A] rounded-2xl shadow-2xl p-6 space-y-4 my-auto max-h-[92vh] sm:max-h-[85vh] overflow-y-auto"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between">
@@ -1583,11 +1636,11 @@ const TaskDetail: React.FC = () => {
             {/* Return for Revision Modal */}
             {showReturnModal && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+                    className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200"
                     onClick={() => setShowReturnModal(false)}
                 >
                     <div
-                        className="w-full max-w-md bg-white dark:bg-[#18181B] border border-zinc-200 dark:border-[#27272A] rounded-2xl shadow-2xl p-6 space-y-4"
+                        className="w-full max-w-md bg-white dark:bg-[#18181B] border border-zinc-200 dark:border-[#27272A] rounded-2xl shadow-2xl p-6 space-y-4 my-auto max-h-[92vh] sm:max-h-[85vh] overflow-y-auto"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between">

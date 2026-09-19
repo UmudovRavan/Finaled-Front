@@ -504,20 +504,28 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 selection:bg-fuchsia-500/30">
+    <div 
+      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 selection:bg-fuchsia-500/30 overflow-y-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) navigate('/crm/dashboard');
+      }}
+    >
       {/* Main Settings Modal Box */}
-      <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-3xl shadow-2xl w-full max-w-5xl h-[88vh] flex overflow-hidden text-[#E4E4E7] relative animate-in fade-in duration-200">
+      <div 
+        className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-5xl h-[94vh] md:h-[88vh] flex flex-col md:flex-row overflow-hidden text-[#E4E4E7] relative animate-in fade-in duration-200 my-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Top Right Close Button */}
         <button
           onClick={() => navigate('/crm/dashboard')}
-          className="absolute top-4 right-4 z-20 p-2 rounded-xl text-[#71717A] hover:text-white hover:bg-[#2C2C2E] transition-colors cursor-pointer"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 p-2 rounded-xl text-[#71717A] hover:text-white hover:bg-[#2C2C2E] transition-colors cursor-pointer"
         >
           <XMarkIcon className="w-5 h-5" />
         </button>
 
         {/* LEFT SIDEBAR NAVIGATION */}
-        <div className="w-64 bg-[#141416] border-r border-[#2C2C2E] p-3 flex flex-col justify-between shrink-0 overflow-y-auto custom-scrollbar select-none">
-          <div className="space-y-4">
+        <div className="w-full md:w-64 bg-[#141416] border-b md:border-b-0 md:border-r border-[#2C2C2E] p-3 flex flex-row md:flex-col justify-between shrink-0 overflow-x-auto md:overflow-y-auto custom-scrollbar select-none">
+          <div className="flex flex-row md:flex-col gap-4 md:gap-0 md:space-y-4">
             {navCategories.map((group) => (
               <div key={group.category} className="space-y-1">
                 <h3 className="px-3 text-[11px] font-medium text-[#71717A] uppercase tracking-wider">
@@ -1881,11 +1889,22 @@ const SettingsPage = () => {
 
       {/* ADD NEW USER MODAL */}
       {isAddUserModalOpen && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-3xl shadow-2xl p-6 w-full max-w-md text-[#E4E4E7] space-y-4 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between">
+        <div 
+          className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsAddUserModalOpen(false); }}
+        >
+          <div 
+            className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-6 w-full max-w-md text-[#E4E4E7] space-y-4 animate-in fade-in duration-200 my-auto max-h-[92vh] sm:max-h-[85vh] overflow-y-auto custom-scrollbar"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 pb-3">
               <h2 className="text-base font-bold text-white tracking-tight">{language === 'az' ? 'Yeni İstifadəçi Əlavə Et' : language === 'en' ? 'Add New User' : 'Добавить пользователя'}</h2>
-              <button onClick={() => setIsAddUserModalOpen(false)} className="hover:text-white transition-colors cursor-pointer">
+              <button 
+                type="button" 
+                onClick={() => setIsAddUserModalOpen(false)} 
+                className="p-1.5 rounded-lg hover:bg-white/5 text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                aria-label="Close"
+              >
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
@@ -1928,10 +1947,17 @@ const SettingsPage = () => {
                 </select>
               </div>
 
-              <div className="flex items-center justify-end pt-2">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#2C2C2E]/60">
+                <button
+                  type="button"
+                  onClick={() => setIsAddUserModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-[#2C2C2E] text-xs font-semibold text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                >
+                  {t('common.cancel', {}, 'Cancel')}
+                </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs transition-colors cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs transition-colors shadow-md cursor-pointer"
                 >
                   {language === 'az' ? 'İstifadəçi Əlavə Et' : language === 'en' ? 'Add User' : 'Добавить'}
                 </button>
@@ -1943,11 +1969,22 @@ const SettingsPage = () => {
 
       {/* CONFIGURE EMAIL & SIGNATURE MODAL */}
       {isConfigureEmailOpen && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-3xl shadow-2xl p-6 w-full max-w-md text-[#E4E4E7] space-y-4 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between">
+        <div 
+          className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsConfigureEmailOpen(false); }}
+        >
+          <div 
+            className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-6 w-full max-w-md text-[#E4E4E7] space-y-4 animate-in fade-in duration-200 my-auto max-h-[92vh] sm:max-h-[85vh] overflow-y-auto custom-scrollbar"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 pb-3">
               <h2 className="text-base font-bold text-white tracking-tight">{t('settings.emailAndSignature', {}, 'Emails & Signature')}</h2>
-              <button onClick={() => setIsConfigureEmailOpen(false)} className="hover:text-white transition-colors cursor-pointer">
+              <button 
+                type="button" 
+                onClick={() => setIsConfigureEmailOpen(false)} 
+                className="p-1.5 rounded-lg hover:bg-white/5 text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                aria-label="Close"
+              >
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
@@ -1974,10 +2011,18 @@ const SettingsPage = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-end pt-2">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#2C2C2E]/60">
               <button
+                type="button"
                 onClick={() => setIsConfigureEmailOpen(false)}
-                className="px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-xl border border-[#2C2C2E] text-xs font-semibold text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                {t('common.cancel', {}, 'Cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsConfigureEmailOpen(false)}
+                className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs transition-colors shadow-md cursor-pointer"
               >
                 {t('settings.saveSignature', {}, 'Save Signature')}
               </button>
@@ -1988,11 +2033,22 @@ const SettingsPage = () => {
 
       {/* CHANGE PASSWORD MODAL */}
       {isChangePasswordOpen && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-3xl shadow-2xl p-6 w-full max-w-md text-[#E4E4E7] space-y-4 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between">
+        <div 
+          className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsChangePasswordOpen(false); }}
+        >
+          <div 
+            className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-6 w-full max-w-md text-[#E4E4E7] space-y-4 animate-in fade-in duration-200 my-auto max-h-[92vh] sm:max-h-[85vh] overflow-y-auto custom-scrollbar"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 pb-3">
               <h2 className="text-base font-bold text-white tracking-tight">{t('settings.changePassword', {}, 'Change Password')}</h2>
-              <button onClick={() => setIsChangePasswordOpen(false)} className="hover:text-white transition-colors cursor-pointer">
+              <button 
+                type="button" 
+                onClick={() => setIsChangePasswordOpen(false)} 
+                className="p-1.5 rounded-lg hover:bg-white/5 text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                aria-label="Close"
+              >
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
@@ -2037,10 +2093,17 @@ const SettingsPage = () => {
                   />
                 </div>
 
-                <div className="flex items-center justify-end pt-2">
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#2C2C2E]/60">
+                  <button
+                    type="button"
+                    onClick={() => setIsChangePasswordOpen(false)}
+                    className="px-4 py-2 rounded-xl border border-[#2C2C2E] text-xs font-semibold text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                  >
+                    {t('common.cancel', {}, 'Cancel')}
+                  </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs transition-colors cursor-pointer"
+                    className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs transition-colors shadow-md cursor-pointer"
                   >
                     {t('settings.updatePassword', {}, 'Update Password')}
                   </button>
@@ -2081,8 +2144,14 @@ const SettingsPage = () => {
 
       {/* SOFT DELETE CONFIRMATION MODAL */}
       {deleteConfirmUserId && (
-        <div className="fixed inset-0 z-[110] bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-3xl shadow-2xl p-6 w-full max-w-sm text-center space-y-4 animate-in fade-in duration-150">
+        <div 
+          className="fixed inset-0 z-[110] bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setDeleteConfirmUserId(null); }}
+        >
+          <div 
+            className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl sm:rounded-3xl shadow-2xl p-6 w-full max-w-sm text-center space-y-4 animate-in fade-in duration-150 my-auto max-h-[92vh] sm:max-h-[85vh] overflow-y-auto custom-scrollbar"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-400 flex items-center justify-center mx-auto border border-red-500/20">
               <TrashIcon className="w-6 h-6" />
             </div>
@@ -2094,12 +2163,14 @@ const SettingsPage = () => {
             </div>
             <div className="flex items-center gap-3 pt-2">
               <button
+                type="button"
                 onClick={() => setDeleteConfirmUserId(null)}
                 className="flex-1 py-2.5 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] text-white text-xs font-semibold border border-[#3F3F46] transition-colors cursor-pointer"
               >
                 {t('settings.cancelBtn', {}, 'Ləğv Et')}
               </button>
               <button
+                type="button"
                 onClick={() => confirmDeleteUser(deleteConfirmUserId)}
                 className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold shadow-lg shadow-red-600/30 transition-colors cursor-pointer"
               >

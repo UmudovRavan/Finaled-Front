@@ -700,16 +700,22 @@ const EmailWidget = ({
 
       {/* EMAIL TEMPLATES SELECTION MODAL (EXACT MATCH TO SCREENSHOT 2) */}
       {isTemplatesModalOpen && (
-        <div className="fixed inset-0 z-[250] bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#1F1F22] border border-[#2C2C2E] rounded-3xl shadow-2xl p-6 w-full max-w-2xl text-[#E4E4E7] space-y-5 animate-in fade-in duration-150 relative">
-            
+        <div 
+          className="fixed inset-0 z-[250] bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsTemplatesModalOpen(false); }}
+        >
+          <div 
+            className="bg-[#1F1F22] border border-[#2C2C2E] rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-6 w-full max-w-2xl text-[#E4E4E7] space-y-5 animate-in fade-in duration-150 my-auto max-h-[92vh] sm:max-h-[85vh] overflow-y-auto custom-scrollbar"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-white tracking-tight">{language === 'az' ? 'E-poçt Şablonları' : language === 'en' ? 'Email Templates' : 'Шаблоны писем'}</h2>
+            <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 pb-3">
+              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">{language === 'az' ? 'E-poçt Şablonları' : language === 'en' ? 'Email Templates' : 'Шаблоны писем'}</h2>
               <button
                 type="button"
                 onClick={() => setIsTemplatesModalOpen(false)}
                 className="p-1.5 rounded-xl bg-[#27272A]/60 hover:bg-[#27272A] text-[#A1A1AA] hover:text-white border border-[#3F3F46]/50 transition-colors cursor-pointer"
+                aria-label="Close"
               >
                 <XMarkIcon className="w-4 h-4" />
               </button>

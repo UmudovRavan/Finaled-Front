@@ -1187,9 +1187,9 @@ const DealDetailPage = () => {
       )}
 
       {/* 1. TOP BREADCRUMB & HEADER ACTIONS BAR */}
-      <div className="px-6 py-3 border-b border-[#2C2C2E]/60 bg-[#121214] flex items-center justify-between shrink-0">
+      <div className="px-3 sm:px-6 py-3 border-b border-[#2C2C2E]/60 bg-[#121214] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
         {/* Left: Breadcrumbs */}
-        <div className="flex items-center gap-2 text-xs font-medium text-[#A1A1AA]">
+        <div className="flex items-center gap-2 text-xs font-medium text-[#A1A1AA] flex-wrap">
           <Link to="/crm/deals" className="hover:text-white transition-colors">{language === 'az' ? 'Sövdələşmələr' : language === 'en' ? 'Deals' : 'Сделки'}</Link>
           <span>/</span>
           <Link to="/crm/deals" className="hover:text-white transition-colors">{language === 'az' ? 'Siyahı' : language === 'en' ? 'List' : 'Список'}</Link>
@@ -1273,7 +1273,7 @@ const DealDetailPage = () => {
       </div>
 
       {/* 2. SUB-HEADER NAVIGATION TABS */}
-      <div className="px-6 border-b border-[#2C2C2E]/60 bg-[#121214] flex items-center gap-6 text-xs text-[#A1A1AA] overflow-x-auto custom-scrollbar shrink-0">
+      <div className="px-3 sm:px-6 border-b border-[#2C2C2E]/60 bg-[#121214] flex items-center gap-4 sm:gap-6 text-xs text-[#A1A1AA] overflow-x-auto custom-scrollbar shrink-0">
         {[
           { key: 'Activity', label: language === 'az' ? 'Fəaliyyət' : language === 'en' ? 'Activity' : 'Активность' },
           { key: 'Emails', label: language === 'az' ? 'E-poçtlar' : language === 'en' ? 'Emails' : 'Письма' },
@@ -1301,7 +1301,7 @@ const DealDetailPage = () => {
       {/* 3. MAIN TWO-COLUMN CONTENT BODY */}
       <div className="flex-1 flex flex-col lg:flex-row min-w-0">
         {/* LEFT MAIN PANEL */}
-        <div className="flex-1 p-6 lg:p-8 overflow-y-auto custom-scrollbar flex flex-col justify-between space-y-6">
+        <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto custom-scrollbar flex flex-col justify-between space-y-6">
           <div className="space-y-6 flex-1">
             {/* 1. ACTIVITY TAB */}
             {activeTab === 'Activity' && (
@@ -2022,7 +2022,7 @@ const DealDetailPage = () => {
         </div>
 
         {/* RIGHT SIDEBAR SUMMARY PANEL */}
-        <div className="w-full lg:w-80 shrink-0 border-l border-[#2C2C2E]/60 bg-[#121214] p-5 space-y-5 text-xs overflow-y-auto custom-scrollbar">
+        <div className="w-full lg:w-80 shrink-0 border-t lg:border-t-0 lg:border-l border-[#2C2C2E]/60 bg-[#121214] p-4 sm:p-5 space-y-5 text-xs overflow-y-auto custom-scrollbar">
           <div className="flex justify-end text-[11px] text-[#A1A1AA] font-mono tracking-tight">
             CRM-DEAL-2026-00017
           </div>
@@ -2152,46 +2152,60 @@ const DealDetailPage = () => {
 
       {/* CREATE NOTE MODAL */}
       {isNewNoteModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-3xl shadow-2xl p-6 w-full max-w-xl text-[#E4E4E7] space-y-5 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 pb-3">
-              <h2 className="text-lg font-bold text-white tracking-tight">{language === 'az' ? 'Qeyd Yarat' : language === 'en' ? 'Create Note' : 'Создать заметку'}</h2>
-              <div className="flex items-center gap-2">
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsNewNoteModalOpen(false); }}
+        >
+          <div 
+            className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-xl text-[#E4E4E7] flex flex-col max-h-[92vh] sm:max-h-[85vh] overflow-hidden my-auto animate-in fade-in duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 p-4 sm:p-6 shrink-0 bg-[#1C1C1E]">
+              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">{language === 'az' ? 'Qeyd Yarat' : language === 'en' ? 'Create Note' : 'Создать заметку'}</h2>
+              <button
+                type="button"
+                onClick={() => setIsNewNoteModalOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-white/5 text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                aria-label="Close"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateNoteSubmit} className="flex flex-col flex-1 min-h-0">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs custom-scrollbar">
+                <div className="space-y-1.5">
+                  <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Başlıq' : language === 'en' ? 'Title' : 'Заголовок'} <span className="text-rose-400">*</span></label>
+                  <input
+                    type="text"
+                    required
+                    placeholder={language === 'az' ? 'Başlıq' : language === 'en' ? 'Title' : 'Заголовок'}
+                    value={noteForm.title}
+                    onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
+                    className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Məzmun' : language === 'en' ? 'Content' : 'Содержимое'}</label>
+                  <RichTextEditor
+                    value={noteForm.content}
+                    onChange={(html) => setNoteForm({ ...noteForm, content: html })}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 border-t border-[#2C2C2E]/60 p-4 sm:p-6 shrink-0 bg-[#1C1C1E]">
                 <button
                   type="button"
                   onClick={() => setIsNewNoteModalOpen(false)}
-                  className="p-1.5 rounded-xl hover:bg-[#2C2C2E] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-xl border border-[#2C2C2E] text-xs font-semibold text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
                 >
-                  <XMarkIcon className="w-5 h-5" />
+                  {t('common.cancel', {}, 'Cancel')}
                 </button>
-              </div>
-            </div>
-
-            <form onSubmit={handleCreateNoteSubmit} className="space-y-4 text-xs">
-              <div className="space-y-1.5">
-                <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Başlıq' : language === 'en' ? 'Title' : 'Заголовок'} <span className="text-rose-400">*</span></label>
-                <input
-                  type="text"
-                  required
-                  placeholder={language === 'az' ? 'Başlıq' : language === 'en' ? 'Title' : 'Заголовок'}
-                  value={noteForm.title}
-                  onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
-                  className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Məzmun' : language === 'en' ? 'Content' : 'Содержимое'}</label>
-                <RichTextEditor
-                  value={noteForm.content}
-                  onChange={(html) => setNoteForm({ ...noteForm, content: html })}
-                />
-              </div>
-
-              <div className="flex items-center justify-end pt-2">
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-colors shadow-md cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-colors shadow-md cursor-pointer"
                 >
                   {t('common.create', {}, 'Create')}
                 </button>
@@ -2203,185 +2217,199 @@ const DealDetailPage = () => {
 
       {/* CREATE CALL LOG MODAL */}
       {isNewCallModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-3xl shadow-2xl p-6 w-full max-w-lg text-[#E4E4E7] space-y-5 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 pb-3">
-              <h2 className="text-lg font-bold text-white tracking-tight">{language === 'az' ? 'Zəng qeydi yarat' : language === 'en' ? 'Create Call Log' : 'Записать звонок'}</h2>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsNewCallModalOpen(false)}
-                  className="p-1.5 rounded-xl hover:bg-[#2C2C2E] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                >
-                  <XMarkIcon className="w-5 h-5" />
-                </button>
-              </div>
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsNewCallModalOpen(false); }}
+        >
+          <div 
+            className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg text-[#E4E4E7] flex flex-col max-h-[92vh] sm:max-h-[85vh] overflow-hidden my-auto animate-in fade-in duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 p-4 sm:p-6 shrink-0 bg-[#1C1C1E]">
+              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">{language === 'az' ? 'Zəng qeydi yarat' : language === 'en' ? 'Create Call Log' : 'Записать звонок'}</h2>
+              <button
+                type="button"
+                onClick={() => setIsNewCallModalOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-white/5 text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                aria-label="Close"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
             </div>
 
-            <form onSubmit={handleCreateCallSubmit} className="space-y-4 text-xs">
-              {/* Row 1: Type * & To Number * */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5 relative">
-                  <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Növ' : language === 'en' ? 'Type' : 'Тип'} <span className="text-rose-400">*</span></label>
-                  <button
-                    type="button"
-                    onClick={() => setOpenDropdownField(openDropdownField === 'type' ? null : 'type')}
-                    className="flex items-center justify-between w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-[#D4D4D8] focus:outline-none focus:border-sky-500 cursor-pointer"
-                  >
-                    <span>{callForm.type || (language === 'az' ? 'Növ' : language === 'en' ? 'Type' : 'Тип')}</span>
-                    <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
-                  </button>
+            <form onSubmit={handleCreateCallSubmit} className="flex flex-col flex-1 min-h-0">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs custom-scrollbar">
+                {/* Row 1: Type * & To Number * */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5 relative">
+                    <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Növ' : language === 'en' ? 'Type' : 'Тип'} <span className="text-rose-400">*</span></label>
+                    <button
+                      type="button"
+                      onClick={() => setOpenDropdownField(openDropdownField === 'type' ? null : 'type')}
+                      className="flex items-center justify-between w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-[#D4D4D8] focus:outline-none focus:border-sky-500 cursor-pointer"
+                    >
+                      <span>{callForm.type || (language === 'az' ? 'Növ' : language === 'en' ? 'Type' : 'Тип')}</span>
+                      <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
+                    </button>
 
-                  {openDropdownField === 'type' && (
-                    <div className="absolute top-14 left-0 w-full bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-[100] text-xs text-[#E4E4E7] space-y-0.5 animate-in fade-in duration-150">
-                      {callTypes.map((t) => (
-                        <button
-                          key={t}
-                          type="button"
-                          onClick={() => {
-                            setCallForm({ ...callForm, type: t });
-                            setOpenDropdownField(null);
-                          }}
-                          className={`flex items-center justify-between w-full px-3 py-2 rounded-xl transition-colors text-left cursor-pointer ${callForm.type === t ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
-                            }`}
-                        >
-                          <span>{t}</span>
-                          {callForm.type === t && <CheckIcon className="w-4 h-4 text-sky-400" />}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Qəbul edən nömrə' : language === 'en' ? 'To Number' : 'Номер получателя'} <span className="text-rose-400">*</span></label>
-                  <input
-                    type="text"
-                    required
-                    placeholder={language === 'az' ? 'Qəbul edən nömrə' : language === 'en' ? 'To Number' : 'Номер получателя'}
-                    value={callForm.toNumber}
-                    onChange={(e) => setCallForm({ ...callForm, toNumber: e.target.value })}
-                    className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white font-mono placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
-                  />
-                </div>
-              </div>
-
-              {/* Row 2: From Number * & Status * */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Zəng edən nömrə' : language === 'en' ? 'From Number' : 'Номер звонящего'} <span className="text-rose-400">*</span></label>
-                  <input
-                    type="text"
-                    required
-                    placeholder={language === 'az' ? 'Zəng edən nömrə' : language === 'en' ? 'From Number' : 'Номер звонящего'}
-                    value={callForm.fromNumber}
-                    onChange={(e) => setCallForm({ ...callForm, fromNumber: e.target.value })}
-                    className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white font-mono placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
-                  />
-                </div>
-
-                <div className="space-y-1.5 relative">
-                  <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Status' : language === 'en' ? 'Status' : 'Статус'} <span className="text-rose-400">*</span></label>
-                  <button
-                    type="button"
-                    onClick={() => setOpenDropdownField(openDropdownField === 'status' ? null : 'status')}
-                    className="flex items-center justify-between w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-[#D4D4D8] focus:outline-none focus:border-sky-500 cursor-pointer"
-                  >
-                    <span className="truncate">{callForm.status || (language === 'az' ? 'Status' : language === 'en' ? 'Status' : 'Статус')}</span>
-                    <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
-                  </button>
-
-                  {openDropdownField === 'status' && (
-                    <div className="absolute top-14 left-0 w-full bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-[100] text-xs text-[#E4E4E7] space-y-0.5 animate-in fade-in duration-150 max-h-48 overflow-y-auto custom-scrollbar">
-                      {callStatuses.map((st) => (
-                        <button
-                          key={st}
-                          type="button"
-                          onClick={() => {
-                            setCallForm({ ...callForm, status: st });
-                            setOpenDropdownField(null);
-                          }}
-                          className={`flex items-center justify-between w-full px-3 py-2 rounded-xl transition-colors text-left cursor-pointer ${callForm.status === st ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
-                            }`}
-                        >
-                          <span>{st}</span>
-                          {callForm.status === st && <CheckIcon className="w-4 h-4 text-sky-400" />}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Row 3: Duration & Dynamic User */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Müddət' : language === 'en' ? 'Duration' : 'Длительность'}</label>
-                  <input
-                    type="text"
-                    placeholder="30s"
-                    value={callForm.duration}
-                    onChange={(e) => setCallForm({ ...callForm, duration: e.target.value })}
-                    className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
-                  />
-                </div>
-
-                <div className="space-y-1.5 relative">
-                  <label className="text-[#A1A1AA] font-medium">
-                    {callForm.type === 'Incoming' ? (language === 'az' ? 'Qəbul edən istifadəçi' : language === 'en' ? 'Call Received By' : 'Принял звонок') : (language === 'az' ? 'Zəng edən istifadəçi' : language === 'en' ? 'Caller' : 'Звонящий')}
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => { setOpenDropdownField(openDropdownField === 'callUser' ? null : 'callUser'); setDropdownSearch(''); }}
-                    className="flex items-center justify-between w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-[#D4D4D8] focus:outline-none focus:border-sky-500 cursor-pointer"
-                  >
-                    <span className="truncate">
-                      {callForm.type === 'Incoming' ? (callForm.receiver || (language === 'az' ? 'Qəbul edən' : 'Receiver')) : (callForm.caller || (language === 'az' ? 'Zəng edən' : 'Caller'))}
-                    </span>
-                    <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
-                  </button>
-
-                  {openDropdownField === 'callUser' && (
-                    <div className="absolute top-14 left-0 w-full bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-2 z-[100] text-xs text-[#E4E4E7] space-y-2 animate-in fade-in duration-150">
-                      <div className="relative">
-                        <input
-                          type="text"
-                          placeholder={t('common.search', {}, 'Search')}
-                          value={dropdownSearch}
-                          onChange={(e) => setDropdownSearch(e.target.value)}
-                          className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl pl-3 pr-7 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
-                        />
-                      </div>
-
-                      <div className="max-h-40 overflow-y-auto space-y-0.5 custom-scrollbar pr-1">
-                        {ownerList.filter(o => o.name.toLowerCase().includes(dropdownSearch.toLowerCase())).map((usr) => (
+                    {openDropdownField === 'type' && (
+                      <div className="absolute top-14 left-0 w-full bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-[100] text-xs text-[#E4E4E7] space-y-0.5 animate-in fade-in duration-150">
+                        {callTypes.map((t) => (
                           <button
-                            key={usr.name}
+                            key={t}
                             type="button"
                             onClick={() => {
-                              if (callForm.type === 'Incoming') {
-                                setCallForm({ ...callForm, receiver: usr.name });
-                              } else {
-                                setCallForm({ ...callForm, caller: usr.name });
-                              }
+                              setCallForm({ ...callForm, type: t });
                               setOpenDropdownField(null);
                             }}
-                            className={`w-full text-left px-2.5 py-1.5 rounded-xl transition-colors cursor-pointer ${(callForm.type === 'Incoming' ? callForm.receiver : callForm.caller) === usr.name ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
+                            className={`flex items-center justify-between w-full px-3 py-2 rounded-xl transition-colors text-left cursor-pointer ${callForm.type === t ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
                               }`}
                           >
-                            {usr.name}
+                            <span>{t}</span>
+                            {callForm.type === t && <CheckIcon className="w-4 h-4 text-sky-400" />}
                           </button>
                         ))}
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Qəbul edən nömrə' : language === 'en' ? 'To Number' : 'Номер получателя'} <span className="text-rose-400">*</span></label>
+                    <input
+                      type="text"
+                      required
+                      placeholder={language === 'az' ? 'Qəbul edən nömrə' : language === 'en' ? 'To Number' : 'Номер получателя'}
+                      value={callForm.toNumber}
+                      onChange={(e) => setCallForm({ ...callForm, toNumber: e.target.value })}
+                      className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white font-mono placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Row 2: From Number * & Status * */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Zəng edən nömrə' : language === 'en' ? 'From Number' : 'Номер звонящего'} <span className="text-rose-400">*</span></label>
+                    <input
+                      type="text"
+                      required
+                      placeholder={language === 'az' ? 'Zəng edən nömrə' : language === 'en' ? 'From Number' : 'Номер звонящего'}
+                      value={callForm.fromNumber}
+                      onChange={(e) => setCallForm({ ...callForm, fromNumber: e.target.value })}
+                      className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white font-mono placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 relative">
+                    <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Status' : language === 'en' ? 'Status' : 'Статус'} <span className="text-rose-400">*</span></label>
+                    <button
+                      type="button"
+                      onClick={() => setOpenDropdownField(openDropdownField === 'status' ? null : 'status')}
+                      className="flex items-center justify-between w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-[#D4D4D8] focus:outline-none focus:border-sky-500 cursor-pointer"
+                    >
+                      <span className="truncate">{callForm.status || (language === 'az' ? 'Status' : language === 'en' ? 'Status' : 'Статус')}</span>
+                      <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
+                    </button>
+
+                    {openDropdownField === 'status' && (
+                      <div className="absolute top-14 left-0 w-full bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-[100] text-xs text-[#E4E4E7] space-y-0.5 animate-in fade-in duration-150 max-h-48 overflow-y-auto custom-scrollbar">
+                        {callStatuses.map((st) => (
+                          <button
+                            key={st}
+                            type="button"
+                            onClick={() => {
+                              setCallForm({ ...callForm, status: st });
+                              setOpenDropdownField(null);
+                            }}
+                            className={`flex items-center justify-between w-full px-3 py-2 rounded-xl transition-colors text-left cursor-pointer ${callForm.status === st ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
+                              }`}
+                          >
+                            <span>{st}</span>
+                            {callForm.status === st && <CheckIcon className="w-4 h-4 text-sky-400" />}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Row 3: Duration & Dynamic User */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Müddət' : language === 'en' ? 'Duration' : 'Длительность'}</label>
+                    <input
+                      type="text"
+                      placeholder="30s"
+                      value={callForm.duration}
+                      onChange={(e) => setCallForm({ ...callForm, duration: e.target.value })}
+                      className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 relative">
+                    <label className="text-[#A1A1AA] font-medium">
+                      {callForm.type === 'Incoming' ? (language === 'az' ? 'Qəbul edən istifadəçi' : language === 'en' ? 'Call Received By' : 'Принял звонок') : (language === 'az' ? 'Zəng edən istifadəçi' : language === 'en' ? 'Caller' : 'Звонящий')}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => { setOpenDropdownField(openDropdownField === 'callUser' ? null : 'callUser'); setDropdownSearch(''); }}
+                      className="flex items-center justify-between w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-[#D4D4D8] focus:outline-none focus:border-sky-500 cursor-pointer"
+                    >
+                      <span className="truncate">
+                        {callForm.type === 'Incoming' ? (callForm.receiver || (language === 'az' ? 'Qəbul edən' : 'Receiver')) : (callForm.caller || (language === 'az' ? 'Zəng edən' : 'Caller'))}
+                      </span>
+                      <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
+                    </button>
+
+                    {openDropdownField === 'callUser' && (
+                      <div className="absolute top-14 left-0 w-full bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-2 z-[100] text-xs text-[#E4E4E7] space-y-2 animate-in fade-in duration-150">
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder={t('common.search', {}, 'Search')}
+                            value={dropdownSearch}
+                            onChange={(e) => setDropdownSearch(e.target.value)}
+                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl pl-3 pr-7 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
+                          />
+                        </div>
+
+                        <div className="max-h-40 overflow-y-auto space-y-0.5 custom-scrollbar pr-1">
+                          {ownerList.filter(o => o.name.toLowerCase().includes(dropdownSearch.toLowerCase())).map((usr) => (
+                            <button
+                              key={usr.name}
+                              type="button"
+                              onClick={() => {
+                                if (callForm.type === 'Incoming') {
+                                  setCallForm({ ...callForm, receiver: usr.name });
+                                } else {
+                                  setCallForm({ ...callForm, caller: usr.name });
+                                }
+                                setOpenDropdownField(null);
+                              }}
+                              className={`w-full text-left px-2.5 py-1.5 rounded-xl transition-colors cursor-pointer ${(callForm.type === 'Incoming' ? callForm.receiver : callForm.caller) === usr.name ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
+                                }`}
+                            >
+                              {usr.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end pt-3">
+              <div className="flex items-center justify-end gap-3 border-t border-[#2C2C2E]/60 p-4 sm:p-6 shrink-0 bg-[#1C1C1E]">
+                <button
+                  type="button"
+                  onClick={() => setIsNewCallModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-[#2C2C2E] text-xs font-semibold text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                >
+                  {t('common.cancel', {}, 'Cancel')}
+                </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-colors shadow-md cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-colors shadow-md cursor-pointer"
                 >
                   {t('common.create', {}, 'Create')}
                 </button>
@@ -2393,17 +2421,23 @@ const DealDetailPage = () => {
 
       {/* CREATE NEW PRODUCT MODAL */}
       {isNewProductModalOpen && (
-        <div className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-3xl shadow-2xl w-full max-w-xl p-6 text-[#E4E4E7] space-y-5 animate-in fade-in duration-200">
+        <div 
+          className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) { setIsNewProductModalOpen(false); setEditingProductId(null); } }}
+        >
+          <div 
+            className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-xl text-[#E4E4E7] flex flex-col max-h-[92vh] sm:max-h-[85vh] overflow-hidden my-auto animate-in fade-in duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 pb-3">
-              <h2 className="text-xl font-bold text-white tracking-tight">
+            <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 p-4 sm:p-6 shrink-0 bg-[#1C1C1E]">
+              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
                 {editingProductId ? (language === 'az' ? 'Məhsulu Redaktə Et' : language === 'en' ? 'Edit Product' : 'Редактировать товар') : (language === 'az' ? 'Yeni Məhsul' : language === 'en' ? 'New Product' : 'Новый товар')}
               </h2>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  className="p-1.5 rounded-xl hover:bg-[#2C2C2E] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg hover:bg-white/5 text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
                   title="Edit Fields Layout"
                 >
                   <PencilSquareIcon className="w-5 h-5" />
@@ -2414,130 +2448,143 @@ const DealDetailPage = () => {
                     setIsNewProductModalOpen(false);
                     setEditingProductId(null);
                   }}
-                  className="p-1.5 rounded-xl hover:bg-[#2C2C2E] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg hover:bg-white/5 text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                  aria-label="Close"
                 >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            <form onSubmit={handleCreateProductSubmit} className="space-y-4 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Left Column */}
-                <div className="space-y-3.5">
-                  {/* Naming Series Dropdown */}
-                  <div className="space-y-1.5 relative">
-                    <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Adlandırma seriyası' : language === 'en' ? 'Naming Series' : 'Серия нумерации'}</label>
-                    <button
-                      type="button"
-                      onClick={() => setIsNamingSeriesOpen(!isNamingSeriesOpen)}
-                      className="flex items-center justify-between w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500 cursor-pointer"
-                    >
-                      <span>{newProductForm.namingSeries}</span>
-                      <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A]" />
-                    </button>
+            <form onSubmit={handleCreateProductSubmit} className="flex flex-col flex-1 min-h-0">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs custom-scrollbar">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Left Column */}
+                  <div className="space-y-3.5">
+                    {/* Naming Series Dropdown */}
+                    <div className="space-y-1.5 relative">
+                      <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Adlandırma seriyası' : language === 'en' ? 'Naming Series' : 'Серия нумерации'}</label>
+                      <button
+                        type="button"
+                        onClick={() => setIsNamingSeriesOpen(!isNamingSeriesOpen)}
+                        className="flex items-center justify-between w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500 cursor-pointer"
+                      >
+                        <span>{newProductForm.namingSeries}</span>
+                        <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A]" />
+                      </button>
 
-                    {isNamingSeriesOpen && (
-                      <div className="absolute top-14 left-0 w-full bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-[200] text-xs text-[#E4E4E7] space-y-0.5 animate-in fade-in duration-150">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setNewProductForm({ ...newProductForm, namingSeries: 'CRM-PROD-.YYYY.-' });
-                            setIsNamingSeriesOpen(false);
-                          }}
-                          className="flex items-center justify-between w-full px-3 py-2 rounded-xl bg-[#2C2C2E] text-white font-semibold text-left cursor-pointer"
-                        >
-                          <span>CRM-PROD-.YYYY.-</span>
-                          <CheckIcon className="w-4 h-4 text-sky-400" />
-                        </button>
-                      </div>
-                    )}
+                      {isNamingSeriesOpen && (
+                        <div className="absolute top-14 left-0 w-full bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-[200] text-xs text-[#E4E4E7] space-y-0.5 animate-in fade-in duration-150">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNewProductForm({ ...newProductForm, namingSeries: 'CRM-PROD-.YYYY.-' });
+                              setIsNamingSeriesOpen(false);
+                            }}
+                            className="flex items-center justify-between w-full px-3 py-2 rounded-xl bg-[#2C2C2E] text-white font-semibold text-left cursor-pointer"
+                          >
+                            <span>CRM-PROD-.YYYY.-</span>
+                            <CheckIcon className="w-4 h-4 text-sky-400" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Product Code */}
+                    <div className="space-y-1.5">
+                      <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Məhsul Kodu' : language === 'en' ? 'Product Code' : 'Код товара'} <span className="text-rose-400">*</span></label>
+                      <input
+                        type="text"
+                        required
+                        placeholder={language === 'az' ? 'Məhsul Kodu' : language === 'en' ? 'Product Code' : 'Код товара'}
+                        value={newProductForm.productCode}
+                        onChange={(e) => setNewProductForm({ ...newProductForm, productCode: e.target.value })}
+                        className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
+                      />
+                    </div>
+
+                    {/* Product Name */}
+                    <div className="space-y-1.5">
+                      <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Məhsul Adı' : language === 'en' ? 'Product Name' : 'Наименование товара'}</label>
+                      <input
+                        type="text"
+                        placeholder={language === 'az' ? 'Məhsul Adı' : language === 'en' ? 'Product Name' : 'Наименование товара'}
+                        value={newProductForm.productName}
+                        onChange={(e) => setNewProductForm({ ...newProductForm, productName: e.target.value })}
+                        className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
+                      />
+                    </div>
                   </div>
 
-                  {/* Product Code */}
-                  <div className="space-y-1.5">
-                    <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Məhsul Kodu' : language === 'en' ? 'Product Code' : 'Код товара'} <span className="text-rose-400">*</span></label>
-                    <input
-                      type="text"
-                      required
-                      placeholder={language === 'az' ? 'Məhsul Kodu' : language === 'en' ? 'Product Code' : 'Код товара'}
-                      value={newProductForm.productCode}
-                      onChange={(e) => setNewProductForm({ ...newProductForm, productCode: e.target.value })}
-                      className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
-                    />
-                  </div>
+                  {/* Right Column */}
+                  <div className="space-y-3.5">
+                    {/* Disabled Checkbox */}
+                    <div className="flex items-center gap-2 pt-6">
+                      <input
+                        type="checkbox"
+                        id="disabledCheck"
+                        checked={newProductForm.disabled}
+                        onChange={(e) => setNewProductForm({ ...newProductForm, disabled: e.target.checked })}
+                        className="w-4 h-4 rounded border-[#3F3F46] bg-[#27272A] text-sky-500 focus:ring-0 cursor-pointer"
+                      />
+                      <label htmlFor="disabledCheck" className="text-[#A1A1AA] font-medium cursor-pointer">{language === 'az' ? 'Deaktiv' : language === 'en' ? 'Disabled' : 'Отключен'}</label>
+                    </div>
 
-                  {/* Product Name */}
-                  <div className="space-y-1.5">
-                    <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Məhsul Adı' : language === 'en' ? 'Product Name' : 'Наименование товара'}</label>
-                    <input
-                      type="text"
-                      placeholder={language === 'az' ? 'Məhsul Adı' : language === 'en' ? 'Product Name' : 'Наименование товара'}
-                      value={newProductForm.productName}
-                      onChange={(e) => setNewProductForm({ ...newProductForm, productName: e.target.value })}
-                      className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
-                    />
+                    {/* Standard Selling Rate */}
+                    <div className="space-y-1.5">
+                      <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Standart Satış Qiyməti' : language === 'en' ? 'Standard Selling Rate' : 'Стандартная цена продажи'}</label>
+                      <input
+                        type="text"
+                        placeholder="$ 0.00"
+                        value={newProductForm.standardSellingRate ? `$ ${newProductForm.standardSellingRate}` : '$ 0.00'}
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(/[^0-9.]/g, '');
+                          setNewProductForm({ ...newProductForm, standardSellingRate: raw });
+                        }}
+                        className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-xs text-white font-mono placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
+                      />
+                    </div>
+
+                    {/* Image Attachment Trigger */}
+                    <div className="space-y-1.5">
+                      <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Şəkil' : language === 'en' ? 'Image' : 'Изображение'}</label>
+                      <button
+                        type="button"
+                        onClick={() => setIsAttachModalOpen(true)}
+                        className="flex items-center gap-2 w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-xs text-[#71717A] hover:text-white hover:border-[#3F3F46] transition-colors cursor-pointer text-left"
+                      >
+                        <PaperClipIcon className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{newProductForm.image || (language === 'az' ? 'Fayl əlavə et...' : language === 'en' ? 'Attach file...' : 'Прикрепить файл...')}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                {/* Right Column */}
-                <div className="space-y-3.5">
-                  {/* Disabled Checkbox */}
-                  <div className="flex items-center gap-2 pt-6">
-                    <input
-                      type="checkbox"
-                      id="disabledCheck"
-                      checked={newProductForm.disabled}
-                      onChange={(e) => setNewProductForm({ ...newProductForm, disabled: e.target.checked })}
-                      className="w-4 h-4 rounded border-[#3F3F46] bg-[#27272A] text-sky-500 focus:ring-0 cursor-pointer"
-                    />
-                    <label htmlFor="disabledCheck" className="text-[#A1A1AA] font-medium cursor-pointer">{language === 'az' ? 'Deaktiv' : language === 'en' ? 'Disabled' : 'Отключен'}</label>
-                  </div>
-
-                  {/* Standard Selling Rate */}
-                  <div className="space-y-1.5">
-                    <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Standart Satış Qiyməti' : language === 'en' ? 'Standard Selling Rate' : 'Стандартная цена продажи'}</label>
-                    <input
-                      type="text"
-                      placeholder="$ 0.00"
-                      value={newProductForm.standardSellingRate ? `$ ${newProductForm.standardSellingRate}` : '$ 0.00'}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(/[^0-9.]/g, '');
-                        setNewProductForm({ ...newProductForm, standardSellingRate: raw });
-                      }}
-                      className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-xs text-white font-mono placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
-                    />
-                  </div>
-
-                  {/* Image Attachment Trigger */}
-                  <div className="space-y-1.5">
-                    <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Şəkil' : language === 'en' ? 'Image' : 'Изображение'}</label>
-                    <button
-                      type="button"
-                      onClick={() => setIsAttachModalOpen(true)}
-                      className="flex items-center gap-2 w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-xs text-[#71717A] hover:text-white hover:border-[#3F3F46] transition-colors cursor-pointer text-left"
-                    >
-                      <PaperClipIcon className="w-4 h-4 shrink-0" />
-                      <span className="truncate">{newProductForm.image || (language === 'az' ? 'Fayl əlavə et...' : language === 'en' ? 'Attach file...' : 'Прикрепить файл...')}</span>
-                    </button>
-                  </div>
+                {/* Description Section with RichTextEditor */}
+                <div className="space-y-1.5 pt-2 border-t border-[#2C2C2E]/60">
+                  <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Təsvir' : language === 'en' ? 'Description' : 'Описание'}</label>
+                  <RichTextEditor
+                    value={newProductForm.description}
+                    onChange={(html) => setNewProductForm({ ...newProductForm, description: html })}
+                  />
                 </div>
-              </div>
-
-              {/* Description Section with RichTextEditor */}
-              <div className="space-y-1.5 pt-2 border-t border-[#2C2C2E]/60">
-                <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Təsvir' : language === 'en' ? 'Description' : 'Описание'}</label>
-                <RichTextEditor
-                  value={newProductForm.description}
-                  onChange={(html) => setNewProductForm({ ...newProductForm, description: html })}
-                />
               </div>
 
               {/* Submit Button */}
-              <div className="pt-3">
+              <div className="flex items-center justify-end gap-3 border-t border-[#2C2C2E]/60 p-4 sm:p-6 shrink-0 bg-[#1C1C1E]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsNewProductModalOpen(false);
+                    setEditingProductId(null);
+                  }}
+                  className="px-4 py-2 rounded-xl border border-[#2C2C2E] text-xs font-semibold text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                >
+                  {t('common.cancel', {}, 'Cancel')}
+                </button>
                 <button
                   type="submit"
-                  className="w-full py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs transition-colors shadow-md cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs transition-colors shadow-md cursor-pointer"
                 >
                   {editingProductId ? (language === 'az' ? 'Yadda Saxla' : language === 'en' ? 'Save' : 'Сохранить') : (language === 'az' ? 'Yarat' : language === 'en' ? 'Create' : 'Создать')}
                 </button>
@@ -2549,11 +2596,17 @@ const DealDetailPage = () => {
 
       {/* ATTACH MODAL */}
       {isAttachModalOpen && (
-        <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-3xl shadow-2xl w-full max-w-lg p-6 text-[#E4E4E7] space-y-6 animate-in fade-in duration-200">
+        <div 
+          className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) { setIsAttachModalOpen(false); setSelectedAttachFile(null); setAttachLinkUrl(''); } }}
+        >
+          <div 
+            className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg p-4 sm:p-6 text-[#E4E4E7] space-y-6 animate-in fade-in duration-200 my-auto max-h-[92vh] sm:max-h-[85vh] overflow-y-auto custom-scrollbar"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 pb-3">
-              <h2 className="text-xl font-bold text-white tracking-tight">{language === 'az' ? 'Əlavə et' : language === 'en' ? 'Attach' : 'Прикрепить'}</h2>
+              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">{language === 'az' ? 'Əlavə et' : language === 'en' ? 'Attach' : 'Прикрепить'}</h2>
               <button
                 type="button"
                 onClick={() => {
@@ -2561,7 +2614,8 @@ const DealDetailPage = () => {
                   setSelectedAttachFile(null);
                   setAttachLinkUrl('');
                 }}
-                className="p-1.5 rounded-xl hover:bg-[#2C2C2E] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg hover:bg-white/5 text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                aria-label="Close"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>

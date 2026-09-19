@@ -6,6 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { platformApi } from '../api/platformApi';
 import { permissionsApi } from '../api/permissionsApi';
 import SettingsModal from '../components/common/SettingsModal';
+import AuthMobileBottomNav from '../components/layout/AuthMobileBottomNav';
 import authLogo from '../assets/auth-logo.svg';
 
 const desktopApps = [
@@ -45,6 +46,7 @@ export const DashboardLayout: React.FC = () => {
   const { showToast } = useToast();
   const { t } = useLanguage();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isBrandMenuOpen, setIsBrandMenuOpen] = useState(false);
   const [isAppsSubmenuOpen, setIsAppsSubmenuOpen] = useState(false);
   const [isCreateTenantOpen, setIsCreateTenantOpen] = useState(false);
@@ -222,11 +224,11 @@ export const DashboardLayout: React.FC = () => {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#121214] text-[#F4F4F5] font-sans antialiased select-none">
-      {/* 1. Left Sidebar (Altensor CRM 1:1) */}
+      {/* 1. Desktop Left Sidebar (Hidden on mobile) */}
       <aside
-        className={`${
+        className={`hidden md:flex ${
           isCollapsed ? 'w-16' : 'w-56'
-        } bg-[#18181B] text-[#A1A1AA] border-r border-[#27272A] min-h-screen flex flex-col justify-between p-2.5 transition-all duration-200 shrink-0 z-40`}
+        } bg-[#18181B] text-[#A1A1AA] border-r border-[#27272A] min-h-screen flex-col justify-between p-2.5 transition-all duration-200 shrink-0 z-40`}
       >
         {/* Top Brand Section with Dropdown */}
         <div className="flex flex-col gap-3">
@@ -397,16 +399,140 @@ export const DashboardLayout: React.FC = () => {
         </div>
       </aside>
 
+      {/* Mobile Drawer (Off-canvas sidebar) */}
+      {isMobileDrawerOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex animate-in fade-in duration-200">
+          <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-xs transition-opacity"
+            onClick={() => setIsMobileDrawerOpen(false)}
+          />
+          <aside
+            className="relative w-72 bg-[#18181B] text-[#A1A1AA] border-r border-[#27272A] min-h-screen flex flex-col justify-between p-4 z-10 shadow-2xl animate-in slide-in-from-left duration-200 overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top Brand & Close Button */}
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[#27272A]">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-[#D946EF]/10 border border-[#D946EF]/25 flex items-center justify-center p-0.5 shadow-sm shadow-fuchsia-500/20">
+                    <img src={authLogo} alt="Altensor Auth" className="w-full h-full object-contain" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-white text-sm leading-snug tracking-tight block">
+                      Altensor Auth
+                    </span>
+                    <span className="text-[10px] text-[#A1A1AA] font-mono leading-none">
+                      {isSuperAdmin ? t('nav.superAdmin', {}, 'Super Admin') : 'Tenant Admin'}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileDrawerOpen(false)}
+                  className="p-1.5 rounded-lg text-[#71717A] hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[20px]">close</span>
+                </button>
+              </div>
+
+              {/* Mobile Navigation Links */}
+              <nav className="flex flex-col gap-1">
+                {menuItems.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setIsMobileDrawerOpen(false)}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'bg-[#27272A] text-white font-semibold shadow-xs'
+                          : 'text-[#A1A1AA] hover:bg-white/[0.04] hover:text-white'
+                      }`
+                    }
+                  >
+                    <span className="material-symbols-outlined text-[20px] shrink-0">{item.icon}</span>
+                    <span className="truncate">{item.label}</span>
+                  </NavLink>
+                ))}
+              </nav>
+
+              {/* Desktop Apps Shortcuts on Mobile Drawer */}
+              <div className="pt-3 border-t border-[#27272A]/70">
+                <span className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider block px-2 mb-2">
+                  {t('common.applications', {}, 'Digər Tətbiqlər')}
+                </span>
+                <div className="space-y-1">
+                  {desktopApps.map((app) => (
+                    <div
+                      key={app.id}
+                      onClick={() => {
+                        setIsMobileDrawerOpen(false);
+                        if (app.route.startsWith('/')) {
+                          navigate(app.route);
+                        } else {
+                          window.open(app.route, '_blank');
+                        }
+                      }}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-[#2C2C2E] text-[#D4D4D8] hover:text-white transition-colors cursor-pointer text-xs"
+                    >
+                      <div
+                        className="w-6 h-6 rounded-lg text-white flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: app.iconBg }}
+                      >
+                        <span className="material-symbols-outlined text-xs">{app.icon}</span>
+                      </div>
+                      <span className="truncate">{app.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile Drawer Bottom Actions */}
+            <div className="flex flex-col gap-1 pt-3 border-t border-[#27272A]">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileDrawerOpen(false);
+                  setIsSettingsModalOpen(true);
+                }}
+                className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors text-left w-full cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[18px]">settings</span>
+                <span>{t('nav.settings', {}, 'Settings')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-rose-400 hover:bg-rose-500/10 transition-colors text-left w-full cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[18px]">logout</span>
+                <span>{t('nav.logout', {}, 'Log out')}</span>
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+
       {/* 2. Main Workspace */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#121214]">
         {/* Top Header */}
-        <header className="h-14 w-full bg-[#18181B] border-b border-[#27272A] flex items-center justify-between px-6 shrink-0 z-30">
-          <div className="flex items-center gap-3">
-            <span className="font-bold text-white text-base tracking-tight">Auth Gateway</span>
-            <span className="text-[#71717A] text-xs font-mono">@{tenantSlugName}</span>
+        <header className="h-14 w-full bg-[#18181B] border-b border-[#27272A] flex items-center justify-between px-4 sm:px-6 shrink-0 z-30">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* Hamburger Button on Mobile */}
+            <button
+              type="button"
+              onClick={() => setIsMobileDrawerOpen(true)}
+              className="md:hidden p-1.5 rounded-lg text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors"
+              aria-label="Open menu"
+            >
+              <span className="material-symbols-outlined text-[22px]">menu</span>
+            </button>
+            <span className="font-bold text-white text-sm sm:text-base tracking-tight truncate">Auth Gateway</span>
+            <span className="text-[#71717A] text-[11px] sm:text-xs font-mono truncate">@{tenantSlugName}</span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Search Input */}
             <div className="relative hidden md:block w-64">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#71717A] text-sm">
@@ -422,17 +548,18 @@ export const DashboardLayout: React.FC = () => {
             {isSuperAdmin && (
               <button
                 onClick={() => setIsCreateTenantOpen(true)}
-                className="btn-primary px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                className="btn-primary px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0"
               >
                 <span className="material-symbols-outlined text-[16px]">add</span>
-                {t('nav.newTenant', {}, 'Create Tenant')}
+                <span className="hidden sm:inline">{t('nav.newTenant', {}, 'Create Tenant')}</span>
+                <span className="sm:hidden">{t('common.create', {}, 'Tenant')}</span>
               </button>
             )}
 
             {/* Profile Avatar / Settings Trigger */}
             <button
               onClick={() => setIsSettingsModalOpen(true)}
-              className="w-8 h-8 rounded-full bg-[#27272A] hover:bg-[#3F3F46] text-[#D946EF] font-bold text-xs flex items-center justify-center border border-[#3F3F46] transition-colors cursor-pointer"
+              className="w-8 h-8 rounded-full bg-[#27272A] hover:bg-[#3F3F46] text-[#D946EF] font-bold text-xs flex items-center justify-center border border-[#3F3F46] transition-colors cursor-pointer shrink-0"
               title={`${displayName} - ${t('nav.settings', {}, 'Tənzimləmələr')}`}
             >
               {avatarInitial}
@@ -440,155 +567,172 @@ export const DashboardLayout: React.FC = () => {
           </div>
         </header>
 
-        {/* Scrollable Page Content */}
-        <main className="flex-1 overflow-y-auto p-6 bg-[#121214]">
+        {/* Scrollable Page Content (cleared for mobile bottom nav) */}
+        <main className="flex-1 overflow-y-auto p-3.5 sm:p-6 pb-24 md:pb-6 bg-[#121214]">
           <Outlet />
         </main>
       </div>
 
+      {/* Mobile Bottom Navigation Bar */}
+      <AuthMobileBottomNav onOpenMobileMenu={() => setIsMobileDrawerOpen(true)} />
+
       {/* Quick Create Tenant Modal */}
       {isCreateTenantOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl w-full max-w-lg p-6 animate-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-[#27272A] mb-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-150"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsCreateTenantOpen(false); }}
+        >
+          <div
+            className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[92vh] sm:max-h-[85vh] overflow-hidden my-auto animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Fixed Header */}
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[#27272A] shrink-0 bg-[#1C1C1E]">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-[#D946EF]/20 text-[#D946EF] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-[#D946EF]/20 text-[#D946EF] flex items-center justify-center shrink-0">
                   <span className="material-symbols-outlined text-lg">domain_add</span>
                 </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">Yeni Müştəri Təşkilatı (Tenant)</h3>
-                  <p className="text-xs text-[#71717A]">Şirkət profili, ilk admin və aktiv modullar</p>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-white truncate">Yeni Müştəri Təşkilatı (Tenant)</h3>
+                  <p className="text-xs text-[#71717A] truncate">Şirkət profili, ilk admin və aktiv modullar</p>
                 </div>
               </div>
-              <button onClick={() => setIsCreateTenantOpen(false)} className="text-[#71717A] hover:text-white p-1">
+              <button
+                type="button"
+                onClick={() => setIsCreateTenantOpen(false)}
+                className="text-[#71717A] hover:text-white p-1 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+              >
                 <span className="material-symbols-outlined text-lg">close</span>
               </button>
             </div>
 
-            <form onSubmit={handleCreateTenantSubmit} className="space-y-3.5">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Təşkilat Adı *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Məs: Pasha Holding"
-                    value={tenantName}
-                    onChange={(e) => {
-                      setTenantName(e.target.value);
-                      if (!tenantSlug) {
-                        setTenantSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-'));
-                      }
-                    }}
-                    className="w-full crm-input text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Tenant Slug *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="pasha-holding"
-                    value={tenantSlug}
-                    onChange={(e) => setTenantSlug(e.target.value.toLowerCase())}
-                    className="w-full crm-input font-mono text-xs"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Domen (Opsional)</label>
-                <input
-                  type="text"
-                  placeholder="pashaholding.az"
-                  value={tenantDomain}
-                  onChange={(e) => setTenantDomain(e.target.value)}
-                  className="w-full crm-input text-xs"
-                />
-              </div>
-
-              <div className="pt-2 border-t border-[#27272A]">
-                <span className="block text-xs font-bold text-[#D946EF] mb-2">İlk İnzibatçı Hesabı</span>
-                <div className="grid grid-cols-2 gap-3">
+            {/* Scrollable Form Body */}
+            <form onSubmit={handleCreateTenantSubmit} className="flex flex-col flex-1 min-h-0">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3.5 custom-scrollbar text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Admin Ad, Soyad *</label>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Təşkilat Adı *</label>
                     <input
                       type="text"
                       required
-                      placeholder="Əli Əliyev"
-                      value={adminFullName}
-                      onChange={(e) => setAdminFullName(e.target.value)}
+                      placeholder="Məs: Pasha Holding"
+                      value={tenantName}
+                      onChange={(e) => {
+                        setTenantName(e.target.value);
+                        if (!tenantSlug) {
+                          setTenantSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-'));
+                        }
+                      }}
                       className="w-full crm-input text-xs"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Admin Email *</label>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Tenant Slug *</label>
                     <input
-                      type="email"
+                      type="text"
                       required
-                      placeholder="admin@company.az"
-                      value={adminEmail}
-                      onChange={(e) => setAdminEmail(e.target.value)}
+                      placeholder="pasha-holding"
+                      value={tenantSlug}
+                      onChange={(e) => setTenantSlug(e.target.value.toLowerCase())}
+                      className="w-full crm-input font-mono text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Domen (Opsional)</label>
+                  <input
+                    type="text"
+                    placeholder="pashaholding.az"
+                    value={tenantDomain}
+                    onChange={(e) => setTenantDomain(e.target.value)}
+                    className="w-full crm-input text-xs"
+                  />
+                </div>
+
+                <div className="pt-2 border-t border-[#27272A]">
+                  <span className="block text-xs font-bold text-white mb-2">İlk İnzibatçı (Admin) Hesabı</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Admin Ad, Soyad *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Məs: Cavid Məmmədov"
+                        value={adminFullName}
+                        onChange={(e) => setAdminFullName(e.target.value)}
+                        className="w-full crm-input text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Admin Email *</label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="admin@pasha.az"
+                        value={adminEmail}
+                        onChange={(e) => setAdminEmail(e.target.value)}
+                        className="w-full crm-input text-xs"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-2.5">
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Admin Şifrəsi *</label>
+                    <input
+                      type="password"
+                      required
+                      value={adminPassword}
+                      onChange={(e) => setAdminPassword(e.target.value)}
                       className="w-full crm-input text-xs"
                     />
                   </div>
                 </div>
 
-                <div className="mt-2">
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Admin İlkin Şifrə *</label>
-                  <input
-                    type="password"
-                    required
-                    value={adminPassword}
-                    onChange={(e) => setAdminPassword(e.target.value)}
-                    className="w-full crm-input text-xs"
-                  />
+                <div className="pt-2 border-t border-[#27272A]">
+                  <label className="block text-xs font-bold text-[#D946EF] mb-2">Aktiv Modullar</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {modulesToDisplay.map((m) => {
+                      const isChecked =
+                        selectedModules.includes(m.code) ||
+                        selectedModules.includes(m.id) ||
+                        (m.code === 'HR' && selectedModules.includes('HRM')) ||
+                        (m.code === 'ACCOUNTING' && selectedModules.includes('BILLING'));
+
+                      return (
+                        <label
+                          key={m.code || m.id}
+                          className={`flex items-center gap-2 p-2 rounded-xl border text-xs cursor-pointer ${
+                            isChecked
+                              ? 'bg-[#D946EF]/15 border-[#D946EF] text-[#D946EF] font-bold'
+                              : 'border-[#27272A] bg-[#121214] text-[#A1A1AA]'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedModules([...selectedModules, m.code]);
+                              } else {
+                                setSelectedModules(
+                                  selectedModules.filter(
+                                    (c) => c !== m.code && c !== m.id
+                                  )
+                                );
+                              }
+                            }}
+                            className="rounded text-[#D946EF] h-3.5 w-3.5"
+                          />
+                          <span className="truncate">{m.name}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-[#27272A]">
-                <label className="block text-xs font-bold text-[#D946EF] mb-2">Aktiv Modullar</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {modulesToDisplay.map((m) => {
-                    const isChecked =
-                      selectedModules.includes(m.code) ||
-                      selectedModules.includes(m.id) ||
-                      (m.code === 'HR' && selectedModules.includes('HRM')) ||
-                      (m.code === 'ACCOUNTING' && selectedModules.includes('BILLING'));
-
-                    return (
-                      <label
-                        key={m.code || m.id}
-                        className={`flex items-center gap-2 p-2 rounded-xl border text-xs cursor-pointer ${
-                          isChecked
-                            ? 'bg-[#D946EF]/15 border-[#D946EF] text-[#D946EF] font-bold'
-                            : 'border-[#27272A] bg-[#121214] text-[#A1A1AA]'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedModules([...selectedModules, m.code]);
-                            } else {
-                              setSelectedModules(
-                                selectedModules.filter(
-                                  (c) => c !== m.code && c !== m.id
-                                )
-                              );
-                            }
-                          }}
-                          className="rounded text-[#D946EF] h-3.5 w-3.5"
-                        />
-                        <span className="truncate">{m.name}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t border-[#27272A]">
+              {/* Sticky Footer */}
+              <div className="flex items-center justify-end gap-2.5 p-4 sm:p-5 border-t border-[#27272A] shrink-0 bg-[#1C1C1E]">
                 <button
                   type="button"
                   onClick={() => setIsCreateTenantOpen(false)}
@@ -599,7 +743,7 @@ export const DashboardLayout: React.FC = () => {
                 <button
                   type="submit"
                   disabled={creatingTenant}
-                  className="px-4 py-2 text-xs font-semibold btn-primary rounded-xl cursor-pointer"
+                  className="px-4 py-2 text-xs font-semibold btn-primary rounded-xl cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
                 >
                   {creatingTenant ? 'Yaradılır...' : 'Təşkilatı Yarat'}
                 </button>

@@ -857,8 +857,8 @@ const LeadsPage = () => {
       </div>
 
       {/* Filter Bar */}
-      <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-2.5 relative z-20">
-        <div className="flex items-center gap-2 shrink-0">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 relative z-20">
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
           <input
             type="text"
             placeholder={t('common.name', {}, 'Full Name')}
@@ -1593,27 +1593,40 @@ const LeadsPage = () => {
 
       {/* 1. FULL CREATE LEAD MODAL */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-3xl shadow-2xl p-6 w-full max-w-2xl text-[#E4E4E7] space-y-6 animate-in fade-in duration-200 overflow-visible" ref={createDropdownRef}>
+        <div 
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsCreateModalOpen(false); }}
+        >
+          <div 
+            className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-2xl text-[#E4E4E7] flex flex-col max-h-[92vh] sm:max-h-[85vh] overflow-hidden my-auto animate-in fade-in duration-200" 
+            ref={createDropdownRef}
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 pb-3">
-              <h2 className="text-lg font-bold text-white tracking-tight">{t('leads.createLead', {}, 'Create Lead')}</h2>
-              <div className="flex items-center gap-3 text-[#A1A1AA]">
+            <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 p-4 sm:p-6 shrink-0 bg-[#1C1C1E]">
+              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">{t('leads.createLead', {}, 'Create Lead')}</h2>
+              <div className="flex items-center gap-2 sm:gap-3 text-[#A1A1AA]">
                 <button
                   type="button"
                   onClick={() => setIsEditLayoutModalOpen(true)}
-                  className="hover:text-white transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
                   title="Edit Layout"
                 >
                   <PencilSquareIcon className="w-5 h-5" />
                 </button>
-                <button type="button" onClick={() => setIsCreateModalOpen(false)} className="hover:text-white transition-colors cursor-pointer">
+                <button 
+                  type="button" 
+                  onClick={() => setIsCreateModalOpen(false)} 
+                  className="p-1.5 rounded-lg hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                  aria-label="Close"
+                >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            <form onSubmit={handleFullCreateLeadSubmit} className="space-y-4 text-xs">
+            <form onSubmit={handleFullCreateLeadSubmit} className="flex flex-col flex-1 min-h-0">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs custom-scrollbar">
               {/* Row 1: Salutation, First Name *, Last Name */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1.5 relative">
@@ -2161,11 +2174,20 @@ const LeadsPage = () => {
                   )}
                 </div>
               </div>
+              </div>
 
-              <div className="flex items-center justify-end pt-3">
+              {/* Modal Sticky Footer */}
+              <div className="flex items-center justify-end gap-3 border-t border-[#2C2C2E]/60 p-4 sm:p-6 shrink-0 bg-[#1C1C1E]">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-[#2C2C2E] text-xs font-semibold text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                >
+                  {t('common.cancel', {}, 'Cancel')}
+                </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-colors shadow-md cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-colors shadow-md cursor-pointer"
                 >
                   {t('common.create', {}, 'Create')}
                 </button>
@@ -2177,12 +2199,19 @@ const LeadsPage = () => {
 
       {/* 2. EDIT QUICK ENTRY LAYOUT MODAL (With "Not Saved" Badge & Functional 3-Dots Context Menu!) */}
       {isEditLayoutModalOpen && (
-        <div className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-3xl shadow-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto custom-scrollbar text-[#E4E4E7] space-y-5 animate-in fade-in duration-200" ref={addFieldRef}>
+        <div 
+          className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsEditLayoutModalOpen(false); }}
+        >
+          <div 
+            className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-6 w-full max-w-4xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto custom-scrollbar text-[#E4E4E7] space-y-5 animate-in fade-in duration-200 my-auto" 
+            ref={addFieldRef}
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Header with Title & "Not Saved" Orange Badge (Exact Match with Screenshot!) */}
             <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 pb-3">
               <div className="flex items-center gap-2.5">
-                <h2 className="text-lg font-bold text-white tracking-tight">Edit Quick Entry Layout</h2>
+                <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">Edit Quick Entry Layout</h2>
                 {isLayoutDirty && (
                   <span className="bg-[#78350F]/70 text-[#F59E0B] text-[11px] font-semibold px-2.5 py-0.5 rounded-md border border-[#92400E]/50">
                     Not Saved
@@ -2192,7 +2221,8 @@ const LeadsPage = () => {
               <button
                 type="button"
                 onClick={() => setIsEditLayoutModalOpen(false)}
-                className="text-[#71717A] hover:text-white transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-[#71717A] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                aria-label="Close"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
@@ -2487,15 +2517,21 @@ const LeadsPage = () => {
 
       {/* 3. UNIVERSAL CREATE NEW ENTITY MODAL */}
       {createItemModalConfig && (
-        <div className="fixed inset-0 z-[160] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-3xl shadow-2xl p-5 w-full max-w-sm text-[#E4E4E7] space-y-5 animate-in fade-in duration-150">
+        <div 
+          className="fixed inset-0 z-[160] bg-black/75 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setCreateItemModalConfig(null); }}
+        >
+          <div 
+            className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl sm:rounded-3xl shadow-2xl p-5 w-full max-w-sm text-[#E4E4E7] space-y-5 animate-in fade-in duration-150 my-auto max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold text-white tracking-tight">New {createItemModalConfig.labelName}</h2>
               <div className="flex items-center gap-2 text-[#A1A1AA]">
-                <button className="hover:text-white transition-colors cursor-pointer" title="Edit Fields Layout">
+                <button className="p-1 rounded-lg hover:text-white hover:bg-white/5 transition-colors cursor-pointer" title="Edit Fields Layout">
                   <PencilSquareIcon className="w-5 h-5" />
                 </button>
-                <button onClick={() => setCreateItemModalConfig(null)} className="hover:text-white transition-colors cursor-pointer">
+                <button onClick={() => setCreateItemModalConfig(null)} className="p-1 rounded-lg hover:text-white hover:bg-white/5 transition-colors cursor-pointer" aria-label="Close">
                   <XMarkIcon className="w-5 h-5" />
                 </button>
               </div>
@@ -2527,11 +2563,17 @@ const LeadsPage = () => {
 
       {/* Create View Modal */}
       {isCreateViewModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-5 w-full max-w-[400px] text-[#E4E4E7] space-y-5 animate-in fade-in duration-200">
+        <div 
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsCreateViewModalOpen(false); }}
+        >
+          <div 
+            className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-5 w-full max-w-[400px] text-[#E4E4E7] space-y-5 animate-in fade-in duration-200 my-auto max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold text-white tracking-tight">Create View</h2>
-              <button onClick={() => setIsCreateViewModalOpen(false)} className="text-[#71717A] hover:text-white transition-colors cursor-pointer">
+              <button onClick={() => setIsCreateViewModalOpen(false)} className="p-1 rounded-lg text-[#71717A] hover:text-white hover:bg-white/5 transition-colors cursor-pointer" aria-label="Close">
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>

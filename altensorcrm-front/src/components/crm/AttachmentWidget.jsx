@@ -409,11 +409,23 @@ const AttachmentWidget = ({
 
       {/* UPLOAD MODAL */}
       {isUploadModalOpen && (
-        <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-3xl shadow-2xl w-full max-w-lg p-6 text-[#E4E4E7] space-y-5 animate-in fade-in duration-200">
+        <div 
+          className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsUploadModalOpen(false);
+              setSelectedFiles([]);
+              setUploadNote('');
+            }
+          }}
+        >
+          <div 
+            className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg p-4 sm:p-6 text-[#E4E4E7] space-y-5 animate-in fade-in duration-200 my-auto max-h-[92vh] sm:max-h-[85vh] overflow-y-auto custom-scrollbar"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 pb-3">
-              <h2 className="text-xl font-bold text-white tracking-tight">
+              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
                 {language === 'az' ? 'Fayl Yüklə' : language === 'en' ? 'Upload Files' : 'Загрузить файлы'}
               </h2>
               <button
@@ -424,6 +436,7 @@ const AttachmentWidget = ({
                   setUploadNote('');
                 }}
                 className="p-1.5 rounded-xl hover:bg-[#2C2C2E] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                aria-label="Close"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>

@@ -72,28 +72,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const cardOuterBg = isLight ? 'bg-[#F1F5F9]' : isMidnight ? 'bg-[#0E1526]' : 'bg-[#161619]';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-150"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
       <div
-        className={`${modalBg} ${borderColor} border rounded-2xl shadow-2xl w-full max-w-4xl h-[560px] max-h-[90vh] overflow-hidden flex animate-in zoom-in-95 duration-150 relative select-none transition-colors duration-200`}
+        className={`${modalBg} ${borderColor} border rounded-2xl shadow-2xl w-full max-w-4xl max-h-[94vh] md:max-h-[90vh] my-auto overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-150 relative select-none transition-colors duration-200`}
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className={`absolute top-5 right-5 ${textSub} hover:${textTitle} p-1 rounded-lg hover:bg-white/[0.06] transition-colors z-20 cursor-pointer`}
+          className={`absolute top-4 right-4 sm:top-5 sm:right-5 ${textSub} hover:${textTitle} p-1 rounded-lg hover:bg-white/[0.06] transition-colors z-20 cursor-pointer`}
         >
           <span className="material-symbols-outlined text-[20px]">close</span>
         </button>
 
-        <aside className={`w-60 ${sidebarBg} ${borderColor} border-r p-4 flex flex-col justify-between overflow-y-auto shrink-0 transition-colors duration-200`}>
-          <div className="space-y-6 text-[11px]">
+        <aside className={`w-full md:w-60 ${sidebarBg} ${borderColor} border-b md:border-b-0 md:border-r p-3 sm:p-4 flex flex-col justify-between shrink-0 transition-colors duration-200`}>
+          <div className="space-y-4 md:space-y-6 text-[11px]">
             <div>
               <span className={`text-[10px] font-bold ${textSub} uppercase tracking-wider px-2 block mb-1.5`}>
                 {t('settings.general', {}, 'İstifadəçi Konfiqurasiyası')}
               </span>
-              <div className="space-y-1">
+              <div className="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible pb-1 md:pb-0">
                 <button
                   onClick={() => setActiveMenu('profile')}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all text-left cursor-pointer ${
+                  className={`flex items-center gap-2 px-3 py-1.5 md:py-2 rounded-xl text-xs font-medium transition-all text-left cursor-pointer shrink-0 md:shrink ${
                     activeMenu === 'profile'
                       ? `${activeNavBg} font-semibold shadow-xs`
                       : `${textSub} hover:bg-white/[0.04] hover:${textTitle}`
@@ -102,24 +105,36 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   <div className="w-4 h-4 rounded-full bg-white/10 text-current flex items-center justify-center text-[10px] font-bold shrink-0">
                     {avatarInitial}
                   </div>
-                  <span>{t('users.title', {}, 'Profil')}</span>
+                  <span className="truncate">{t('users.title', {}, 'Profil')}</span>
                 </button>
 
                 <button
                   onClick={() => setActiveMenu('preferences')}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all text-left cursor-pointer ${
+                  className={`flex items-center gap-2 px-3 py-1.5 md:py-2 rounded-xl text-xs font-medium transition-all text-left cursor-pointer shrink-0 md:shrink ${
                     activeMenu === 'preferences'
                       ? `${activeNavBg} font-semibold shadow-xs`
                       : `${textSub} hover:bg-white/[0.04] hover:${textTitle}`
                   }`}
                 >
                   <span className="material-symbols-outlined text-[17px]">tune</span>
-                  <span>{t('settings.preferences', {}, 'Tərcihlər')}</span>
+                  <span className="truncate">{t('settings.preferences', {}, 'Tərcihlər')}</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveMenu('security')}
+                  className={`flex items-center gap-2 px-3 py-1.5 md:py-2 rounded-xl text-xs font-medium transition-all text-left cursor-pointer shrink-0 md:shrink md:hidden ${
+                    activeMenu === 'security'
+                      ? `${activeNavBg} font-semibold shadow-xs`
+                      : `${textSub} hover:bg-white/[0.04] hover:${textTitle}`
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[17px]">security</span>
+                  <span className="truncate">{t('security.title', {}, 'Təhlükəsizlik')}</span>
                 </button>
               </div>
             </div>
 
-            <div>
+            <div className="hidden md:block">
               <span className={`text-[10px] font-bold ${textSub} uppercase tracking-wider px-2 block mb-1.5`}>
                 {t('settings.security', {}, 'Təhlükəsizlik & Giriş')}
               </span>
@@ -140,7 +155,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           </div>
         </aside>
 
-        <main className="flex-1 p-8 overflow-y-auto custom-scrollbar">
+        <main className="flex-1 p-4 sm:p-8 overflow-y-auto custom-scrollbar">
           {activeMenu === 'profile' && (
             <div className="max-w-xl space-y-7 animate-in fade-in duration-150">
               <div>

@@ -559,8 +559,14 @@ const WorkGroups: React.FC = () => {
 
             {/* Create Work Group Multi-Step Wizard Modal */}
             {showCreateModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in">
-                    <div className="w-full max-w-lg bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto animate-in fade-in"
+                    onClick={(e) => { if (e.target === e.currentTarget) setShowCreateModal(false); }}
+                >
+                    <div
+                        className="w-full max-w-lg bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[85vh] my-auto"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         {/* Modal Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-[#2C2C2E]">
                             <div className="flex items-center gap-2.5">

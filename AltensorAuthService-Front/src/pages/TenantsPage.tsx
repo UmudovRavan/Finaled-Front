@@ -587,150 +587,165 @@ export const TenantsPage: React.FC = () => {
 
       {/* New Tenant Modal */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl w-full max-w-lg p-6 animate-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-[#27272A] mb-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-150"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsCreateOpen(false); }}
+        >
+          <div
+            className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[92vh] sm:max-h-[85vh] overflow-hidden my-auto animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Fixed Header */}
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[#27272A] shrink-0 bg-[#1C1C1E]">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-white/10 text-white flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-white/10 text-white flex items-center justify-center shrink-0">
                   <span className="material-symbols-outlined text-lg">domain_add</span>
                 </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">{t('tenants.createNew', {}, 'Yeni Müştəri Təşkilatı (Tenant)')}</h3>
-                  <p className="text-xs text-[#71717A]">{t('tenants.subtitle', {}, 'Şirkət profili, ilk admin və aktiv modulları təyin edin')}</p>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-white truncate">{t('tenants.createNew', {}, 'Yeni Müştəri Təşkilatı (Tenant)')}</h3>
+                  <p className="text-xs text-[#71717A] truncate">{t('tenants.subtitle', {}, 'Şirkət profili, ilk admin və aktiv modulları təyin edin')}</p>
                 </div>
               </div>
-              <button onClick={() => setIsCreateOpen(false)} className="text-[#71717A] hover:text-white p-1">
+              <button
+                type="button"
+                onClick={() => setIsCreateOpen(false)}
+                className="text-[#71717A] hover:text-white p-1 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+              >
                 <span className="material-symbols-outlined text-lg">close</span>
               </button>
             </div>
 
-            <form onSubmit={handleCreateTenant} className="space-y-3.5">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">{t('tenants.tenantName', {}, 'Təşkilat Adı')} *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Məs: Pasha Holding"
-                    value={tenantName}
-                    onChange={(e) => {
-                      setTenantName(e.target.value);
-                      if (!tenantSlug) {
-                        setTenantSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-'));
-                      }
-                    }}
-                    className="w-full crm-input text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">{t('tenants.tenantSlug', {}, 'Tenant Slug')} *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="pasha-holding"
-                    value={tenantSlug}
-                    onChange={(e) => setTenantSlug(e.target.value.toLowerCase())}
-                    className="w-full crm-input font-mono text-xs"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">{t('tenants.customDomain', {}, 'Domen (Opsional)')}</label>
-                <input
-                  type="text"
-                  placeholder="pashaholding.az"
-                  value={tenantDomain}
-                  onChange={(e) => setTenantDomain(e.target.value)}
-                  className="w-full crm-input text-xs"
-                />
-              </div>
-
-              <div className="pt-2 border-t border-[#27272A]">
-                <span className="block text-xs font-bold text-white mb-2">{t('common.adminAccount', {}, 'İlk İnzibatçı (Admin) Hesabı')}</span>
-                <div className="grid grid-cols-2 gap-3">
+            {/* Scrollable Form Body */}
+            <form onSubmit={handleCreateTenant} className="flex flex-col flex-1 min-h-0">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 custom-scrollbar text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">{t('tenants.adminUser', {}, 'Admin Ad, Soyad')} *</label>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">{t('tenants.tenantName', {}, 'Təşkilat Adı')} *</label>
                     <input
                       type="text"
                       required
-                      placeholder="Əli Əliyev"
-                      value={adminFullName}
-                      onChange={(e) => setAdminFullName(e.target.value)}
+                      placeholder="Məs: Pasha Holding"
+                      value={tenantName}
+                      onChange={(e) => {
+                        setTenantName(e.target.value);
+                        if (!tenantSlug) {
+                          setTenantSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-'));
+                        }
+                      }}
                       className="w-full crm-input text-xs"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">{t('tenants.adminEmail', {}, 'Admin Email')} *</label>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">{t('tenants.tenantSlug', {}, 'Tenant Slug')} *</label>
                     <input
-                      type="email"
+                      type="text"
                       required
-                      placeholder="admin@company.az"
-                      value={adminEmail}
-                      onChange={(e) => setAdminEmail(e.target.value)}
+                      placeholder="pasha-holding"
+                      value={tenantSlug}
+                      onChange={(e) => setTenantSlug(e.target.value.toLowerCase())}
+                      className="w-full crm-input font-mono text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">{t('tenants.customDomain', {}, 'Domen (Opsional)')}</label>
+                  <input
+                    type="text"
+                    placeholder="pashaholding.az"
+                    value={tenantDomain}
+                    onChange={(e) => setTenantDomain(e.target.value)}
+                    className="w-full crm-input text-xs"
+                  />
+                </div>
+
+                <div className="pt-2 border-t border-[#27272A]">
+                  <span className="block text-xs font-bold text-white mb-2">{t('common.adminAccount', {}, 'İlk İnzibatçı (Admin) Hesabı')}</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">{t('tenants.adminUser', {}, 'Admin Ad, Soyad')} *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Əli Əliyev"
+                        value={adminFullName}
+                        onChange={(e) => setAdminFullName(e.target.value)}
+                        className="w-full crm-input text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">{t('tenants.adminEmail', {}, 'Admin Email')} *</label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="admin@company.az"
+                        value={adminEmail}
+                        onChange={(e) => setAdminEmail(e.target.value)}
+                        className="w-full crm-input text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-2.5">
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">{t('tenants.adminPassword', {}, 'Admin İlkin Şifrə')} *</label>
+                    <input
+                      type="password"
+                      required
+                      value={adminPassword}
+                      onChange={(e) => setAdminPassword(e.target.value)}
                       className="w-full crm-input text-xs"
                     />
                   </div>
                 </div>
 
-                <div className="mt-2">
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">{t('tenants.adminPassword', {}, 'Admin İlkin Şifrə')} *</label>
-                  <input
-                    type="password"
-                    required
-                    value={adminPassword}
-                    onChange={(e) => setAdminPassword(e.target.value)}
-                    className="w-full crm-input text-xs"
-                  />
+                <div className="pt-2 border-t border-[#27272A]">
+                  <label className="block text-xs font-bold text-white mb-2">{t('tenants.activeModules', {}, 'Aktiv Modul Abunəlikləri')}</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {modulesToDisplay.map((m) => {
+                      const isChecked =
+                        selectedModules.includes(m.code) ||
+                        selectedModules.includes(m.id) ||
+                        (m.code === 'HR' && selectedModules.includes('HRM')) ||
+                        (m.code === 'ACCOUNTING' && selectedModules.includes('BILLING'));
+
+                      return (
+                        <label
+                          key={m.id}
+                          className={`flex items-start gap-2.5 p-2 rounded-xl border text-xs cursor-pointer transition-all ${
+                            isChecked
+                              ? 'bg-white/[0.08] border-white/40 text-white font-semibold'
+                              : 'border-[#27272A] bg-[#121214] text-[#A1A1AA] hover:border-[#3F3F46]'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedModules([...selectedModules, m.code]);
+                              } else {
+                                setSelectedModules(
+                                  selectedModules.filter(
+                                    (s) => s !== m.code && s !== m.id && s !== 'HRM' && s !== 'BILLING'
+                                  )
+                                );
+                              }
+                            }}
+                            className="rounded h-3.5 w-3.5 mt-0.5 shrink-0 accent-white"
+                          />
+                          <div className="min-w-0">
+                            <span className="font-semibold block">{m.name}</span>
+                            <span className="text-[10px] text-[#71717A] font-mono">{m.code}</span>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-[#27272A]">
-                <label className="block text-xs font-bold text-white mb-2">{t('tenants.activeModules', {}, 'Aktiv Modul Abunəlikləri')}</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {modulesToDisplay.map((m) => {
-                    const isChecked =
-                      selectedModules.includes(m.code) ||
-                      selectedModules.includes(m.id) ||
-                      (m.code === 'HR' && selectedModules.includes('HRM')) ||
-                      (m.code === 'ACCOUNTING' && selectedModules.includes('BILLING'));
-
-                    return (
-                      <label
-                        key={m.id}
-                        className={`flex items-start gap-2.5 p-2 rounded-xl border text-xs cursor-pointer transition-all ${
-                          isChecked
-                            ? 'bg-white/[0.08] border-white/40 text-white font-semibold'
-                            : 'border-[#27272A] bg-[#121214] text-[#A1A1AA] hover:border-[#3F3F46]'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedModules([...selectedModules, m.code]);
-                            } else {
-                              setSelectedModules(
-                                selectedModules.filter(
-                                  (s) => s !== m.code && s !== m.id && s !== 'HRM' && s !== 'BILLING'
-                                )
-                              );
-                            }
-                          }}
-                          className="rounded h-3.5 w-3.5 mt-0.5 shrink-0 accent-white"
-                        />
-                        <div className="min-w-0">
-                          <span className="font-semibold block">{m.name}</span>
-                          <span className="text-[10px] text-[#71717A] font-mono">{m.code}</span>
-                        </div>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t border-[#27272A]">
+              {/* Sticky Footer */}
+              <div className="flex items-center justify-end gap-2.5 p-4 sm:p-5 border-t border-[#27272A] shrink-0 bg-[#1C1C1E]">
                 <button
                   type="button"
                   onClick={() => setIsCreateOpen(false)}
@@ -741,7 +756,7 @@ export const TenantsPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={creatingTenant}
-                  className="px-4 py-2 text-xs font-semibold btn-primary rounded-xl cursor-pointer shadow-md"
+                  className="px-4 py-2 text-xs font-semibold btn-primary rounded-xl cursor-pointer shadow-md disabled:opacity-50 flex items-center gap-1.5"
                 >
                   {creatingTenant ? t('common.loading', {}, 'Yaradılır...') : t('tenants.createNew', {}, 'Təşkilatı Yarat')}
                 </button>

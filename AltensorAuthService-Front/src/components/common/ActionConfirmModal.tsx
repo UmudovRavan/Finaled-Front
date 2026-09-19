@@ -120,9 +120,12 @@ export const ActionConfirmModal: React.FC<ActionConfirmModalProps> = ({
   const vStyles = getVariantStyles();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-150"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
       <div
-        className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150"
+        className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl w-full max-w-md my-auto max-h-[92vh] sm:max-h-[85vh] overflow-y-auto custom-scrollbar animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         <form onSubmit={handleConfirm} className="p-6 space-y-4">

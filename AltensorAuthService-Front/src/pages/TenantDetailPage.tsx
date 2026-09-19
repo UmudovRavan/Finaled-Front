@@ -558,11 +558,19 @@ export const TenantDetailPage: React.FC = () => {
 
       {/* Add Module Modal */}
       {isAddModuleOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-[#27272A] mb-4">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-150"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsAddModuleOpen(false);
+          }}
+        >
+          <div 
+            className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[92vh] sm:max-h-[85vh] overflow-hidden my-auto animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[#27272A] shrink-0 bg-[#1C1C1E]">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-[#D946EF]/20 text-[#D946EF] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-[#D946EF]/20 text-[#D946EF] flex items-center justify-center shrink-0">
                   <span className="material-symbols-outlined text-lg">extension</span>
                 </div>
                 <div>
@@ -570,40 +578,46 @@ export const TenantDetailPage: React.FC = () => {
                   <p className="text-xs text-[#71717A]">{tenant.name} - {t('tenants.activeModules', {}, 'yeni modul')}</p>
                 </div>
               </div>
-              <button onClick={() => setIsAddModuleOpen(false)} className="text-[#71717A] hover:text-white p-1">
+              <button 
+                type="button"
+                onClick={() => setIsAddModuleOpen(false)} 
+                className="text-[#71717A] hover:text-white p-1 rounded-lg transition-colors"
+              >
                 <span className="material-symbols-outlined text-lg">close</span>
               </button>
             </div>
 
-            <form onSubmit={handleAddModule} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">{t('tenants.activeModules', {}, 'Əlavə Ediləcək Modul')} *</label>
-                <select
-                  value={selectedModuleId}
-                  onChange={(e) => setSelectedModuleId(e.target.value)}
-                  className="w-full crm-input text-xs"
-                  required
-                >
-                  {availableModules.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
+            <form onSubmit={handleAddModule} className="flex flex-col flex-1 min-h-0">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 custom-scrollbar text-xs">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">{t('tenants.activeModules', {}, 'Əlavə Ediləcək Modul')} *</label>
+                  <select
+                    value={selectedModuleId}
+                    onChange={(e) => setSelectedModuleId(e.target.value)}
+                    className="w-full crm-input text-xs"
+                    required
+                  >
+                    {availableModules.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Bitmə Tarixi (Opsional)</label>
+                  <input
+                    type="date"
+                    value={expiryDate}
+                    onChange={(e) => setExpiryDate(e.target.value)}
+                    className="w-full crm-input text-xs"
+                  />
+                  <span className="text-[11px] text-[#71717A] mt-1 block">Boş saxlandıqda müddətsiz təyin edilir.</span>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Bitmə Tarixi (Opsional)</label>
-                <input
-                  type="date"
-                  value={expiryDate}
-                  onChange={(e) => setExpiryDate(e.target.value)}
-                  className="w-full crm-input text-xs"
-                />
-                <span className="text-[11px] text-[#71717A] mt-1 block">Boş saxlandıqda müddətsiz təyin edilir.</span>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t border-[#27272A]">
+              <div className="flex items-center justify-end gap-2.5 p-4 sm:p-5 border-t border-[#27272A] shrink-0 bg-[#1C1C1E]">
                 <button
                   type="button"
                   onClick={() => setIsAddModuleOpen(false)}

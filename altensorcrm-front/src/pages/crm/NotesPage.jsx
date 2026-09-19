@@ -1008,11 +1008,17 @@ const NotesPage = () => {
 
       {/* 2. NOTE VIEW / EDIT / CREATE MODAL */}
       {isNoteModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-3xl shadow-2xl p-6 w-full max-w-xl text-[#E4E4E7] space-y-4 animate-in fade-in duration-200 overflow-visible">
+        <div 
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsNoteModalOpen(false); }}
+        >
+          <div 
+            className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-xl text-[#E4E4E7] flex flex-col max-h-[92vh] sm:max-h-[85vh] overflow-hidden my-auto animate-in fade-in duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white tracking-tight">
+            <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 p-4 sm:p-6 shrink-0 bg-[#1C1C1E]">
+              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
                 {activeModalType === 'Create' ? (language === 'az' ? 'Qeyd Yarat' : language === 'en' ? 'Create Note' : 'Создать заметку') : (language === 'az' ? 'Qeydə düzəliş et' : language === 'en' ? 'Edit Note' : 'Редактировать заметку')}
               </h2>
 
@@ -1028,7 +1034,7 @@ const NotesPage = () => {
                 <button
                   type="button"
                   onClick={() => setIsEditLayoutModalOpen(true)}
-                  className="p-1.5 rounded-xl hover:bg-[#2C2C2E] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg hover:bg-white/5 text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
                   title="Edit Fields Layout"
                 >
                   <PencilSquareIcon className="w-5 h-5" />
@@ -1036,41 +1042,51 @@ const NotesPage = () => {
                 <button
                   type="button"
                   onClick={() => setIsNoteModalOpen(false)}
-                  className="p-1.5 rounded-xl hover:bg-[#2C2C2E] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg hover:bg-white/5 text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                  aria-label="Close"
                 >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            <form onSubmit={handleSaveNoteSubmit} className="space-y-4 text-xs">
-              {/* Title Field */}
-              <div className="space-y-1.5">
-                <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Başlıq' : language === 'en' ? 'Title' : 'Заголовок'} <span className="text-rose-400">*</span></label>
-                <input
-                  type="text"
-                  required
-                  placeholder={language === 'az' ? 'Başlıq' : language === 'en' ? 'Title' : 'Заголовок'}
-                  value={noteForm.title}
-                  onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
-                  className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
-                />
-              </div>
+            <form onSubmit={handleSaveNoteSubmit} className="flex flex-col flex-1 min-h-0">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs custom-scrollbar">
+                {/* Title Field */}
+                <div className="space-y-1.5">
+                  <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Başlıq' : language === 'en' ? 'Title' : 'Заголовок'} <span className="text-rose-400">*</span></label>
+                  <input
+                    type="text"
+                    required
+                    placeholder={language === 'az' ? 'Başlıq' : language === 'en' ? 'Title' : 'Заголовок'}
+                    value={noteForm.title}
+                    onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
+                    className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
+                  />
+                </div>
 
-              {/* Real Interactive Rich Text Editor (Screenshot 1 & 2!) */}
-              <div className="space-y-1.5">
-                <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Məzmun' : language === 'en' ? 'Content' : 'Содержание'}</label>
-                <RichTextEditor
-                  value={noteForm.content}
-                  onChange={(html) => setNoteForm({ ...noteForm, content: html })}
-                />
+                {/* Real Interactive Rich Text Editor (Screenshot 1 & 2!) */}
+                <div className="space-y-1.5">
+                  <label className="text-[#A1A1AA] font-medium">{language === 'az' ? 'Məzmun' : language === 'en' ? 'Content' : 'Содержание'}</label>
+                  <RichTextEditor
+                    value={noteForm.content}
+                    onChange={(html) => setNoteForm({ ...noteForm, content: html })}
+                  />
+                </div>
               </div>
 
               {/* Bottom Submit Button */}
-              <div className="flex items-center justify-end pt-2">
+              <div className="flex items-center justify-end gap-3 border-t border-[#2C2C2E]/60 p-4 sm:p-6 shrink-0 bg-[#1C1C1E]">
+                <button
+                  type="button"
+                  onClick={() => setIsNoteModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-[#2C2C2E] text-xs font-semibold text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                >
+                  {t('common.cancel', {}, 'Cancel')}
+                </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-colors shadow-md cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-colors shadow-md cursor-pointer"
                 >
                   {activeModalType === 'Create' ? t('common.create', {}, 'Create') : t('common.update', {}, 'Update')}
                 </button>
@@ -1082,11 +1098,18 @@ const NotesPage = () => {
 
       {/* 3. EDIT QUICK ENTRY LAYOUT MODAL */}
       {isEditLayoutModalOpen && (
-        <div className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-3xl shadow-2xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto custom-scrollbar text-[#E4E4E7] space-y-5 animate-in fade-in duration-200" ref={addFieldRef}>
+        <div 
+          className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsEditLayoutModalOpen(false); }}
+        >
+          <div 
+            className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-6 w-full max-w-3xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto custom-scrollbar text-[#E4E4E7] space-y-5 animate-in fade-in duration-200 my-auto" 
+            ref={addFieldRef}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 pb-3">
               <div className="flex items-center gap-2.5">
-                <h2 className="text-lg font-bold text-white tracking-tight">Edit Quick Entry Layout</h2>
+                <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">Edit Quick Entry Layout</h2>
                 {isLayoutDirty && (
                   <span className="bg-[#78350F]/70 text-[#F59E0B] text-[11px] font-semibold px-2.5 py-0.5 rounded-md border border-[#92400E]/50">
                     Not Saved
@@ -1096,7 +1119,8 @@ const NotesPage = () => {
               <button
                 type="button"
                 onClick={() => setIsEditLayoutModalOpen(false)}
-                className="text-[#71717A] hover:text-white transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-[#71717A] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                aria-label="Close"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>

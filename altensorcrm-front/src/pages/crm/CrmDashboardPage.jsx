@@ -1553,11 +1553,17 @@ const CrmDashboardPage = () => {
 
       {/* WIDGET LIBRARY & ADD MODAL (PRO CATALOG) */}
       {isLibraryOpen && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#18181B] border border-[#27272A] rounded-3xl shadow-2xl p-6 w-full max-w-[760px] text-[#E4E4E7] space-y-5 animate-in fade-in zoom-in-95 duration-200">
+        <div 
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsLibraryOpen(false); }}
+        >
+          <div 
+            className="bg-[#18181B] border border-[#27272A] rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-6 w-full max-w-[760px] text-[#E4E4E7] space-y-5 animate-in fade-in zoom-in-95 duration-200 my-auto max-h-[92vh] sm:max-h-[85vh] overflow-y-auto custom-scrollbar"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between border-b border-[#27272A] pb-4">
               <div>
-                <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
                   <Squares2X2Icon className="w-5 h-5 text-sky-400" />
                   <span>{language === 'az' ? 'Vidcet və Qrafiklər Kataloqu' : language === 'en' ? 'Widget & Chart Library' : 'Каталог виджетов и графиков'}</span>
                 </h2>
@@ -1574,7 +1580,12 @@ const CrmDashboardPage = () => {
                 >
                   + {language === 'az' ? 'Xüsusi Vidcet' : 'Custom Widget'}
                 </button>
-                <button onClick={() => setIsLibraryOpen(false)} className="text-[#71717A] hover:text-white p-1 transition-colors cursor-pointer">
+                <button 
+                  type="button"
+                  onClick={() => setIsLibraryOpen(false)} 
+                  className="p-1.5 rounded-lg hover:bg-white/5 text-[#71717A] hover:text-white transition-colors cursor-pointer"
+                  aria-label="Close"
+                >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
               </div>
@@ -1605,13 +1616,14 @@ const CrmDashboardPage = () => {
                 ))}
               </div>
 
-              <div className="w-full sm:w-60">
+              <div className="relative w-full sm:w-64">
+                <MagnifyingGlassIcon className="w-4 h-4 text-[#71717A] absolute left-3 top-2.5" />
                 <input
                   type="text"
-                  placeholder={language === 'az' ? 'Vidcet axtar...' : 'Search widget...'}
+                  placeholder={language === 'az' ? 'Vidcet axtar...' : 'Search widgets...'}
                   value={librarySearch}
                   onChange={(e) => setLibrarySearch(e.target.value)}
-                  className="w-full bg-[#121214] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
+                  className="w-full bg-[#121214] border border-[#27272A] rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-sky-500"
                 />
               </div>
             </div>
@@ -1654,7 +1666,7 @@ const CrmDashboardPage = () => {
               })}
             </div>
 
-            <div className="flex items-center justify-between border-t border-[#27272A] pt-4">
+            <div className="flex items-center justify-between border-t border-[#27272A] pt-3">
               <span className="text-xs text-[#71717A]">
                 {widgetsList.length} {language === 'az' ? 'vidcet hazırda yerləşdirilib' : 'widgets currently placed'}
               </span>
@@ -1672,13 +1684,24 @@ const CrmDashboardPage = () => {
 
       {/* CREATE CUSTOM WIDGET MODAL */}
       {isCustomWidgetModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#18181B] border border-[#27272A] rounded-2xl shadow-2xl p-5 w-full max-w-[420px] text-[#E4E4E7] space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between">
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsCustomWidgetModalOpen(false); }}
+        >
+          <div 
+            className="bg-[#18181B] border border-[#27272A] rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-5 w-full max-w-[420px] text-[#E4E4E7] space-y-4 animate-in fade-in zoom-in-95 duration-150 my-auto max-h-[92vh] sm:max-h-[85vh] overflow-y-auto custom-scrollbar"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#27272A] pb-3">
               <h2 className="text-base font-bold text-white tracking-tight">
                 {language === 'az' ? 'Xüsusi Vidcet Yarat' : 'Create Custom Widget'}
               </h2>
-              <button onClick={() => setIsCustomWidgetModalOpen(false)} className="text-[#71717A] hover:text-white">
+              <button 
+                type="button"
+                onClick={() => setIsCustomWidgetModalOpen(false)} 
+                className="p-1.5 rounded-lg hover:bg-white/5 text-[#71717A] hover:text-white transition-colors cursor-pointer"
+                aria-label="Close"
+              >
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
@@ -1741,7 +1764,7 @@ const CrmDashboardPage = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#27272A]">
               <button
                 type="button"
                 onClick={() => setIsCustomWidgetModalOpen(false)}
@@ -1763,8 +1786,14 @@ const CrmDashboardPage = () => {
 
       {/* RENAME WIDGET TITLE MODAL */}
       {editingWidget && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#18181B] border border-[#27272A] rounded-2xl shadow-2xl p-5 w-full max-w-[360px] text-[#E4E4E7] space-y-4 animate-in fade-in duration-150">
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setEditingWidget(null); }}
+        >
+          <div 
+            className="bg-[#18181B] border border-[#27272A] rounded-2xl shadow-2xl p-4 sm:p-5 w-full max-w-[360px] text-[#E4E4E7] space-y-4 animate-in fade-in duration-150 my-auto max-h-[92vh] sm:max-h-[85vh] overflow-y-auto custom-scrollbar"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-sm font-bold text-white">
               {language === 'az' ? 'Vidcet Başlığını Dəyiş' : 'Rename Widget Title'}
             </h3>
@@ -1777,7 +1806,7 @@ const CrmDashboardPage = () => {
               autoFocus
             />
 
-            <div className="flex items-center justify-end gap-2">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#27272A]">
               <button
                 type="button"
                 onClick={() => setEditingWidget(null)}

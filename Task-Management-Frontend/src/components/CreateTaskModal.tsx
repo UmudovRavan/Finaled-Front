@@ -10,6 +10,7 @@ import {
     FolderIcon,
     QueueListIcon,
     ShieldExclamationIcon,
+    SparklesIcon,
 } from '@heroicons/react/24/outline';
 import { DifficultyLevel, Priority } from '../dto';
 import type { UserResponse, DivisionDTO, ProjectDTO, ProjectLevelDTO, WorkloadWarningDTO } from '../dto';
@@ -39,7 +40,6 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     const { t } = useLanguage();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [difficulty, setDifficulty] = useState<DifficultyLevel>(DifficultyLevel.Medium);
     const [priority, setPriority] = useState<Priority>(Priority.Normal);
     const [deadline, setDeadline] = useState('');
     const [assignedUser, setAssignedUser] = useState<UserResponse | null>(null);
@@ -73,7 +73,6 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             fetchInitialData();
             setTitle('');
             setDescription('');
-            setDifficulty(DifficultyLevel.Medium);
             setPriority(Priority.Normal);
             setDeadline('');
             setAssignedUser(null);
@@ -282,7 +281,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 {
                     title: title.trim(),
                     description: description.trim(),
-                    difficulty: typeof difficulty === 'number' ? difficulty : 1,
+                    difficulty: DifficultyLevel.Medium,
                     priority: typeof priority === 'number' ? priority : 1,
                     status: assignedUser ? 1 : 0,
                     deadline: new Date(deadline).toISOString(),
@@ -318,13 +317,16 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/70 backdrop-blur-sm animate-in fade-in duration-150 font-sans">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 dark:bg-black/70 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-150 font-sans"
+            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
             <div
-                className="w-full max-w-xl bg-white dark:bg-[#1C1C1E] border border-zinc-200 dark:border-[#2C2C2E] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-zinc-900 dark:text-[#F4F4F5]"
+                className="w-full max-w-xl bg-white dark:bg-[#1C1C1E] border border-zinc-200 dark:border-[#2C2C2E] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[85vh] my-auto text-zinc-900 dark:text-[#F4F4F5]"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-[#2C2C2E]">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-[#2C2C2E] shrink-0">
                     <div className="flex items-center gap-2.5">
                         <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
                         <h2 className="text-sm font-bold text-zinc-900 dark:text-white tracking-tight">
@@ -340,9 +342,10 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 </div>
 
                 {/* Form Container */}
-                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
-                    {error && (
-                        <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-xs flex items-center gap-2 animate-in fade-in">
+                <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+                        {error && (
+                            <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-xs flex items-center gap-2 animate-in fade-in">
                             <ExclamationTriangleIcon className="w-4 h-4 shrink-0" />
                             <span>{error}</span>
                         </div>
@@ -441,8 +444,8 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                         />
                     </div>
 
-                    {/* Row: Priority & Difficulty & Deadline */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {/* Row: Priority & Deadline */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {/* Priority */}
                         <div className="space-y-1.5">
                             <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
@@ -456,23 +459,6 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                                     { value: String(Priority.Normal), label: t('tasks.priorityNormal', {}, 'Normal'), icon: <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> },
                                     { value: String(Priority.High), label: t('tasks.priorityHigh', {}, 'Yüksək'), icon: <span className="text-xs">⚡</span> },
                                     { value: String(Priority.Urgent), label: t('tasks.priorityUrgent', {}, 'Təcili'), icon: <span className="text-xs">🔥</span> },
-                                ]}
-                                className="w-full"
-                            />
-                        </div>
-
-                        {/* Difficulty */}
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
-                                {t('common.difficulty', {}, 'Çətinlik')}
-                            </label>
-                            <CustomSelect
-                                value={String(difficulty)}
-                                onChange={(val) => setDifficulty(Number(val) as DifficultyLevel)}
-                                options={[
-                                    { value: String(DifficultyLevel.Easy), label: t('tasks.difficultyEasy', {}, 'Asan (10 bal)'), badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">{t('tasks.pointsBadge', { count: 10 }, '10 bal')}</span> },
-                                    { value: String(DifficultyLevel.Medium), label: t('tasks.difficultyMedium', {}, 'Orta (20 bal)'), badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/20">{t('tasks.pointsBadge', { count: 20 }, '20 bal')}</span> },
-                                    { value: String(DifficultyLevel.Hard), label: t('tasks.difficultyHard', {}, 'Çətin (30 bal)'), badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold border border-rose-500/20">{t('tasks.pointsBadge', { count: 30 }, '30 bal')}</span> },
                                 ]}
                                 className="w-full"
                             />
@@ -535,13 +521,9 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                                 {workloadWarning.isOverloaded ? (
                                     <ShieldExclamationIcon className="w-4 h-4 text-rose-500 dark:text-rose-400 flex-shrink-0" />
                                 ) : (
-                                    <ExclamationTriangleIcon className="w-4 h-4 text-amber-500 dark:text-amber-400 flex-shrink-0" />
+                                    <SparklesIcon className="w-4 h-4 text-amber-500 dark:text-amber-400 flex-shrink-0" />
                                 )}
-                                <span>
-                                    {assignedUser?.userName || t('tasks.thisUser', {}, 'Bu istifadəçi')} {t('tasks.activeTasksOnUser', {}, 'üzərində')}{' '}
-                                    <strong>{t('tasks.activeTasksCountLabel', { count: workloadWarning.activeTaskCount }, `${workloadWarning.activeTaskCount} aktiv tapşırıq`)}</strong>.{' '}
-                                    {workloadWarning.isOverloaded && t('tasks.overloadWarning', {}, '(Həddindən artıq yüklənmə tövsiyə edilmir!)')}
-                                </span>
+                                <span>{workloadWarning.message}</span>
                             </div>
                         )}
                     </div>
@@ -577,29 +559,30 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                             </div>
                         )}
                     </div>
+                </div>
 
-                    {/* Footer Actions */}
-                    <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-100 dark:border-[#2C2C2E]">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 rounded-xl bg-transparent hover:bg-zinc-100 dark:hover:bg-white/5 text-xs font-semibold text-zinc-600 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
-                        >
-                            {t('common.cancel', {}, 'İmtina')}
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 hover:shadow-lg transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
-                        >
-                            {isSubmitting && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-                            <span>{isSubmitting ? t('tasks.creating', {}, 'Yaradılır...') : t('tasks.createTaskButton', {}, 'Tapşırığı Yarat')}</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
+                {/* Footer Actions - Sticky Bottom */}
+                <div className="flex items-center justify-end gap-3 p-4 sm:p-6 border-t border-zinc-100 dark:border-[#2C2C2E] shrink-0 bg-white dark:bg-[#1C1C1E]">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-4 py-2 rounded-xl bg-transparent hover:bg-zinc-100 dark:hover:bg-white/5 text-xs font-semibold text-zinc-600 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
+                    >
+                        {t('common.cancel', {}, 'İmtina')}
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 hover:shadow-lg transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                        {isSubmitting && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                        <span>{isSubmitting ? t('tasks.creating', {}, 'Yaradılır...') : t('tasks.createTaskButton', {}, 'Tapşırığı Yarat')}</span>
+                    </button>
+                </div>
+            </form>
         </div>
-    );
+    </div>
+);
 };
 
 export default CreateTaskModal;

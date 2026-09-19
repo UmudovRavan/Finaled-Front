@@ -480,9 +480,15 @@ export const LoginPage: React.FC = () => {
 
       {/* Forgot / Reset Password Modal */}
       {isForgotModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/25 animate-in fade-in duration-150">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-150"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsForgotModalOpen(false);
+          }}
+        >
           <div
-            className={`border rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 transition-all ${
+            onClick={(e) => e.stopPropagation()}
+            className={`border rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[92vh] sm:max-h-[85vh] overflow-hidden my-auto animate-in zoom-in-95 transition-all ${
               isLight
                 ? 'bg-white border-slate-200 text-slate-900 shadow-slate-300/50'
                 : isMidnight
@@ -491,12 +497,16 @@ export const LoginPage: React.FC = () => {
             }`}
           >
             <div
-              className={`flex items-center justify-between pb-3 border-b mb-4 ${
-                isLight ? 'border-slate-100' : isMidnight ? 'border-slate-800' : 'border-[#27272A]'
+              className={`flex items-center justify-between p-4 sm:p-5 border-b shrink-0 ${
+                isLight 
+                  ? 'border-slate-100 bg-white' 
+                  : isMidnight 
+                  ? 'border-slate-800 bg-[#0F172A]' 
+                  : 'border-[#27272A] bg-[#1C1C1E]'
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-[#D946EF]/15 text-[#D946EF] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-[#D946EF]/15 text-[#D946EF] flex items-center justify-center shrink-0">
                   <span className="material-symbols-outlined text-lg">
                     {forgotStep === 'forgot' ? 'mail' : 'key'}
                   </span>
@@ -523,62 +533,72 @@ export const LoginPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsForgotModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-lg transition-colors"
               >
                 <span className="material-symbols-outlined text-lg">close</span>
               </button>
             </div>
 
             {forgotStep === 'forgot' ? (
-              <form onSubmit={handleForgotSubmit} className="space-y-3">
-                <div>
-                  <label
-                    className={`block text-xs font-semibold mb-1 ${
-                      isLight ? 'text-slate-700' : 'text-slate-300'
-                    }`}
-                  >
-                    Tenant Slug *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={forgotTenantSlug}
-                    onChange={(e) => setForgotTenantSlug(e.target.value)}
-                    placeholder="platform və ya company-slug"
-                    className={`w-full h-10 px-3 rounded-xl border text-sm font-mono outline-none transition-colors ${
-                      isLight
-                        ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#D946EF] focus:bg-white'
-                        : isMidnight
-                        ? 'bg-[#0B1120] border-slate-700 text-white focus:border-[#D946EF]'
-                        : 'bg-[#121214] border-[#27272A] text-white focus:border-[#D946EF]'
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label
-                    className={`block text-xs font-semibold mb-1 ${
-                      isLight ? 'text-slate-700' : 'text-slate-300'
-                    }`}
-                  >
-                    Email Ünvanı *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={forgotEmail}
-                    onChange={(e) => setForgotEmail(e.target.value)}
-                    placeholder="user@altensor.io"
-                    className={`w-full h-10 px-3 rounded-xl border text-sm outline-none transition-colors ${
-                      isLight
-                        ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#D946EF] focus:bg-white'
-                        : isMidnight
-                        ? 'bg-[#0B1120] border-slate-700 text-white focus:border-[#D946EF]'
-                        : 'bg-[#121214] border-[#27272A] text-white focus:border-[#D946EF]'
-                    }`}
-                  />
+              <form onSubmit={handleForgotSubmit} className="flex flex-col flex-1 min-h-0">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 custom-scrollbar text-xs">
+                  <div>
+                    <label
+                      className={`block text-xs font-semibold mb-1 ${
+                        isLight ? 'text-slate-700' : 'text-slate-300'
+                      }`}
+                    >
+                      Tenant Slug *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={forgotTenantSlug}
+                      onChange={(e) => setForgotTenantSlug(e.target.value)}
+                      placeholder="platform və ya company-slug"
+                      className={`w-full h-10 px-3 rounded-xl border text-sm font-mono outline-none transition-colors ${
+                        isLight
+                          ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#D946EF] focus:bg-white'
+                          : isMidnight
+                          ? 'bg-[#0B1120] border-slate-700 text-white focus:border-[#D946EF]'
+                          : 'bg-[#121214] border-[#27272A] text-white focus:border-[#D946EF]'
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className={`block text-xs font-semibold mb-1 ${
+                        isLight ? 'text-slate-700' : 'text-slate-300'
+                      }`}
+                    >
+                      Email Ünvanı *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      placeholder="user@altensor.io"
+                      className={`w-full h-10 px-3 rounded-xl border text-sm outline-none transition-colors ${
+                        isLight
+                          ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#D946EF] focus:bg-white'
+                          : isMidnight
+                          ? 'bg-[#0B1120] border-slate-700 text-white focus:border-[#D946EF]'
+                          : 'bg-[#121214] border-[#27272A] text-white focus:border-[#D946EF]'
+                      }`}
+                    />
+                  </div>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-2">
+                <div 
+                  className={`flex items-center justify-end gap-2.5 p-4 sm:p-5 border-t shrink-0 ${
+                    isLight 
+                      ? 'border-slate-100 bg-white' 
+                      : isMidnight 
+                      ? 'border-slate-800 bg-[#0F172A]' 
+                      : 'border-[#27272A] bg-[#1C1C1E]'
+                  }`}
+                >
                   <button
                     type="button"
                     onClick={() => setIsForgotModalOpen(false)}
@@ -604,56 +624,66 @@ export const LoginPage: React.FC = () => {
                 </div>
               </form>
             ) : (
-              <form onSubmit={handleResetSubmit} className="space-y-3">
-                <div>
-                  <label
-                    className={`block text-xs font-semibold mb-1 ${
-                      isLight ? 'text-slate-700' : 'text-slate-300'
-                    }`}
-                  >
-                    6-Rəqəmli OTP Kod *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    maxLength={6}
-                    value={resetOtp}
-                    onChange={(e) => setResetOtp(e.target.value.replace(/\D/g, ''))}
-                    placeholder="123456"
-                    className={`w-full h-10 px-3 rounded-xl border text-sm font-mono text-center tracking-widest outline-none transition-colors ${
-                      isLight
-                        ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#D946EF] focus:bg-white'
-                        : isMidnight
-                        ? 'bg-[#0B1120] border-slate-700 text-white focus:border-[#D946EF]'
-                        : 'bg-[#121214] border-[#27272A] text-white focus:border-[#D946EF]'
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label
-                    className={`block text-xs font-semibold mb-1 ${
-                      isLight ? 'text-slate-700' : 'text-slate-300'
-                    }`}
-                  >
-                    Yeni Şifrə *
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={resetNewPassword}
-                    onChange={(e) => setResetNewPassword(e.target.value)}
-                    placeholder="••••••••••••"
-                    className={`w-full h-10 px-3 rounded-xl border text-sm outline-none transition-colors ${
-                      isLight
-                        ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#D946EF] focus:bg-white'
-                        : isMidnight
-                        ? 'bg-[#0B1120] border-slate-700 text-white focus:border-[#D946EF]'
-                        : 'bg-[#121214] border-[#27272A] text-white focus:border-[#D946EF]'
-                    }`}
-                  />
+              <form onSubmit={handleResetSubmit} className="flex flex-col flex-1 min-h-0">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 custom-scrollbar text-xs">
+                  <div>
+                    <label
+                      className={`block text-xs font-semibold mb-1 ${
+                        isLight ? 'text-slate-700' : 'text-slate-300'
+                      }`}
+                    >
+                      6-Rəqəmli OTP Kod *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      maxLength={6}
+                      value={resetOtp}
+                      onChange={(e) => setResetOtp(e.target.value.replace(/\D/g, ''))}
+                      placeholder="123456"
+                      className={`w-full h-10 px-3 rounded-xl border text-sm font-mono text-center tracking-widest outline-none transition-colors ${
+                        isLight
+                          ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#D946EF] focus:bg-white'
+                          : isMidnight
+                          ? 'bg-[#0B1120] border-slate-700 text-white focus:border-[#D946EF]'
+                          : 'bg-[#121214] border-[#27272A] text-white focus:border-[#D946EF]'
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className={`block text-xs font-semibold mb-1 ${
+                        isLight ? 'text-slate-700' : 'text-slate-300'
+                      }`}
+                    >
+                      Yeni Şifrə *
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      value={resetNewPassword}
+                      onChange={(e) => setResetNewPassword(e.target.value)}
+                      placeholder="••••••••••••"
+                      className={`w-full h-10 px-3 rounded-xl border text-sm outline-none transition-colors ${
+                        isLight
+                          ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#D946EF] focus:bg-white'
+                          : isMidnight
+                          ? 'bg-[#0B1120] border-slate-700 text-white focus:border-[#D946EF]'
+                          : 'bg-[#121214] border-[#27272A] text-white focus:border-[#D946EF]'
+                      }`}
+                    />
+                  </div>
                 </div>
 
-                <div className="flex justify-between items-center pt-2">
+                <div 
+                  className={`flex items-center justify-between gap-2.5 p-4 sm:p-5 border-t shrink-0 ${
+                    isLight 
+                      ? 'border-slate-100 bg-white' 
+                      : isMidnight 
+                      ? 'border-slate-800 bg-[#0F172A]' 
+                      : 'border-[#27272A] bg-[#1C1C1E]'
+                  }`}
+                >
                   <button
                     type="button"
                     onClick={() => setForgotStep('forgot')}

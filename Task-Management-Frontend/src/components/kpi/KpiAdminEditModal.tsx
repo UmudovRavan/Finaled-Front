@@ -113,9 +113,12 @@ export const KpiAdminEditModal: React.FC<KpiAdminEditModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 overflow-hidden animate-in fade-in duration-150 font-sans">
+        <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150 font-sans"
+            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
             <div
-                className="w-full max-w-xl bg-white dark:bg-[#121214] border border-zinc-200 dark:border-[#27272A] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-zinc-900 dark:text-[#F4F4F5] animate-in zoom-in-95 duration-150"
+                className="w-full max-w-xl bg-white dark:bg-[#121214] border border-zinc-200 dark:border-[#27272A] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[85vh] text-zinc-900 dark:text-[#F4F4F5] my-auto animate-in zoom-in-95 duration-150"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Fixed Header */}
