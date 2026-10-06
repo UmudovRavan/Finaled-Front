@@ -5,7 +5,7 @@ import KpiCard from '../components/KpiCard';
 import { projectService, divisionService, taskService, notificationService, userService, authService } from '../api';
 import type { ProjectDTO, DivisionDTO, CreateProjectRequest, NotificationResponse, UserResponse, TaskResponse } from '../dto';
 import { ProjectStatus } from '../dto';
-import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, isUserAdmin, isUserManager } from '../utils';
+import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, isUserAdmin, isUserManager, formatDateOnly } from '../utils';
 import type { UserInfo } from '../utils';
 import CustomSelect from '../components/CustomSelect';
 import { useAuth } from '../context/AuthContext';
@@ -684,7 +684,7 @@ const Projects: React.FC = () => {
                                                     <div className="flex items-center gap-1.5">
                                                         <CalendarIcon className="w-3.5 h-3.5 text-zinc-400" />
                                                         <span>
-                                                            {proj.startDate ? new Date(proj.startDate).toLocaleDateString('az-AZ') : '—'} - {proj.endDate ? new Date(proj.endDate).toLocaleDateString('az-AZ') : '—'}
+                                                            {formatDateOnly(proj.startDate)} - {formatDateOnly(proj.endDate)}
                                                         </span>
                                                     </div>
                                                 )}

@@ -13,6 +13,7 @@ import {
 import altensorLogo from '../assets/Altensor-Logo.png';
 import taskManagementLogo from '../assets/Task-Management-Logo.svg';
 import altensorCrmLogo from '../assets/Altensor_CRM_Logo.svg';
+import accountingLogo from '../assets/Accounting-Logo.png';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -32,6 +33,13 @@ const appsList = [
     logo: altensorCrmLogo,
     externalRoute: import.meta.env.VITE_CRM_WEB_URL || 'https://crm.altensor.com/desktop',
     requiredModule: 'crm'
+  },
+  {
+    id: 'accounting',
+    name: 'Accounting',
+    logo: accountingLogo,
+    externalRoute: import.meta.env.VITE_ACC_WEB_URL || 'https://accounting.altensor.com',
+    requiredModule: 'accounting'
   }
 ];
 
@@ -96,11 +104,12 @@ const DesktopPage = () => {
     if (!app.requiredModule) return true;
     if (isAdmin) return true;
 
-    const target = app.requiredModule.toLowerCase(); // 'tms' or 'crm' or 'auth'
+    const target = app.requiredModule.toLowerCase(); // 'tms' or 'crm' or 'accounting' or 'auth'
     return userModules.some((m) => {
       if (m === target) return true;
       if (target === 'tms' && (m === 'task' || m === 'tasks' || m === 'task-management')) return true;
       if (target === 'crm' && m === 'crm') return true;
+      if (target === 'accounting' && (m === 'acc' || m === 'account' || m === 'accounting')) return true;
       if (target === 'auth' && (m === 'auth' || m === 'authorization' || m === 'identity')) return true;
       return false;
     });
@@ -328,7 +337,7 @@ const DesktopPage = () => {
                 <div className="flex items-center gap-1.5 mt-3.5 justify-center w-full">
                   <span className={`text-sm sm:text-base md:text-lg font-semibold text-center tracking-tight truncate transition-colors ${isDarkMode ? 'text-slate-200 group-hover:text-white' : 'text-slate-700 group-hover:text-slate-900'
                     }`}>
-                    {app.id === 'tasks' ? t('desktop.tasksAppName', {}, app.name) : app.id === 'crm' ? t('desktop.crmAppName', {}, app.name) : t('desktop.authAppName', {}, app.name)}
+                    {app.id === 'tasks' ? t('desktop.tasksAppName', {}, app.name) : app.id === 'crm' ? t('desktop.crmAppName', {}, app.name) : app.id === 'accounting' ? t('desktop.accountingAppName', {}, app.name) : t('desktop.authAppName', {}, app.name)}
                   </span>
                   {!hasAccess && (
                     <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0">
@@ -361,7 +370,7 @@ const DesktopPage = () => {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-slate-100">
-                  {accessDeniedModal.id === 'tasks' ? t('desktop.tasksAppName', {}, accessDeniedModal.name) : accessDeniedModal.id === 'crm' ? t('desktop.crmAppName', {}, accessDeniedModal.name) : t('desktop.authAppName', {}, accessDeniedModal.name)}
+                  {accessDeniedModal.id === 'tasks' ? t('desktop.tasksAppName', {}, accessDeniedModal.name) : accessDeniedModal.id === 'crm' ? t('desktop.crmAppName', {}, accessDeniedModal.name) : accessDeniedModal.id === 'accounting' ? t('desktop.accountingAppName', {}, accessDeniedModal.name) : t('desktop.authAppName', {}, accessDeniedModal.name)}
                 </h3>
                 <p className="text-xs text-amber-400 font-semibold">{t('desktop.noAccessTitle', {}, 'Giriş Məhdudiyyəti')}</p>
               </div>

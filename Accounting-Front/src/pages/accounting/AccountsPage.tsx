@@ -1,0 +1,1236 @@
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { accountsService } from '../../api';
+import type { AccountDto, CreateAccountRequest, InitialBalanceRequest } from '../../dto';
+import {
+    PlusIcon,
+    ArrowPathIcon,
+    FunnelIcon,
+    ArrowsUpDownIcon,
+    ViewColumnsIcon,
+    EllipsisHorizontalIcon,
+    ChevronDownIcon,
+    XMarkIcon,
+    Bars3Icon,
+    CheckIcon,
+    PencilSquareIcon,
+    SparklesIcon,
+} from '@heroicons/react/24/outline';
+
+const ACCOUNT_CATEGORIES = [
+    { id: 1, label: 'Aktiv (Asset)' },
+    { id: 2, label: 'Öhdəlik (Liability)' },
+    { id: 3, label: 'Kapital (Equity)' },
+    { id: 4, label: 'Gəlir (Income)' },
+    { id: 5, label: 'Xərc (Expense)' },
+];
+
+const ACCOUNT_TYPE_OPTIONS = [
+    { id: 0, label: 'Standart (Standard)' },
+    { id: 1, label: 'Debitor (Receivable)' },
+    { id: 2, label: 'Kreditor (Payable)' },
+    { id: 3, label: 'Bank' },
+    { id: 4, label: 'Kassa (Cash)' },
+    { id: 5, label: 'Anbar (Stock)' },
+    { id: 6, label: 'GRNI' },
+    { id: 7, label: 'Satışın Mayası (COGS)' },
+    { id: 8, label: 'Vergi (Tax)' },
+    { id: 9, label: 'Bölüşdürülməmiş Mənfəət' },
+    { id: 10, label: 'Gəlir (Revenue)' },
+    { id: 11, label: 'Xərc (Expense)' },
+    { id: 12, label: 'Əsas Vəsait (Fixed Asset)' },
+    { id: 13, label: 'Cari Aktiv (Current Asset)' },
+    { id: 14, label: 'Qısamüddətli Öhdəlik' },
+    { id: 15, label: 'Uzunmüddətli Öhdəlik' },
+];
+
+const ACCOUNT_TYPES = ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'];
+const CURRENCIES = ['AZN', 'USD', 'EUR', 'GBP', 'TRY'];
+
+export const AccountsPage: React.FC = () => {
+    const navigate = useNavigate();
+    const [accounts, setAccounts] = useState<AccountDto[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    // Filters
+    const [filterCode, setFilterCode] = useState('');
+    const [filterName, setFilterName] = useState('');
+    const [selectedType, setSelectedType] = useState('Tip');
+    const [selectedCurrency, setSelectedCurrency] = useState('Valyuta');
+    const [selectedStatus, setSelectedStatus] = useState('Status');
+
+    // Filter Dropdown Open States
+    const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
+    const [isCurrencyDropdownOpen, setIsCurrencyDropdownOpen] = useState(false);
+    const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+    const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
+    const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState(false);
+    const [isColumnsOpen, setIsColumnsOpen] = useState(false);
+    const [isSortOpen, setIsSortOpen] = useState(false);
+
+    // Sort & Pagination
+    const [sortField, setSortField] = useState<'code' | 'name' | 'type' | 'balance'>('code');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+    const [pageSize, setPageSize] = useState(20);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [selectedRows, setSelectedRows] = useState<string[]>([]);
+
+    // Column Visibility
+    const [columns, setColumns] = useState([
+        { key: 'code', label: 'Kod', visible: true },
+        { key: 'name', label: 'Hesabın Adı', visible: true },
+        { key: 'type', label: 'Tipi', visible: true },
+        { key: 'currency', label: 'Valyuta', visible: true },
+        { key: 'balance', label: 'Qalıq', visible: true },
+        { key: 'status', label: 'Status', visible: true },
+    ]);
+
+    // Create Modal State - strictly backend CreateAccountDto fields
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [createForm, setCreateForm] = useState({
+        code: '',
+        name: '',
+        category: 1,
+        type: 0,
+        currency: 'AZN',
+        parentAccountId: '',
+        isControlAccount: false,
+    });
+    const [createLoading, setCreateLoading] = useState(false);
+    const [createError, setCreateError] = useState('');
+
+    // Initial Balance Modal
+    const [showBalanceModal, setShowBalanceModal] = useState(false);
+    const [selectedAccount, setSelectedAccount] = useState<AccountDto | null>(null);
+    const [balanceError, setBalanceError] = useState('');
+    const [balanceForm, setBalanceForm] = useState<InitialBalanceRequest>({
+        accountId: '',
+        debitAmount: 0,
+        creditAmount: 0,
+        asOfDate: new Date().toISOString().split('T')[0],
+        notes: '',
+    });
+    const [balanceLoading, setBalanceLoading] = useState(false);
+    const [seedLoading, setSeedLoading] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
+
+    // Dropdown Refs
+    const typeRef = useRef<HTMLDivElement>(null);
+    const currencyRef = useRef<HTMLDivElement>(null);
+    const statusRef = useRef<HTMLDivElement>(null);
+    const filterRef = useRef<HTMLDivElement>(null);
+    const moreRef = useRef<HTMLDivElement>(null);
+    const columnsRef = useRef<HTMLDivElement>(null);
+    const sortRef = useRef<HTMLDivElement>(null);
+
+    const loadAccounts = async () => {
+        setIsRefreshing(true);
+        try {
+            const data = await accountsService.getAccounts();
+            setAccounts(Array.isArray(data) ? data : []);
+        } catch (err) {
+            console.error('Failed to load accounts:', err);
+        } finally {
+            setLoading(false);
+            setIsRefreshing(false);
+        }
+    };
+
+    useEffect(() => {
+        loadAccounts();
+    }, []);
+
+    // Outside click listener for filter popovers
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (typeRef.current && !typeRef.current.contains(e.target as Node)) setIsTypeDropdownOpen(false);
+            if (currencyRef.current && !currencyRef.current.contains(e.target as Node)) setIsCurrencyDropdownOpen(false);
+            if (statusRef.current && !statusRef.current.contains(e.target as Node)) setIsStatusDropdownOpen(false);
+            if (filterRef.current && !filterRef.current.contains(e.target as Node)) setIsFilterPopoverOpen(false);
+            if (moreRef.current && !moreRef.current.contains(e.target as Node)) setIsMoreOptionsOpen(false);
+            if (columnsRef.current && !columnsRef.current.contains(e.target as Node)) setIsColumnsOpen(false);
+            if (sortRef.current && !sortRef.current.contains(e.target as Node)) setIsSortOpen(false);
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const showToast = (msg: string) => {
+        setToastMessage(msg);
+        setTimeout(() => setToastMessage(''), 3500);
+    };
+
+    const activeFilterCount = useMemo(() => {
+        let count = 0;
+        if (filterCode.trim()) count++;
+        if (filterName.trim()) count++;
+        if (selectedType !== 'Tip') count++;
+        if (selectedCurrency !== 'Valyuta') count++;
+        if (selectedStatus !== 'Status') count++;
+        return count;
+    }, [filterCode, filterName, selectedType, selectedCurrency, selectedStatus]);
+
+    // Filtered & Sorted accounts
+    const filteredAccounts = useMemo(() => {
+        return accounts.filter((acc) => {
+            if (filterCode.trim()) {
+                const codeStr = String(acc.code || '').toLowerCase();
+                if (!codeStr.includes(filterCode.trim().toLowerCase())) return false;
+            }
+            if (filterName.trim()) {
+                const nameStr = String(acc.name || '').toLowerCase();
+                if (!nameStr.includes(filterName.trim().toLowerCase())) return false;
+            }
+            if (selectedType !== 'Tip') {
+                const typeStr = String(acc.type || '').toLowerCase();
+                const catStr = String(acc.category || '').toLowerCase();
+                const sel = selectedType.toLowerCase();
+
+                const matchesCat =
+                    (sel === 'asset' && (acc.category === 1 || catStr.includes('asset') || typeStr.includes('asset'))) ||
+                    (sel === 'liability' && (acc.category === 2 || catStr.includes('liability') || typeStr.includes('liability'))) ||
+                    (sel === 'equity' && (acc.category === 3 || catStr.includes('equity') || typeStr.includes('equity'))) ||
+                    (sel === 'revenue' && (acc.category === 4 || catStr.includes('revenue') || catStr.includes('income') || typeStr.includes('revenue') || typeStr.includes('income'))) ||
+                    (sel === 'expense' && (acc.category === 5 || catStr.includes('expense') || typeStr.includes('expense')));
+
+                const matchesType = typeStr.includes(sel);
+
+                if (!matchesCat && !matchesType) return false;
+            }
+            if (selectedCurrency !== 'Valyuta') {
+                const cur = String(acc.currency || 'AZN').toUpperCase();
+                if (cur !== selectedCurrency.toUpperCase()) return false;
+            }
+            if (selectedStatus === 'Aktiv' && !acc.isActive) return false;
+            if (selectedStatus === 'Deaktiv' && acc.isActive) return false;
+            return true;
+        }).sort((a, b) => {
+            let valA: any = a[sortField] || '';
+            let valB: any = b[sortField] || '';
+            if (sortField === 'balance') {
+                valA = Number(a.balance ?? (a as any).currentBalance) || 0;
+                valB = Number(b.balance ?? (b as any).currentBalance) || 0;
+            }
+            if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+            if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [accounts, filterCode, filterName, selectedType, selectedCurrency, selectedStatus, sortField, sortDirection]);
+
+    const paginatedAccounts = useMemo(() => {
+        const start = (currentPage - 1) * pageSize;
+        return filteredAccounts.slice(start, start + pageSize);
+    }, [filteredAccounts, currentPage, pageSize]);
+
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            setSelectedRows(paginatedAccounts.map((a) => a.id));
+        } else {
+            setSelectedRows([]);
+        }
+    };
+
+    const handleSelectRow = (id: string) => {
+        setSelectedRows((prev) =>
+            prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+        );
+    };
+
+    const toggleColumnVisibility = (key: string) => {
+        setColumns((prev) =>
+            prev.map((c) => (c.key === key ? { ...c, visible: !c.visible } : c))
+        );
+    };
+
+    const isColVisible = (key: string) => {
+        return columns.find((c) => c.key === key)?.visible ?? true;
+    };
+
+    // Handle Create Submit
+    const handleCreateAccount = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setCreateLoading(true);
+        setCreateError('');
+        try {
+            await accountsService.createAccount({
+                code: createForm.code.trim(),
+                name: createForm.name.trim(),
+                category: Number(createForm.category),
+                type: Number(createForm.type),
+                parentAccountId: createForm.parentAccountId || null,
+                isControlAccount: Boolean(createForm.isControlAccount),
+                currency: createForm.currency || 'AZN',
+            });
+
+            setShowCreateModal(false);
+            setCreateForm({
+                code: '',
+                name: '',
+                category: 1,
+                type: 0,
+                currency: 'AZN',
+                parentAccountId: '',
+                isControlAccount: false,
+            });
+            showToast('Hesab uğurla yaradıldı!');
+            loadAccounts();
+        } catch (err: any) {
+            setCreateError(err.response?.data?.message || 'Hesab yaradılarkən xəta baş verdi.');
+        } finally {
+            setCreateLoading(false);
+        }
+    };
+
+    // Handle Initial Balance Submit
+    const handleSetInitialBalance = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setBalanceLoading(true);
+        setBalanceError('');
+        try {
+            await accountsService.setInitialBalance(balanceForm);
+            setShowBalanceModal(false);
+            showToast('İlkin qalıq uğurla təyin edildi!');
+            loadAccounts();
+        } catch (err: any) {
+            setBalanceError(err.response?.data?.message || err.message || 'İlkin qalıq qeyd olunarkən xəta baş verdi.');
+        } finally {
+            setBalanceLoading(false);
+        }
+    };
+
+    const handleSeedTemplate = async () => {
+        setSeedLoading(true);
+        try {
+            await accountsService.seedTemplate();
+            showToast('Standart hesablar planı şablonu uğurla tətbiq edildi!');
+            loadAccounts();
+        } catch (err: any) {
+            showToast(err.response?.data?.message || 'Şablon yüklənərkən xəta baş verdi.');
+        } finally {
+            setSeedLoading(false);
+        }
+    };
+
+    const getTypeColor = (type: string) => {
+        switch (type) {
+            case 'Asset': return '#38BDF8';
+            case 'Liability': return '#F59E0B';
+            case 'Equity': return '#A855F7';
+            case 'Revenue': return '#22C55E';
+            case 'Expense': return '#EF4444';
+            default: return '#71717A';
+        }
+    };
+
+    return (
+        <div className="space-y-3.5 font-sans text-[#F4F4F5] antialiased select-none pb-12">
+            {/* ─── Top Header (Breadcrumb / Title & + Yarat button - Image 1) ─── */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                    <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                        <span>Hesablar Planı</span>
+                        <span className="text-[#52525B]">/</span>
+                        <div className="inline-flex items-center gap-1.5 text-white font-bold">
+                            <Bars3Icon className="w-4 h-4 text-[#A1A1AA]" />
+                            <span>Siyahı</span>
+                        </div>
+                    </h1>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setShowCreateModal(true)}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white hover:bg-zinc-200 text-black text-xs font-semibold shadow-md transition-colors cursor-pointer"
+                    >
+                        <PlusIcon className="w-4 h-4 stroke-[2.5]" />
+                        <span>Yarat</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* Toast Notification */}
+            {toastMessage && (
+                <div className="p-3 rounded-xl bg-white/10 border border-white/20 text-white text-xs flex items-center gap-2 animate-in fade-in">
+                    <CheckIcon className="w-4 h-4 text-emerald-400" />
+                    <span>{toastMessage}</span>
+                </div>
+            )}
+
+            {/* ─── Filter Bar (Inputs & Action Buttons - Image 1) ─── */}
+            <div className="flex flex-wrap items-center justify-between gap-2.5 relative z-20">
+                <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                    {/* Kod Input */}
+                    <input
+                        type="text"
+                        placeholder="Kod"
+                        value={filterCode}
+                        onChange={(e) => setFilterCode(e.target.value)}
+                        className="w-28 sm:w-32 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
+                    />
+
+                    {/* Ad Input */}
+                    <input
+                        type="text"
+                        placeholder="Hesabın adı"
+                        value={filterName}
+                        onChange={(e) => setFilterName(e.target.value)}
+                        className="w-36 sm:w-44 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
+                    />
+
+                    {/* Status Dropdown */}
+                    <div className="relative" ref={statusRef}>
+                        <button
+                            type="button"
+                            onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                            className="flex items-center justify-between w-28 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                        >
+                            <span className="truncate">{selectedStatus}</span>
+                            <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
+                        </button>
+
+                        {isStatusDropdownOpen && (
+                            <div className="absolute top-9 left-0 w-36 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-50 flex flex-col text-xs text-[#E4E4E7] animate-in fade-in duration-150">
+                                {['Status', 'Aktiv', 'Deaktiv'].map((st) => (
+                                    <button
+                                        key={st}
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedStatus(st);
+                                            setIsStatusDropdownOpen(false);
+                                        }}
+                                        className={`px-3 py-1.5 rounded-xl text-left cursor-pointer transition-colors ${
+                                            selectedStatus === st ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
+                                        }`}
+                                    >
+                                        {st === 'Status' ? 'Bütün Statuslar' : st}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Tip Dropdown */}
+                    <div className="relative" ref={typeRef}>
+                        <button
+                            type="button"
+                            onClick={() => setIsTypeDropdownOpen(!isTypeDropdownOpen)}
+                            className="flex items-center justify-between w-28 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                        >
+                            <span className="truncate">{selectedType}</span>
+                            <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
+                        </button>
+
+                        {isTypeDropdownOpen && (
+                            <div className="absolute top-9 left-0 w-40 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-50 flex flex-col text-xs text-[#E4E4E7] animate-in fade-in duration-150">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSelectedType('Tip');
+                                        setIsTypeDropdownOpen(false);
+                                    }}
+                                    className="px-3 py-1.5 rounded-xl text-left cursor-pointer text-[#A1A1AA] hover:bg-[#2C2C2E]/60"
+                                >
+                                    Bütün Tiplər
+                                </button>
+                                <div className="h-px bg-[#2C2C2E] my-1" />
+                                {ACCOUNT_TYPES.map((t) => (
+                                    <button
+                                        key={t}
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedType(t);
+                                            setIsTypeDropdownOpen(false);
+                                        }}
+                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-left cursor-pointer transition-colors ${
+                                            selectedType === t ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
+                                        }`}
+                                    >
+                                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getTypeColor(t) }} />
+                                        <span>{t}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Valyuta Dropdown */}
+                    <div className="relative" ref={currencyRef}>
+                        <button
+                            type="button"
+                            onClick={() => setIsCurrencyDropdownOpen(!isCurrencyDropdownOpen)}
+                            className="flex items-center justify-between w-28 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                        >
+                            <span className="truncate">{selectedCurrency}</span>
+                            <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
+                        </button>
+
+                        {isCurrencyDropdownOpen && (
+                            <div className="absolute top-9 left-0 w-36 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-50 flex flex-col text-xs text-[#E4E4E7] animate-in fade-in duration-150">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSelectedCurrency('Valyuta');
+                                        setIsCurrencyDropdownOpen(false);
+                                    }}
+                                    className="px-3 py-1.5 rounded-xl text-left cursor-pointer text-[#A1A1AA] hover:bg-[#2C2C2E]/60"
+                                >
+                                    Bütün Valyutalar
+                                </button>
+                                <div className="h-px bg-[#2C2C2E] my-1" />
+                                {CURRENCIES.map((c) => (
+                                    <button
+                                        key={c}
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedCurrency(c);
+                                            setIsCurrencyDropdownOpen(false);
+                                        }}
+                                        className={`px-3 py-1.5 rounded-xl text-left cursor-pointer font-mono ${
+                                            selectedCurrency === c ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
+                                        }`}
+                                    >
+                                        {c}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Right Action Icons (Refresh, Filter, Sort, Columns, More - Image 1) */}
+                <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                    {/* Refresh */}
+                    <button
+                        type="button"
+                        onClick={loadAccounts}
+                        title="Yenilə"
+                        className="p-1.5 rounded-xl border border-[#27272A] bg-[#18181B] hover:bg-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                    >
+                        <ArrowPathIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-white' : ''}`} />
+                    </button>
+
+                    {/* Filter Button */}
+                    <div className="relative" ref={filterRef}>
+                        <button
+                            type="button"
+                            onClick={() => setIsFilterPopoverOpen(!isFilterPopoverOpen)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-colors cursor-pointer ${
+                                activeFilterCount > 0
+                                    ? 'bg-white text-black border-white font-semibold'
+                                    : 'border-[#27272A] bg-[#18181B] hover:bg-[#27272A] text-white'
+                            }`}
+                        >
+                            <FunnelIcon className="w-3.5 h-3.5" />
+                            <span>Filtr</span>
+                            {activeFilterCount > 0 && (
+                                <span className="w-4 h-4 rounded-full bg-black text-white text-[10px] font-bold flex items-center justify-center">
+                                    {activeFilterCount}
+                                </span>
+                            )}
+                        </button>
+
+                        {isFilterPopoverOpen && (
+                            <div className="absolute top-9 right-0 w-80 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-4 z-50 text-xs text-[#E4E4E7] space-y-3.5 animate-in fade-in duration-150">
+                                <div className="flex items-center justify-between pb-2 border-b border-[#2C2C2E]">
+                                    <div className="flex items-center gap-1.5 font-bold text-white">
+                                        <FunnelIcon className="w-4 h-4 text-[#A1A1AA]" />
+                                        <span>Filtrlər</span>
+                                    </div>
+                                    {activeFilterCount > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setFilterCode('');
+                                                setFilterName('');
+                                                setSelectedType('Tip');
+                                                setSelectedCurrency('Valyuta');
+                                                setSelectedStatus('Status');
+                                            }}
+                                            className="text-[11px] text-rose-400 hover:underline cursor-pointer font-medium"
+                                        >
+                                            Təmizlə ({activeFilterCount})
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="space-y-3">
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] text-[#A1A1AA]">Hesab Kodu</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Kod üzrə axtar..."
+                                            value={filterCode}
+                                            onChange={(e) => setFilterCode(e.target.value)}
+                                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white font-mono"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] text-[#A1A1AA]">Hesabın Adı</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Ad üzrə axtar..."
+                                            value={filterName}
+                                            onChange={(e) => setFilterName(e.target.value)}
+                                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="space-y-1">
+                                            <label className="text-[11px] text-[#A1A1AA]">Kateqoriya / Tip</label>
+                                            <select
+                                                value={selectedType}
+                                                onChange={(e) => setSelectedType(e.target.value)}
+                                                className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-white"
+                                            >
+                                                <option value="Tip">Bütün Tiplər</option>
+                                                {ACCOUNT_TYPES.map((t) => (
+                                                    <option key={t} value={t} className="bg-[#1C1C1E]">
+                                                        {t}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <label className="text-[11px] text-[#A1A1AA]">Valyuta</label>
+                                            <select
+                                                value={selectedCurrency}
+                                                onChange={(e) => setSelectedCurrency(e.target.value)}
+                                                className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-white font-mono"
+                                            >
+                                                <option value="Valyuta" className="bg-[#1C1C1E]">Hamısı</option>
+                                                {CURRENCIES.map((c) => (
+                                                    <option key={c} value={c} className="bg-[#1C1C1E]">
+                                                        {c}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] text-[#A1A1AA]">Status</label>
+                                        <select
+                                            value={selectedStatus}
+                                            onChange={(e) => setSelectedStatus(e.target.value)}
+                                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-white"
+                                        >
+                                            <option value="Status" className="bg-[#1C1C1E]">Bütün Statuslar</option>
+                                            <option value="Aktiv" className="bg-[#1C1C1E]">● Aktiv</option>
+                                            <option value="Deaktiv" className="bg-[#1C1C1E]">● Deaktiv</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-2 border-t border-[#2C2C2E]">
+                                    <span className="text-[11px] text-[#71717A]">
+                                        {filteredAccounts.length} nəticə tapıldı
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsFilterPopoverOpen(false)}
+                                        className="px-3.5 py-1.5 bg-white text-black font-semibold rounded-xl text-xs hover:bg-zinc-200 transition-colors cursor-pointer"
+                                    >
+                                        Tətbiq et
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Sort Button */}
+                    <div className="relative" ref={sortRef}>
+                        <button
+                            type="button"
+                            onClick={() => setIsSortOpen(!isSortOpen)}
+                            className="p-1.5 rounded-xl border border-[#27272A] bg-[#18181B] hover:bg-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                            title="Sırala"
+                        >
+                            <ArrowsUpDownIcon className="w-4 h-4" />
+                        </button>
+
+                        {isSortOpen && (
+                            <div className="absolute top-9 right-0 w-44 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-50 text-xs text-[#E4E4E7] space-y-0.5 animate-in fade-in duration-150">
+                                {[
+                                    { key: 'code', label: 'Kod üzrə' },
+                                    { key: 'name', label: 'Ad üzrə' },
+                                    { key: 'type', label: 'Tip üzrə' },
+                                    { key: 'balance', label: 'Qalıq üzrə' },
+                                ].map((item) => (
+                                    <button
+                                        key={item.key}
+                                        type="button"
+                                        onClick={() => {
+                                            if (sortField === item.key) {
+                                                setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+                                            } else {
+                                                setSortField(item.key as any);
+                                                setSortDirection('asc');
+                                            }
+                                            setIsSortOpen(false);
+                                        }}
+                                        className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-xl transition-colors text-left cursor-pointer ${
+                                            sortField === item.key ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
+                                        }`}
+                                    >
+                                        <span>{item.label}</span>
+                                        {sortField === item.key && (
+                                            <span className="text-[10px] text-[#A1A1AA] font-mono">
+                                                {sortDirection === 'asc' ? '↑' : '↓'}
+                                            </span>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Columns Button */}
+                    <div className="relative" ref={columnsRef}>
+                        <button
+                            type="button"
+                            onClick={() => setIsColumnsOpen(!isColumnsOpen)}
+                            className="p-1.5 rounded-xl border border-[#27272A] bg-[#18181B] hover:bg-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                            title="Sütunlar"
+                        >
+                            <ViewColumnsIcon className="w-4 h-4" />
+                        </button>
+
+                        {isColumnsOpen && (
+                            <div className="absolute top-9 right-0 w-48 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-2 z-50 text-xs text-[#E4E4E7] space-y-1.5 animate-in fade-in duration-150">
+                                <div className="space-y-1">
+                                    {columns.map((col) => (
+                                        <div
+                                            key={col.key}
+                                            onClick={() => toggleColumnVisibility(col.key)}
+                                            className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-[#141416]/50 border border-[#2C2C2E]/40 hover:bg-[#2C2C2E]/60 transition-colors cursor-pointer"
+                                        >
+                                            <span className={col.visible ? 'text-white' : 'text-[#71717A] line-through'}>
+                                                {col.label}
+                                            </span>
+                                            {col.visible && <CheckIcon className="w-3.5 h-3.5 text-white" />}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* More Options */}
+                    <div className="relative" ref={moreRef}>
+                        <button
+                            type="button"
+                            onClick={() => setIsMoreOptionsOpen(!isMoreOptionsOpen)}
+                            className="p-1.5 rounded-xl border border-[#27272A] bg-[#18181B] hover:bg-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                            title="Digər"
+                        >
+                            <EllipsisHorizontalIcon className="w-4 h-4" />
+                        </button>
+
+                        {isMoreOptionsOpen && (
+                            <div className="absolute top-9 right-0 w-52 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-50 text-xs text-[#E4E4E7] space-y-0.5 animate-in fade-in duration-150">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsMoreOptionsOpen(false);
+                                        handleSeedTemplate();
+                                    }}
+                                    disabled={seedLoading}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#2C2C2E] text-left w-full transition-colors cursor-pointer font-medium"
+                                >
+                                    <SparklesIcon className="w-4 h-4 text-amber-400" />
+                                    <span>Standart Şablonu Yüklə</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* ─── Table View (Exact CRM Leads Style - Image 1) ─── */}
+            <div className="bg-[#121214] border border-[#27272A] rounded-2xl overflow-hidden shadow-xl animate-in fade-in duration-200">
+                <div className="overflow-x-auto custom-scrollbar">
+                    <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr className="bg-[#18181B] border-b border-[#27272A] text-[#71717A] font-medium uppercase tracking-wider text-[11px]">
+                                <th className="py-3 px-4 w-10">
+                                    <input
+                                        type="checkbox"
+                                        onChange={handleSelectAll}
+                                        checked={
+                                            selectedRows.length === paginatedAccounts.length &&
+                                            paginatedAccounts.length > 0
+                                        }
+                                        className="rounded border-[#3F3F46] bg-[#27272A] text-white focus:ring-0 cursor-pointer"
+                                    />
+                                </th>
+                                {isColVisible('code') && (
+                                    <th className="py-3 px-4 text-[#A1A1AA] font-normal">KOD</th>
+                                )}
+                                {isColVisible('name') && (
+                                    <th className="py-3 px-4 text-[#A1A1AA] font-normal">HESABIN ADI</th>
+                                )}
+                                {isColVisible('type') && (
+                                    <th className="py-3 px-4 text-[#A1A1AA] font-normal">TİPİ</th>
+                                )}
+                                {isColVisible('currency') && (
+                                    <th className="py-3 px-4 text-[#A1A1AA] font-normal">VALYUTA</th>
+                                )}
+                                {isColVisible('balance') && (
+                                    <th className="py-3 px-4 text-[#A1A1AA] font-normal text-right">QALIQ</th>
+                                )}
+                                {isColVisible('status') && (
+                                    <th className="py-3 px-4 text-[#A1A1AA] font-normal text-center">STATUS</th>
+                                )}
+                                <th className="py-3 px-4 text-[#A1A1AA] font-normal text-right">ƏMƏLİYYAT</th>
+                            </tr>
+                        </thead>
+
+                        <tbody className="divide-y divide-[#27272A]/60 text-[#D4D4D8]">
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={8} className="py-12 text-center text-[#71717A]">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <ArrowPathIcon className="w-5 h-5 animate-spin text-white" />
+                                            <span>Yüklənir...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : paginatedAccounts.length === 0 ? (
+                                <tr>
+                                    <td colSpan={8} className="py-12 text-center text-[#71717A]">
+                                        Heç bir hesab tapılmadı. "Yarat" düyməsi ilə yeni hesab əlavə edə bilərsiniz.
+                                    </td>
+                                </tr>
+                            ) : (
+                                paginatedAccounts.map((acc) => {
+                                    const isSelected = selectedRows.includes(acc.id);
+                                    const initialChar = (acc.name || 'H').charAt(0).toUpperCase();
+                                    const currentBal = Number(acc.balance ?? (acc as any).currentBalance) || 0;
+
+                                    return (
+                                        <tr
+                                            key={acc.id}
+                                            onClick={() => navigate(`/accounts/${acc.id}`)}
+                                            className={`hover:bg-[#18181B]/80 transition-colors cursor-pointer group ${
+                                                isSelected ? 'bg-[#18181B]' : ''
+                                            }`}
+                                        >
+                                            <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => handleSelectRow(acc.id)}
+                                                    className="rounded border-[#3F3F46] bg-[#27272A] text-white focus:ring-0 cursor-pointer"
+                                                />
+                                            </td>
+
+                                            {/* Code */}
+                                            {isColVisible('code') && (
+                                                <td className="py-3.5 px-4 font-mono font-bold text-white group-hover:text-sky-400 transition-colors">
+                                                    {acc.code}
+                                                </td>
+                                            )}
+
+                                            {/* Name with Circle Avatar */}
+                                            {isColVisible('name') && (
+                                                <td className="py-3.5 px-4 font-semibold text-white group-hover:underline transition-colors">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <span className="w-5 h-5 rounded-full bg-[#27272A] text-[#A1A1AA] text-[10px] font-bold flex items-center justify-center shrink-0">
+                                                            {initialChar}
+                                                        </span>
+                                                        <span className="truncate">{acc.name}</span>
+                                                    </div>
+                                                </td>
+                                            )}
+
+                                            {/* Type with Dot */}
+                                            {isColVisible('type') && (
+                                                <td className="py-3.5 px-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <span
+                                                            className="w-2 h-2 rounded-full inline-block shrink-0"
+                                                            style={{ backgroundColor: getTypeColor(acc.type) }}
+                                                        />
+                                                        <span className="text-white font-medium">{acc.type}</span>
+                                                    </div>
+                                                </td>
+                                            )}
+
+                                            {/* Currency */}
+                                            {isColVisible('currency') && (
+                                                <td className="py-3.5 px-4 font-mono text-[#A1A1AA]">
+                                                    {acc.currency || 'AZN'}
+                                                </td>
+                                            )}
+
+                                            {/* Balance */}
+                                            {isColVisible('balance') && (
+                                                <td className="py-3.5 px-4 text-right font-mono font-bold text-white">
+                                                    {new Intl.NumberFormat('az-AZ', {
+                                                        style: 'currency',
+                                                        currency: acc.currency || 'AZN',
+                                                    }).format(currentBal)}
+                                                </td>
+                                            )}
+
+                                            {/* Status with Dot */}
+                                            {isColVisible('status') && (
+                                                <td className="py-3.5 px-4 text-center">
+                                                    <div className="inline-flex items-center gap-1.5">
+                                                        <span
+                                                            className={`w-2 h-2 rounded-full inline-block shrink-0 ${
+                                                                acc.isActive ? 'bg-[#22C55E]' : 'bg-[#71717A]'
+                                                            }`}
+                                                        />
+                                                        <span className="text-white">
+                                                            {acc.isActive ? 'Aktiv' : 'Deaktiv'}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                            )}
+
+                                            {/* Actions */}
+                                            <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedAccount(acc);
+                                                        setBalanceError('');
+                                                        setBalanceForm({
+                                                            accountId: acc.id,
+                                                            debitAmount: 0,
+                                                            creditAmount: 0,
+                                                            asOfDate: new Date().toISOString().split('T')[0],
+                                                            notes: '',
+                                                        });
+                                                        setShowBalanceModal(true);
+                                                    }}
+                                                    className="px-2.5 py-1 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-[11px] font-medium text-[#D4D4D8] hover:text-white transition-colors cursor-pointer"
+                                                >
+                                                    İlkin Qalıq
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Bottom Pagination Bar (Exact Match with Image 1) */}
+                <div className="p-3 bg-[#141416] border-t border-[#27272A] flex items-center justify-between text-xs text-[#71717A]">
+                    <div className="flex items-center gap-1 bg-[#18181B] p-1 rounded-xl border border-[#27272A]">
+                        {[20, 50, 100].map((size) => (
+                            <button
+                                key={size}
+                                onClick={() => {
+                                    setPageSize(size);
+                                    setCurrentPage(1);
+                                }}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                                    pageSize === size ? 'bg-[#27272A] text-white' : 'hover:text-white'
+                                }`}
+                            >
+                                {size}
+                            </button>
+                        ))}
+                    </div>
+
+                    <span>
+                        {filteredAccounts.length === 0
+                            ? '0 of 0'
+                            : `${(currentPage - 1) * pageSize + 1}-${Math.min(
+                                  currentPage * pageSize,
+                                  filteredAccounts.length
+                              )} of ${filteredAccounts.length}`}
+                    </span>
+                </div>
+            </div>
+
+            {/* ─── CREATE ACCOUNT MODAL (Matches Image 2 Exactly) ─── */}
+            {showCreateModal && (
+                <div
+                    className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) setShowCreateModal(false);
+                    }}
+                >
+                    <div
+                        className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-2xl text-[#E4E4E7] flex flex-col max-h-[92vh] sm:max-h-[85vh] overflow-hidden my-auto animate-in fade-in duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 p-4 sm:p-6 shrink-0 bg-[#1C1C1E]">
+                            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">Yeni Hesab</h2>
+                            <button
+                                type="button"
+                                onClick={() => setShowCreateModal(false)}
+                                className="p-1.5 rounded-lg text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                                aria-label="Bağla"
+                            >
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {createError && (
+                            <div className="mx-6 mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs">
+                                {createError}
+                            </div>
+                        )}
+
+                        {/* Modal Form Body - Strictly the 7 fields accepted by backend CreateAccountDto */}
+                        <form onSubmit={handleCreateAccount} className="flex flex-col flex-1 min-h-0">
+                            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs custom-scrollbar">
+                                {/* Row 1: Hesab Kodu * & Hesabın Adı * */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[#A1A1AA] font-medium">
+                                            Hesab Kodu <span className="text-rose-400">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            required
+                                            placeholder="məs. 101"
+                                            value={createForm.code}
+                                            onChange={(e) => setCreateForm({ ...createForm, code: e.target.value })}
+                                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors font-mono"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-[#A1A1AA] font-medium">
+                                            Hesabın Adı <span className="text-rose-400">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            required
+                                            placeholder="Hesabın adı"
+                                            value={createForm.name}
+                                            onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Row 2: Kateqoriya, Hesab Növü (Type), Valyuta */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[#A1A1AA] font-medium">Kateqoriya</label>
+                                        <select
+                                            value={createForm.category}
+                                            onChange={(e) => setCreateForm({ ...createForm, category: Number(e.target.value) })}
+                                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-white transition-colors"
+                                        >
+                                            {ACCOUNT_CATEGORIES.map((c) => (
+                                                <option key={c.id} value={c.id} className="bg-[#1C1C1E]">
+                                                    {c.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-[#A1A1AA] font-medium">Hesab Növü (Type)</label>
+                                        <select
+                                            value={createForm.type}
+                                            onChange={(e) => setCreateForm({ ...createForm, type: Number(e.target.value) })}
+                                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-white transition-colors"
+                                        >
+                                            {ACCOUNT_TYPE_OPTIONS.map((t) => (
+                                                <option key={t.id} value={t.id} className="bg-[#1C1C1E]">
+                                                    {t.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-[#A1A1AA] font-medium">Valyuta</label>
+                                        <select
+                                            value={createForm.currency}
+                                            onChange={(e) => setCreateForm({ ...createForm, currency: e.target.value })}
+                                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-white transition-colors font-mono"
+                                        >
+                                            {CURRENCIES.map((c) => (
+                                                <option key={c} value={c} className="bg-[#1C1C1E]">
+                                                    {c}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Row 3: Əsas Hesab (Parent) & Nəzarət Hesabı (Control) */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[#A1A1AA] font-medium">Əsas Hesab (Parent)</label>
+                                        <select
+                                            value={createForm.parentAccountId}
+                                            onChange={(e) => setCreateForm({ ...createForm, parentAccountId: e.target.value })}
+                                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-white transition-colors"
+                                        >
+                                            <option value="" className="bg-[#1C1C1E]">Yoxdur (Baş Hesab)</option>
+                                            {accounts.map((a) => (
+                                                <option key={a.id} value={a.id} className="bg-[#1C1C1E]">
+                                                    {a.code} - {a.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-[#A1A1AA] font-medium">Nəzarət Hesabı</label>
+                                        <select
+                                            value={createForm.isControlAccount ? 'true' : 'false'}
+                                            onChange={(e) =>
+                                                setCreateForm({
+                                                    ...createForm,
+                                                    isControlAccount: e.target.value === 'true',
+                                                })
+                                            }
+                                            className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-white transition-colors"
+                                        >
+                                            <option value="false" className="bg-[#1C1C1E]">Xeyr</option>
+                                            <option value="true" className="bg-[#1C1C1E]">Bəli</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Modal Footer (Matches Image 2 Exactly) */}
+                            <div className="flex items-center justify-end gap-3 border-t border-[#2C2C2E]/60 p-4 sm:p-6 shrink-0 bg-[#1C1C1E]">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCreateModal(false)}
+                                    className="px-4 py-2 rounded-xl border border-[#2C2C2E] text-xs font-semibold text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                                >
+                                    İmtina
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={createLoading}
+                                    className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-colors shadow-md cursor-pointer disabled:opacity-50"
+                                >
+                                    {createLoading ? 'Yaradılır...' : 'Yarat'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ─── INITIAL BALANCE MODAL ─── */}
+            {showBalanceModal && selectedAccount && (
+                <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+                    <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg text-[#E4E4E7] overflow-hidden animate-in fade-in duration-200">
+                        <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 p-5">
+                            <div>
+                                <h3 className="text-base font-bold text-white">İlkin Qalıq Təyin Et</h3>
+                                <p className="text-xs text-[#71717A]">
+                                    {selectedAccount.code} - {selectedAccount.name}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowBalanceModal(false)}
+                                className="p-1 rounded-lg text-[#A1A1AA] hover:text-white"
+                            >
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSetInitialBalance} className="p-6 space-y-4 text-xs">
+                            {balanceError && (
+                                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center justify-between gap-2 animate-in fade-in">
+                                    <span>{balanceError}</span>
+                                    <button type="button" onClick={() => setBalanceError('')} className="text-rose-400 hover:text-white p-0.5 cursor-pointer">
+                                        <XMarkIcon className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-[#A1A1AA] font-medium">Debet Məbləği</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={balanceForm.debitAmount}
+                                        onChange={(e) =>
+                                            setBalanceForm({
+                                                ...balanceForm,
+                                                debitAmount: parseFloat(e.target.value) || 0,
+                                            })
+                                        }
+                                        className="w-full mt-1 px-3 py-2 rounded-xl bg-[#141416] border border-[#2C2C2E] text-white focus:outline-none focus:border-white font-mono"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[#A1A1AA] font-medium">Kredit Məbləği</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={balanceForm.creditAmount}
+                                        onChange={(e) =>
+                                            setBalanceForm({
+                                                ...balanceForm,
+                                                creditAmount: parseFloat(e.target.value) || 0,
+                                            })
+                                        }
+                                        className="w-full mt-1 px-3 py-2 rounded-xl bg-[#141416] border border-[#2C2C2E] text-white focus:outline-none focus:border-white font-mono"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-[#A1A1AA] font-medium">Qalıq Tarixi</label>
+                                <input
+                                    type="date"
+                                    required
+                                    value={balanceForm.asOfDate}
+                                    onChange={(e) => setBalanceForm({ ...balanceForm, asOfDate: e.target.value })}
+                                    className="w-full mt-1 px-3 py-2 rounded-xl bg-[#141416] border border-[#2C2C2E] text-white focus:outline-none focus:border-white"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-[#A1A1AA] font-medium">Qeydlər</label>
+                                <input
+                                    type="text"
+                                    placeholder="İlkin saldo qeydi..."
+                                    value={balanceForm.notes}
+                                    onChange={(e) => setBalanceForm({ ...balanceForm, notes: e.target.value })}
+                                    className="w-full mt-1 px-3 py-2 rounded-xl bg-[#141416] border border-[#2C2C2E] text-white placeholder:text-[#71717A] focus:outline-none focus:border-white"
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#2C2C2E]/60">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowBalanceModal(false)}
+                                    className="px-4 py-2 rounded-xl border border-[#2C2C2E] text-xs font-semibold text-[#A1A1AA] hover:text-white"
+                                >
+                                    İmtina
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={balanceLoading}
+                                    className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+                                >
+                                    {balanceLoading ? 'Yadda saxlanılır...' : 'Təsdiqlə'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default AccountsPage;

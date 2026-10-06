@@ -23,3 +23,13 @@ export function formatDateOnly(dateStr?: string | Date | null): string {
 
     return `${day}.${month}.${year}`;
 }
+
+const AZ_MONTHS_SHORT = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'İyn', 'İyl', 'Avq', 'Sen', 'Okt', 'Noy', 'Dek'];
+
+export function formatShortDate(dateStr?: string | Date | null): string {
+    if (!dateStr) return '—';
+    const d = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+    if (isNaN(d.getTime())) return typeof dateStr === 'string' ? dateStr : '—';
+    return `${d.getDate()} ${AZ_MONTHS_SHORT[d.getMonth()]}`;
+}
+

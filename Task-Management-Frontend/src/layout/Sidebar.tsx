@@ -22,6 +22,7 @@ import {
     ScaleIcon,
     ArrowTrendingUpIcon,
     XMarkIcon,
+    BanknotesIcon,
 } from '@heroicons/react/24/outline';
 import { BarChart3, Medal } from 'lucide-react';
 import { authService } from '../api';
@@ -73,6 +74,16 @@ const desktopApps = [
         iconElement: (
             <div className="w-6 h-6 rounded-lg bg-[#6366F1] text-white flex items-center justify-center shrink-0">
                 <ClipboardDocumentListIcon className="w-3.5 h-3.5" />
+            </div>
+        ),
+    },
+    {
+        id: 'accounting',
+        name: 'Accounting',
+        route: import.meta.env.VITE_ACC_WEB_URL || 'https://accounting.altensor.com',
+        iconElement: (
+            <div className="w-6 h-6 rounded-lg bg-[#10B981] text-white flex items-center justify-center shrink-0">
+                <BanknotesIcon className="w-3.5 h-3.5" />
             </div>
         ),
     },

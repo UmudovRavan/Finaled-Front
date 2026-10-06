@@ -6,7 +6,7 @@ import { taskService, authService, notificationService, userService, attachmentS
 import { signalRService } from '../services/signalRService';
 import type { TaskResponse, NotificationResponse, UserResponse, TaskCommentDto } from '../dto';
 import { TaskStatus, DifficultyLevel } from '../dto';
-import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, formatDateTime } from '../utils';
+import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, formatDateTime, formatDateOnly } from '../utils';
 import type { UserInfo } from '../utils';
 import { useLanguage } from '../context/LanguageContext';
 import UserSuggestionList from '../components/UserSuggestionList';
@@ -933,7 +933,7 @@ const TaskDetail: React.FC = () => {
         if (diffMins < 60) return `${diffMins} dəq əvvəl`;
         if (diffHours < 24) return `${diffHours} saat əvvəl`;
         if (diffDays < 7) return `${diffDays} gün əvvəl`;
-        return date.toLocaleDateString('az-AZ');
+        return formatDateOnly(date);
     };
 
     if (loading) {

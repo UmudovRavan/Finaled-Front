@@ -19,6 +19,7 @@ import {
   InformationCircleIcon,
   ArrowRightOnRectangleIcon,
   ComputerDesktopIcon,
+  BanknotesIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useTheme } from '../../context/ThemeContext';
@@ -54,6 +55,16 @@ const desktopApps = [
     iconElement: (
       <div className="w-6 h-6 rounded-lg bg-[#D946EF] text-white flex items-center justify-center shrink-0">
         <FunnelIcon className="w-3.5 h-3.5" />
+      </div>
+    )
+  },
+  {
+    id: 'accounting',
+    name: 'Accounting',
+    route: import.meta.env.VITE_ACC_WEB_URL || 'https://accounting.altensor.com',
+    iconElement: (
+      <div className="w-6 h-6 rounded-lg bg-[#10B981] text-white flex items-center justify-center shrink-0">
+        <BanknotesIcon className="w-3.5 h-3.5" />
       </div>
     )
   }

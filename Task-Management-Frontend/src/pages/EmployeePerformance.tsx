@@ -14,7 +14,7 @@ import type {
     UserResponse,
 } from '../dto';
 import { TaskStatus, DifficultyLevel } from '../dto';
-import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
+import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, formatShortDate } from '../utils';
 import type { UserInfo } from '../utils';
 import { useLanguage } from '../context/LanguageContext';
 import {
@@ -221,8 +221,7 @@ const EmployeePerformance: React.FC = () => {
             if (task.status === TaskStatus.InProgress || task.status === TaskStatus.Assigned) statusLabel = 'In Progress';
 
             const points = DIFFICULTY_POINTS[task.difficulty] || 10;
-            const date = new Date(task.deadline);
-            const dateStr = date.toLocaleDateString('az-AZ', { month: 'short', day: 'numeric' });
+            const dateStr = formatShortDate(task.deadline);
 
             return {
                 id: task.id,
@@ -287,7 +286,7 @@ const EmployeePerformance: React.FC = () => {
             for (let i = 5; i >= 0; i--) {
                 const date = new Date(today);
                 date.setDate(today.getDate() - (i * 5));
-                const label = date.toLocaleDateString('az-AZ', { month: 'short', day: 'numeric' });
+                const label = formatShortDate(date);
 
                 const windowStart = new Date(date);
                 windowStart.setDate(date.getDate() - 5);

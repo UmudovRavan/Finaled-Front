@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../layout';
 import { notificationService, authService } from '../api';
 import type { NotificationResponse } from '../dto';
-import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
+import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, formatShortDate } from '../utils';
 import type { UserInfo } from '../utils';
 import { useLanguage } from '../context/LanguageContext';
 import {
@@ -177,7 +177,7 @@ const Notifications: React.FC = () => {
         if (diffHours < 24) return `${diffHours} saat əvvəl`;
         if (diffDays === 1) return 'Dünən';
         if (diffDays < 7) return `${diffDays} gün əvvəl`;
-        return date.toLocaleDateString('az-AZ', { month: 'short', day: 'numeric' });
+        return formatShortDate(date);
     }, []);
 
     const getNotificationTypeConfig = (message: string) => {

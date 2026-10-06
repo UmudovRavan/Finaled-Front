@@ -497,6 +497,7 @@ export const translations = {
       themeDark: 'Qaranlıq Rejim',
       tasksAppName: 'Task Management',
       crmAppName: 'Altensor CRM',
+      accountingAppName: 'Accounting',
       authAppName: 'Auth Service'
     },
     settings: {
@@ -1025,6 +1026,7 @@ export const translations = {
       themeDark: 'Dark Mode',
       tasksAppName: 'Task Management',
       crmAppName: 'Altensor CRM',
+      accountingAppName: 'Accounting',
       authAppName: 'Auth Service'
     },
     settings: {
@@ -1553,6 +1555,7 @@ export const translations = {
       themeDark: 'Темная Тема',
       tasksAppName: 'Task Management',
       crmAppName: 'Altensor CRM',
+      accountingAppName: 'Accounting',
       authAppName: 'Auth Service'
     },
     settings: {

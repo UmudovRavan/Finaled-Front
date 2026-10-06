@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="az" class="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Altensor - Mühasibatlıq və Maliyyə İdarəetməsi</title>
+
+  <!-- Google Fonts: Inter, Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Material Symbols -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+  <!-- Theme init -->
+  <script>
+    (function() {
+      try {
+        var saved = localStorage.getItem('altensor_theme') || localStorage.getItem('desktopTheme') || localStorage.getItem('theme') || 'dark';
+        var root = document.documentElement;
+        root.classList.remove('light', 'dark');
+        root.classList.add(saved === 'light' ? 'light' : 'dark');
+      } catch (e) {}
+    })();
+  </script>
+
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="Altensor Accounting System - Müasir Mühasibatlıq, Maliyyə, Anbar və Tədarük Platforması" />
+</head>
+
+<body class="bg-[#121214] text-[#F4F4F5] antialiased min-h-screen w-full font-sans selection:bg-white/20 overflow-x-hidden">
+  <div id="root" class="min-h-screen w-full flex flex-col"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>
