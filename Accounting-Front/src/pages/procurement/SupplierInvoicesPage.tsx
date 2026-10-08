@@ -11,6 +11,7 @@ import type {
     CreateSupplierInvoiceRequest,
 } from '../../dto';
 import CustomSelect from '../../components/CustomSelect';
+import { useLanguage } from '../../context/LanguageContext';
 import {
     PlusIcon,
     MagnifyingGlassIcon,
@@ -45,6 +46,7 @@ interface InvoiceLineState {
 
 export const SupplierInvoicesPage: React.FC = () => {
     const navigate = useNavigate();
+    const { t } = useLanguage();
 
     // Data states
     const [invoices, setInvoices] = useState<SupplierInvoiceDto[]>([]);
@@ -130,7 +132,7 @@ export const SupplierInvoicesPage: React.FC = () => {
         if (data?.message) return data.message;
         if (data?.title) return data.title;
         if (data?.error) return data.error;
-        return err.message || 'Xəta baş verdi';
+        return err.message || t('common.error', {}, 'Xəta baş verdi');
     };
 
     // Fetch initial data
@@ -154,7 +156,7 @@ export const SupplierInvoicesPage: React.FC = () => {
             setReceipts(rcptData);
         } catch (err) {
             console.error('Error loading supplier invoices data:', err);
-            showToast('Məlumatlar yüklənərkən xəta baş verdi', 'error');
+            showToast(t('common.error', {}, 'Məlumatlar yüklənərkən xəta baş verdi'), 'error');
         } finally {
             setLoading(false);
             setIsRefreshing(false);
@@ -272,13 +274,13 @@ export const SupplierInvoicesPage: React.FC = () => {
     const handleCreateInvoice = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!modalSupplierId) {
-            setCreateError('Zəhmət olmasa təchizatçı seçin.');
+            setCreateError(t('validation.supplierRequired', {}, 'Zəhmət olmasa təchizatçı seçin.'));
             return;
         }
 
         const validLines = modalLines.filter((l) => l.itemId || l.description.trim());
         if (validLines.length === 0) {
-            setCreateError('Ən azı 1 sətir doldurulmalıdır.');
+            setCreateError(t('validation.selectAtLeastOneLine', {}, 'Ən azı 1 sətir doldurulmalıdır.'));
             return;
         }
 
@@ -317,7 +319,7 @@ export const SupplierInvoicesPage: React.FC = () => {
             });
 
             setShowCreateModal(false);
-            showToast(`Alış qaiməsi (${created.invoiceNumber || 'Yeni'}) uğurla yaradıldı!`);
+            showToast(`${t('procurement.supplierInvoicesTitle', {}, 'Alış qaiməsi')} (${created.invoiceNumber || 'Yeni'}) ${t('common.success', {}, 'uğurla yaradıldı!')}`);
             resetCreateForm();
             await loadData(true);
         } catch (err: any) {
@@ -350,7 +352,7 @@ export const SupplierInvoicesPage: React.FC = () => {
         setActionLoadingId(invoiceId);
         try {
             await procurementService.postSupplierInvoice(invoiceId);
-            showToast(`${invoiceNumber} qaiməsi uğurla icra edildi və uçota alındı!`);
+            showToast(`${invoiceNumber} ${t('procurement.supplierInvoicePostedSuccess', {}, 'qaiməsi uğurla icra edildi və uçota alındı!')}`);
             await loadData(true);
         } catch (err: any) {
             console.error('Error posting supplier invoice:', err);
@@ -366,7 +368,7 @@ export const SupplierInvoicesPage: React.FC = () => {
         const s = String(status || '').toLowerCase();
         if (s.includes('paid') && !s.includes('part')) {
             return {
-                label: 'Ödənilib',
+                label: t('statuses.paid', {}, 'Ödənilib'),
                 bg: 'bg-emerald-500/10',
                 border: 'border-emerald-500/20',
                 text: 'text-emerald-400',
@@ -375,7 +377,7 @@ export const SupplierInvoicesPage: React.FC = () => {
         }
         if (s.includes('part') || setStatus === 2) {
             return {
-                label: 'Qismən Ödənilib',
+                label: t('statuses.partiallyPaid', {}, 'Qismən Ödənilib'),
                 bg: 'bg-amber-500/10',
                 border: 'border-amber-500/20',
                 text: 'text-amber-400',
@@ -384,7 +386,7 @@ export const SupplierInvoicesPage: React.FC = () => {
         }
         if (s.includes('post') || s.includes('appr') || docStatus === 4) {
             return {
-                label: 'Təsdiqlənib',
+                label: t('statuses.approved', {}, 'Təsdiqlənib'),
                 bg: 'bg-cyan-500/10',
                 border: 'border-cyan-500/20',
                 text: 'text-cyan-400',
@@ -393,7 +395,7 @@ export const SupplierInvoicesPage: React.FC = () => {
         }
         if (s.includes('canc') || docStatus === 5) {
             return {
-                label: 'Ləğv Edilib',
+                label: t('statuses.cancelled', {}, 'Ləğv Edilib'),
                 bg: 'bg-rose-500/10',
                 border: 'border-rose-500/20',
                 text: 'text-rose-400',
@@ -401,7 +403,7 @@ export const SupplierInvoicesPage: React.FC = () => {
             };
         }
         return {
-            label: 'Qaralama',
+            label: t('statuses.draft', {}, 'Qaralama'),
             bg: 'bg-neutral-500/10',
             border: 'border-neutral-500/20',
             text: 'text-neutral-400',
@@ -413,7 +415,7 @@ export const SupplierInvoicesPage: React.FC = () => {
         const s = String(matchStatus || '').toLowerCase();
         if (s.includes('match') && !s.includes('not') && !s.includes('discr')) {
             return {
-                label: 'Uyğundur',
+                label: t('procurement.matchPassed', {}, 'Uyğundur'),
                 bg: 'bg-emerald-500/10',
                 border: 'border-emerald-500/20',
                 text: 'text-emerald-400',
@@ -421,7 +423,7 @@ export const SupplierInvoicesPage: React.FC = () => {
         }
         if (s.includes('tol') || matchStatus === 3) {
             return {
-                label: 'Tolerans Daxilində',
+                label: t('procurement.threeWayMatch', {}, 'Tolerans Daxilində'),
                 bg: 'bg-amber-500/10',
                 border: 'border-amber-500/20',
                 text: 'text-amber-400',
@@ -429,14 +431,14 @@ export const SupplierInvoicesPage: React.FC = () => {
         }
         if (s.includes('hold') || matchStatus === 4) {
             return {
-                label: 'Tolerans Aşıldı',
+                label: t('procurement.matchFailed', {}, 'Tolerans Aşıldı'),
                 bg: 'bg-rose-500/10',
                 border: 'border-rose-500/20',
                 text: 'text-rose-400',
             };
         }
         return {
-            label: 'Gözləmədə',
+            label: t('procurement.matchPending', {}, 'Gözləmədə'),
             bg: 'bg-neutral-500/10',
             border: 'border-neutral-500/20',
             text: 'text-neutral-400',
@@ -592,12 +594,12 @@ export const SupplierInvoicesPage: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
                     <div className="flex items-center gap-2 text-xs text-[#71717A]">
-                        <span>Təchizat</span>
+                        <span>{t('nav.suppliers', {}, 'Təchizat')}</span>
                         <span>/</span>
-                        <span className="text-[#E4E4E7] font-medium">Alış Qaimələri</span>
+                        <span className="text-[#E4E4E7] font-medium">{t('nav.supplierInvoices', {}, 'Alış Qaimələri')}</span>
                     </div>
                     <div className="flex items-center gap-2 mt-1">
-                        <h1 className="text-xl font-semibold text-white tracking-tight">Alış Qaimələri (Fakturalar)</h1>
+                        <h1 className="text-xl font-semibold text-white tracking-tight">{t('procurement.supplierInvoicesTitle', {}, 'Alış Qaimələri (Fakturalar)')}</h1>
                         <span className="px-2 py-0.5 rounded-full text-xs bg-[#1C1C1E] border border-[#27272A] text-[#A1A1AA] font-mono">
                             {filteredInvoices.length}
                         </span>
@@ -609,7 +611,7 @@ export const SupplierInvoicesPage: React.FC = () => {
                         onClick={() => loadData(true)}
                         disabled={isRefreshing}
                         className="p-2 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white hover:border-[#3F3F46] transition-colors disabled:opacity-50"
-                        title="Yenilə"
+                        title={t('common.refresh', {}, 'Yenilə')}
                     >
                         <ArrowPathIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-zinc-300' : ''}`} />
                     </button>
@@ -621,7 +623,7 @@ export const SupplierInvoicesPage: React.FC = () => {
                         className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-neutral-200 text-black font-semibold text-xs transition-all shadow-sm active:scale-95"
                     >
                         <PlusIcon className="w-4 h-4" />
-                        <span>Faktura Yarat</span>
+                        <span>{t('procurement.newSupplierInvoice', {}, 'Faktura Yarat')}</span>
                     </button>
                 </div>
             </div>
@@ -654,7 +656,7 @@ export const SupplierInvoicesPage: React.FC = () => {
                                 setSearchTerm(e.target.value);
                                 setCurrentPage(1);
                             }}
-                            placeholder="Faktura №, təchizatçı və ya qaimə axtar..."
+                            placeholder={t('common.searchPlaceholder', {}, 'Faktura №, təchizatçı və ya qaimə axtar...')}
                             className="w-full bg-[#18181B] border border-[#27272A] rounded-xl pl-9 pr-8 py-1.5 text-xs text-white placeholder-[#71717A] focus:outline-none focus:border-[#3F3F46] transition-colors"
                         />
                         {searchTerm && (
@@ -675,16 +677,16 @@ export const SupplierInvoicesPage: React.FC = () => {
                         >
                             <span>
                                 {statusFilter === 'ALL'
-                                    ? 'Bütün Statuslar'
+                                    ? t('common.all', {}, 'Bütün Statuslar')
                                     : statusFilter === 'Draft'
-                                    ? 'Qaralama'
+                                    ? t('statuses.draft', {}, 'Qaralama')
                                     : statusFilter === 'Approved'
-                                    ? 'Təsdiqlənib'
+                                    ? t('statuses.approved', {}, 'Təsdiqlənib')
                                     : statusFilter === 'Paid'
-                                    ? 'Ödənilib'
+                                    ? t('statuses.paid', {}, 'Ödənilib')
                                     : statusFilter === 'PartiallyPaid'
-                                    ? 'Qismən Ödənilib'
-                                    : 'Ləğv Edilib'}
+                                    ? t('statuses.partiallyPaid', {}, 'Qismən Ödənilib')
+                                    : t('statuses.cancelled', {}, 'Ləğv Edilib')}
                             </span>
                             <span className="text-[#71717A] text-[10px]">▼</span>
                         </button>
@@ -692,12 +694,12 @@ export const SupplierInvoicesPage: React.FC = () => {
                         {isStatusDropdownOpen && (
                             <div className="absolute top-full left-0 mt-1.5 w-44 rounded-xl bg-[#18181B] border border-[#27272A] shadow-xl py-1 z-30 animate-in fade-in zoom-in-95 duration-100">
                                 {[
-                                    { key: 'ALL', label: 'Bütün Statuslar' },
-                                    { key: 'Draft', label: 'Qaralama' },
-                                    { key: 'Approved', label: 'Təsdiqlənib' },
-                                    { key: 'Paid', label: 'Ödənilib' },
-                                    { key: 'PartiallyPaid', label: 'Qismən Ödənilib' },
-                                    { key: 'Cancelled', label: 'Ləğv Edilib' },
+                                    { key: 'ALL', label: t('common.all', {}, 'Bütün Statuslar') },
+                                    { key: 'Draft', label: t('statuses.draft', {}, 'Qaralama') },
+                                    { key: 'Approved', label: t('statuses.approved', {}, 'Təsdiqlənib') },
+                                    { key: 'Paid', label: t('statuses.paid', {}, 'Ödənilib') },
+                                    { key: 'PartiallyPaid', label: t('statuses.partiallyPaid', {}, 'Qismən Ödənilib') },
+                                    { key: 'Cancelled', label: t('statuses.cancelled', {}, 'Ləğv Edilib') },
                                 ].map((item) => (
                                     <button
                                         key={item.key}
@@ -729,7 +731,7 @@ export const SupplierInvoicesPage: React.FC = () => {
                             }`}
                         >
                             <FunnelIcon className="w-3.5 h-3.5" />
-                            <span>Filtr</span>
+                            <span>{t('common.filter', {}, 'Filtr')}</span>
                             {activeFiltersCount > 0 && (
                                 <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500 text-black font-bold">
                                     {activeFiltersCount}
@@ -741,23 +743,23 @@ export const SupplierInvoicesPage: React.FC = () => {
                         {isFilterPopoverOpen && (
                             <div className="absolute top-full left-0 mt-1.5 w-72 rounded-2xl bg-[#18181B] border border-[#27272A] shadow-2xl p-4 z-30 space-y-3 animate-in fade-in zoom-in-95 duration-100">
                                 <div className="flex items-center justify-between pb-2 border-b border-[#27272A]">
-                                    <span className="text-xs font-semibold text-white">Filter parametrləri</span>
+                                    <span className="text-xs font-semibold text-white">{t('common.allFilters', {}, 'Filter parametrləri')}</span>
                                     {activeFiltersCount > 0 && (
                                         <button onClick={resetFilters} className="text-[10px] text-emerald-400 hover:underline">
-                                            Sıfırla
+                                            {t('common.reset', {}, 'Sıfırla')}
                                         </button>
                                     )}
                                 </div>
 
                                 {/* Supplier filter */}
                                 <div>
-                                    <label className="block text-[11px] text-[#A1A1AA] mb-1 font-medium">Təchizatçı</label>
+                                    <label className="block text-[11px] text-[#A1A1AA] mb-1 font-medium">{t('procurement.supplierName', {}, 'Təchizatçı')}</label>
                                     <select
                                         value={filterSupplierId}
                                         onChange={(e) => setFilterSupplierId(e.target.value)}
                                         className="w-full bg-[#121214] border border-[#27272A] rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#3F3F46]"
                                     >
-                                        <option value="ALL">Bütün Təchizatçılar</option>
+                                        <option value="ALL">{t('common.all', {}, 'Bütün Təchizatçılar')}</option>
                                         {suppliers.map((s) => (
                                             <option key={s.id} value={s.id}>
                                                 {s.name}
@@ -768,22 +770,22 @@ export const SupplierInvoicesPage: React.FC = () => {
 
                                 {/* 3-Way Match filter */}
                                 <div>
-                                    <label className="block text-[11px] text-[#A1A1AA] mb-1 font-medium">3-Way Match</label>
+                                    <label className="block text-[11px] text-[#A1A1AA] mb-1 font-medium">{t('procurement.threeWayMatch', {}, '3-Way Match')}</label>
                                     <select
                                         value={filterMatchStatus}
                                         onChange={(e) => setFilterMatchStatus(e.target.value)}
                                         className="w-full bg-[#121214] border border-[#27272A] rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#3F3F46]"
                                     >
-                                        <option value="ALL">Hamısı</option>
-                                        <option value="Matched">Uyğundur (Matched)</option>
-                                        <option value="Tolerance">Tolerans Daxilində</option>
-                                        <option value="Hold">Tolerans Aşıldı (On Hold)</option>
+                                        <option value="ALL">{t('common.all', {}, 'Hamısı')}</option>
+                                        <option value="Matched">{t('procurement.matchPassed', {}, 'Uyğundur (Matched)')}</option>
+                                        <option value="Tolerance">{t('procurement.threeWayMatch', {}, 'Tolerans Daxilində')}</option>
+                                        <option value="Hold">{t('procurement.matchFailed', {}, 'Tolerans Aşıldı (On Hold)')}</option>
                                     </select>
                                 </div>
 
                                 {/* Amount range */}
                                 <div>
-                                    <label className="block text-[11px] text-[#A1A1AA] mb-1 font-medium">Məbləğ aralığı (AZN)</label>
+                                    <label className="block text-[11px] text-[#A1A1AA] mb-1 font-medium">{t('common.amount', {}, 'Məbləğ aralığı')} (AZN)</label>
                                     <div className="grid grid-cols-2 gap-2">
                                         <input
                                             type="number"
@@ -804,7 +806,7 @@ export const SupplierInvoicesPage: React.FC = () => {
 
                                 {/* Date range */}
                                 <div>
-                                    <label className="block text-[11px] text-[#A1A1AA] mb-1 font-medium">Faktura Tarixi</label>
+                                    <label className="block text-[11px] text-[#A1A1AA] mb-1 font-medium">{t('procurement.supplierInvoicesTitle', {}, 'Faktura Tarixi')}</label>
                                     <div className="grid grid-cols-2 gap-2">
                                         <input
                                             type="date"
@@ -834,13 +836,13 @@ export const SupplierInvoicesPage: React.FC = () => {
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-xs text-[#E4E4E7] hover:border-[#3F3F46] transition-colors"
                         >
                             <AdjustmentsHorizontalIcon className="w-3.5 h-3.5" />
-                            <span>Sütunlar</span>
+                            <span>{t('common.details', {}, 'Sütunlar')}</span>
                         </button>
 
                         {isColumnsOpen && (
                             <div className="absolute top-full right-0 mt-1.5 w-48 rounded-xl bg-[#18181B] border border-[#27272A] shadow-xl py-2 px-3 z-30 space-y-1.5 animate-in fade-in zoom-in-95 duration-100">
                                 <span className="text-[11px] font-semibold text-[#71717A] uppercase tracking-wider block mb-1">
-                                    Görünən Sütunlar
+                                    {t('common.details', {}, 'Görünən Sütunlar')}
                                 </span>
                                 {columns.map((col) => (
                                     <label key={col.key} className="flex items-center gap-2 text-xs text-[#E4E4E7] cursor-pointer select-none">
@@ -864,17 +866,17 @@ export const SupplierInvoicesPage: React.FC = () => {
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-xs text-[#E4E4E7] hover:border-[#3F3F46] transition-colors"
                         >
                             <ArrowsUpDownIcon className="w-3.5 h-3.5" />
-                            <span>Sıralama</span>
+                            <span>{t('common.sort', {}, 'Sıralama')}</span>
                         </button>
 
                         {isSortOpen && (
                             <div className="absolute top-full right-0 mt-1.5 w-48 rounded-xl bg-[#18181B] border border-[#27272A] shadow-xl py-1 z-30 animate-in fade-in zoom-in-95 duration-100">
                                 {[
-                                    { field: 'date' as const, dir: 'desc' as const, label: 'Tarix: Yeni - Köhnə' },
-                                    { field: 'date' as const, dir: 'asc' as const, label: 'Tarix: Köhnə - Yeni' },
-                                    { field: 'invoiceNumber' as const, dir: 'asc' as const, label: 'Faktura №: A - Z' },
-                                    { field: 'amount' as const, dir: 'desc' as const, label: 'Məbləğ: Çox - Az' },
-                                    { field: 'outstanding' as const, dir: 'desc' as const, label: 'Qalıq Borc: Çox - Az' },
+                                    { field: 'date' as const, dir: 'desc' as const, label: `${t('common.date', {}, 'Tarix')}: ${t('common.today', {}, 'Yeni - Köhnə')}` },
+                                    { field: 'date' as const, dir: 'asc' as const, label: `${t('common.date', {}, 'Tarix')}: Köhnə - Yeni` },
+                                    { field: 'invoiceNumber' as const, dir: 'asc' as const, label: `${t('procurement.supplierInvoicesTitle', {}, 'Faktura №')}: A - Z` },
+                                    { field: 'amount' as const, dir: 'desc' as const, label: `${t('common.amount', {}, 'Məbləğ')}: Çox - Az` },
+                                    { field: 'outstanding' as const, dir: 'desc' as const, label: `${t('common.outstanding', {}, 'Qalıq Borc')}: Çox - Az` },
                                 ].map((item, idx) => (
                                     <button
                                         key={idx}
@@ -915,16 +917,16 @@ export const SupplierInvoicesPage: React.FC = () => {
                                         className="rounded border-[#27272A] bg-[#121214] text-emerald-500 focus:ring-0 focus:ring-offset-0"
                                     />
                                 </th>
-                                {isColVisible('invoiceNumber') && <th className="py-3 px-3">Faktura №</th>}
-                                {isColVisible('supplierInvoiceNumber') && <th className="py-3 px-3">Təchizatçı Faktura №</th>}
-                                {isColVisible('supplier') && <th className="py-3 px-3">Təchizatçı</th>}
-                                {isColVisible('invoiceDate') && <th className="py-3 px-3">Faktura Tarixi</th>}
-                                {isColVisible('dueDate') && <th className="py-3 px-3">Son Ödəniş</th>}
-                                {isColVisible('amount') && <th className="py-3 px-3 text-right">Yekun Məbləğ</th>}
-                                {isColVisible('outstanding') && <th className="py-3 px-3 text-right">Qalıq Borc</th>}
-                                {isColVisible('matchStatus') && <th className="py-3 px-3 text-center">3-Way Match</th>}
-                                {isColVisible('status') && <th className="py-3 px-3 text-center">Status</th>}
-                                <th className="py-3 px-3 text-right w-28">Əməliyyatlar</th>
+                                {isColVisible('invoiceNumber') && <th className="py-3 px-3">{t('customers.invoiceNumber', {}, 'Faktura №')}</th>}
+                                {isColVisible('supplierInvoiceNumber') && <th className="py-3 px-3">{t('procurement.supplierInvoiceNumber', {}, 'Təchizatçı Faktura №')}</th>}
+                                {isColVisible('supplier') && <th className="py-3 px-3">{t('procurement.supplierName', {}, 'Təchizatçı')}</th>}
+                                {isColVisible('invoiceDate') && <th className="py-3 px-3">{t('customers.invoiceDate', {}, 'Faktura Tarixi')}</th>}
+                                {isColVisible('dueDate') && <th className="py-3 px-3">{t('customers.dueDate', {}, 'Son Ödəniş')}</th>}
+                                {isColVisible('amount') && <th className="py-3 px-3 text-right">{t('common.grandTotal', {}, 'Yekun Məbləğ')}</th>}
+                                {isColVisible('outstanding') && <th className="py-3 px-3 text-right">{t('common.outstanding', {}, 'Qalıq Borc')}</th>}
+                                {isColVisible('matchStatus') && <th className="py-3 px-3 text-center">{t('procurement.threeWayMatch', {}, '3-Way Match')}</th>}
+                                {isColVisible('status') && <th className="py-3 px-3 text-center">{t('common.status', {}, 'Status')}</th>}
+                                <th className="py-3 px-3 text-right w-28">{t('common.actions', {}, 'Əməliyyatlar')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#27272A]/60 text-xs">
@@ -932,15 +934,15 @@ export const SupplierInvoicesPage: React.FC = () => {
                                 <tr>
                                     <td colSpan={10} className="py-12 text-center text-[#71717A]">
                                         <ArrowPathIcon className="w-6 h-6 animate-spin mx-auto mb-2 text-zinc-400" />
-                                        <span>Alış qaimələri yüklənir...</span>
+                                        <span>{t('common.loading', {}, 'Alış qaimələri yüklənir...')}</span>
                                     </td>
                                 </tr>
                             ) : paginatedInvoices.length === 0 ? (
                                 <tr>
                                     <td colSpan={10} className="py-12 text-center text-[#71717A]">
                                         <DocumentTextIcon className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                                        <p className="text-sm text-[#A1A1AA] font-medium">Heç bir alış qaiməsi tapılmadı</p>
-                                        <p className="text-[11px] mt-1">Axtarış filtrini dəyişin və ya yeni faktura yaradın.</p>
+                                        <p className="text-sm text-[#A1A1AA] font-medium">{t('common.noData', {}, 'Heç bir alış qaiməsi tapılmadı')}</p>
+                                        <p className="text-[11px] mt-1">{t('common.searchPlaceholder', {}, 'Axtarış filtrini dəyişin və ya yeni faktura yaradın.')}</p>
                                     </td>
                                 </tr>
                             ) : (
@@ -995,7 +997,7 @@ export const SupplierInvoicesPage: React.FC = () => {
                                             {/* Supplier */}
                                             {isColVisible('supplier') && (
                                                 <td className="py-3 px-3 text-[#E4E4E7]">
-                                                    <span className="font-medium">{inv.supplierName || 'Təchizatçı'}</span>
+                                                    <span className="font-medium">{inv.supplierName || t('procurement.supplierName', {}, 'Təchizatçı')}</span>
                                                 </td>
                                             )}
 
@@ -1076,19 +1078,19 @@ export const SupplierInvoicesPage: React.FC = () => {
                                                             onClick={() => handlePostInvoice(inv.id, inv.invoiceNumber)}
                                                             disabled={actionLoadingId === inv.id}
                                                             className="px-2.5 py-1 rounded-lg bg-[#18181B] border border-[#27272A] hover:bg-[#27272A] text-zinc-300 hover:text-white text-[11px] font-medium transition-colors disabled:opacity-50"
-                                                            title="Qaiməni İcra Et (Post)"
+                                                            title={t('procurement.postSupplierInvoice', {}, 'Qaiməni İcra Et (Post)')}
                                                         >
                                                             {actionLoadingId === inv.id ? (
                                                                 <ArrowPathIcon className="w-3 h-3 animate-spin" />
                                                             ) : (
-                                                                'İcra Et'
+                                                                t('common.confirm', {}, 'İcra Et')
                                                             )}
                                                         </button>
                                                     )}
                                                     <Link
                                                         to={`/supplier-invoices/${inv.id}`}
                                                         className="p-1.5 rounded-lg bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white hover:border-[#3F3F46] transition-colors"
-                                                        title="Detallara bax"
+                                                        title={t('common.details', {}, 'Detallara bax')}
                                                     >
                                                         <EyeIcon className="w-3.5 h-3.5" />
                                                     </Link>
@@ -1123,11 +1125,11 @@ export const SupplierInvoicesPage: React.FC = () => {
 
                     <span>
                         {filteredInvoices.length === 0
-                            ? '0 of 0'
+                            ? '0 / 0'
                             : `${(currentPage - 1) * pageSize + 1}-${Math.min(
                                   currentPage * pageSize,
                                   filteredInvoices.length
-                              )} of ${filteredInvoices.length}`}
+                              )} ${t('common.of', {}, '/')} ${filteredInvoices.length}`}
                     </span>
                 </div>
             </div>
@@ -1139,8 +1141,8 @@ export const SupplierInvoicesPage: React.FC = () => {
                         {/* Modal Header */}
                         <div className="p-4 sm:p-5 border-b border-[#27272A] flex items-center justify-between bg-[#121214]/60">
                             <div>
-                                <h2 className="text-base font-semibold text-white">Yeni Alış Qaiməsi (Faktura)</h2>
-                                <p className="text-xs text-[#71717A]">Təchizatçı fakturasını qeydiyyata alın və 3-Way Match aparın</p>
+                                <h2 className="text-base font-semibold text-white">{t('procurement.newSupplierInvoice', {}, 'Yeni Alış Qaiməsi (Faktura)')}</h2>
+                                <p className="text-xs text-[#71717A]">{t('procurement.supplierInvoicesSubtitle', {}, 'Təchizatçı fakturasını qeydiyyata alın və 3-Way Match aparın')}</p>
                             </div>
                             <button
                                 onClick={() => setShowCreateModal(false)}
@@ -1164,20 +1166,20 @@ export const SupplierInvoicesPage: React.FC = () => {
                                 {/* Təchizatçı (CustomSelect) */}
                                 <div className="min-w-0">
                                     <label className="block text-xs font-medium text-[#E4E4E7] mb-1.5">
-                                        Təchizatçı <span className="text-rose-400">*</span>
+                                        {t('procurement.supplierName', {}, 'Təchizatçı')} <span className="text-rose-400">*</span>
                                     </label>
                                     <CustomSelect
                                         options={suppliers.map((s) => ({ value: s.id, label: s.name }))}
                                         value={modalSupplierId}
                                         onChange={(val) => setModalSupplierId(val)}
-                                        placeholder="Təchizatçı seçin..."
+                                        placeholder={t('common.select', {}, 'Təchizatçı seçin...')}
                                     />
                                 </div>
 
                                 {/* Təchizatçı Faktura № */}
                                 <div className="min-w-0">
                                     <label className="block text-xs font-medium text-[#E4E4E7] mb-1.5">
-                                        Təchizatçı Faktura №
+                                        {t('procurement.supplierInvoiceNumber', {}, 'Təchizatçı Faktura №')}
                                     </label>
                                     <input
                                         type="text"
@@ -1191,45 +1193,45 @@ export const SupplierInvoicesPage: React.FC = () => {
                                 {/* Əlaqəli Sifariş (PO) */}
                                 <div className="min-w-0">
                                     <label className="block text-xs font-medium text-[#E4E4E7] mb-1.5">
-                                        Əlaqəli Sifariş (PO)
+                                        {t('procurement.poTitle', {}, 'Əlaqəli Sifariş (PO)')}
                                     </label>
                                     <CustomSelect
                                         options={[
-                                            { value: '', label: 'Sərbəst Qaimə (Sifarişsiz)' },
+                                            { value: '', label: t('common.none', {}, 'Sərbəst Qaimə (Sifarişsiz)') },
                                             ...orders.map((o) => ({
                                                 value: o.id,
-                                                label: `${o.orderNumber} - ${o.supplierName || 'Təchizatçı'}`,
+                                                label: `${o.orderNumber} - ${o.supplierName || t('procurement.supplierName', {}, 'Təchizatçı')}`,
                                             })),
                                         ]}
                                         value={modalPurchaseOrderId}
                                         onChange={handlePoSelection}
-                                        placeholder="Sifariş seçin..."
+                                        placeholder={t('common.select', {}, 'Sifariş seçin...')}
                                     />
                                 </div>
 
                                 {/* Əlaqəli Mədaxil (GRN) */}
                                 <div className="min-w-0">
                                     <label className="block text-xs font-medium text-[#E4E4E7] mb-1.5">
-                                        Əlaqəli Qəbul Sənədi (GRN)
+                                        {t('procurement.grnTitle', {}, 'Əlaqəli Qəbul Sənədi (GRN)')}
                                     </label>
                                     <CustomSelect
                                         options={[
-                                            { value: '', label: 'Sərbəst Qaimə (İrsaliyəsiz)' },
+                                            { value: '', label: t('common.none', {}, 'Sərbəst Qaimə (İrsaliyəsiz)') },
                                             ...receipts.map((g) => ({
                                                 value: g.id,
-                                                label: `${g.receiptNumber} - ${g.supplierName || 'Təchizatçı'}`,
+                                                label: `${g.receiptNumber} - ${g.supplierName || t('procurement.supplierName', {}, 'Təchizatçı')}`,
                                             })),
                                         ]}
                                         value={modalGoodsReceiptId}
                                         onChange={handleGrnSelection}
-                                        placeholder="Qəbul sənədi seçin..."
+                                        placeholder={t('common.select', {}, 'Qəbul sənədi seçin...')}
                                     />
                                 </div>
 
                                 {/* Faktura Tarixi */}
                                 <div className="min-w-0">
                                     <label className="block text-xs font-medium text-[#E4E4E7] mb-1.5">
-                                        Faktura Tarixi <span className="text-rose-400">*</span>
+                                        {t('customers.invoiceDate', {}, 'Faktura Tarixi')} <span className="text-rose-400">*</span>
                                     </label>
                                     <input
                                         type="date"
@@ -1243,7 +1245,7 @@ export const SupplierInvoicesPage: React.FC = () => {
                                 {/* Son Ödəniş Tarixi */}
                                 <div className="min-w-0">
                                     <label className="block text-xs font-medium text-[#E4E4E7] mb-1.5">
-                                        Son Ödəniş Tarixi
+                                        {t('customers.dueDate', {}, 'Son Ödəniş Tarixi')}
                                     </label>
                                     <input
                                         type="date"
@@ -1258,7 +1260,7 @@ export const SupplierInvoicesPage: React.FC = () => {
                             <div className="space-y-3 pt-1">
                                 <div className="flex items-center justify-between border-b border-[#27272A] pb-2">
                                     <h3 className="text-xs font-semibold text-white tracking-wide uppercase">
-                                        Faktura Sətirləri
+                                        {t('accounting.lines', {}, 'Faktura Sətirləri')}
                                     </h3>
                                     <button
                                         type="button"
@@ -1266,7 +1268,7 @@ export const SupplierInvoicesPage: React.FC = () => {
                                         className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] text-white text-xs font-medium transition-colors"
                                     >
                                         <PlusIcon className="w-3.5 h-3.5" />
-                                        <span>Sətir Əlavə Et</span>
+                                        <span>{t('accounting.addLine', {}, 'Sətir Əlavə Et')}</span>
                                     </button>
                                 </div>
 
@@ -1283,7 +1285,7 @@ export const SupplierInvoicesPage: React.FC = () => {
                                                 {/* Məhsul Seçimi (CustomSelect) */}
                                                 <div className="sm:col-span-5 min-w-0">
                                                     <label className="block text-[11px] text-[#A1A1AA] mb-1">
-                                                        Məhsul / Xidmət <span className="text-rose-400">*</span>
+                                                        {t('customers.item', {}, 'Məhsul / Xidmət')} <span className="text-rose-400">*</span>
                                                     </label>
                                                     <CustomSelect
                                                         options={items.map((i) => ({
@@ -1292,13 +1294,13 @@ export const SupplierInvoicesPage: React.FC = () => {
                                                         }))}
                                                         value={line.itemId}
                                                         onChange={(val) => handleLineItemSelect(idx, val)}
-                                                        placeholder="Məhsul seçin..."
+                                                        placeholder={t('common.select', {}, 'Məhsul seçin...')}
                                                     />
                                                 </div>
 
                                                 {/* Say (Miqdar) */}
                                                 <div className="sm:col-span-2 min-w-0">
-                                                    <label className="block text-[11px] text-[#A1A1AA] mb-1">Say</label>
+                                                    <label className="block text-[11px] text-[#A1A1AA] mb-1">{t('common.quantity', {}, 'Say')}</label>
                                                     <input
                                                         type="number"
                                                         min="1"
@@ -1312,7 +1314,7 @@ export const SupplierInvoicesPage: React.FC = () => {
 
                                                 {/* Vahid Qiymət */}
                                                 <div className="sm:col-span-2 min-w-0">
-                                                    <label className="block text-[11px] text-[#A1A1AA] mb-1">Vahid Qiymət (AZN)</label>
+                                                    <label className="block text-[11px] text-[#A1A1AA] mb-1">{t('common.unitPrice', {}, 'Vahid Qiymət')} (AZN)</label>
                                                     <input
                                                         type="number"
                                                         min="0"
@@ -1327,7 +1329,7 @@ export const SupplierInvoicesPage: React.FC = () => {
 
                                                 {/* Sətir Cəmi */}
                                                 <div className="sm:col-span-2 min-w-0">
-                                                    <label className="block text-[11px] text-[#A1A1AA] mb-1">Cəmi (+ƏDV)</label>
+                                                    <label className="block text-[11px] text-[#A1A1AA] mb-1">{t('common.total', {}, 'Cəmi')} (+ƏDV)</label>
                                                     <div className="py-1.5 text-xs font-semibold text-white">
                                                         {lineTotal.toFixed(2)} <span className="text-[10px] text-[#71717A]">AZN</span>
                                                     </div>
@@ -1340,7 +1342,7 @@ export const SupplierInvoicesPage: React.FC = () => {
                                                         onClick={() => handleRemoveLine(idx)}
                                                         disabled={modalLines.length <= 1}
                                                         className="p-1.5 rounded-xl text-[#71717A] hover:text-rose-400 hover:bg-rose-500/10 transition-colors disabled:opacity-30"
-                                                        title="Sətiri sil"
+                                                        title={t('common.delete', {}, 'Sətiri sil')}
                                                     >
                                                         <TrashIcon className="w-4 h-4" />
                                                     </button>
@@ -1354,30 +1356,30 @@ export const SupplierInvoicesPage: React.FC = () => {
                             {/* Section 3: Notes & Summary */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                                 <div>
-                                    <label className="block text-xs font-medium text-[#E4E4E7] mb-1.5">Qeydlər və Şərtlər</label>
+                                    <label className="block text-xs font-medium text-[#E4E4E7] mb-1.5">{t('common.notes', {}, 'Qeydlər və Şərtlər')}</label>
                                     <textarea
                                         rows={3}
                                         value={modalNotes}
                                         onChange={(e) => setModalNotes(e.target.value)}
-                                        placeholder="Faktura qeydləri və ödəniş şərtləri..."
+                                        placeholder={t('common.notes', {}, 'Faktura qeydləri və ödəniş şərtləri...')}
                                         className="w-full bg-[#121214] border border-[#27272A] rounded-xl p-2.5 text-xs text-white placeholder-[#71717A] focus:outline-none focus:border-[#3F3F46]"
                                     />
                                 </div>
 
                                 {/* Summary Box */}
                                 <div className="p-4 rounded-2xl bg-[#121214] border border-[#27272A] flex flex-col justify-between space-y-2">
-                                    <span className="text-xs font-semibold text-white uppercase tracking-wide">Faktura Xülasəsi</span>
+                                    <span className="text-xs font-semibold text-white uppercase tracking-wide">{t('common.details', {}, 'Faktura Xülasəsi')}</span>
                                     <div className="space-y-1.5 text-xs">
                                         <div className="flex justify-between text-[#A1A1AA]">
-                                            <span>Xalis Məbləğ:</span>
+                                            <span>{t('common.subTotal', {}, 'Xalis Məbləğ:')}</span>
                                             <span className="text-white font-medium">{modalCalculations.subTotal.toFixed(2)} AZN</span>
                                         </div>
                                         <div className="flex justify-between text-[#A1A1AA]">
-                                            <span>ƏDV (18%):</span>
+                                            <span>{t('common.taxTotal', {}, 'ƏDV (18%):')}</span>
                                             <span className="text-white font-medium">{modalCalculations.taxTotal.toFixed(2)} AZN</span>
                                         </div>
                                         <div className="pt-2 border-t border-[#27272A] flex justify-between text-sm font-semibold text-white">
-                                            <span>Yekun Faktura Məbləği:</span>
+                                            <span>{t('common.grandTotal', {}, 'Yekun Faktura Məbləği:')}</span>
                                             <span className="text-white font-bold">
                                                 {modalCalculations.grandTotal.toFixed(2)} AZN
                                             </span>
@@ -1393,7 +1395,7 @@ export const SupplierInvoicesPage: React.FC = () => {
                                     onClick={() => setShowCreateModal(false)}
                                     className="px-4 py-2 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] text-[#E4E4E7] text-xs font-medium transition-colors"
                                 >
-                                    Ləğv Et
+                                    {t('common.cancel', {}, 'Ləğv Et')}
                                 </button>
                                 <button
                                     type="submit"
@@ -1401,7 +1403,7 @@ export const SupplierInvoicesPage: React.FC = () => {
                                     className="px-5 py-2 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-semibold transition-all shadow-sm active:scale-95 disabled:opacity-50 flex items-center gap-2"
                                 >
                                     {createLoading && <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />}
-                                    <span>Yarat</span>
+                                    <span>{t('common.create', {}, 'Yarat')}</span>
                                 </button>
                             </div>
                         </form>

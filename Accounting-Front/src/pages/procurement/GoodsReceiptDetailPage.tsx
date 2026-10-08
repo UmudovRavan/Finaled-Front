@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { procurementService } from '../../api';
 import { formatDate } from '../../utils';
 import type { GoodsReceiptDto } from '../../dto';
+import { useLanguage } from '../../context/LanguageContext';
 import {
     ArrowLeftIcon,
     ArrowPathIcon,
@@ -22,6 +23,7 @@ import {
 export const GoodsReceiptDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { t } = useLanguage();
 
     const [receipt, setReceipt] = useState<GoodsReceiptDto | null>(null);
     const [loading, setLoading] = useState(true);
@@ -38,7 +40,7 @@ export const GoodsReceiptDetailPage: React.FC = () => {
         if (data?.message) return data.message;
         if (data?.title) return data.title;
         if (data?.error) return data.error;
-        return err.message || 'Xəta baş verdi';
+        return err.message || t('common.error', {}, 'Xəta baş verdi');
     };
 
     const loadData = async (silent = false) => {
@@ -52,7 +54,7 @@ export const GoodsReceiptDetailPage: React.FC = () => {
             setReceipt(data);
         } catch (err: any) {
             console.error('Failed to load goods receipt detail:', err);
-            setError(extractErrorMessage(err) || 'Malların qəbulu sənədi tapılmadı.');
+            setError(extractErrorMessage(err) || t('common.noData', {}, 'Malların qəbulu sənədi tapılmadı.'));
         } finally {
             setLoading(false);
             setIsRefreshing(false);
@@ -75,7 +77,7 @@ export const GoodsReceiptDetailPage: React.FC = () => {
         try {
             const updated = await procurementService.postGoodsReceipt(receipt.id);
             setReceipt(updated);
-            showToast('Qəbul sənədi uğurla icra edildi və mallar anbara mədaxil olundu!');
+            showToast(t('procurement.grnPostedSuccess', {}, 'Qəbul sənədi uğurla icra edildi və mallar anbara mədaxil olundu!'));
             await loadData(true);
         } catch (err: any) {
             console.error('Failed to post goods receipt:', err);
@@ -90,7 +92,7 @@ export const GoodsReceiptDetailPage: React.FC = () => {
         const s = String(status || '').toLowerCase();
         if (s.includes('post') || status === 4) {
             return {
-                label: 'İcra Edilib',
+                label: t('statuses.posted', {}, 'İcra Edilib'),
                 bg: 'bg-emerald-500/10',
                 border: 'border-emerald-500/20',
                 text: 'text-emerald-400',
@@ -100,7 +102,7 @@ export const GoodsReceiptDetailPage: React.FC = () => {
         }
         if (s.includes('appr') || status === 3) {
             return {
-                label: 'Təsdiqlənib',
+                label: t('statuses.approved', {}, 'Təsdiqlənib'),
                 bg: 'bg-cyan-500/10',
                 border: 'border-cyan-500/20',
                 text: 'text-cyan-400',
@@ -110,7 +112,7 @@ export const GoodsReceiptDetailPage: React.FC = () => {
         }
         if (s.includes('sub') || status === 2) {
             return {
-                label: 'Təqdim Edilib',
+                label: t('statuses.pending', {}, 'Təqdim Edilib'),
                 bg: 'bg-blue-500/10',
                 border: 'border-blue-500/20',
                 text: 'text-blue-400',
@@ -120,7 +122,7 @@ export const GoodsReceiptDetailPage: React.FC = () => {
         }
         if (s.includes('canc') || status === 5) {
             return {
-                label: 'Ləğv Edilib',
+                label: t('statuses.cancelled', {}, 'Ləğv Edilib'),
                 bg: 'bg-rose-500/10',
                 border: 'border-rose-500/20',
                 text: 'text-rose-400',
@@ -129,7 +131,7 @@ export const GoodsReceiptDetailPage: React.FC = () => {
             };
         }
         return {
-            label: 'Qaralama',
+            label: t('statuses.draft', {}, 'Qaralama'),
             bg: 'bg-neutral-500/10',
             border: 'border-neutral-500/20',
             text: 'text-neutral-400',
@@ -142,7 +144,7 @@ export const GoodsReceiptDetailPage: React.FC = () => {
         return (
             <div className="flex flex-col items-center justify-center min-h-[50vh] text-[#71717A] space-y-3">
                 <ArrowPathIcon className="w-8 h-8 animate-spin text-zinc-400" />
-                <p className="text-xs">Malların qəbulu sənədi yüklənir...</p>
+                <p className="text-xs">{t('common.loading', {}, 'Malların qəbulu sənədi yüklənir...')}</p>
             </div>
         );
     }
@@ -153,14 +155,14 @@ export const GoodsReceiptDetailPage: React.FC = () => {
                 <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mx-auto">
                     <ExclamationCircleIcon className="w-6 h-6" />
                 </div>
-                <h2 className="text-base font-semibold text-white">Sənəd Tapılmadı</h2>
-                <p className="text-xs text-[#A1A1AA]">{error || 'Axtardığınız malların qəbulu sənədi mövcud deyil.'}</p>
+                <h2 className="text-base font-semibold text-white">{t('common.error', {}, 'Sənəd Tapılmadı')}</h2>
+                <p className="text-xs text-[#A1A1AA]">{error || t('common.noData', {}, 'Axtardığınız malların qəbulu sənədi mövcud deyil.')}</p>
                 <div className="pt-2">
                     <button
                         onClick={() => navigate('/goods-receipts')}
                         className="px-4 py-2 rounded-xl bg-white text-black text-xs font-semibold hover:bg-neutral-200 transition-colors"
                     >
-                        Siyahıya Qayıt
+                        {t('common.back', {}, 'Siyahıya Qayıt')}
                     </button>
                 </div>
             </div>
@@ -181,7 +183,7 @@ export const GoodsReceiptDetailPage: React.FC = () => {
                 <div>
                     <div className="flex items-center gap-2 text-xs text-[#71717A]">
                         <Link to="/goods-receipts" className="hover:text-white transition-colors">
-                            Malların Qəbulu
+                            {t('nav.goodsReceipts', {}, 'Malların Qəbulu')}
                         </Link>
                         <span>/</span>
                         <span className="text-[#E4E4E7] font-medium font-mono">{receipt.receiptNumber}</span>
@@ -190,12 +192,12 @@ export const GoodsReceiptDetailPage: React.FC = () => {
                         <Link
                             to="/goods-receipts"
                             className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white hover:border-[#3F3F46] transition-colors"
-                            title="Geriyə"
+                            title={t('common.back', {}, 'Geriyə')}
                         >
                             <ArrowLeftIcon className="w-4 h-4" />
                         </Link>
                         <h1 className="text-xl font-semibold text-white tracking-tight flex items-center gap-2">
-                            <span>Qəbul:</span>
+                            <span>{t('procurement.receiptNumber', {}, 'Qəbul')}:</span>
                             <span className="font-mono text-white">{receipt.receiptNumber}</span>
                         </h1>
                         <span
@@ -212,7 +214,7 @@ export const GoodsReceiptDetailPage: React.FC = () => {
                         onClick={() => loadData(true)}
                         disabled={isRefreshing}
                         className="p-2 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white hover:border-[#3F3F46] transition-colors disabled:opacity-50"
-                        title="Yenilə"
+                        title={t('common.refresh', {}, 'Yenilə')}
                     >
                         <ArrowPathIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-zinc-300' : ''}`} />
                     </button>
@@ -224,7 +226,7 @@ export const GoodsReceiptDetailPage: React.FC = () => {
                             className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] hover:border-[#3F3F46] text-white font-medium text-xs transition-all shadow-sm active:scale-95 disabled:opacity-50"
                         >
                             {isPosting ? <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" /> : <CheckCircleIcon className="w-4 h-4 text-zinc-400" />}
-                            <span>Sənədi İcra Et (Post)</span>
+                            <span>{t('procurement.postGrn', {}, 'Sənədi İcra Et (Post)')}</span>
                         </button>
                     )}
 
@@ -233,7 +235,7 @@ export const GoodsReceiptDetailPage: React.FC = () => {
                         className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-neutral-200 text-black font-semibold text-xs transition-all shadow-sm active:scale-95"
                     >
                         <PlusIcon className="w-4 h-4" />
-                        <span>Faktura Yarat</span>
+                        <span>{t('procurement.createInvoiceFromGrn', {}, 'Faktura Yarat')}</span>
                     </Link>
                 </div>
             </div>
@@ -257,7 +259,7 @@ export const GoodsReceiptDetailPage: React.FC = () => {
                 {/* 1. Grand Total */}
                 <div className="p-4 rounded-2xl bg-[#121214] border border-[#27272A] flex flex-col justify-between">
                     <div className="flex items-center justify-between text-[#A1A1AA]">
-                        <span className="text-xs font-medium">Yekun Dəyər</span>
+                        <span className="text-xs font-medium">{t('common.grandTotal', {}, 'Yekun Dəyər')}</span>
                         <div className="w-7 h-7 rounded-xl bg-[#18181B] border border-[#27272A] flex items-center justify-center text-zinc-300">
                             <CurrencyDollarIcon className="w-4 h-4" />
                         </div>
@@ -276,21 +278,21 @@ export const GoodsReceiptDetailPage: React.FC = () => {
                 {/* 2. Items / Quantity Count */}
                 <div className="p-4 rounded-2xl bg-[#121214] border border-[#27272A] flex flex-col justify-between">
                     <div className="flex items-center justify-between text-[#A1A1AA]">
-                        <span className="text-xs font-medium">Qəbul Miqdarı</span>
+                        <span className="text-xs font-medium">{t('procurement.receivedQty', {}, 'Qəbul Miqdarı')}</span>
                         <div className="w-7 h-7 rounded-xl bg-[#18181B] border border-[#27272A] flex items-center justify-center text-zinc-300">
                             <InboxArrowDownIcon className="w-4 h-4" />
                         </div>
                     </div>
                     <div className="mt-3">
                         <span className="text-xl font-bold text-white tracking-tight">{totalLinesCount}</span>
-                        <span className="text-xs text-[#71717A] ml-1.5 font-medium">ədəd ({(receipt.lines || []).length} çeşid)</span>
+                        <span className="text-xs text-[#71717A] ml-1.5 font-medium">{t('common.quantity', {}, 'ədəd')} ({(receipt.lines || []).length} {t('common.itemsCount', {}, 'çeşid')})</span>
                     </div>
                 </div>
 
                 {/* 3. Receipt Date */}
                 <div className="p-4 rounded-2xl bg-[#121214] border border-[#27272A] flex flex-col justify-between">
                     <div className="flex items-center justify-between text-[#A1A1AA]">
-                        <span className="text-xs font-medium">Qəbul Tarixi</span>
+                        <span className="text-xs font-medium">{t('procurement.receiptDate', {}, 'Qəbul Tarixi')}</span>
                         <div className="w-7 h-7 rounded-xl bg-[#18181B] border border-[#27272A] flex items-center justify-center text-zinc-300">
                             <CalendarIcon className="w-4 h-4" />
                         </div>
@@ -305,7 +307,7 @@ export const GoodsReceiptDetailPage: React.FC = () => {
                 {/* 4. Status Description */}
                 <div className="p-4 rounded-2xl bg-[#121214] border border-[#27272A] flex flex-col justify-between">
                     <div className="flex items-center justify-between text-[#A1A1AA]">
-                        <span className="text-xs font-medium">Sənəd Vəziyyəti</span>
+                        <span className="text-xs font-medium">{t('common.status', {}, 'Sənəd Vəziyyəti')}</span>
                         <div className={`w-7 h-7 rounded-xl flex items-center justify-center ${statusObj.bg} ${statusObj.border} ${statusObj.text}`}>
                             <TagIcon className="w-4 h-4" />
                         </div>
@@ -323,13 +325,13 @@ export const GoodsReceiptDetailPage: React.FC = () => {
                 <div className="lg:col-span-1 space-y-4">
                     <div className="p-5 rounded-3xl bg-[#121214] border border-[#27272A] space-y-4">
                         <h2 className="text-xs font-semibold text-white uppercase tracking-wider border-b border-[#27272A] pb-3">
-                            Qəbul Məlumatları
+                            {t('procurement.grnDetails', {}, 'Qəbul Məlumatları')}
                         </h2>
 
                         <div className="space-y-3.5 text-xs">
                             {/* Təchizatçı */}
                             <div>
-                                <span className="text-[#71717A] block mb-1">Təchizatçı</span>
+                                <span className="text-[#71717A] block mb-1">{t('procurement.supplierName', {}, 'Təchizatçı')}</span>
                                 <div className="flex items-center gap-2 text-white font-medium">
                                     <div className="w-6 h-6 rounded-lg bg-[#18181B] border border-[#27272A] flex items-center justify-center text-[#A1A1AA] text-[10px] font-bold">
                                         {(receipt.supplierName || 'T')[0]}
@@ -338,24 +340,24 @@ export const GoodsReceiptDetailPage: React.FC = () => {
                                         to={`/suppliers/${receipt.supplierId}`}
                                         className="hover:text-emerald-400 hover:underline transition-colors"
                                     >
-                                        {receipt.supplierName || 'Təchizatçı'}
+                                        {receipt.supplierName || t('procurement.supplierName', {}, 'Təchizatçı')}
                                     </Link>
                                 </div>
                             </div>
 
                             {/* Anbar */}
                             <div>
-                                <span className="text-[#71717A] block mb-1">Mədaxil Anbarı</span>
+                                <span className="text-[#71717A] block mb-1">{t('procurement.warehouse', {}, 'Mədaxil Anbarı')}</span>
                                 <div className="flex items-center gap-2 text-[#E4E4E7]">
                                     <BuildingOffice2Icon className="w-4 h-4 text-zinc-400" />
-                                    <span>{receipt.warehouseName || 'Əsas Anbar'}</span>
+                                    <span>{receipt.warehouseName || t('inventory.warehouseName', {}, 'Əsas Anbar')}</span>
                                 </div>
                             </div>
 
                             {/* Əlaqəli Sifariş */}
                             {receipt.purchaseOrderId && (
                                 <div>
-                                    <span className="text-[#71717A] block mb-1">Əlaqəli Sifariş (PO)</span>
+                                    <span className="text-[#71717A] block mb-1">{t('procurement.poTitle', {}, 'Əlaqəli Sifariş (PO)')}</span>
                                     <Link
                                         to={`/purchase-orders/${receipt.purchaseOrderId}`}
                                         className="font-mono text-zinc-300 hover:text-white hover:underline inline-flex items-center gap-1"
@@ -368,29 +370,28 @@ export const GoodsReceiptDetailPage: React.FC = () => {
 
                             {/* İrsaliyə / Faktura № */}
                             <div>
-                                <span className="text-[#71717A] block mb-1">İrsaliyə / Faktura №</span>
+                                <span className="text-[#71717A] block mb-1">{t('procurement.waybillNumber', {}, 'İrsaliyə / Faktura №')}</span>
                                 <span className="text-white font-mono">{receipt.waybillNumber || '—'}</span>
                             </div>
 
                             {/* Qəbul Tarixi */}
                             <div>
-                                <span className="text-[#71717A] block mb-1">Qəbul Tarixi</span>
+                                <span className="text-[#71717A] block mb-1">{t('procurement.receiptDate', {}, 'Qəbul Tarixi')}</span>
                                 <span className="text-white">{formatDate(receipt.receiptDate)}</span>
                             </div>
 
                             {/* Uçot Tarixi */}
                             {receipt.postingDate && (
                                 <div>
-                                    <span className="text-[#71717A] block mb-1">Uçot (Posting) Tarixi</span>
+                                    <span className="text-[#71717A] block mb-1">{t('accounting.postingDate', {}, 'Uçot (Posting) Tarixi')}</span>
                                     <span className="text-white">{formatDate(receipt.postingDate)}</span>
                                 </div>
                             )}
 
-
                             {/* Qeydlər */}
                             {receipt.notes && (
                                 <div className="pt-2 border-t border-[#27272A]">
-                                    <span className="text-[#71717A] block mb-1">Qeydlər və Təhvil-təslim</span>
+                                    <span className="text-[#71717A] block mb-1">{t('common.notes', {}, 'Qeydlər və Təhvil-təslim')}</span>
                                     <p className="text-[#A1A1AA] text-xs bg-[#18181B] p-2.5 rounded-xl border border-[#27272A] leading-relaxed">
                                         {receipt.notes}
                                     </p>
@@ -405,10 +406,10 @@ export const GoodsReceiptDetailPage: React.FC = () => {
                     <div className="p-5 rounded-3xl bg-[#121214] border border-[#27272A] space-y-4">
                         <div className="flex items-center justify-between border-b border-[#27272A] pb-3">
                             <h2 className="text-xs font-semibold text-white uppercase tracking-wider">
-                                Mədaxil Sətirləri
+                                {t('accounting.lines', {}, 'Mədaxil Sətirləri')}
                             </h2>
                             <span className="text-xs text-[#71717A]">
-                                Toplam: <span className="text-white font-medium">{(receipt.lines || []).length}</span> sətir
+                                {t('common.total', {}, 'Toplam')}: <span className="text-white font-medium">{(receipt.lines || []).length}</span> {t('common.linesCount', {}, 'sətir')}
                             </span>
                         </div>
 
@@ -418,17 +419,17 @@ export const GoodsReceiptDetailPage: React.FC = () => {
                                 <thead>
                                     <tr className="border-b border-[#27272A] text-[#71717A] text-[11px] font-semibold tracking-wider uppercase">
                                         <th className="py-2.5 px-3">#</th>
-                                        <th className="py-2.5 px-3">Məhsul / Təsvir</th>
-                                        <th className="py-2.5 px-3 text-right">Qəbul Sayı</th>
-                                        <th className="py-2.5 px-3 text-right">Vahid Maya</th>
-                                        <th className="py-2.5 px-3 text-right">Cəmi Dəyər</th>
+                                        <th className="py-2.5 px-3">{t('customers.item', {}, 'Məhsul / Təsvir')}</th>
+                                        <th className="py-2.5 px-3 text-right">{t('procurement.receivedQty', {}, 'Qəbul Sayı')}</th>
+                                        <th className="py-2.5 px-3 text-right">{t('common.unitCost', {}, 'Vahid Maya')}</th>
+                                        <th className="py-2.5 px-3 text-right">{t('common.total', {}, 'Cəmi Dəyər')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#27272A]/50 text-xs">
                                     {(!receipt.lines || receipt.lines.length === 0) ? (
                                         <tr>
                                             <td colSpan={5} className="py-8 text-center text-[#71717A]">
-                                                Sətir məlumatı mövcud deyil.
+                                                {t('common.noData', {}, 'Sətir məlumatı mövcud deyil.')}
                                             </td>
                                         </tr>
                                     ) : (
@@ -441,10 +442,10 @@ export const GoodsReceiptDetailPage: React.FC = () => {
                                                 <tr key={line.id || idx} className="hover:bg-[#18181B]/40 transition-colors">
                                                     <td className="py-3 px-3 text-[#71717A] font-mono">{idx + 1}</td>
                                                     <td className="py-3 px-3 text-white font-medium">
-                                                        <div>{line.description || line.itemCode || 'Məhsul'}</div>
+                                                        <div>{line.description || line.itemCode || t('customers.item', {}, 'Məhsul')}</div>
                                                         {line.itemCode && (
                                                             <span className="text-[10px] text-[#71717A] font-mono">
-                                                                Kod: {line.itemCode}
+                                                                {t('common.code', {}, 'Kod')}: {line.itemCode}
                                                             </span>
                                                         )}
                                                     </td>
@@ -466,11 +467,11 @@ export const GoodsReceiptDetailPage: React.FC = () => {
                         {/* Summary Footer */}
                         <div className="pt-3 border-t border-[#27272A] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
                             <div className="text-[#71717A]">
-                                <span>Toplam qəbul edilən məhsul vahidi: </span>
+                                <span>{t('procurement.receivedQty', {}, 'Toplam qəbul edilən məhsul vahidi')}: </span>
                                 <span className="text-white font-semibold">{totalLinesCount}</span>
                             </div>
                             <div className="text-right">
-                                <span className="text-[#71717A] mr-2">Yekun Mədaxil Dəyəri:</span>
+                                <span className="text-[#71717A] mr-2">{t('common.grandTotal', {}, 'Yekun Mədaxil Dəyəri')}:</span>
                                 <span className="text-base font-bold text-white">
                                     {(receipt.totalValue || 0).toLocaleString('az-AZ', {
                                         minimumFractionDigits: 2,

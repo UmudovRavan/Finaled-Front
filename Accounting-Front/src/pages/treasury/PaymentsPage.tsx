@@ -9,7 +9,7 @@ import type {
     AccountDto,
     CreatePaymentRequest,
 } from '../../dto';
-import CustomSelect from '../../components/CustomSelect';
+import { useLanguage } from '../../context/LanguageContext';
 import {
     PlusIcon,
     MagnifyingGlassIcon,
@@ -22,17 +22,14 @@ import {
     EyeIcon,
     BanknotesIcon,
     BuildingLibraryIcon,
-    CreditCardIcon,
     ClipboardDocumentIcon,
     CheckCircleIcon,
     ExclamationTriangleIcon,
     ArrowTrendingUpIcon,
     ArrowTrendingDownIcon,
     DocumentTextIcon,
-    CalendarIcon,
     UserIcon,
     ArrowsRightLeftIcon,
-    CurrencyDollarIcon,
 } from '@heroicons/react/24/outline';
 
 const CURRENCIES = ['AZN', 'USD', 'EUR', 'TRY', 'GBP', 'RUB'];
@@ -44,6 +41,7 @@ interface ColumnConfig {
 }
 
 export const PaymentsPage: React.FC = () => {
+    const { t } = useLanguage();
     const navigate = useNavigate();
 
     // Data states
@@ -90,15 +88,15 @@ export const PaymentsPage: React.FC = () => {
 
     // Columns config
     const [columns, setColumns] = useState<ColumnConfig[]>([
-        { key: 'date', label: 'Tarix', visible: true },
-        { key: 'number', label: 'Ödəniş №', visible: true },
-        { key: 'type', label: 'Növ', visible: true },
-        { key: 'party', label: 'Qarşı Tərəf', visible: true },
-        { key: 'account', label: 'Bank / Kassa', visible: true },
-        { key: 'currency', label: 'Valyuta', visible: true },
-        { key: 'amount', label: 'Məbləğ', visible: true },
-        { key: 'allocated', label: 'Bölüşdürülən', visible: true },
-        { key: 'status', label: 'Status', visible: true },
+        { key: 'date', label: t('common.date', {}, 'Tarix'), visible: true },
+        { key: 'number', label: t('treasury.paymentNumber', {}, 'Ödəniş №'), visible: true },
+        { key: 'type', label: t('common.type', {}, 'Növ'), visible: true },
+        { key: 'party', label: t('treasury.party', {}, 'Qarşı Tərəf'), visible: true },
+        { key: 'account', label: t('treasury.bankOrCash', {}, 'Bank / Kassa'), visible: true },
+        { key: 'currency', label: t('common.currency', {}, 'Valyuta'), visible: true },
+        { key: 'amount', label: t('common.amount', {}, 'Məbləğ'), visible: true },
+        { key: 'allocated', label: t('treasury.allocatedAmount', {}, 'Bölüşdürülən'), visible: true },
+        { key: 'status', label: t('common.status', {}, 'Status'), visible: true },
     ]);
 
     // Create Modal state
@@ -131,7 +129,7 @@ export const PaymentsPage: React.FC = () => {
         if (data?.message) return data.message;
         if (data?.title) return data.title;
         if (data?.error) return data.error;
-        return err.message || 'Xəta baş verdi';
+        return err.message || t('common.error', {}, 'Xəta baş verdi');
     };
 
     const loadData = async (silent = false) => {
@@ -154,7 +152,7 @@ export const PaymentsPage: React.FC = () => {
             setSuppliers(supps);
         } catch (err) {
             console.error('Failed to load payments data:', err);
-            showToast('Ödənişlər yüklənərkən xəta baş verdi', 'error');
+            showToast(t('treasury.paymentsLoadFailed', {}, 'Ödənişlər yüklənərkən xəta baş verdi'), 'error');
         } finally {
             setLoading(false);
             setIsRefreshing(false);
@@ -214,47 +212,46 @@ export const PaymentsPage: React.FC = () => {
         }
     };
 
-
     const getTypeBadge = (type: any, paymentType?: string) => {
-        const t = String(type || '').toLowerCase();
+        const tVal = String(type || '').toLowerCase();
         const pt = String(paymentType || '').toLowerCase();
 
-        if (t === '1' || t.includes('customerreceipt') || pt === 'incoming') {
+        if (tVal === '1' || tVal.includes('customerreceipt') || pt === 'incoming') {
             return (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                     <ArrowTrendingUpIcon className="w-3 h-3" />
-                    <span>Mədaxil</span>
+                    <span>{t('treasury.typeCustomerReceipt', {}, 'Mədaxil')}</span>
                 </span>
             );
         }
-        if (t === '2' || t.includes('customeradvance')) {
+        if (tVal === '2' || tVal.includes('customeradvance')) {
             return (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
                     <ArrowTrendingUpIcon className="w-3 h-3" />
-                    <span>Müştəri Avansı</span>
+                    <span>{t('treasury.customerAdvance', {}, 'Müştəri Avansı')}</span>
                 </span>
             );
         }
-        if (t === '3' || t.includes('supplierpayment') || pt === 'outgoing') {
+        if (tVal === '3' || tVal.includes('supplierpayment') || pt === 'outgoing') {
             return (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
                     <ArrowTrendingDownIcon className="w-3 h-3" />
-                    <span>Məxaric</span>
+                    <span>{t('treasury.typeSupplierPayment', {}, 'Məxaric')}</span>
                 </span>
             );
         }
-        if (t === '4' || t.includes('supplieradvance')) {
+        if (tVal === '4' || tVal.includes('supplieradvance')) {
             return (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
                     <ArrowTrendingDownIcon className="w-3 h-3" />
-                    <span>Təchizatçı Avansı</span>
+                    <span>{t('treasury.supplierAdvance', {}, 'Təchizatçı Avansı')}</span>
                 </span>
             );
         }
         return (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
                 <ArrowsRightLeftIcon className="w-3 h-3" />
-                <span>Transfer</span>
+                <span>{t('treasury.typeInternalTransfer', {}, 'Transfer')}</span>
             </span>
         );
     };
@@ -293,7 +290,7 @@ export const PaymentsPage: React.FC = () => {
         e.preventDefault();
         const amt = Number(modalAmount);
         if (!amt || amt <= 0) {
-            setCreateError('Zəhmət olmasa 0-dan böyük məbləğ daxil edin.');
+            setCreateError(t('treasury.specifyValidAmount', {}, 'Zəhmət olmasa 0-dan böyük məbləğ daxil edin.'));
             return;
         }
 
@@ -301,12 +298,12 @@ export const PaymentsPage: React.FC = () => {
         const isSupp = modalPaymentTypeEnum === 3 || modalPaymentTypeEnum === 4;
 
         if ((isCust || isSupp) && !modalPartyId) {
-            setCreateError('Zəhmət olmasa qarşı tərəfi seçin.');
+            setCreateError(t('treasury.specifyParty', {}, 'Zəhmət olmasa qarşı tərəfi seçin.'));
             return;
         }
 
         if (!modalBankAccountId) {
-            setCreateError('Zəhmət olmasa Bank və ya Kassa hesabını seçin.');
+            setCreateError(t('treasury.specifyAccount', {}, 'Zəhmət olmasa Bank və ya Kassa hesabını seçin.'));
             return;
         }
 
@@ -347,7 +344,7 @@ export const PaymentsPage: React.FC = () => {
 
             const created = await paymentService.createPayment(payload);
 
-            showToast(`${created.paymentNumber} ödəniş sənədi uğurla yaradıldı!`);
+            showToast(`${created.paymentNumber} ${t('treasury.paymentCreatedSuccess', {}, 'ödəniş sənədi uğurla yaradıldı!')}`);
             setShowCreateModal(false);
             loadData(true);
         } catch (err: any) {
@@ -363,7 +360,7 @@ export const PaymentsPage: React.FC = () => {
         setActionLoadingId(pId);
         try {
             await paymentService.postPayment(pId);
-            showToast(`${pNumber} ödənişi uğurla icra edildi və uçota alındı!`);
+            showToast(`${pNumber} ${t('treasury.paymentPostedSuccess', {}, 'ödənişi uğurla icra edildi və uçota alındı!')}`);
             loadData(true);
         } catch (err: any) {
             console.error('Failed to post payment:', err);
@@ -515,15 +512,15 @@ export const PaymentsPage: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Xəzinə</span>
+                        <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">{t('nav.treasury', {}, 'Xəzinə')}</span>
                         <span className="text-xs text-zinc-600">/</span>
-                        <h1 className="text-2xl font-bold tracking-tight text-white">Ödənişlər və Mədaxillər</h1>
+                        <h1 className="text-2xl font-bold tracking-tight text-white">{t('treasury.paymentsTitle', {}, 'Ödənişlər və Mədaxillər')}</h1>
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[#18181B] text-zinc-400 border border-[#27272A]">
-                            {payments.length} qeyd
+                            {payments.length} {t('treasury.recordsCount', {}, 'qeyd')}
                         </span>
                     </div>
                     <p className="text-xs text-zinc-400 mt-1">
-                        Müştərilərdən mədaxillər, təchizatçılara ödənişlər, avanslar və kassa/bank köçürmələri jurnalı
+                        {t('treasury.paymentsSubtitle', {}, 'Müştərilərdən mədaxillər, təchizatçılara ödənişlər, avanslar və kassa/bank köçürmələri jurnalı')}
                     </p>
                 </div>
 
@@ -532,7 +529,7 @@ export const PaymentsPage: React.FC = () => {
                         onClick={() => loadData(false)}
                         disabled={loading || isRefreshing}
                         className="p-2 rounded-xl bg-[#18181B] border border-[#27272A] text-zinc-400 hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer disabled:opacity-50"
-                        title="Yenilə"
+                        title={t('common.refresh', {}, 'Yenilə')}
                     >
                         <ArrowPathIcon className={`w-4 h-4 ${isRefreshing || loading ? 'animate-spin' : ''}`} />
                     </button>
@@ -542,7 +539,7 @@ export const PaymentsPage: React.FC = () => {
                         className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-semibold transition-all shadow-xs cursor-pointer"
                     >
                         <PlusIcon className="w-4 h-4 text-black" />
-                        <span>Yeni Ödəniş / Mədaxil</span>
+                        <span>{t('treasury.newPayment', {}, 'Yeni Ödəniş / Mədaxil')}</span>
                     </button>
                 </div>
             </div>
@@ -551,11 +548,11 @@ export const PaymentsPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between">
                     <div>
-                        <div className="text-[11px] font-medium text-zinc-400">Toplam Mədaxil (+)</div>
+                        <div className="text-[11px] font-medium text-zinc-400">{t('treasury.totalReceipts', {}, 'Toplam Mədaxil (+)')}</div>
                         <div className="text-xl font-bold font-mono text-emerald-400 mt-0.5">
                             +{formatCurrency(stats.totalIn, 'AZN')}
                         </div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">Müştərilərdən daxilolmalar</div>
+                        <div className="text-[10px] text-zinc-500 mt-0.5">{t('treasury.customerReceiptsDesc', {}, 'Müştərilərdən daxilolmalar')}</div>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                         <ArrowTrendingUpIcon className="w-5 h-5" />
@@ -564,11 +561,11 @@ export const PaymentsPage: React.FC = () => {
 
                 <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between">
                     <div>
-                        <div className="text-[11px] font-medium text-zinc-400">Toplam Məxaric (-)</div>
+                        <div className="text-[11px] font-medium text-zinc-400">{t('treasury.totalPaymentsOut', {}, 'Toplam Məxaric (-)')}</div>
                         <div className="text-xl font-bold font-mono text-rose-400 mt-0.5">
                             -{formatCurrency(stats.totalOut, 'AZN')}
                         </div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">Təchizatçılara ödənişlər</div>
+                        <div className="text-[10px] text-zinc-500 mt-0.5">{t('treasury.supplierPaymentsDesc', {}, 'Təchizatçılara ödənişlər')}</div>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
                         <ArrowTrendingDownIcon className="w-5 h-5" />
@@ -577,7 +574,7 @@ export const PaymentsPage: React.FC = () => {
 
                 <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between">
                     <div>
-                        <div className="text-[11px] font-medium text-zinc-400">Xalis Pul Axını</div>
+                        <div className="text-[11px] font-medium text-zinc-400">{t('treasury.netCashflow', {}, 'Xalis Pul Axını')}</div>
                         <div
                             className={`text-xl font-bold font-mono mt-0.5 ${
                                 stats.netCashflow >= 0 ? 'text-white' : 'text-rose-400'
@@ -585,7 +582,7 @@ export const PaymentsPage: React.FC = () => {
                         >
                             {stats.netCashflow >= 0 ? '+' : ''}{formatCurrency(stats.netCashflow, 'AZN')}
                         </div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">Mədaxil və məxaric fərqi</div>
+                        <div className="text-[10px] text-zinc-500 mt-0.5">{t('treasury.cashflowDesc', {}, 'Mədaxil və məxaric fərqi')}</div>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-300">
                         <BanknotesIcon className="w-5 h-5" />
@@ -594,11 +591,11 @@ export const PaymentsPage: React.FC = () => {
 
                 <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between">
                     <div>
-                        <div className="text-[11px] font-medium text-zinc-400">Ümumi Ödəniş Sayı</div>
+                        <div className="text-[11px] font-medium text-zinc-400">{t('treasury.totalPaymentsCount', {}, 'Ümumi Ödəniş Sayı')}</div>
                         <div className="text-xl font-bold text-white mt-0.5">
-                            {stats.totalCount} <span className="text-xs font-normal text-zinc-500">({stats.postedCount} uçotda)</span>
+                            {stats.totalCount} <span className="text-xs font-normal text-zinc-500">({stats.postedCount} {t('treasury.postedCountSuffix', {}, 'uçotda')})</span>
                         </div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">Ödəniş qəbzləri cəmi</div>
+                        <div className="text-[10px] text-zinc-500 mt-0.5">{t('treasury.receiptsTotalDesc', {}, 'Ödəniş qəbzləri cəmi')}</div>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-300">
                         <DocumentTextIcon className="w-5 h-5" />
@@ -637,7 +634,7 @@ export const PaymentsPage: React.FC = () => {
                                 setSearchTerm(e.target.value);
                                 setCurrentPage(1);
                             }}
-                            placeholder="Axtar (nömrə, qarşı tərəf, bank, təyinat)..."
+                            placeholder={t('treasury.searchPaymentPlaceholder', {}, 'Axtar (nömrə, qarşı tərəf, bank, təyinat)...')}
                             className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-xs text-white placeholder-zinc-500 focus:border-zinc-500 focus:outline-hidden transition-colors"
                         />
                         {searchTerm && (
@@ -657,17 +654,17 @@ export const PaymentsPage: React.FC = () => {
                             className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-xs text-zinc-300 hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer"
                         >
                             <span>
-                                Növ:{' '}
+                                {t('common.type', {}, 'Növ')}:{' '}
                                 <strong className="text-white font-medium">
                                     {typeFilter === 'ALL'
-                                        ? 'Hamısı'
+                                        ? t('common.all', {}, 'Hamısı')
                                         : typeFilter === 'Incoming'
-                                        ? 'Mədaxil (Receipt)'
+                                        ? t('treasury.incomingFilter', {}, 'Mədaxil (Receipt)')
                                         : typeFilter === 'Outgoing'
-                                        ? 'Məxaric (Payment)'
+                                        ? t('treasury.outgoingFilter', {}, 'Məxaric (Payment)')
                                         : typeFilter === 'CustAdvance'
-                                        ? 'Müştəri Avansı'
-                                        : 'Təchizatçı Avansı'}
+                                        ? t('treasury.customerAdvance', {}, 'Müştəri Avansı')
+                                        : t('treasury.supplierAdvance', {}, 'Təchizatçı Avansı')}
                                 </strong>
                             </span>
                             <ArrowsUpDownIcon className="w-3 h-3 text-zinc-500" />
@@ -676,11 +673,11 @@ export const PaymentsPage: React.FC = () => {
                         {isTypeDropdownOpen && (
                             <div className="absolute left-0 mt-1 w-48 rounded-xl bg-[#18181B] border border-[#27272A] py-1 shadow-xl z-30">
                                 {[
-                                    { key: 'ALL', label: 'Hamısı' },
-                                    { key: 'Incoming', label: 'Mədaxil (Gələn)' },
-                                    { key: 'Outgoing', label: 'Məxaric (Gedən)' },
-                                    { key: 'CustAdvance', label: 'Müştəri Avansı' },
-                                    { key: 'SuppAdvance', label: 'Təchizatçı Avansı' },
+                                    { key: 'ALL', label: t('common.all', {}, 'Hamısı') },
+                                    { key: 'Incoming', label: t('treasury.incomingFilter', {}, 'Mədaxil (Gələn)') },
+                                    { key: 'Outgoing', label: t('treasury.outgoingFilter', {}, 'Məxaric (Gedən)') },
+                                    { key: 'CustAdvance', label: t('treasury.customerAdvance', {}, 'Müştəri Avansı') },
+                                    { key: 'SuppAdvance', label: t('treasury.supplierAdvance', {}, 'Təchizatçı Avansı') },
                                 ].map((item) => (
                                     <button
                                         key={item.key}
@@ -715,7 +712,7 @@ export const PaymentsPage: React.FC = () => {
                             }`}
                         >
                             <FunnelIcon className="w-3.5 h-3.5" />
-                            <span>Filtr</span>
+                            <span>{t('common.filter', {}, 'Filtr')}</span>
                             {activeFilterCount > 0 && (
                                 <span className="w-4 h-4 rounded-full bg-black text-white text-[10px] flex items-center justify-center font-bold">
                                     {activeFilterCount}
@@ -726,19 +723,19 @@ export const PaymentsPage: React.FC = () => {
                         {isFilterPopoverOpen && (
                             <div className="absolute right-0 mt-2 w-80 rounded-2xl bg-[#18181B] border border-[#27272A] p-4 shadow-2xl z-40 space-y-3.5">
                                 <div className="flex items-center justify-between pb-2 border-b border-[#27272A]">
-                                    <span className="text-xs font-bold text-white">Filter Parametrləri</span>
+                                    <span className="text-xs font-bold text-white">{t('common.filterOptions', {}, 'Filter Parametrləri')}</span>
                                     {activeFilterCount > 0 && (
                                         <button
                                             onClick={resetFilters}
                                             className="text-[11px] text-zinc-400 hover:text-white underline cursor-pointer"
                                         >
-                                            Sıfırla
+                                            {t('common.reset', {}, 'Sıfırla')}
                                         </button>
                                     )}
                                 </div>
 
                                 <div>
-                                    <label className="text-[11px] text-zinc-400 block mb-1">Status</label>
+                                    <label className="text-[11px] text-zinc-400 block mb-1">{t('common.status', {}, 'Status')}</label>
                                     <select
                                         value={statusFilter}
                                         onChange={(e) => {
@@ -747,14 +744,14 @@ export const PaymentsPage: React.FC = () => {
                                         }}
                                         className="w-full px-2.5 py-1.5 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white focus:outline-hidden"
                                     >
-                                        <option value="ALL">Bütün statuslar</option>
-                                        <option value="Posted">Uçota alınıb (Posted)</option>
-                                        <option value="Draft">Qaralama (Draft)</option>
+                                        <option value="ALL">{t('common.allStatuses', {}, 'Bütün statuslar')}</option>
+                                        <option value="Posted">{t('statuses.posted', {}, 'Uçota alınıb (Posted)')}</option>
+                                        <option value="Draft">{t('statuses.draft', {}, 'Qaralama (Draft)')}</option>
                                     </select>
                                 </div>
 
                                 <div>
-                                    <label className="text-[11px] text-zinc-400 block mb-1">Qarşı Tərəf Növü</label>
+                                    <label className="text-[11px] text-zinc-400 block mb-1">{t('treasury.partyType', {}, 'Qarşı Tərəf Növü')}</label>
                                     <select
                                         value={partyTypeFilter}
                                         onChange={(e) => {
@@ -763,14 +760,14 @@ export const PaymentsPage: React.FC = () => {
                                         }}
                                         className="w-full px-2.5 py-1.5 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white focus:outline-hidden"
                                     >
-                                        <option value="ALL">Hamısı</option>
-                                        <option value="Customer">Yalnız Müştərilər</option>
-                                        <option value="Supplier">Yalnız Təchizatçılar</option>
+                                        <option value="ALL">{t('common.all', {}, 'Hamısı')}</option>
+                                        <option value="Customer">{t('treasury.onlyCustomers', {}, 'Yalnız Müştərilər')}</option>
+                                        <option value="Supplier">{t('treasury.onlySuppliers', {}, 'Yalnız Təchizatçılar')}</option>
                                     </select>
                                 </div>
 
                                 <div>
-                                    <label className="text-[11px] text-zinc-400 block mb-1">Bank / Kassa Hesabı</label>
+                                    <label className="text-[11px] text-zinc-400 block mb-1">{t('treasury.bankOrCashAccount', {}, 'Bank / Kassa Hesabı')}</label>
                                     <select
                                         value={filterBankAccountId}
                                         onChange={(e) => {
@@ -779,7 +776,7 @@ export const PaymentsPage: React.FC = () => {
                                         }}
                                         className="w-full px-2.5 py-1.5 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white focus:outline-hidden"
                                     >
-                                        <option value="ALL">Bütün hesablar</option>
+                                        <option value="ALL">{t('treasury.allAccounts', {}, 'Bütün hesablar')}</option>
                                         {bankAccounts.map((b) => (
                                             <option key={b.id} value={b.id}>
                                                 {b.bankName} ({b.currency})
@@ -789,7 +786,7 @@ export const PaymentsPage: React.FC = () => {
                                 </div>
 
                                 <div>
-                                    <label className="text-[11px] text-zinc-400 block mb-1">Valyuta</label>
+                                    <label className="text-[11px] text-zinc-400 block mb-1">{t('common.currency', {}, 'Valyuta')}</label>
                                     <select
                                         value={currencyFilter}
                                         onChange={(e) => {
@@ -798,7 +795,7 @@ export const PaymentsPage: React.FC = () => {
                                         }}
                                         className="w-full px-2.5 py-1.5 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white focus:outline-hidden"
                                     >
-                                        <option value="ALL">Bütün valyutalar</option>
+                                        <option value="ALL">{t('common.allCurrencies', {}, 'Bütün valyutalar')}</option>
                                         {CURRENCIES.map((c) => (
                                             <option key={c} value={c}>
                                                 {c}
@@ -809,7 +806,7 @@ export const PaymentsPage: React.FC = () => {
 
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label className="text-[11px] text-zinc-400 block mb-1">Başlanğıc Tarix</label>
+                                        <label className="text-[11px] text-zinc-400 block mb-1">{t('common.startDate', {}, 'Başlanğıc Tarix')}</label>
                                         <input
                                             type="date"
                                             value={filterStartDate}
@@ -821,7 +818,7 @@ export const PaymentsPage: React.FC = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-[11px] text-zinc-400 block mb-1">Son Tarix</label>
+                                        <label className="text-[11px] text-zinc-400 block mb-1">{t('common.endDate', {}, 'Son Tarix')}</label>
                                         <input
                                             type="date"
                                             value={filterEndDate}
@@ -839,7 +836,7 @@ export const PaymentsPage: React.FC = () => {
                                         onClick={() => setIsFilterPopoverOpen(false)}
                                         className="w-full py-1.5 rounded-xl bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors"
                                     >
-                                        Tətbiq et
+                                        {t('common.apply', {}, 'Tətbiq et')}
                                     </button>
                                 </div>
                             </div>
@@ -853,13 +850,13 @@ export const PaymentsPage: React.FC = () => {
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-xs text-zinc-300 hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer"
                         >
                             <AdjustmentsHorizontalIcon className="w-3.5 h-3.5" />
-                            <span>Sütunlar</span>
+                            <span>{t('common.columns', {}, 'Sütunlar')}</span>
                         </button>
 
                         {isColumnsOpen && (
                             <div className="absolute right-0 mt-2 w-52 rounded-2xl bg-[#18181B] border border-[#27272A] p-3 shadow-2xl z-40 space-y-2">
                                 <div className="text-[11px] font-bold text-white pb-1.5 border-b border-[#27272A]">
-                                    Görünən Sütunlar
+                                    {t('common.visibleColumns', {}, 'Görünən Sütunlar')}
                                 </div>
                                 <div className="space-y-1 max-h-56 overflow-y-auto">
                                     {columns.map((col) => (
@@ -888,16 +885,16 @@ export const PaymentsPage: React.FC = () => {
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-xs text-zinc-300 hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer"
                         >
                             <ArrowsUpDownIcon className="w-3.5 h-3.5" />
-                            <span>Sıralama</span>
+                            <span>{t('common.sort', {}, 'Sıralama')}</span>
                         </button>
 
                         {isSortOpen && (
                             <div className="absolute right-0 mt-2 w-48 rounded-2xl bg-[#18181B] border border-[#27272A] p-2 shadow-2xl z-40 space-y-1">
                                 {[
-                                    { key: 'date', label: 'Tarix üzrə' },
-                                    { key: 'amount', label: 'Məbləğ üzrə' },
-                                    { key: 'number', label: 'Ödəniş № üzrə' },
-                                    { key: 'party', label: 'Qarşı tərəf üzrə' },
+                                    { key: 'date', label: t('treasury.sortByDate', {}, 'Tarix üzrə') },
+                                    { key: 'amount', label: t('treasury.sortByAmount', {}, 'Məbləğ üzrə') },
+                                    { key: 'number', label: t('treasury.sortByNumber', {}, 'Ödəniş № üzrə') },
+                                    { key: 'party', label: t('treasury.sortByParty', {}, 'Qarşı tərəf üzrə') },
                                 ].map((item) => (
                                     <button
                                         key={item.key}
@@ -917,7 +914,7 @@ export const PaymentsPage: React.FC = () => {
                                         <span>{item.label}</span>
                                         {sortField === item.key && (
                                             <span className="text-[10px] text-zinc-400">
-                                                {sortDirection === 'desc' ? 'Azalan' : 'Artan'}
+                                                {sortDirection === 'desc' ? t('common.descending', {}, 'Azalan') : t('common.ascending', {}, 'Artan')}
                                             </span>
                                         )}
                                     </button>
@@ -931,12 +928,12 @@ export const PaymentsPage: React.FC = () => {
             {/* Selected Rows Bulk Actions Bar */}
             {selectedRows.length > 0 && (
                 <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-[#18181B] border border-zinc-700 text-xs">
-                    <span className="font-semibold text-white">{selectedRows.length} ödəniş seçilib</span>
+                    <span className="font-semibold text-white">{selectedRows.length} {t('treasury.paymentsSelected', {}, 'ödəniş seçilib')}</span>
                     <button
                         onClick={() => setSelectedRows([])}
                         className="px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs cursor-pointer"
                     >
-                        Seçimi ləğv et
+                        {t('common.clearSelection', {}, 'Seçimi ləğv et')}
                     </button>
                 </div>
             )}
@@ -958,15 +955,15 @@ export const PaymentsPage: React.FC = () => {
                                         className="rounded bg-[#121214] border-zinc-700 text-white focus:ring-0"
                                     />
                                 </th>
-                                {isColVisible('date') && <th className="py-3.5 px-4">Tarix</th>}
-                                {isColVisible('number') && <th className="py-3.5 px-4">Ödəniş №</th>}
-                                {isColVisible('type') && <th className="py-3.5 px-4">Növ</th>}
-                                {isColVisible('party') && <th className="py-3.5 px-4">Qarşı Tərəf</th>}
-                                {isColVisible('account') && <th className="py-3.5 px-4">Bank / Kassa</th>}
-                                {isColVisible('currency') && <th className="py-3.5 px-4 text-center">Valyuta</th>}
-                                {isColVisible('amount') && <th className="py-3.5 px-4 text-right">Məbləğ</th>}
-                                {isColVisible('allocated') && <th className="py-3.5 px-4 text-right">Bölüşdürülən</th>}
-                                {isColVisible('status') && <th className="py-3.5 px-4 text-center">Status</th>}
+                                {isColVisible('date') && <th className="py-3.5 px-4">{t('common.date', {}, 'Tarix')}</th>}
+                                {isColVisible('number') && <th className="py-3.5 px-4">{t('treasury.paymentNumber', {}, 'Ödəniş №')}</th>}
+                                {isColVisible('type') && <th className="py-3.5 px-4">{t('common.type', {}, 'Növ')}</th>}
+                                {isColVisible('party') && <th className="py-3.5 px-4">{t('treasury.party', {}, 'Qarşı Tərəf')}</th>}
+                                {isColVisible('account') && <th className="py-3.5 px-4">{t('treasury.bankOrCash', {}, 'Bank / Kassa')}</th>}
+                                {isColVisible('currency') && <th className="py-3.5 px-4 text-center">{t('common.currency', {}, 'Valyuta')}</th>}
+                                {isColVisible('amount') && <th className="py-3.5 px-4 text-right">{t('common.amount', {}, 'Məbləğ')}</th>}
+                                {isColVisible('allocated') && <th className="py-3.5 px-4 text-right">{t('treasury.allocatedAmount', {}, 'Bölüşdürülən')}</th>}
+                                {isColVisible('status') && <th className="py-3.5 px-4 text-center">{t('common.status', {}, 'Status')}</th>}
                                 <th className="w-32 py-3.5 px-4 text-right"></th>
                             </tr>
                         </thead>
@@ -977,7 +974,7 @@ export const PaymentsPage: React.FC = () => {
                                     <td colSpan={11} className="py-16 text-center text-zinc-500">
                                         <div className="flex flex-col items-center justify-center gap-2">
                                             <ArrowPathIcon className="w-6 h-6 animate-spin text-zinc-400" />
-                                            <span>Ödənişlər yüklənir...</span>
+                                            <span>{t('common.loading', {}, 'Ödənişlər yüklənir...')}</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -986,9 +983,9 @@ export const PaymentsPage: React.FC = () => {
                                     <td colSpan={11} className="py-16 text-center text-zinc-500">
                                         <div className="flex flex-col items-center justify-center gap-2">
                                             <BanknotesIcon className="w-8 h-8 text-zinc-600" />
-                                            <span className="font-semibold text-zinc-400">Heç bir ödəniş tapılmadı</span>
+                                            <span className="font-semibold text-zinc-400">{t('treasury.noPaymentsFound', {}, 'Heç bir ödəniş tapılmadı')}</span>
                                             <p className="text-[11px] text-zinc-500 max-w-sm">
-                                                Yuxarıdakı &quot;+ Yeni Ödəniş / Mədaxil&quot; düyməsinə klikləyərək yeni ödəniş sənədi qeydiyyatdan keçirin.
+                                                {t('treasury.noPaymentsFoundDesc', {}, 'Yuxarıdakı "+ Yeni Ödəniş / Mədaxil" düyməsinə klikləyərək yeni ödəniş sənədi qeydiyyatdan keçirin.')}
                                             </p>
                                         </div>
                                     </td>
@@ -1033,7 +1030,7 @@ export const PaymentsPage: React.FC = () => {
                                                         <button
                                                             onClick={() => handleCopy(pmt.id, pmt.paymentNumber)}
                                                             className="text-zinc-500 hover:text-white transition-colors cursor-pointer"
-                                                            title="Kopyala"
+                                                            title={t('common.copy', {}, 'Kopyala')}
                                                         >
                                                             {copiedId === pmt.id ? (
                                                                 <CheckIcon className="w-3 h-3 text-emerald-400" />
@@ -1072,7 +1069,7 @@ export const PaymentsPage: React.FC = () => {
                                                     <div className="flex items-center gap-1.5">
                                                         <BuildingLibraryIcon className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                                                         <span className="truncate max-w-[130px]">
-                                                            {pmt.bankAccountName || (pmt.paymentMethod === 'Cash' ? 'Kassa' : 'Bank Hesabı')}
+                                                            {pmt.bankAccountName || (pmt.paymentMethod === 'Cash' ? t('treasury.typeCash', {}, 'Kassa') : t('treasury.typeBank', {}, 'Bank Hesabı'))}
                                                         </span>
                                                     </div>
                                                 </td>
@@ -1109,7 +1106,7 @@ export const PaymentsPage: React.FC = () => {
                                                                 : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                                                         }`}
                                                     >
-                                                        {isPosted ? 'Uçotda' : 'Qaralama'}
+                                                        {isPosted ? t('statuses.posted', {}, 'Uçotda') : t('statuses.draft', {}, 'Qaralama')}
                                                     </span>
                                                 </td>
                                             )}
@@ -1121,21 +1118,21 @@ export const PaymentsPage: React.FC = () => {
                                                             onClick={() => handlePostPayment(pmt.id, pmt.paymentNumber)}
                                                             disabled={actionLoadingId === pmt.id}
                                                             className="px-2.5 py-1 rounded-lg bg-white hover:bg-zinc-200 text-black text-[11px] font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1"
-                                                            title="Uçota al"
+                                                            title={t('treasury.postPayment', {}, 'İcra Et')}
                                                         >
                                                             {actionLoadingId === pmt.id ? (
                                                                 <ArrowPathIcon className="w-3 h-3 animate-spin text-black" />
                                                             ) : (
                                                                 <CheckIcon className="w-3 h-3 text-black" />
                                                             )}
-                                                            <span>İcra Et</span>
+                                                            <span>{t('treasury.postPayment', {}, 'İcra Et')}</span>
                                                         </button>
                                                     )}
 
                                                     <Link
                                                         to={`/payments/${pmt.id}`}
                                                         className="p-1.5 rounded-lg bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-zinc-400 hover:text-white transition-colors cursor-pointer"
-                                                        title="Baxış"
+                                                        title={t('common.view', {}, 'Baxış')}
                                                     >
                                                         <EyeIcon className="w-3.5 h-3.5" />
                                                     </Link>
@@ -1170,11 +1167,11 @@ export const PaymentsPage: React.FC = () => {
 
                     <span>
                         {filteredPayments.length === 0
-                            ? '0 of 0'
+                            ? `0 ${t('common.of', {}, 'of')} 0`
                             : `${(currentPage - 1) * pageSize + 1}-${Math.min(
                                   currentPage * pageSize,
                                   filteredPayments.length
-                              )} of ${filteredPayments.length}`}
+                              )} ${t('common.of', {}, 'of')} ${filteredPayments.length}`}
                     </span>
                 </div>
             </div>
@@ -1185,9 +1182,9 @@ export const PaymentsPage: React.FC = () => {
                     <div className="relative w-full max-w-2xl rounded-2xl bg-[#121214] border border-[#27272A] shadow-2xl p-6 space-y-5">
                         <div className="flex items-center justify-between pb-3 border-b border-[#27272A]">
                             <div>
-                                <h3 className="text-base font-bold text-white">Yeni Ödəniş / Mədaxil Sənədi</h3>
+                                <h3 className="text-base font-bold text-white">{t('treasury.newPaymentTitle', {}, 'Yeni Ödəniş / Mədaxil Sənədi')}</h3>
                                 <p className="text-xs text-zinc-400 mt-0.5">
-                                    Müştəri və ya təchizatçı üzrə nağd / bank ödənişi qeydiyyatdan keçirin
+                                    {t('treasury.newPaymentDesc', {}, 'Müştəri və ya təchizatçı üzrə nağd / bank ödənişi qeydiyyatdan keçirin')}
                                 </p>
                             </div>
                             <button
@@ -1207,13 +1204,13 @@ export const PaymentsPage: React.FC = () => {
 
                         {/* Payment Type Selector Pills */}
                         <div>
-                            <label className="text-[11px] text-zinc-400 block mb-1.5">Ödəniş Sənədinin Növü:</label>
+                            <label className="text-[11px] text-zinc-400 block mb-1.5">{t('treasury.paymentTypeLabel', {}, 'Ödəniş Sənədinin Növü:')}</label>
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 rounded-xl bg-[#18181B] border border-[#27272A]">
                                 {[
-                                    { id: 1, label: 'Müştəri Mədaxili', type: 'Receipt' },
-                                    { id: 2, label: 'Müştəri Avansı', type: 'Advance' },
-                                    { id: 3, label: 'Təchizatçı Ödənişi', type: 'Payment' },
-                                    { id: 4, label: 'Təchizatçı Avansı', type: 'Advance' },
+                                    { id: 1, label: t('treasury.typeCustomerReceipt', {}, 'Müştəri Mədaxili'), type: 'Receipt' },
+                                    { id: 2, label: t('treasury.customerAdvance', {}, 'Müştəri Avansı'), type: 'Advance' },
+                                    { id: 3, label: t('treasury.typeSupplierPayment', {}, 'Təchizatçı Ödənişi'), type: 'Payment' },
+                                    { id: 4, label: t('treasury.supplierAdvance', {}, 'Təchizatçı Avansı'), type: 'Advance' },
                                 ].map((item) => (
                                     <button
                                         key={item.id}
@@ -1236,7 +1233,7 @@ export const PaymentsPage: React.FC = () => {
                                 {/* Counterparty Selection */}
                                 <div>
                                     <label className="text-xs font-semibold text-zinc-300 block mb-1">
-                                        {modalPaymentTypeEnum <= 2 ? 'Müştəri *' : 'Təchizatçı *'}
+                                        {modalPaymentTypeEnum <= 2 ? `${t('customers.customer', {}, 'Müştəri')} *` : `${t('procurement.supplier', {}, 'Təchizatçı')} *`}
                                     </label>
                                     <select
                                         value={modalPartyId}
@@ -1244,7 +1241,7 @@ export const PaymentsPage: React.FC = () => {
                                         required
                                         className="w-full px-3 py-2 rounded-xl bg-[#18181B] border border-[#27272A] text-xs text-white focus:border-zinc-500 focus:outline-hidden"
                                     >
-                                        <option value="">Seçin...</option>
+                                        <option value="">{t('common.select', {}, 'Seçin...')}</option>
                                         {(modalPaymentTypeEnum <= 2 ? customers : suppliers).map((party) => (
                                             <option key={party.id} value={party.id}>
                                                 {party.name} ({party.code})
@@ -1256,7 +1253,7 @@ export const PaymentsPage: React.FC = () => {
                                 {/* Bank or Cash Account Selection */}
                                 <div>
                                     <label className="text-xs font-semibold text-zinc-300 block mb-1">
-                                        Bank / Kassa Hesabı *
+                                        {t('treasury.bankOrCashAccount', {}, 'Bank / Kassa Hesabı')} *
                                     </label>
                                     <select
                                         value={modalBankAccountId}
@@ -1268,10 +1265,10 @@ export const PaymentsPage: React.FC = () => {
                                         required
                                         className="w-full px-3 py-2 rounded-xl bg-[#18181B] border border-[#27272A] text-xs text-white focus:border-zinc-500 focus:outline-hidden"
                                     >
-                                        <option value="">Seçin...</option>
+                                        <option value="">{t('common.select', {}, 'Seçin...')}</option>
                                         {bankAccounts.map((b) => (
                                             <option key={b.id} value={b.id}>
-                                                {b.bankName} ({b.currency}) - Qalıq: {b.currentBalance} {b.currency}
+                                                {b.bankName} ({b.currency}) - {t('common.balance', {}, 'Qalıq')}: {b.currentBalance} {b.currency}
                                             </option>
                                         ))}
                                     </select>
@@ -1280,7 +1277,7 @@ export const PaymentsPage: React.FC = () => {
 
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <div>
-                                    <label className="text-xs font-semibold text-zinc-300 block mb-1">Məbləğ *</label>
+                                    <label className="text-xs font-semibold text-zinc-300 block mb-1">{t('common.amount', {}, 'Məbləğ')} *</label>
                                     <input
                                         type="number"
                                         step="0.01"
@@ -1293,7 +1290,7 @@ export const PaymentsPage: React.FC = () => {
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-semibold text-zinc-300 block mb-1">Valyuta</label>
+                                    <label className="text-xs font-semibold text-zinc-300 block mb-1">{t('common.currency', {}, 'Valyuta')}</label>
                                     <select
                                         value={modalCurrency}
                                         onChange={(e) => setModalCurrency(e.target.value)}
@@ -1308,7 +1305,7 @@ export const PaymentsPage: React.FC = () => {
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-semibold text-zinc-300 block mb-1">Məzənnə</label>
+                                    <label className="text-xs font-semibold text-zinc-300 block mb-1">{t('common.exchangeRate', {}, 'Məzənnə')}</label>
                                     <input
                                         type="number"
                                         step="0.0001"
@@ -1321,7 +1318,7 @@ export const PaymentsPage: React.FC = () => {
 
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <div>
-                                    <label className="text-xs font-semibold text-zinc-300 block mb-1">Ödəniş Tarixi</label>
+                                    <label className="text-xs font-semibold text-zinc-300 block mb-1">{t('treasury.paymentDate', {}, 'Ödəniş Tarixi')}</label>
                                     <input
                                         type="date"
                                         required
@@ -1332,7 +1329,7 @@ export const PaymentsPage: React.FC = () => {
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-semibold text-zinc-300 block mb-1">Uçot Tarixi</label>
+                                    <label className="text-xs font-semibold text-zinc-300 block mb-1">{t('procurement.postingDate', {}, 'Uçot Tarixi')}</label>
                                     <input
                                         type="date"
                                         required
@@ -1343,15 +1340,15 @@ export const PaymentsPage: React.FC = () => {
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-semibold text-zinc-300 block mb-1">Ödəniş Metodu</label>
+                                    <label className="text-xs font-semibold text-zinc-300 block mb-1">{t('treasury.paymentMethod', {}, 'Ödəniş Metodu')}</label>
                                     <select
                                         value={modalPaymentMethod}
                                         onChange={(e) => setModalPaymentMethod(e.target.value as any)}
                                         className="w-full px-3 py-2 rounded-xl bg-[#18181B] border border-[#27272A] text-xs text-white focus:border-zinc-500 focus:outline-hidden"
                                     >
-                                        <option value="BankTransfer">Bank Köçürməsi</option>
-                                        <option value="Cash">Nağd (Kassa)</option>
-                                        <option value="CreditCard">Bank Kartı</option>
+                                        <option value="BankTransfer">{t('treasury.bankTransfer', {}, 'Bank Köçürməsi')}</option>
+                                        <option value="Cash">{t('treasury.cashDesk', {}, 'Nağd (Kassa)')}</option>
+                                        <option value="CreditCard">{t('treasury.creditCard', {}, 'Bank Kartı')}</option>
                                     </select>
                                 </div>
                             </div>
@@ -1359,7 +1356,7 @@ export const PaymentsPage: React.FC = () => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="text-xs font-semibold text-zinc-300 block mb-1">
-                                        Referans / Bank Qəbzi №
+                                        {t('treasury.referenceReceiptNo', {}, 'Referans / Bank Qəbzi №')}
                                     </label>
                                     <input
                                         type="text"
@@ -1371,7 +1368,7 @@ export const PaymentsPage: React.FC = () => {
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-semibold text-zinc-300 block mb-1">Təyinat / Qeydlər</label>
+                                    <label className="text-xs font-semibold text-zinc-300 block mb-1">{t('common.notes', {}, 'Təyinat / Qeydlər')}</label>
                                     <input
                                         type="text"
                                         placeholder="Məs: Qaimə üzrə avans ödənişi"
@@ -1392,7 +1389,7 @@ export const PaymentsPage: React.FC = () => {
                                     className="rounded bg-[#18181B] border-zinc-700 text-white focus:ring-0 cursor-pointer"
                                 />
                                 <label htmlFor="modalAutoPost" className="text-xs text-zinc-300 cursor-pointer select-none">
-                                    Ödənişi yaradılan kimi dərhal uçota al (Auto-Post to GL)
+                                    {t('treasury.autoPostGl', {}, 'Ödənişi yaradılan kimi dərhal uçota al (Auto-Post to GL)')}
                                 </label>
                             </div>
 
@@ -1402,7 +1399,7 @@ export const PaymentsPage: React.FC = () => {
                                     onClick={() => setShowCreateModal(false)}
                                     className="px-4 py-2 rounded-xl bg-[#18181B] border border-[#27272A] text-zinc-300 hover:text-white text-xs font-semibold transition-colors cursor-pointer"
                                 >
-                                    Ləğv et
+                                    {t('common.cancel', {}, 'Ləğv et')}
                                 </button>
                                 <button
                                     type="submit"
@@ -1414,7 +1411,7 @@ export const PaymentsPage: React.FC = () => {
                                     ) : (
                                         <CheckIcon className="w-4 h-4 text-black" />
                                     )}
-                                    <span>Ödənişi Yarat</span>
+                                    <span>{t('treasury.createPaymentSubmit', {}, 'Ödənişi Yarat')}</span>
                                 </button>
                             </div>
                         </form>

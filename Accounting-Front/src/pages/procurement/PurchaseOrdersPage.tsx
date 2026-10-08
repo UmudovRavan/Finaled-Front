@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { procurementService, customersService } from '../../api';
 import type { PurchaseOrderDto, SupplierDto, ItemDto, CreatePurchaseOrderRequest } from '../../dto';
 import CustomSelect from '../../components/CustomSelect';
+import { useLanguage } from '../../context/LanguageContext';
 import {
     PlusIcon,
     MagnifyingGlassIcon,
@@ -38,6 +39,7 @@ interface OrderLineState {
 }
 
 export const PurchaseOrdersPage: React.FC = () => {
+    const { t } = useLanguage();
     const navigate = useNavigate();
 
     // Data states
@@ -82,12 +84,12 @@ export const PurchaseOrdersPage: React.FC = () => {
 
     // Columns config
     const [columns, setColumns] = useState<ColumnConfig[]>([
-        { key: 'orderNumber', label: 'Sifariş №', visible: true },
-        { key: 'supplier', label: 'Təchizatçı', visible: true },
-        { key: 'orderDate', label: 'Sifariş Tarixi', visible: true },
-        { key: 'deliveryDate', label: 'Gözlənilən Çatdırılma', visible: true },
-        { key: 'amount', label: 'Toplam Məbləğ', visible: true },
-        { key: 'status', label: 'Status', visible: true },
+        { key: 'orderNumber', label: t('procurement.poNumber', {}, 'Sifariş №'), visible: true },
+        { key: 'supplier', label: t('procurement.supplierName', {}, 'Təchizatçı'), visible: true },
+        { key: 'orderDate', label: t('procurement.orderDate', {}, 'Sifariş Tarixi'), visible: true },
+        { key: 'deliveryDate', label: t('procurement.expectedDate', {}, 'Gözlənilən Çatdırılma'), visible: true },
+        { key: 'amount', label: t('common.total', {}, 'Toplam Məbləğ'), visible: true },
+        { key: 'status', label: t('common.status', {}, 'Status'), visible: true },
     ]);
 
     // Create Modal state
@@ -179,7 +181,7 @@ export const PurchaseOrdersPage: React.FC = () => {
             return (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
                     <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-                    Təsdiqlənib
+                    {t('statuses.APPROVED', {}, 'Təsdiqlənib')}
                 </span>
             );
         }
@@ -187,7 +189,7 @@ export const PurchaseOrdersPage: React.FC = () => {
             return (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                    Qəbul Edilib
+                    {t('statuses.RECEIVED', {}, 'Qəbul Edilib')}
                 </span>
             );
         }
@@ -195,14 +197,14 @@ export const PurchaseOrdersPage: React.FC = () => {
             return (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
-                    Ləğv Edilib
+                    {t('statuses.CANCELLED', {}, 'Ləğv Edilib')}
                 </span>
             );
         }
         return (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700">
                 <span className="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>
-                Qaralama
+                {t('statuses.DRAFT', {}, 'Qaralama')}
             </span>
         );
     };
@@ -460,12 +462,12 @@ export const PurchaseOrdersPage: React.FC = () => {
                         onClick={() => navigate('/purchase-orders')}
                         className="px-2.5 py-1 rounded-full bg-white/[0.06] text-white hover:bg-white/10 transition-colors font-medium flex items-center gap-1.5 cursor-pointer"
                     >
-                        <span>Satınalma</span>
+                        <span>{t('sidebar.procurement', {}, 'Satınalma')}</span>
                     </button>
                     <span className="text-[#52525B]">/</span>
                     <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/[0.04] text-[#A1A1AA] border border-[#27272A]">
                         <Bars3Icon className="w-3.5 h-3.5 text-zinc-400" />
-                        <span className="font-medium text-white">Satınalma Sifarişləri</span>
+                        <span className="font-medium text-white">{t('procurement.poTitle', {}, 'Satınalma Sifarişləri')}</span>
                     </div>
                 </div>
 
@@ -476,7 +478,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                         onClick={() => loadData(true)}
                         disabled={loading || isRefreshing}
                         className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer disabled:opacity-50"
-                        title="Məlumatları Yenilə"
+                        title={t('common.refresh', {}, 'Yenilə')}
                     >
                         <ArrowPathIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-white' : ''}`} />
                     </button>
@@ -487,7 +489,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                         className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
                     >
                         <PlusIcon className="w-4 h-4 stroke-[2.5]" />
-                        <span>Yarat</span>
+                        <span>{t('common.create', {}, 'Yarat')}</span>
                     </button>
                 </div>
             </div>
@@ -514,7 +516,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                         <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-2.5 text-[#71717A]" />
                         <input
                             type="text"
-                            placeholder="Sifariş № və ya təchizatçı adı..."
+                            placeholder={t('common.search', {}, 'Axtarış...')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-[#18181B] border border-[#27272A] rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
@@ -530,38 +532,38 @@ export const PurchaseOrdersPage: React.FC = () => {
                         >
                             <span className="truncate">
                                 {statusFilter === 'ALL'
-                                    ? 'Bütün Statuslar'
+                                    ? t('common.all', {}, 'Bütün Statuslar')
                                     : statusFilter === 'Draft'
-                                    ? 'Qaralama'
+                                    ? t('statuses.DRAFT', {}, 'Qaralama')
                                     : statusFilter === 'Approved'
-                                    ? 'Təsdiqlənib'
+                                    ? t('statuses.APPROVED', {}, 'Təsdiqlənib')
                                     : statusFilter === 'Received'
-                                    ? 'Qəbul Edilib'
-                                    : 'Ləğv Edilib'}
+                                    ? t('statuses.RECEIVED', {}, 'Qəbul Edilib')
+                                    : t('statuses.CANCELLED', {}, 'Ləğv Edilib')}
                             </span>
                         </button>
 
                         {isStatusDropdownOpen && (
                             <div className="absolute top-9 left-0 w-44 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-50 flex flex-col text-xs text-[#E4E4E7] animate-in fade-in duration-150">
                                 {[
-                                    { id: 'ALL', label: 'Bütün Statuslar' },
-                                    { id: 'Draft', label: 'Qaralama (Draft)' },
-                                    { id: 'Approved', label: 'Təsdiqlənib (Approved)' },
-                                    { id: 'Received', label: 'Qəbul Edilib (Received)' },
-                                    { id: 'Cancelled', label: 'Ləğv Edilib (Cancelled)' },
-                                ].map((t) => (
+                                    { id: 'ALL', label: t('common.all', {}, 'Bütün Statuslar') },
+                                    { id: 'Draft', label: t('statuses.DRAFT', {}, 'Qaralama') },
+                                    { id: 'Approved', label: t('statuses.APPROVED', {}, 'Təsdiqlənib') },
+                                    { id: 'Received', label: t('statuses.RECEIVED', {}, 'Qəbul Edilib') },
+                                    { id: 'Cancelled', label: t('statuses.CANCELLED', {}, 'Ləğv Edilib') },
+                                ].map((tab) => (
                                     <button
-                                        key={t.id}
+                                        key={tab.id}
                                         type="button"
                                         onClick={() => {
-                                            setStatusFilter(t.id);
+                                            setStatusFilter(tab.id);
                                             setIsStatusDropdownOpen(false);
                                         }}
                                         className={`px-3 py-1.5 rounded-xl text-left cursor-pointer transition-colors ${
-                                            statusFilter === t.id ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
+                                            statusFilter === tab.id ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
                                         }`}
                                     >
-                                        {t.label}
+                                        {tab.label}
                                     </button>
                                 ))}
                             </div>
@@ -580,7 +582,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                             }`}
                         >
                             <FunnelIcon className="w-3.5 h-3.5" />
-                            <span>Filtr</span>
+                            <span>{t('common.filter', {}, 'Filtr')}</span>
                             {activeFilterCount > 0 && (
                                 <span className="w-4 h-4 rounded-full bg-white text-black text-[10px] flex items-center justify-center font-bold ml-0.5">
                                     {activeFilterCount}
@@ -591,25 +593,25 @@ export const PurchaseOrdersPage: React.FC = () => {
                         {isFilterPopoverOpen && (
                             <div className="absolute top-9 left-0 w-80 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-4 z-50 text-xs text-[#E4E4E7] space-y-4 animate-in fade-in duration-150">
                                 <div className="flex items-center justify-between pb-2 border-b border-[#2C2C2E]">
-                                    <span className="font-bold text-white text-xs">Sifariş Filtrləri</span>
+                                    <span className="font-bold text-white text-xs">{t('common.filter', {}, 'Sifariş Filtrləri')}</span>
                                     {activeFilterCount > 0 && (
                                         <button
                                             onClick={clearAllFilters}
                                             className="text-[11px] text-zinc-400 hover:text-white cursor-pointer"
                                         >
-                                            Sıfırla
+                                            {t('common.clearFilters', {}, 'Sıfırla')}
                                         </button>
                                     )}
                                 </div>
 
                                 {/* Supplier Filter */}
                                 <div className="space-y-1">
-                                    <label className="text-[11px] text-[#A1A1AA] font-semibold">Təchizatçı</label>
+                                    <label className="text-[11px] text-[#A1A1AA] font-semibold">{t('procurement.supplierName', {}, 'Təchizatçı')}</label>
                                     <CustomSelect
                                         value={filterSupplierId}
                                         onChange={(val) => setFilterSupplierId(String(val))}
                                         options={[
-                                            { value: 'ALL', label: 'Bütün Təchizatçılar' },
+                                            { value: 'ALL', label: t('common.all', {}, 'Bütün Təchizatçılar') },
                                             ...suppliers.map((s) => ({
                                                 value: s.id,
                                                 label: s.name,
@@ -620,7 +622,7 @@ export const PurchaseOrdersPage: React.FC = () => {
 
                                 {/* Amount Range */}
                                 <div className="space-y-1">
-                                    <label className="text-[11px] text-[#A1A1AA] font-semibold">Məbləğ Aralığı (AZN)</label>
+                                    <label className="text-[11px] text-[#A1A1AA] font-semibold">{t('common.total', {}, 'Məbləğ Aralığı')} (AZN)</label>
                                     <div className="grid grid-cols-2 gap-2">
                                         <input
                                             type="number"
@@ -631,7 +633,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                                         />
                                         <input
                                             type="number"
-                                            placeholder="Maks"
+                                            placeholder={t('common.max', {}, 'Maks')}
                                             value={filterMaxAmount}
                                             onChange={(e) => setFilterMaxAmount(e.target.value)}
                                             className="px-2.5 py-1.5 rounded-xl bg-[#121214] border border-[#2C2C2E] text-xs text-white focus:outline-none placeholder:text-[#52525B]"
@@ -641,7 +643,7 @@ export const PurchaseOrdersPage: React.FC = () => {
 
                                 {/* Date Range */}
                                 <div className="space-y-1">
-                                    <label className="text-[11px] text-[#A1A1AA] font-semibold">Sifariş Tarixi Aralığı</label>
+                                    <label className="text-[11px] text-[#A1A1AA] font-semibold">{t('procurement.orderDate', {}, 'Sifariş Tarixi Aralığı')}</label>
                                     <div className="grid grid-cols-2 gap-2">
                                         <input
                                             type="date"
@@ -664,7 +666,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                                         onClick={() => setIsFilterPopoverOpen(false)}
                                         className="px-3 py-1.5 bg-white text-black text-xs font-semibold rounded-xl hover:bg-zinc-200 cursor-pointer"
                                     >
-                                        Tətbiq et
+                                        {t('common.apply', {}, 'Tətbiq et')}
                                     </button>
                                 </div>
                             </div>
@@ -680,13 +682,13 @@ export const PurchaseOrdersPage: React.FC = () => {
                             type="button"
                             onClick={() => setIsColumnsOpen(!isColumnsOpen)}
                             className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                            title="Sütunlar"
+                            title={t('common.columns', {}, 'Sütunlar')}
                         >
                             <AdjustmentsHorizontalIcon className="w-4 h-4" />
                         </button>
                         {isColumnsOpen && (
                             <div className="absolute top-9 right-0 w-52 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-2 z-50 text-xs text-[#E4E4E7] space-y-1.5 animate-in fade-in duration-150">
-                                <span className="font-bold text-white px-2 py-1 block text-[11px]">Görünən Sütunlar</span>
+                                <span className="font-bold text-white px-2 py-1 block text-[11px]">{t('common.columns', {}, 'Görünən Sütunlar')}</span>
                                 {columns.map((col) => (
                                     <label
                                         key={col.key}
@@ -717,7 +719,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                             type="button"
                             onClick={() => setIsSortOpen(!isSortOpen)}
                             className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                            title="Sıralama"
+                            title={t('common.sort', {}, 'Sıralama')}
                         >
                             <ArrowsUpDownIcon className="w-4 h-4" />
                         </button>
@@ -727,25 +729,25 @@ export const PurchaseOrdersPage: React.FC = () => {
                                     onClick={() => { setSortField('date'); setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc'); setIsSortOpen(false); }}
                                     className="px-3 py-1.5 rounded-xl text-left hover:bg-[#2C2C2E]/60 cursor-pointer"
                                 >
-                                    Tarix üzrə ({sortDirection === 'asc' ? 'Artan' : 'Azalan'})
+                                    {t('common.date', {}, 'Tarix')} ({sortDirection === 'asc' ? 'Artan' : 'Azalan'})
                                 </button>
                                 <button
                                     onClick={() => { setSortField('orderNumber'); setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc'); setIsSortOpen(false); }}
                                     className="px-3 py-1.5 rounded-xl text-left hover:bg-[#2C2C2E]/60 cursor-pointer"
                                 >
-                                    Sifariş № üzrə
+                                    {t('procurement.poNumber', {}, 'Sifariş № üzrə')}
                                 </button>
                                 <button
                                     onClick={() => { setSortField('supplier'); setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc'); setIsSortOpen(false); }}
                                     className="px-3 py-1.5 rounded-xl text-left hover:bg-[#2C2C2E]/60 cursor-pointer"
                                 >
-                                    Təchizatçı üzrə
+                                    {t('procurement.supplierName', {}, 'Təchizatçı üzrə')}
                                 </button>
                                 <button
                                     onClick={() => { setSortField('amount'); setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc'); setIsSortOpen(false); }}
                                     className="px-3 py-1.5 rounded-xl text-left hover:bg-[#2C2C2E]/60 cursor-pointer"
                                 >
-                                    Məbləğ üzrə
+                                    {t('common.total', {}, 'Məbləğ üzrə')}
                                 </button>
                             </div>
                         )}
@@ -767,13 +769,13 @@ export const PurchaseOrdersPage: React.FC = () => {
                                         className="rounded bg-[#121214] border-[#2C2C2E] text-white focus:ring-0 cursor-pointer"
                                     />
                                 </th>
-                                {columns.find((c) => c.key === 'orderNumber')?.visible && <th className="py-3 px-3">Sifariş №</th>}
-                                {columns.find((c) => c.key === 'supplier')?.visible && <th className="py-3 px-3">Təchizatçı</th>}
-                                {columns.find((c) => c.key === 'orderDate')?.visible && <th className="py-3 px-3">Sifariş Tarixi</th>}
-                                {columns.find((c) => c.key === 'deliveryDate')?.visible && <th className="py-3 px-3">Gözlənilən Çatdırılma</th>}
-                                {columns.find((c) => c.key === 'amount')?.visible && <th className="py-3 px-3 text-right">Toplam Məbləğ</th>}
-                                {columns.find((c) => c.key === 'status')?.visible && <th className="py-3 px-3 text-center">Status</th>}
-                                <th className="py-3 px-3 text-right">Əməliyyatlar</th>
+                                {columns.find((c) => c.key === 'orderNumber')?.visible && <th className="py-3 px-3">{t('procurement.poNumber', {}, 'Sifariş №')}</th>}
+                                {columns.find((c) => c.key === 'supplier')?.visible && <th className="py-3 px-3">{t('procurement.supplierName', {}, 'Təchizatçı')}</th>}
+                                {columns.find((c) => c.key === 'orderDate')?.visible && <th className="py-3 px-3">{t('procurement.orderDate', {}, 'Sifariş Tarixi')}</th>}
+                                {columns.find((c) => c.key === 'deliveryDate')?.visible && <th className="py-3 px-3">{t('procurement.expectedDate', {}, 'Gözlənilən Çatdırılma')}</th>}
+                                {columns.find((c) => c.key === 'amount')?.visible && <th className="py-3 px-3 text-right">{t('common.total', {}, 'Toplam Məbləğ')}</th>}
+                                {columns.find((c) => c.key === 'status')?.visible && <th className="py-3 px-3 text-center">{t('common.status', {}, 'Status')}</th>}
+                                <th className="py-3 px-3 text-right">{t('common.actions', {}, 'Əməliyyatlar')}</th>
                             </tr>
                         </thead>
 
@@ -783,7 +785,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                                     <td colSpan={8} className="py-12 text-center text-[#71717A]">
                                         <div className="flex items-center justify-center gap-2">
                                             <ArrowPathIcon className="w-4 h-4 animate-spin text-white" />
-                                            <span>Satınalma sifarişləri yüklənir...</span>
+                                            <span>{t('common.loading', {}, 'Satınalma sifarişləri yüklənir...')}</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -795,15 +797,15 @@ export const PurchaseOrdersPage: React.FC = () => {
                                                 <ShoppingBagIcon className="w-6 h-6" />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-bold text-white">Heç bir satınalma sifarişi tapılmadı</p>
-                                                <p className="text-xs text-[#71717A] mt-1 max-w-sm">Təchizatçılara göndərilən mallar və xidmətlər üzrə ilk sifarişi tərtib edin</p>
+                                                <p className="text-sm font-bold text-white">{t('common.noData', {}, 'Heç bir satınalma sifarişi tapılmadı')}</p>
+                                                <p className="text-xs text-[#71717A] mt-1 max-w-sm">{t('procurement.poSubtitle', {}, 'Təchizatçılara göndərilən mallar və xidmətlər üzrə ilk sifarişi tərtib edin')}</p>
                                             </div>
                                             <button
                                                 onClick={openCreateModal}
                                                 className="mt-2 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-semibold transition-colors cursor-pointer"
                                             >
                                                 <PlusIcon className="w-3.5 h-3.5" />
-                                                <span>İlk Sifarişi Yarat</span>
+                                                <span>{t('procurement.newPo', {}, 'İlk Sifarişi Yarat')}</span>
                                             </button>
                                         </div>
                                     </td>
@@ -878,14 +880,14 @@ export const PurchaseOrdersPage: React.FC = () => {
                                                             ) : (
                                                                 <CheckCircleIcon className="w-3 h-3" />
                                                             )}
-                                                            <span>Təsdiqlə</span>
+                                                            <span>{t('invoices.post', {}, 'Təsdiqlə')}</span>
                                                         </button>
                                                     )}
 
                                                     <Link
                                                         to={`/purchase-orders/${o.id}`}
                                                         className="p-1 rounded-lg bg-[#18181B] hover:bg-[#27272A] text-[#A1A1AA] hover:text-white transition-colors"
-                                                        title="Detallara Bax"
+                                                        title={t('common.viewDetails', {}, 'Detallara Bax')}
                                                     >
                                                         <EyeIcon className="w-4 h-4" />
                                                     </Link>
@@ -944,14 +946,14 @@ export const PurchaseOrdersPage: React.FC = () => {
                         {/* Modal Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-[#27272A] shrink-0">
                             <div>
-                                <h3 className="text-base font-bold text-white">Yeni Satınalma Sifarişi</h3>
-                                <p className="text-xs text-[#A1A1AA] mt-0.5">Təchizatçı üçün yeni rəsmi satınalma sifarişi tərtib edin</p>
+                                <h3 className="text-base font-bold text-white">{t('procurement.newPo', {}, 'Yeni Satınalma Sifarişi')}</h3>
+                                <p className="text-xs text-[#A1A1AA] mt-0.5">{t('procurement.poSubtitle', {}, 'Təchizatçı üçün yeni rəsmi satınalma sifarişi tərtib edin')}</p>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setShowCreateModal(false)}
                                 className="p-1.5 rounded-xl text-[#71717A] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-                                aria-label="Bağla"
+                                aria-label={t('common.close', {}, 'Bağla')}
                             >
                                 <XMarkIcon className="w-5 h-5" />
                             </button>
@@ -971,12 +973,12 @@ export const PurchaseOrdersPage: React.FC = () => {
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-semibold text-[#A1A1AA] block">
-                                            Təchizatçı <span className="text-rose-400">*</span>
+                                            {t('procurement.supplierName', {}, 'Təchizatçı')} <span className="text-rose-400">*</span>
                                         </label>
                                         <CustomSelect
                                             value={modalSupplierId}
                                             onChange={(val) => setModalSupplierId(String(val))}
-                                            placeholder="Təchizatçı seçin..."
+                                            placeholder={t('procurement.supplierName', {}, 'Təchizatçı seçin...')}
                                             options={suppliers.map((s) => ({
                                                 value: s.id,
                                                 label: s.name,
@@ -987,7 +989,7 @@ export const PurchaseOrdersPage: React.FC = () => {
 
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-semibold text-[#A1A1AA] block">
-                                            Sifariş Tarixi <span className="text-rose-400">*</span>
+                                            {t('procurement.orderDate', {}, 'Sifariş Tarixi')} <span className="text-rose-400">*</span>
                                         </label>
                                         <input
                                             type="date"
@@ -999,7 +1001,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-[#A1A1AA] block">Gözlənilən Çatdırılma</label>
+                                        <label className="text-xs font-semibold text-[#A1A1AA] block">{t('procurement.expectedDate', {}, 'Gözlənilən Çatdırılma')}</label>
                                         <input
                                             type="date"
                                             value={modalDeliveryDate}
@@ -1012,7 +1014,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                                 {/* Line Items Header */}
                                 <div className="flex items-center justify-between pt-2">
                                     <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">
-                                        Sifariş Sətirləri (Məhsullar / Xidmətlər)
+                                        {t('invoices.lines', {}, 'Sifariş Sətirləri')}
                                     </span>
                                     <button
                                         type="button"
@@ -1020,7 +1022,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#18181B] border border-[#27272A] hover:bg-[#27272A] text-xs font-semibold text-white transition-colors cursor-pointer"
                                     >
                                         <PlusIcon className="w-3.5 h-3.5" />
-                                        <span>Sətir Əlavə Et</span>
+                                        <span>{t('invoices.addLine', {}, 'Sətir Əlavə Et')}</span>
                                     </button>
                                 </div>
 
@@ -1039,13 +1041,13 @@ export const PurchaseOrdersPage: React.FC = () => {
                                                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
                                                     {/* Item Dropdown */}
                                                     <div className="sm:col-span-4 space-y-1">
-                                                        <label className="text-[10.5px] text-[#71717A] block">Məhsul / Xidmət</label>
+                                                        <label className="text-[10.5px] text-[#71717A] block">{t('items.title', {}, 'Məhsul / Xidmət')}</label>
                                                         <CustomSelect
                                                             value={line.itemId}
                                                             onChange={(val) => handleItemSelect(idx, String(val))}
-                                                            placeholder="Məhsul seçin..."
+                                                            placeholder={t('items.title', {}, 'Məhsul seçin...')}
                                                             options={[
-                                                                { value: '', label: 'Əllə daxil et...' },
+                                                                { value: '', label: t('common.description', {}, 'Əllə daxil et...') },
                                                                 ...items.map((itm) => ({
                                                                     value: itm.id,
                                                                     label: `${itm.code} - ${itm.name}`,
@@ -1056,11 +1058,11 @@ export const PurchaseOrdersPage: React.FC = () => {
 
                                                     {/* Description */}
                                                     <div className="sm:col-span-3 space-y-1">
-                                                        <label className="text-[10.5px] text-[#71717A] block">Təsvir</label>
+                                                        <label className="text-[10.5px] text-[#71717A] block">{t('common.description', {}, 'Təsvir')}</label>
                                                         <input
                                                             type="text"
                                                             required
-                                                            placeholder="Məhsulun təsviri..."
+                                                            placeholder={t('common.description', {}, 'Məhsulun təsviri...')}
                                                             value={line.description}
                                                             onChange={(e) => handleLineChange(idx, 'description', e.target.value)}
                                                             className="w-full bg-[#121214] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-white transition-colors"
@@ -1069,7 +1071,7 @@ export const PurchaseOrdersPage: React.FC = () => {
 
                                                     {/* Quantity */}
                                                     <div className="sm:col-span-2 space-y-1">
-                                                        <label className="text-[10.5px] text-[#71717A] block">Say</label>
+                                                        <label className="text-[10.5px] text-[#71717A] block">{t('invoices.quantity', {}, 'Say')}</label>
                                                         <input
                                                             type="number"
                                                             min="0.01"
@@ -1083,7 +1085,7 @@ export const PurchaseOrdersPage: React.FC = () => {
 
                                                     {/* Unit Price */}
                                                     <div className="sm:col-span-2 space-y-1">
-                                                        <label className="text-[10.5px] text-[#71717A] block">Qiymət (AZN)</label>
+                                                        <label className="text-[10.5px] text-[#71717A] block">{t('invoices.unitPrice', {}, 'Qiymət')} (AZN)</label>
                                                         <input
                                                             type="number"
                                                             min="0"
@@ -1102,7 +1104,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                                                             onClick={() => handleRemoveLine(idx)}
                                                             disabled={modalLines.length <= 1}
                                                             className="p-2 rounded-xl text-[#71717A] hover:text-rose-400 hover:bg-rose-500/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
-                                                            title="Sətri sil"
+                                                            title={t('common.delete', {}, 'Sətri sil')}
                                                         >
                                                             <TrashIcon className="w-4 h-4" />
                                                         </button>
@@ -1110,8 +1112,8 @@ export const PurchaseOrdersPage: React.FC = () => {
                                                 </div>
 
                                                 <div className="flex items-center justify-between text-[11px] text-[#71717A] pt-1 border-t border-[#27272A]/40 font-mono">
-                                                    <span>ƏDV (18%): {formatCurrency(lineTax)}</span>
-                                                    <span>Sətir Yekunu: <strong className="text-white">{formatCurrency(lineTot)}</strong></span>
+                                                    <span>{t('invoices.taxAmount', {}, 'ƏDV (18%)')}: {formatCurrency(lineTax)}</span>
+                                                    <span>{t('common.total', {}, 'Sətir Yekunu')}: <strong className="text-white">{formatCurrency(lineTot)}</strong></span>
                                                 </div>
                                             </div>
                                         );
@@ -1121,24 +1123,24 @@ export const PurchaseOrdersPage: React.FC = () => {
                                 {/* Summary Box */}
                                 <div className="p-4 rounded-2xl bg-[#121214]/60 border border-[#27272A] flex flex-wrap items-center justify-between gap-4 text-xs font-mono">
                                     <div className="text-[#A1A1AA]">
-                                        Cəmi: <strong className="text-white ml-1">{formatCurrency(modalSubTotal)}</strong>
+                                        {t('invoices.subTotal', {}, 'Cəmi')}: <strong className="text-white ml-1">{formatCurrency(modalSubTotal)}</strong>
                                     </div>
                                     <div className="text-[#A1A1AA]">
-                                        ƏDV (18%): <strong className="text-white ml-1">{formatCurrency(modalTaxTotal)}</strong>
+                                        {t('invoices.taxAmount', {}, 'ƏDV (18%)')}: <strong className="text-white ml-1">{formatCurrency(modalTaxTotal)}</strong>
                                     </div>
                                     <div className="text-white font-bold text-sm">
-                                        Yekun Məbləğ: <span className="text-emerald-400 ml-1">{formatCurrency(modalGrandTotal)}</span>
+                                        {t('invoices.grandTotal', {}, 'Yekun Məbləğ')}: <span className="text-emerald-400 ml-1">{formatCurrency(modalGrandTotal)}</span>
                                     </div>
                                 </div>
 
                                 {/* Notes / Terms */}
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-[#A1A1AA] block">Şərtlər və Qeydlər (Terms & Conditions)</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA] block">{t('common.description', {}, 'Şərtlər və Qeydlər')}</label>
                                     <textarea
                                         rows={2}
                                         value={modalNotes}
                                         onChange={(e) => setModalNotes(e.target.value)}
-                                        placeholder="Sifarişin xüsusi tələbləri, çatdırılma ünvanı və ya müqavilə şərtləri..."
+                                        placeholder={t('common.description', {}, 'Sifarişin xüsusi tələbləri, çatdırılma ünvanı və ya müqavilə şərtləri...')}
                                         className="w-full bg-[#121214] border border-[#27272A] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-[#52525B] focus:outline-none focus:border-white transition-colors resize-none"
                                     />
                                 </div>
@@ -1151,7 +1153,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                                     onClick={() => setShowCreateModal(false)}
                                     className="px-4 py-2 rounded-xl bg-[#18181B] border border-[#27272A] hover:bg-[#27272A] text-xs font-semibold text-white transition-colors cursor-pointer"
                                 >
-                                    Ləğv et
+                                    {t('common.cancel', {}, 'Ləğv et')}
                                 </button>
                                 <button
                                     type="submit"
@@ -1161,12 +1163,12 @@ export const PurchaseOrdersPage: React.FC = () => {
                                     {createLoading ? (
                                         <>
                                             <ArrowPathIcon className="w-4 h-4 animate-spin text-black" />
-                                            <span>Yaradılır...</span>
+                                            <span>{t('common.loading', {}, 'Yaradılır...')}</span>
                                         </>
                                     ) : (
                                         <>
                                             <CheckIcon className="w-4 h-4 stroke-[2.5]" />
-                                            <span>Sifarişi Yarat</span>
+                                            <span>{t('procurement.newPo', {}, 'Sifarişi Yarat')}</span>
                                         </>
                                     )}
                                 </button>

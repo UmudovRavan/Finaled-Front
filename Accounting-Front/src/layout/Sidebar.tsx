@@ -170,24 +170,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     const menuItems = useMemo(
         () => [
-            { path: '/dashboard', label: 'Dashboard', icon: Squares2X2Icon },
-            { path: '/accounts', label: 'Hesablar Planı', icon: ClipboardDocumentListIcon },
-            { path: '/journal', label: 'Jurnal Qeydləri', icon: DocumentTextIcon },
-            { path: '/customers', label: 'Müştərilər', icon: UserGroupIcon },
-            { path: '/customer-invoices', label: 'Satış Qaimələri', icon: ReceiptPercentIcon },
-            { path: '/items', label: 'Məhsul & Xidmətlər', icon: Squares2X2Icon },
-            { path: '/suppliers', label: 'Təchizatçılar', icon: BuildingOfficeIcon },
-            { path: '/purchase-orders', label: 'Satınalma Sifarişləri', icon: ShoppingBagIcon },
-            { path: '/goods-receipts', label: 'Malların Qəbulu', icon: InboxArrowDownIcon },
-            { path: '/supplier-invoices', label: 'Alış Qaimələri', icon: DocumentCheckIcon },
-            { path: '/warehouses', label: 'Anbarlar', icon: BuildingStorefrontIcon },
-            { path: '/stock-ledger', label: 'Ehtiyat Hərəkəti', icon: ArchiveBoxIcon },
-            { path: '/bank-accounts', label: 'Bank Hesabları', icon: CreditCardIcon },
-            { path: '/payments', label: 'Ödənişlər', icon: BanknotesIcon },
-            { path: '/reports/trial-balance', label: 'Maliyyə Hesabatları', icon: ChartBarIcon },
-            { path: '/fiscal-periods', label: 'Maliyyə Dövrləri', icon: CalendarDaysIcon },
+            { path: '/dashboard', label: t('nav.dashboard', {}, 'Dashboard'), icon: Squares2X2Icon },
+            { path: '/accounts', label: t('nav.accounts', {}, 'Hesablar Planı'), icon: ClipboardDocumentListIcon },
+            { path: '/journal', label: t('nav.journal', {}, 'Jurnal Qeydləri'), icon: DocumentTextIcon },
+            { path: '/customers', label: t('nav.customers', {}, 'Müştərilər'), icon: UserGroupIcon },
+            { path: '/customer-invoices', label: t('nav.customerInvoices', {}, 'Satış Qaimələri'), icon: ReceiptPercentIcon },
+            { path: '/items', label: t('nav.items', {}, 'Məhsul & Xidmətlər'), icon: Squares2X2Icon },
+            { path: '/suppliers', label: t('nav.suppliers', {}, 'Təchizatçılar'), icon: BuildingOfficeIcon },
+            { path: '/purchase-orders', label: t('nav.purchaseOrders', {}, 'Satınalma Sifarişləri'), icon: ShoppingBagIcon },
+            { path: '/goods-receipts', label: t('nav.goodsReceipts', {}, 'Malların Qəbulu'), icon: InboxArrowDownIcon },
+            { path: '/supplier-invoices', label: t('nav.supplierInvoices', {}, 'Alış Qaimələri'), icon: DocumentCheckIcon },
+            { path: '/warehouses', label: t('nav.warehouses', {}, 'Anbarlar'), icon: BuildingStorefrontIcon },
+            { path: '/stock-ledger', label: t('nav.stockLedger', {}, 'Ehtiyat Hərəkəti'), icon: ArchiveBoxIcon },
+            { path: '/bank-accounts', label: t('nav.bankAccounts', {}, 'Bank Hesabları'), icon: CreditCardIcon },
+            { path: '/payments', label: t('nav.payments', {}, 'Ödənişlər'), icon: BanknotesIcon },
+            { path: '/reports/trial-balance', label: t('nav.reports', {}, 'Maliyyə Hesabatları'), icon: ChartBarIcon },
+            { path: '/fiscal-periods', label: t('nav.fiscalPeriods', {}, 'Maliyyə Dövrləri'), icon: CalendarDaysIcon },
         ],
-        []
+        [t]
     );
 
     const renderNavList = (isMobile = false) => (
@@ -310,7 +310,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#2C2C2E] hover:text-white transition-colors text-left w-full cursor-pointer"
                                 >
                                     <Cog6ToothIcon className="w-4 h-4 text-[#A1A1AA]" />
-                                    <span>Tənzimləmələr</span>
+                                    <span>{t('nav.settings', {}, 'Tənzimləmələr')}</span>
                                 </button>
 
                                 <button
@@ -320,7 +320,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#2C2C2E] hover:text-white transition-colors text-left w-full cursor-pointer"
                                 >
                                     <InformationCircleIcon className="w-4 h-4 text-[#A1A1AA]" />
-                                    <span>Haqqında</span>
+                                    <span>{t('common.details', {}, 'Haqqında')}</span>
                                 </button>
 
                                 <div className="h-px bg-[#2C2C2E] my-1" />
@@ -330,7 +330,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-rose-500/10 hover:text-rose-400 transition-colors text-left w-full text-[#A1A1AA] cursor-pointer"
                                 >
                                     <ArrowRightOnRectangleIcon className="w-4 h-4" />
-                                    <span>Çıxış</span>
+                                    <span>{t('nav.logout', {}, 'Çıxış')}</span>
                                 </button>
                             </div>
                         )}
@@ -348,10 +348,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         className={`flex items-center gap-3 px-2.5 py-1.5 rounded-lg text-[13px] font-normal text-[#A1A1AA] hover:bg-white/[0.04] hover:text-white transition-colors text-left cursor-pointer ${
                             isCollapsed ? 'justify-center px-0 py-2' : ''
                         }`}
-                        title={isCollapsed ? 'Kömək & Dəstək' : undefined}
+                        title={isCollapsed ? t('nav.help', {}, 'Kömək & Dəstək') : undefined}
                     >
                         <QuestionMarkCircleIcon className="w-[18px] h-[18px] stroke-[1.75] shrink-0" />
-                        {!isCollapsed && <span>Kömək & Dəstək</span>}
+                        {!isCollapsed && <span>{t('nav.help', {}, 'Kömək & Dəstək')}</span>}
                     </button>
 
                     <button
@@ -363,14 +363,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         className={`flex items-center gap-3 px-2.5 py-1.5 rounded-lg text-[13px] font-normal text-[#A1A1AA] hover:bg-white/[0.04] hover:text-white transition-colors cursor-pointer ${
                             isCollapsed ? 'justify-center px-0 py-2' : ''
                         }`}
-                        title={isCollapsed ? 'Menyunu genişləndir' : 'Menyunu kiçilt'}
+                        title={isCollapsed ? 'Expand menu' : 'Collapse menu'}
                     >
                         {isCollapsed ? (
                             <ChevronRightIcon className="w-[18px] h-[18px] stroke-[1.75] shrink-0" />
                         ) : (
                             <>
                                 <ChevronLeftIcon className="w-[18px] h-[18px] stroke-[1.75] shrink-0" />
-                                <span>Menyunu kiçilt</span>
+                                <span>Menyu</span>
                             </>
                         )}
                     </button>

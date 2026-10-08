@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { paymentService, accountsService } from '../../api';
 import type { BankAccountDto, CreateBankAccountRequest, AccountDto } from '../../dto';
-import CustomSelect from '../../components/CustomSelect';
+import { useLanguage } from '../../context/LanguageContext';
 import {
     PlusIcon,
     MagnifyingGlassIcon,
@@ -19,9 +19,6 @@ import {
     ClipboardDocumentIcon,
     CheckCircleIcon,
     ExclamationTriangleIcon,
-    ArrowTrendingUpIcon,
-    ArrowTrendingDownIcon,
-    DocumentTextIcon,
     BuildingOfficeIcon,
 } from '@heroicons/react/24/outline';
 
@@ -44,6 +41,7 @@ interface ColumnConfig {
 }
 
 export const BankAccountsPage: React.FC = () => {
+    const { t } = useLanguage();
     const navigate = useNavigate();
 
     // Data States
@@ -83,13 +81,13 @@ export const BankAccountsPage: React.FC = () => {
 
     // Columns config
     const [columns, setColumns] = useState<ColumnConfig[]>([
-        { key: 'bankName', label: 'Hesab / Bank Adı', visible: true },
-        { key: 'accountNumber', label: 'Hesab / IBAN', visible: true },
+        { key: 'bankName', label: t('treasury.bankName', {}, 'Hesab / Bank Adı'), visible: true },
+        { key: 'accountNumber', label: t('treasury.accountNumber', {}, 'Hesab / IBAN'), visible: true },
         { key: 'swiftCode', label: 'SWIFT / BIC', visible: true },
-        { key: 'currency', label: 'Valyuta', visible: true },
-        { key: 'glAccount', label: 'Mühasibat Hesabı (GL)', visible: true },
-        { key: 'balance', label: 'Cari Balans', visible: true },
-        { key: 'status', label: 'Status', visible: true },
+        { key: 'currency', label: t('common.currency', {}, 'Valyuta'), visible: true },
+        { key: 'glAccount', label: t('treasury.glAccount', {}, 'Mühasibat Hesabı (GL)'), visible: true },
+        { key: 'balance', label: t('treasury.currentBalance', {}, 'Cari Balans'), visible: true },
+        { key: 'status', label: t('common.status', {}, 'Status'), visible: true },
     ]);
 
     // Create Modal State
@@ -110,7 +108,7 @@ export const BankAccountsPage: React.FC = () => {
     const [showDepositModal, setShowDepositModal] = useState(false);
     const [depositAccount, setDepositAccount] = useState<BankAccountDto | null>(null);
     const [depositAmount, setDepositAmount] = useState<string>('');
-    const [depositDescription, setDepositDescription] = useState<string>('Hesabın artırılması / Mədaxil');
+    const [depositDescription, setDepositDescription] = useState<string>('');
     const [depositLoading, setDepositLoading] = useState(false);
     const [depositError, setDepositError] = useState('');
 
@@ -127,7 +125,7 @@ export const BankAccountsPage: React.FC = () => {
         if (data?.message) return data.message;
         if (data?.title) return data.title;
         if (data?.error) return data.error;
-        return err.message || 'Xəta baş verdi';
+        return err.message || t('common.error', {}, 'Xəta baş verdi');
     };
 
     const loadData = async (silent = false) => {
@@ -162,7 +160,7 @@ export const BankAccountsPage: React.FC = () => {
             setGlAccounts(assetAccounts);
         } catch (err) {
             console.error('Failed to load bank accounts data:', err);
-            showToast('Bank hesabları yüklənərkən xəta baş verdi', 'error');
+            showToast(t('treasury.loadFailed', {}, 'Bank hesabları yüklənərkən xəta baş verdi'), 'error');
         } finally {
             setLoading(false);
             setIsRefreshing(false);
@@ -230,7 +228,7 @@ export const BankAccountsPage: React.FC = () => {
         setModalBankName(preset.name);
         setModalSwiftCode(preset.swift);
         if (!modalAccountName) {
-            setModalAccountName(`${preset.name} - Əsas Hesab`);
+            setModalAccountName(`${preset.name} - ${t('treasury.mainAccount', {}, 'Əsas Hesab')}`);
         }
     };
 
@@ -242,14 +240,14 @@ export const BankAccountsPage: React.FC = () => {
         try {
             const cleanName = modalBankName.trim();
             if (!cleanName) {
-                setCreateError(modalAccountType === 'Bank' ? 'Bankın adını qeyd edin.' : 'Kassanın adını qeyd edin.');
+                setCreateError(modalAccountType === 'Bank' ? t('treasury.specifyBankName', {}, 'Bankın adını qeyd edin.') : t('treasury.specifyCashName', {}, 'Kassanın adını qeyd edin.'));
                 setCreateLoading(false);
                 return;
             }
 
             const cleanAccNum = modalAccountNumber.trim();
             if (modalAccountType === 'Bank' && !cleanAccNum) {
-                setCreateError('Hesab nömrəsi və ya IBAN daxil edilməlidir.');
+                setCreateError(t('treasury.specifyIban', {}, 'Hesab nömrəsi və ya IBAN daxil edilməlidir.'));
                 setCreateLoading(false);
                 return;
             }
@@ -277,7 +275,7 @@ export const BankAccountsPage: React.FC = () => {
                     glAccountName: selectedGl?.name,
                 });
 
-                showToast(`${created.bankName} uğurla yaradıldı!`);
+                showToast(`${created.bankName} ${t('common.createdSuccess', {}, 'uğurla yaradıldı!')}`);
             } else {
                 // Create Cash Desk
                 await paymentService.createCashDesk({
@@ -287,7 +285,7 @@ export const BankAccountsPage: React.FC = () => {
                     openingBalance: Number(modalOpeningBalance) || 0,
                 });
 
-                showToast(`${cleanName} kassası uğurla yaradıldı!`);
+                showToast(`${cleanName} ${t('treasury.cashCreatedSuccess', {}, 'kassası uğurla yaradıldı!')}`);
             }
 
             setShowCreateModal(false);
@@ -304,7 +302,7 @@ export const BankAccountsPage: React.FC = () => {
     const openDepositModal = (acc: BankAccountDto) => {
         setDepositAccount(acc);
         setDepositAmount('');
-        setDepositDescription('Hesab balansının artırılması');
+        setDepositDescription(t('treasury.balanceIncreaseDefault', {}, 'Hesab balansının artırılması'));
         setDepositError('');
         setShowDepositModal(true);
     };
@@ -315,7 +313,7 @@ export const BankAccountsPage: React.FC = () => {
 
         const amountNum = Number(depositAmount);
         if (!amountNum || amountNum <= 0) {
-            setDepositError('Məbləğ 0-dan böyük olmalıdır.');
+            setDepositError(t('treasury.amountMustBePositive', {}, 'Məbləğ 0-dan böyük olmalıdır.'));
             return;
         }
 
@@ -337,14 +335,14 @@ export const BankAccountsPage: React.FC = () => {
                     {
                         transactionDate: nowIso,
                         amount: amountNum,
-                        reference: 'Balans Artırılması',
-                        counterpartyName: 'Hesab Sahibi',
-                        description: depositDescription.trim() || 'Balans artırılması',
+                        reference: t('treasury.depositReference', {}, 'Balans Artırılması'),
+                        counterpartyName: t('treasury.accountOwner', {}, 'Hesab Sahibi'),
+                        description: depositDescription.trim() || t('treasury.depositReference', {}, 'Balans artırılması'),
                     },
                 ],
             });
 
-            showToast(`${depositAccount.bankName} balansına +${formatCurrency(amountNum, depositAccount.currency)} uğurla əlavə edildi!`);
+            showToast(`${depositAccount.bankName} ${t('treasury.depositSuccess', {}, 'balansına')} +${formatCurrency(amountNum, depositAccount.currency)} ${t('treasury.addedSuccess', {}, 'uğurla əlavə edildi!')}`);
             setShowDepositModal(false);
             loadData(true);
         } catch (err: any) {
@@ -480,15 +478,15 @@ export const BankAccountsPage: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Xəzinə</span>
+                        <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">{t('nav.treasury', {}, 'Xəzinə')}</span>
                         <span className="text-xs text-zinc-600">/</span>
-                        <h1 className="text-2xl font-bold tracking-tight text-white">Bank Hesabları və Xəzinə</h1>
+                        <h1 className="text-2xl font-bold tracking-tight text-white">{t('treasury.bankAccountsTitle', {}, 'Bank Hesabları və Xəzinə')}</h1>
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[#18181B] text-zinc-400 border border-[#27272A]">
-                            {bankAccounts.length} hesab
+                            {bankAccounts.length} {t('treasury.accountsCount', {}, 'hesab')}
                         </span>
                     </div>
                     <p className="text-xs text-zinc-400 mt-1">
-                        Bank hesablaşma hesabları, kassa qalıqları, valyutalar və bank əməliyyatlarının idarə olunması
+                        {t('treasury.bankAccountsSubtitle', {}, 'Bank hesablaşma hesabları, kassa qalıqları, valyutalar və bank əməliyyatlarının idarə olunması')}
                     </p>
                 </div>
 
@@ -497,7 +495,7 @@ export const BankAccountsPage: React.FC = () => {
                         onClick={() => loadData(false)}
                         disabled={loading || isRefreshing}
                         className="p-2 rounded-xl bg-[#18181B] border border-[#27272A] text-zinc-400 hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer disabled:opacity-50"
-                        title="Yenilə"
+                        title={t('common.refresh', {}, 'Yenilə')}
                     >
                         <ArrowPathIcon className={`w-4 h-4 ${isRefreshing || loading ? 'animate-spin' : ''}`} />
                     </button>
@@ -507,7 +505,7 @@ export const BankAccountsPage: React.FC = () => {
                         className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-semibold transition-all shadow-xs cursor-pointer"
                     >
                         <PlusIcon className="w-4 h-4 text-black" />
-                        <span>Yeni Hesab / Kassa</span>
+                        <span>{t('treasury.newBankAccount', {}, 'Yeni Hesab / Kassa')}</span>
                     </button>
                 </div>
             </div>
@@ -516,11 +514,11 @@ export const BankAccountsPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between">
                     <div>
-                        <div className="text-[11px] font-medium text-zinc-400">Toplam Bank Balansı</div>
+                        <div className="text-[11px] font-medium text-zinc-400">{t('treasury.totalBankBalance', {}, 'Toplam Bank Balansı')}</div>
                         <div className="text-xl font-bold font-mono text-emerald-400 mt-0.5">
                             {formatCurrency(stats.totalBankAzn, 'AZN')}
                         </div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">Bank hesablarındakı vəsait</div>
+                        <div className="text-[10px] text-zinc-500 mt-0.5">{t('treasury.totalBankDesc', {}, 'Bank hesablarındakı vəsait')}</div>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                         <BuildingLibraryIcon className="w-5 h-5" />
@@ -529,11 +527,11 @@ export const BankAccountsPage: React.FC = () => {
 
                 <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between">
                     <div>
-                        <div className="text-[11px] font-medium text-zinc-400">Kassa Qalıqları</div>
+                        <div className="text-[11px] font-medium text-zinc-400">{t('treasury.totalCashBalance', {}, 'Kassa Qalıqları')}</div>
                         <div className="text-xl font-bold font-mono text-white mt-0.5">
                             {formatCurrency(stats.totalCashAzn, 'AZN')}
                         </div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">Nağd pul kassaları</div>
+                        <div className="text-[10px] text-zinc-500 mt-0.5">{t('treasury.totalCashDesc', {}, 'Nağd pul kassaları')}</div>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-300">
                         <BanknotesIcon className="w-5 h-5" />
@@ -542,11 +540,11 @@ export const BankAccountsPage: React.FC = () => {
 
                 <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between">
                     <div>
-                        <div className="text-[11px] font-medium text-zinc-400">Aktiv Hesablar</div>
+                        <div className="text-[11px] font-medium text-zinc-400">{t('treasury.activeAccounts', {}, 'Aktiv Hesablar')}</div>
                         <div className="text-xl font-bold text-white mt-0.5">
                             {stats.activeCount} <span className="text-xs font-normal text-zinc-500">/ {stats.totalAccounts}</span>
                         </div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">İstifadədə olan hesablar</div>
+                        <div className="text-[10px] text-zinc-500 mt-0.5">{t('treasury.inUseAccounts', {}, 'İstifadədə olan hesablar')}</div>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-300">
                         <CreditCardIcon className="w-5 h-5" />
@@ -555,11 +553,11 @@ export const BankAccountsPage: React.FC = () => {
 
                 <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between">
                     <div>
-                        <div className="text-[11px] font-medium text-zinc-400">Ümumi Likvid Vəsait</div>
+                        <div className="text-[11px] font-medium text-zinc-400">{t('treasury.totalLiquidFunds', {}, 'Ümumi Likvid Vəsait')}</div>
                         <div className="text-xl font-bold font-mono text-white mt-0.5">
                             {formatCurrency(stats.totalAllAzn, 'AZN')}
                         </div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">{stats.currencyCount} fərqli valyutada</div>
+                        <div className="text-[10px] text-zinc-500 mt-0.5">{stats.currencyCount} {t('treasury.distinctCurrencies', {}, 'fərqli valyutada')}</div>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-300">
                         <BuildingOfficeIcon className="w-5 h-5" />
@@ -598,7 +596,7 @@ export const BankAccountsPage: React.FC = () => {
                                 setSearchTerm(e.target.value);
                                 setCurrentPage(1);
                             }}
-                            placeholder="Axtar (bank, hesab nömrəsi, valyuta, IBAN)..."
+                            placeholder={t('treasury.searchPlaceholder', {}, 'Axtar (bank, hesab nömrəsi, valyuta, IBAN)...')}
                             className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-xs text-white placeholder-zinc-500 focus:border-zinc-500 focus:outline-hidden transition-colors"
                         />
                         {searchTerm && (
@@ -618,9 +616,9 @@ export const BankAccountsPage: React.FC = () => {
                             className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-xs text-zinc-300 hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer"
                         >
                             <span>
-                                Növ:{' '}
+                                {t('common.type', {}, 'Növ')}:{' '}
                                 <strong className="text-white font-medium">
-                                    {typeFilter === 'ALL' ? 'Hamısı' : typeFilter === 'Bank' ? 'Bank Hesabları' : 'Kassa'}
+                                    {typeFilter === 'ALL' ? t('common.all', {}, 'Hamısı') : typeFilter === 'Bank' ? t('treasury.typeBank', {}, 'Bank Hesabları') : t('treasury.typeCash', {}, 'Kassa')}
                                 </strong>
                             </span>
                             <ArrowsUpDownIcon className="w-3 h-3 text-zinc-500" />
@@ -629,9 +627,9 @@ export const BankAccountsPage: React.FC = () => {
                         {isTypeDropdownOpen && (
                             <div className="absolute left-0 mt-1 w-44 rounded-xl bg-[#18181B] border border-[#27272A] py-1 shadow-xl z-30">
                                 {[
-                                    { key: 'ALL', label: 'Hamısı' },
-                                    { key: 'Bank', label: 'Bank Hesabları' },
-                                    { key: 'Cash', label: 'Kassa (Cash)' },
+                                    { key: 'ALL', label: t('common.all', {}, 'Hamısı') },
+                                    { key: 'Bank', label: t('treasury.typeBank', {}, 'Bank Hesabları') },
+                                    { key: 'Cash', label: t('treasury.typeCash', {}, 'Kassa (Cash)') },
                                 ].map((item) => (
                                     <button
                                         key={item.key}
@@ -666,7 +664,7 @@ export const BankAccountsPage: React.FC = () => {
                             }`}
                         >
                             <FunnelIcon className="w-3.5 h-3.5" />
-                            <span>Filtr</span>
+                            <span>{t('common.filter', {}, 'Filtr')}</span>
                             {activeFilterCount > 0 && (
                                 <span className="w-4 h-4 rounded-full bg-black text-white text-[10px] flex items-center justify-center font-bold">
                                     {activeFilterCount}
@@ -677,19 +675,19 @@ export const BankAccountsPage: React.FC = () => {
                         {isFilterPopoverOpen && (
                             <div className="absolute right-0 mt-2 w-80 rounded-2xl bg-[#18181B] border border-[#27272A] p-4 shadow-2xl z-40 space-y-3.5">
                                 <div className="flex items-center justify-between pb-2 border-b border-[#27272A]">
-                                    <span className="text-xs font-bold text-white">Filter Parametrləri</span>
+                                    <span className="text-xs font-bold text-white">{t('common.filterOptions', {}, 'Filter Parametrləri')}</span>
                                     {activeFilterCount > 0 && (
                                         <button
                                             onClick={resetFilters}
                                             className="text-[11px] text-zinc-400 hover:text-white underline cursor-pointer"
                                         >
-                                            Sıfırla
+                                            {t('common.reset', {}, 'Sıfırla')}
                                         </button>
                                     )}
                                 </div>
 
                                 <div>
-                                    <label className="text-[11px] text-zinc-400 block mb-1">Valyuta</label>
+                                    <label className="text-[11px] text-zinc-400 block mb-1">{t('common.currency', {}, 'Valyuta')}</label>
                                     <select
                                         value={currencyFilter}
                                         onChange={(e) => {
@@ -698,7 +696,7 @@ export const BankAccountsPage: React.FC = () => {
                                         }}
                                         className="w-full px-2.5 py-1.5 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white focus:outline-hidden"
                                     >
-                                        <option value="ALL">Bütün valyutalar</option>
+                                        <option value="ALL">{t('common.allCurrencies', {}, 'Bütün valyutalar')}</option>
                                         {CURRENCIES.map((c) => (
                                             <option key={c} value={c}>
                                                 {c}
@@ -708,7 +706,7 @@ export const BankAccountsPage: React.FC = () => {
                                 </div>
 
                                 <div>
-                                    <label className="text-[11px] text-zinc-400 block mb-1">Status</label>
+                                    <label className="text-[11px] text-zinc-400 block mb-1">{t('common.status', {}, 'Status')}</label>
                                     <select
                                         value={statusFilter}
                                         onChange={(e) => {
@@ -717,14 +715,14 @@ export const BankAccountsPage: React.FC = () => {
                                         }}
                                         className="w-full px-2.5 py-1.5 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white focus:outline-hidden"
                                     >
-                                        <option value="ALL">Hamısı</option>
-                                        <option value="active">Yalnız Aktiv Hesablar</option>
-                                        <option value="inactive">Deaktiv Hesablar</option>
+                                        <option value="ALL">{t('common.all', {}, 'Hamısı')}</option>
+                                        <option value="active">{t('treasury.onlyActive', {}, 'Yalnız Aktiv Hesablar')}</option>
+                                        <option value="inactive">{t('treasury.onlyInactive', {}, 'Deaktiv Hesablar')}</option>
                                     </select>
                                 </div>
 
                                 <div>
-                                    <label className="text-[11px] text-zinc-400 block mb-1">Minimum Balans (AZN)</label>
+                                    <label className="text-[11px] text-zinc-400 block mb-1">{t('treasury.minBalance', {}, 'Minimum Balans (AZN)')}</label>
                                     <input
                                         type="number"
                                         placeholder="Məs: 1000"
@@ -742,7 +740,7 @@ export const BankAccountsPage: React.FC = () => {
                                         onClick={() => setIsFilterPopoverOpen(false)}
                                         className="w-full py-1.5 rounded-xl bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors"
                                     >
-                                        Tətbiq et
+                                        {t('common.apply', {}, 'Tətbiq et')}
                                     </button>
                                 </div>
                             </div>
@@ -756,13 +754,13 @@ export const BankAccountsPage: React.FC = () => {
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-xs text-zinc-300 hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer"
                         >
                             <AdjustmentsHorizontalIcon className="w-3.5 h-3.5" />
-                            <span>Sütunlar</span>
+                            <span>{t('common.columns', {}, 'Sütunlar')}</span>
                         </button>
 
                         {isColumnsOpen && (
                             <div className="absolute right-0 mt-2 w-52 rounded-2xl bg-[#18181B] border border-[#27272A] p-3 shadow-2xl z-40 space-y-2">
                                 <div className="text-[11px] font-bold text-white pb-1.5 border-b border-[#27272A]">
-                                    Görünən Sütunlar
+                                    {t('common.visibleColumns', {}, 'Görünən Sütunlar')}
                                 </div>
                                 <div className="space-y-1 max-h-56 overflow-y-auto">
                                     {columns.map((col) => (
@@ -791,16 +789,16 @@ export const BankAccountsPage: React.FC = () => {
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-xs text-zinc-300 hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer"
                         >
                             <ArrowsUpDownIcon className="w-3.5 h-3.5" />
-                            <span>Sıralama</span>
+                            <span>{t('common.sort', {}, 'Sıralama')}</span>
                         </button>
 
                         {isSortOpen && (
                             <div className="absolute right-0 mt-2 w-48 rounded-2xl bg-[#18181B] border border-[#27272A] p-2 shadow-2xl z-40 space-y-1">
                                 {[
-                                    { key: 'balance', label: 'Balans üzrə' },
-                                    { key: 'name', label: 'Ad üzrə (A-Z)' },
-                                    { key: 'currency', label: 'Valyuta üzrə' },
-                                    { key: 'date', label: 'Yaradılma Tarixi' },
+                                    { key: 'balance', label: t('treasury.sortByBalance', {}, 'Balans üzrə') },
+                                    { key: 'name', label: t('treasury.sortByName', {}, 'Ad üzrə (A-Z)') },
+                                    { key: 'currency', label: t('treasury.sortByCurrency', {}, 'Valyuta üzrə') },
+                                    { key: 'date', label: t('treasury.sortByDate', {}, 'Yaradılma Tarixi') },
                                 ].map((item) => (
                                     <button
                                         key={item.key}
@@ -820,7 +818,7 @@ export const BankAccountsPage: React.FC = () => {
                                         <span>{item.label}</span>
                                         {sortField === item.key && (
                                             <span className="text-[10px] text-zinc-400">
-                                                {sortDirection === 'desc' ? 'Azalan' : 'Artan'}
+                                                {sortDirection === 'desc' ? t('common.descending', {}, 'Azalan') : t('common.ascending', {}, 'Artan')}
                                             </span>
                                         )}
                                     </button>
@@ -834,12 +832,12 @@ export const BankAccountsPage: React.FC = () => {
             {/* Selected Rows Bulk Actions Bar */}
             {selectedRows.length > 0 && (
                 <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-[#18181B] border border-zinc-700 text-xs">
-                    <span className="font-semibold text-white">{selectedRows.length} hesab seçilib</span>
+                    <span className="font-semibold text-white">{selectedRows.length} {t('treasury.accountsSelected', {}, 'hesab seçilib')}</span>
                     <button
                         onClick={() => setSelectedRows([])}
-                        className="px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs"
+                        className="px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs cursor-pointer"
                     >
-                        Seçimi ləğv et
+                        {t('common.clearSelection', {}, 'Seçimi ləğv et')}
                     </button>
                 </div>
             )}
@@ -861,13 +859,13 @@ export const BankAccountsPage: React.FC = () => {
                                         className="rounded bg-[#121214] border-zinc-700 text-white focus:ring-0"
                                     />
                                 </th>
-                                {isColVisible('bankName') && <th className="py-3.5 px-4">Hesab / Bank Adı</th>}
-                                {isColVisible('accountNumber') && <th className="py-3.5 px-4">Hesab Nömrəsi / IBAN</th>}
+                                {isColVisible('bankName') && <th className="py-3.5 px-4">{t('treasury.bankName', {}, 'Hesab / Bank Adı')}</th>}
+                                {isColVisible('accountNumber') && <th className="py-3.5 px-4">{t('treasury.accountNumber', {}, 'Hesab Nömrəsi / IBAN')}</th>}
                                 {isColVisible('swiftCode') && <th className="py-3.5 px-4">SWIFT / BIC</th>}
-                                {isColVisible('currency') && <th className="py-3.5 px-4 text-center">Valyuta</th>}
-                                {isColVisible('glAccount') && <th className="py-3.5 px-4">Mühasibat Hesabı (GL)</th>}
-                                {isColVisible('balance') && <th className="py-3.5 px-4 text-right">Cari Balans</th>}
-                                {isColVisible('status') && <th className="py-3.5 px-4 text-center">Status</th>}
+                                {isColVisible('currency') && <th className="py-3.5 px-4 text-center">{t('common.currency', {}, 'Valyuta')}</th>}
+                                {isColVisible('glAccount') && <th className="py-3.5 px-4">{t('treasury.glAccount', {}, 'Mühasibat Hesabı (GL)')}</th>}
+                                {isColVisible('balance') && <th className="py-3.5 px-4 text-right">{t('treasury.currentBalance', {}, 'Cari Balans')}</th>}
+                                {isColVisible('status') && <th className="py-3.5 px-4 text-center">{t('common.status', {}, 'Status')}</th>}
                                 <th className="w-32 py-3.5 px-4 text-right"></th>
                             </tr>
                         </thead>
@@ -878,7 +876,7 @@ export const BankAccountsPage: React.FC = () => {
                                     <td colSpan={9} className="py-16 text-center text-zinc-500">
                                         <div className="flex flex-col items-center justify-center gap-2">
                                             <ArrowPathIcon className="w-6 h-6 animate-spin text-zinc-400" />
-                                            <span>Bank hesabları yüklənir...</span>
+                                            <span>{t('common.loading', {}, 'Bank hesabları yüklənir...')}</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -887,9 +885,9 @@ export const BankAccountsPage: React.FC = () => {
                                     <td colSpan={9} className="py-16 text-center text-zinc-500">
                                         <div className="flex flex-col items-center justify-center gap-2">
                                             <BuildingLibraryIcon className="w-8 h-8 text-zinc-600" />
-                                            <span className="font-semibold text-zinc-400">Heç bir bank hesabı tapılmadı</span>
+                                            <span className="font-semibold text-zinc-400">{t('treasury.noAccountsFound', {}, 'Heç bir bank hesabı tapılmadı')}</span>
                                             <p className="text-[11px] text-zinc-500 max-w-sm">
-                                                Yuxarıdakı &quot;+ Yeni Hesab / Kassa&quot; düyməsinə klikləyərək yeni bank və ya kassa hesabı əlavə edin.
+                                                {t('treasury.noAccountsFoundDesc', {}, 'Yuxarıdakı "+ Yeni Hesab / Kassa" düyməsinə klikləyərək yeni bank və ya kassa hesabı əlavə edin.')}
                                             </p>
                                         </div>
                                     </td>
@@ -962,7 +960,7 @@ export const BankAccountsPage: React.FC = () => {
                                                             <button
                                                                 onClick={() => handleCopyIban(acc.id, acc.accountNumber)}
                                                                 className="text-zinc-500 hover:text-white transition-colors cursor-pointer"
-                                                                title="IBAN Kopyala"
+                                                                title={t('treasury.copyIban', {}, 'IBAN Kopyala')}
                                                             >
                                                                 {copiedId === acc.id ? (
                                                                     <CheckIcon className="w-3.5 h-3.5 text-emerald-400" />
@@ -997,7 +995,7 @@ export const BankAccountsPage: React.FC = () => {
                                                         </span>
                                                     ) : (
                                                         <span className="text-zinc-500">
-                                                            {acc.glAccountId ? 'Təyin edilib' : '—'}
+                                                            {acc.glAccountId ? t('treasury.assigned', {}, 'Təyin edilib') : '—'}
                                                         </span>
                                                     )}
                                                 </td>
@@ -1018,7 +1016,7 @@ export const BankAccountsPage: React.FC = () => {
                                                                 : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
                                                         }`}
                                                     >
-                                                        {acc.isActive ? 'Aktiv' : 'Deaktiv'}
+                                                        {acc.isActive ? t('statuses.active', {}, 'Aktiv') : t('statuses.inactive', {}, 'Deaktiv')}
                                                     </span>
                                                 </td>
                                             )}
@@ -1028,16 +1026,16 @@ export const BankAccountsPage: React.FC = () => {
                                                     <button
                                                         onClick={() => openDepositModal(acc)}
                                                         className="px-2 py-1 rounded-lg bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-zinc-300 hover:text-white text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer"
-                                                        title="Balansı artır və ya çıxarış daxil et"
+                                                        title={t('treasury.depositOrStatement', {}, 'Balansı artır və ya çıxarış daxil et')}
                                                     >
                                                         <PlusIcon className="w-3 h-3" />
-                                                        <span>Mədaxil</span>
+                                                        <span>{t('treasury.deposit', {}, 'Mədaxil')}</span>
                                                     </button>
 
                                                     <Link
                                                         to={`/bank-accounts/${acc.id}`}
                                                         className="p-1.5 rounded-lg bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-zinc-400 hover:text-white transition-colors cursor-pointer"
-                                                        title="Hesab detalları"
+                                                        title={t('treasury.bankAccountDetails', {}, 'Hesab detalları')}
                                                     >
                                                         <EyeIcon className="w-3.5 h-3.5" />
                                                     </Link>
@@ -1072,11 +1070,11 @@ export const BankAccountsPage: React.FC = () => {
 
                     <span>
                         {filteredAccounts.length === 0
-                            ? '0 of 0'
+                            ? `0 ${t('common.of', {}, 'of')} 0`
                             : `${(currentPage - 1) * pageSize + 1}-${Math.min(
                                   currentPage * pageSize,
                                   filteredAccounts.length
-                              )} of ${filteredAccounts.length}`}
+                              )} ${t('common.of', {}, 'of')} ${filteredAccounts.length}`}
                     </span>
                 </div>
             </div>
@@ -1087,9 +1085,9 @@ export const BankAccountsPage: React.FC = () => {
                     <div className="relative w-full max-w-xl rounded-2xl bg-[#121214] border border-[#27272A] shadow-2xl p-6 space-y-5">
                         <div className="flex items-center justify-between pb-3 border-b border-[#27272A]">
                             <div>
-                                <h3 className="text-base font-bold text-white">Yeni Bank Hesabı / Kassa</h3>
+                                <h3 className="text-base font-bold text-white">{t('treasury.newBankAccount', {}, 'Yeni Bank Hesabı / Kassa')}</h3>
                                 <p className="text-xs text-zinc-400 mt-0.5">
-                                    Mühasibatlıq sistemi üçün yeni bank hesabı və ya nağd kassa qeydiyyatdan keçirin
+                                    {t('treasury.newAccountDesc', {}, 'Mühasibatlıq sistemi üçün yeni bank hesabı və ya nağd kassa qeydiyyatdan keçirin')}
                                 </p>
                             </div>
                             <button
@@ -1123,7 +1121,7 @@ export const BankAccountsPage: React.FC = () => {
                                 }`}
                             >
                                 <BuildingLibraryIcon className="w-4 h-4" />
-                                <span>Bank Hesabı</span>
+                                <span>{t('treasury.typeBank', {}, 'Bank Hesabı')}</span>
                             </button>
 
                             <button
@@ -1140,7 +1138,7 @@ export const BankAccountsPage: React.FC = () => {
                                 }`}
                             >
                                 <BanknotesIcon className="w-4 h-4" />
-                                <span>Kassa (Cash Desk)</span>
+                                <span>{t('treasury.typeCash', {}, 'Kassa (Cash Desk)')}</span>
                             </button>
                         </div>
 
@@ -1148,7 +1146,7 @@ export const BankAccountsPage: React.FC = () => {
                             {/* Popular Bank Chips (Only for Bank type) */}
                             {modalAccountType === 'Bank' && (
                                 <div>
-                                    <label className="text-[11px] text-zinc-400 block mb-1.5">Populyar Banklar:</label>
+                                    <label className="text-[11px] text-zinc-400 block mb-1.5">{t('treasury.popularBanks', {}, 'Populyar Banklar:')}</label>
                                     <div className="flex flex-wrap gap-1.5">
                                         {POPULAR_BANKS.map((b) => (
                                             <button
@@ -1171,7 +1169,7 @@ export const BankAccountsPage: React.FC = () => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="text-xs font-semibold text-zinc-300 block mb-1">
-                                        {modalAccountType === 'Bank' ? 'Bank Adı *' : 'Kassa Adı *'}
+                                        {modalAccountType === 'Bank' ? `${t('treasury.bankName', {}, 'Bank Adı')} *` : `${t('treasury.typeCash', {}, 'Kassa Adı')} *`}
                                     </label>
                                     <input
                                         type="text"
@@ -1185,7 +1183,7 @@ export const BankAccountsPage: React.FC = () => {
 
                                 <div>
                                     <label className="text-xs font-semibold text-zinc-300 block mb-1">
-                                        Hesabın Təyinatı / Adı
+                                        {t('treasury.accountName', {}, 'Hesabın Təyinatı / Adı')}
                                     </label>
                                     <input
                                         type="text"
@@ -1201,7 +1199,7 @@ export const BankAccountsPage: React.FC = () => {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="text-xs font-semibold text-zinc-300 block mb-1">
-                                            Hesab Nömrəsi / IBAN *
+                                            {t('treasury.iban', {}, 'Hesab Nömrəsi / IBAN')} *
                                         </label>
                                         <input
                                             type="text"
@@ -1215,7 +1213,7 @@ export const BankAccountsPage: React.FC = () => {
 
                                     <div>
                                         <label className="text-xs font-semibold text-zinc-300 block mb-1">
-                                            SWIFT / BIC Kodu
+                                            {t('treasury.swiftCode', {}, 'SWIFT / BIC Kodu')}
                                         </label>
                                         <input
                                             type="text"
@@ -1230,7 +1228,7 @@ export const BankAccountsPage: React.FC = () => {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
-                                    <label className="text-xs font-semibold text-zinc-300 block mb-1">Valyuta *</label>
+                                    <label className="text-xs font-semibold text-zinc-300 block mb-1">{t('common.currency', {}, 'Valyuta')} *</label>
                                     <select
                                         value={modalCurrency}
                                         onChange={(e) => setModalCurrency(e.target.value)}
@@ -1246,14 +1244,14 @@ export const BankAccountsPage: React.FC = () => {
 
                                 <div>
                                     <label className="text-xs font-semibold text-zinc-300 block mb-1">
-                                        Mühasibatlıq (GL) Hesabı
+                                        {t('treasury.glAccount', {}, 'Mühasibatlıq (GL) Hesabı')}
                                     </label>
                                     <select
                                         value={modalGlAccountId}
                                         onChange={(e) => setModalGlAccountId(e.target.value)}
                                         className="w-full px-3 py-2 rounded-xl bg-[#18181B] border border-[#27272A] text-xs text-white focus:border-zinc-500 focus:outline-hidden"
                                     >
-                                        <option value="">Hesab təyin edilməsin</option>
+                                        <option value="">{t('treasury.noGlAssigned', {}, 'Hesab təyin edilməsin')}</option>
                                         {glAccounts.map((g) => (
                                             <option key={g.id} value={g.id}>
                                                 {g.code} - {g.name}
@@ -1266,7 +1264,7 @@ export const BankAccountsPage: React.FC = () => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="text-xs font-semibold text-zinc-300 block mb-1">
-                                        İlkin Qalıq / Açılış Balansı ({modalCurrency})
+                                        {t('treasury.openingBalance', {}, 'İlkin Qalıq / Açılış Balansı')} ({modalCurrency})
                                     </label>
                                     <input
                                         type="number"
@@ -1281,7 +1279,7 @@ export const BankAccountsPage: React.FC = () => {
                                 {modalAccountType === 'Bank' && (
                                     <div>
                                         <label className="text-xs font-semibold text-zinc-300 block mb-1">
-                                            Filial / Şöbə
+                                            {t('treasury.branchName', {}, 'Filial / Şöbə')}
                                         </label>
                                         <input
                                             type="text"
@@ -1300,7 +1298,7 @@ export const BankAccountsPage: React.FC = () => {
                                     onClick={() => setShowCreateModal(false)}
                                     className="px-4 py-2 rounded-xl bg-[#18181B] border border-[#27272A] text-zinc-300 hover:text-white text-xs font-semibold transition-colors cursor-pointer"
                                 >
-                                    Ləğv et
+                                    {t('common.cancel', {}, 'Ləğv et')}
                                 </button>
                                 <button
                                     type="submit"
@@ -1312,7 +1310,7 @@ export const BankAccountsPage: React.FC = () => {
                                     ) : (
                                         <CheckIcon className="w-4 h-4 text-black" />
                                     )}
-                                    <span>{modalAccountType === 'Bank' ? 'Bank Hesabını Yarat' : 'Kassanı Yarat'}</span>
+                                    <span>{modalAccountType === 'Bank' ? t('treasury.createBankSubmit', {}, 'Bank Hesabını Yarat') : t('treasury.createCashSubmit', {}, 'Kassanı Yarat')}</span>
                                 </button>
                             </div>
                         </form>
@@ -1326,7 +1324,7 @@ export const BankAccountsPage: React.FC = () => {
                     <div className="relative w-full max-w-md rounded-2xl bg-[#121214] border border-[#27272A] shadow-2xl p-6 space-y-4">
                         <div className="flex items-center justify-between pb-3 border-b border-[#27272A]">
                             <div>
-                                <h3 className="text-base font-bold text-white">Mədaxil / Balans Artırılması</h3>
+                                <h3 className="text-base font-bold text-white">{t('treasury.quickDepositTitle', {}, 'Mədaxil / Balans Artırılması')}</h3>
                                 <p className="text-xs text-zinc-400 mt-0.5">
                                     {depositAccount.bankName} ({depositAccount.currency})
                                 </p>
@@ -1349,7 +1347,7 @@ export const BankAccountsPage: React.FC = () => {
                         <form onSubmit={handleDepositSubmit} className="space-y-4">
                             <div>
                                 <label className="text-xs font-semibold text-zinc-300 block mb-1">
-                                    Məbləğ ({depositAccount.currency}) *
+                                    {t('common.amount', {}, 'Məbləğ')} ({depositAccount.currency}) *
                                 </label>
                                 <input
                                     type="number"
@@ -1365,7 +1363,7 @@ export const BankAccountsPage: React.FC = () => {
 
                             <div>
                                 <label className="text-xs font-semibold text-zinc-300 block mb-1">
-                                    Təyinat / Açıqlama
+                                    {t('common.description', {}, 'Təyinat / Açıqlama')}
                                 </label>
                                 <input
                                     type="text"
@@ -1381,7 +1379,7 @@ export const BankAccountsPage: React.FC = () => {
                                     onClick={() => setShowDepositModal(false)}
                                     className="px-4 py-2 rounded-xl bg-[#18181B] border border-[#27272A] text-zinc-300 hover:text-white text-xs font-semibold transition-colors cursor-pointer"
                                 >
-                                    Ləğv et
+                                    {t('common.cancel', {}, 'Ləğv et')}
                                 </button>
                                 <button
                                     type="submit"
@@ -1393,7 +1391,7 @@ export const BankAccountsPage: React.FC = () => {
                                     ) : (
                                         <CheckIcon className="w-4 h-4 text-black" />
                                     )}
-                                    <span>Balansı Artır</span>
+                                    <span>{t('treasury.increaseBalance', {}, 'Balansı Artır')}</span>
                                 </button>
                             </div>
                         </form>

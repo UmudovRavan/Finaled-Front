@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { accountsService } from '../../api';
 import type { AccountDto, JournalEntryDto, InitialBalanceRequest } from '../../dto';
 import { formatDate } from '../../utils';
+import { useLanguage } from '../../context/LanguageContext';
 import {
     ChevronDownIcon,
     ChevronUpIcon,
@@ -16,6 +17,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 export const AccountDetailPage: React.FC = () => {
+    const { t } = useLanguage();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
 
@@ -93,10 +95,10 @@ export const AccountDetailPage: React.FC = () => {
                 accountId: account?.id || id || '',
             });
             setShowBalanceModal(false);
-            showToast('İlkin qalıq uğurla təyin edildi!');
+            showToast(t('common.success', {}, 'İlkin qalıq uğurla təyin edildi!'));
             fetchAccountData();
         } catch (err: any) {
-            setBalanceError(err.response?.data?.message || err.message || 'İlkin qalıq qeyd olunarkən xəta baş verdi.');
+            setBalanceError(err.response?.data?.message || err.message || t('common.error', {}, 'İlkin qalıq qeyd olunarkən xəta baş verdi.'));
         } finally {
             setBalanceLoading(false);
         }
@@ -135,35 +137,35 @@ export const AccountDetailPage: React.FC = () => {
     };
 
     const getCategoryName = (cat: any) => {
-        if (cat === 1 || cat === 'Asset') return 'Aktiv (Asset)';
-        if (cat === 2 || cat === 'Liability') return 'Öhdəlik (Liability)';
-        if (cat === 3 || cat === 'Equity') return 'Kapital (Equity)';
-        if (cat === 4 || cat === 'Income' || cat === 'Revenue') return 'Gəlir (Income)';
-        if (cat === 5 || cat === 'Expense') return 'Xərc (Expense)';
+        if (cat === 1 || cat === 'Asset') return t('accounting.asset', {}, 'Aktiv (Asset)');
+        if (cat === 2 || cat === 'Liability') return t('accounting.liability', {}, 'Öhdəlik (Liability)');
+        if (cat === 3 || cat === 'Equity') return t('accounting.equity', {}, 'Kapital (Equity)');
+        if (cat === 4 || cat === 'Income' || cat === 'Revenue') return t('accounting.income', {}, 'Gəlir (Income)');
+        if (cat === 5 || cat === 'Expense') return t('accounting.expense', {}, 'Xərc (Expense)');
         return String(cat || '—');
     };
 
     const getTypeName = (type: any) => {
-        if (type === 0 || type === 'Standard') return 'Standart';
-        if (type === 1 || type === 'Receivable') return 'Debitor (Receivable)';
-        if (type === 2 || type === 'Payable') return 'Kreditor (Payable)';
-        if (type === 3 || type === 'Bank') return 'Bank';
-        if (type === 4 || type === 'Cash') return 'Kassa';
-        if (type === 5 || type === 'Stock') return 'Anbar (Stock)';
-        if (type === 10 || type === 'Revenue') return 'Gəlir (Revenue)';
-        if (type === 11 || type === 'Expense') return 'Xərc (Expense)';
-        if (type === 12 || type === 'FixedAsset') return 'Əsas Vəsait (Fixed Asset)';
-        if (type === 13 || type === 'CurrentAsset') return 'Cari Aktiv (Current Asset)';
-        if (type === 14 || type === 'CurrentLiability') return 'Qısamüddətli Öhdəlik';
-        if (type === 15 || type === 'LongTermLiability') return 'Uzunmüddətli Öhdəlik';
-        return String(type || 'Standart');
+        if (type === 0 || type === 'Standard') return t('accounting.typeStandard', {}, 'Standart');
+        if (type === 1 || type === 'Receivable') return t('accounting.typeReceivable', {}, 'Debitor (Receivable)');
+        if (type === 2 || type === 'Payable') return t('accounting.typePayable', {}, 'Kreditor (Payable)');
+        if (type === 3 || type === 'Bank') return t('accounting.typeBank', {}, 'Bank');
+        if (type === 4 || type === 'Cash') return t('accounting.typeCash', {}, 'Kassa');
+        if (type === 5 || type === 'Stock') return t('accounting.typeStock', {}, 'Anbar (Stock)');
+        if (type === 10 || type === 'Revenue') return t('accounting.typeRevenue', {}, 'Gəlir (Revenue)');
+        if (type === 11 || type === 'Expense') return t('accounting.typeExpense', {}, 'Xərc (Expense)');
+        if (type === 12 || type === 'FixedAsset') return t('accounting.typeFixedAsset', {}, 'Əsas Vəsait (Fixed Asset)');
+        if (type === 13 || type === 'CurrentAsset') return t('accounting.typeCurrentAsset', {}, 'Cari Aktiv (Current Asset)');
+        if (type === 14 || type === 'CurrentLiability') return t('accounting.typeCurrentLiability', {}, 'Qısamüddətli Öhdəlik');
+        if (type === 15 || type === 'LongTermLiability') return t('accounting.typeLongTermLiability', {}, 'Uzunmüddətli Öhdəlik');
+        return String(type || t('accounting.typeStandard', {}, 'Standart'));
     };
 
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-xs text-[#71717A]">
                 <ArrowPathIcon className="w-6 h-6 animate-spin text-white" />
-                <span>Hesab məlumatları yüklənir...</span>
+                <span>{t('common.loading', {}, 'Hesab məlumatları yüklənir...')}</span>
             </div>
         );
     }
@@ -171,12 +173,12 @@ export const AccountDetailPage: React.FC = () => {
     if (!account) {
         return (
             <div className="p-8 text-center space-y-3">
-                <p className="text-white text-sm">Hesab tapılmadı.</p>
+                <p className="text-white text-sm">{t('accounting.accountNotFound', {}, 'Hesab tapılmadı.')}</p>
                 <Link
                     to="/accounts"
                     className="inline-block px-4 py-2 bg-white text-black font-semibold text-xs rounded-xl"
                 >
-                    Hesablar Planına Qayıt
+                    {t('accounting.backToAccounts', {}, 'Hesablar Planına Qayıt')}
                 </Link>
             </div>
         );
@@ -195,15 +197,15 @@ export const AccountDetailPage: React.FC = () => {
                 </div>
             )}
 
-            {/* ─── 1. TOP BREADCRUMB BAR (Exact CRM Match) ─── */}
+            {/* ─── 1. TOP BREADCRUMB BAR ─── */}
             <div className="px-1 py-1 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2 text-xs font-medium text-[#A1A1AA] flex-wrap">
                     <Link to="/accounts" className="hover:text-white transition-colors">
-                        Hesablar Planı
+                        {t('accounting.accountsTitle', {}, 'Hesablar Planı')}
                     </Link>
                     <span>/</span>
                     <Link to="/accounts" className="hover:text-white transition-colors">
-                        Siyahı
+                        {t('common.list', {}, 'Siyahı')}
                     </Link>
                     <span>/</span>
                     <span className="text-white font-semibold">
@@ -215,11 +217,11 @@ export const AccountDetailPage: React.FC = () => {
                     to="/accounts"
                     className="px-3 py-1.5 rounded-xl border border-[#27272A] bg-[#18181B] hover:bg-[#27272A] text-xs font-medium text-white transition-colors"
                 >
-                    ← Siyahıya qayıt
+                    ← {t('accounting.backToList', {}, 'Siyahıya qayıt')}
                 </Link>
             </div>
 
-            {/* ─── 2. MAIN TWO-COLUMN CONTENT BODY (Matches CRM ContactDetailPage) ─── */}
+            {/* ─── 2. MAIN TWO-COLUMN CONTENT BODY ─── */}
             <div className="flex flex-col lg:flex-row min-w-0 border border-[#27272A] rounded-2xl bg-[#121214] overflow-hidden shadow-2xl">
                 {/* ─── LEFT PANEL: AVATAR, BALANCE & DETAILS ─── */}
                 <div className="w-full lg:w-80 shrink-0 border-b lg:border-b-0 lg:border-r border-[#27272A] bg-[#121214] p-5 sm:p-6 space-y-5 text-xs overflow-y-auto custom-scrollbar">
@@ -236,7 +238,7 @@ export const AccountDetailPage: React.FC = () => {
 
                     {/* Balance Highlight Box */}
                     <div className="bg-[#18181B] border border-[#27272A] rounded-2xl p-4 space-y-1">
-                        <span className="text-[11px] text-[#A1A1AA] font-medium block">Cari Qalıq</span>
+                        <span className="text-[11px] text-[#A1A1AA] font-medium block">{t('accounting.currentBalance', {}, 'Cari Qalıq')}</span>
                         <span className="text-2xl font-bold font-mono text-white tracking-tight block">
                             {formatCurrency(currentBal, account.currency)}
                         </span>
@@ -245,7 +247,7 @@ export const AccountDetailPage: React.FC = () => {
                                 className="w-2 h-2 rounded-full inline-block shrink-0"
                                 style={{ backgroundColor: getTypeColor(account.type) }}
                             />
-                            <span className="text-[#A1A1AA]">{account.type || 'Asset'}</span>
+                            <span className="text-[#A1A1AA]">{getTypeName(account.type)}</span>
                         </div>
                     </div>
 
@@ -267,20 +269,20 @@ export const AccountDetailPage: React.FC = () => {
                             className="w-full flex items-center justify-center gap-2 bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-white font-semibold px-4 py-2 rounded-xl transition-colors cursor-pointer text-xs shadow-xs"
                         >
                             <ScaleIcon className="w-4 h-4 text-[#A1A1AA]" />
-                            <span>İlkin Qalıq Təyin Et</span>
+                            <span>{t('accounting.setInitialBalance', {}, 'İlkin Qalıq Təyin Et')}</span>
                         </button>
                     </div>
 
                     <div className="h-px bg-[#27272A]"></div>
 
-                    {/* Collapsible Details Section (Exact CRM Layout) */}
+                    {/* Collapsible Details Section */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
                             <button
                                 onClick={() => setIsDetailsOpen(!isDetailsOpen)}
                                 className="flex items-center gap-1.5 font-bold text-white cursor-pointer hover:text-white transition-colors text-sm"
                             >
-                                <span>Detallar</span>
+                                <span>{t('common.details', {}, 'Detallar')}</span>
                                 {isDetailsOpen ? <ChevronDownIcon className="w-4 h-4" /> : <ChevronUpIcon className="w-4 h-4" />}
                             </button>
                         </div>
@@ -289,58 +291,58 @@ export const AccountDetailPage: React.FC = () => {
                             <div className="space-y-3 text-xs">
                                 {/* Hesab Kodu */}
                                 <div className="space-y-1">
-                                    <label className="text-[#71717A] text-[11px] block">Hesab Kodu</label>
+                                    <label className="text-[#71717A] text-[11px] block">{t('accounting.accountCode', {}, 'Hesab Kodu')}</label>
                                     <span className="font-mono font-bold text-white block">{account.code}</span>
                                 </div>
 
                                 {/* Hesabın Adı */}
                                 <div className="space-y-1">
-                                    <label className="text-[#71717A] text-[11px] block">Hesabın Adı</label>
+                                    <label className="text-[#71717A] text-[11px] block">{t('accounting.accountName', {}, 'Hesabın Adı')}</label>
                                     <span className="font-semibold text-white block">{account.name}</span>
                                 </div>
 
                                 {/* Kateqoriya */}
                                 <div className="space-y-1">
-                                    <label className="text-[#71717A] text-[11px] block">Kateqoriya</label>
+                                    <label className="text-[#71717A] text-[11px] block">{t('accounting.accountCategory', {}, 'Kateqoriya')}</label>
                                     <span className="text-white block">{getCategoryName(account.category || account.type)}</span>
                                 </div>
 
                                 {/* Hesab Növü */}
                                 <div className="space-y-1">
-                                    <label className="text-[#71717A] text-[11px] block">Hesab Növü (Type)</label>
+                                    <label className="text-[#71717A] text-[11px] block">{t('accounting.accountType', {}, 'Hesab Növü (Type)')}</label>
                                     <span className="text-white block">{getTypeName(account.type)}</span>
                                 </div>
 
                                 {/* Valyuta */}
                                 <div className="space-y-1">
-                                    <label className="text-[#71717A] text-[11px] block">Valyuta</label>
+                                    <label className="text-[#71717A] text-[11px] block">{t('common.currency', {}, 'Valyuta')}</label>
                                     <span className="font-mono text-white block">{account.currency || 'AZN'}</span>
                                 </div>
 
                                 {/* Nəzarət Hesabı */}
                                 <div className="space-y-1">
-                                    <label className="text-[#71717A] text-[11px] block">Nəzarət Hesabı (Control)</label>
-                                    <span className="text-white block">{account.isControlAccount ? 'Bəli' : 'Xeyr'}</span>
+                                    <label className="text-[#71717A] text-[11px] block">{t('accounting.controlAccount', {}, 'Nəzarət Hesabı (Control)')}</label>
+                                    <span className="text-white block">{account.isControlAccount ? t('common.yes', {}, 'Bəli') : t('common.no', {}, 'Xeyr')}</span>
                                 </div>
 
                                 {/* Ana Hesab */}
                                 <div className="space-y-1">
-                                    <label className="text-[#71717A] text-[11px] block">Ana Hesab (Parent)</label>
+                                    <label className="text-[#71717A] text-[11px] block">{t('accounting.parentAccount', {}, 'Ana Hesab (Parent)')}</label>
                                     <span className="text-white block">
-                                        {parentAccount ? `${parentAccount.code} - ${parentAccount.name}` : 'Yoxdur (Baş Hesab)'}
+                                        {parentAccount ? `${parentAccount.code} - ${parentAccount.name}` : t('accounting.noneParent', {}, 'Yoxdur (Baş Hesab)')}
                                     </span>
                                 </div>
 
                                 {/* Status */}
                                 <div className="space-y-1">
-                                    <label className="text-[#71717A] text-[11px] block">Status</label>
+                                    <label className="text-[#71717A] text-[11px] block">{t('common.status', {}, 'Status')}</label>
                                     <div className="flex items-center gap-1.5">
                                         <span
                                             className={`w-2 h-2 rounded-full inline-block shrink-0 ${
                                                 account.isActive ? 'bg-[#22C55E]' : 'bg-[#71717A]'
                                             }`}
                                         />
-                                        <span className="text-white">{account.isActive ? 'Aktiv' : 'Deaktiv'}</span>
+                                        <span className="text-white">{account.isActive ? t('common.active', {}, 'Aktiv') : t('common.inactive', {}, 'Deaktiv')}</span>
                                     </div>
                                 </div>
                             </div>
@@ -350,7 +352,7 @@ export const AccountDetailPage: React.FC = () => {
 
                 {/* ─── RIGHT MAIN PANEL: TABS & TABLES ─── */}
                 <div className="flex-1 p-5 sm:p-7 flex flex-col min-w-0 bg-[#121214]">
-                    {/* Tabs Header with Badges (Matches CRM) */}
+                    {/* Tabs Header with Badges */}
                     <div className="border-b border-[#27272A] pb-3 flex items-center gap-4 flex-wrap">
                         {/* Tab 1: Transactions */}
                         <button
@@ -363,7 +365,7 @@ export const AccountDetailPage: React.FC = () => {
                             }`}
                         >
                             <DocumentTextIcon className="w-4 h-4" />
-                            <span>Jurnal Qeydləri</span>
+                            <span>{t('accounting.journalEntries', {}, 'Jurnal Qeydləri')}</span>
                             <span className="w-5 h-5 rounded-full bg-[#27272A] text-white text-[10px] font-bold flex items-center justify-center">
                                 {journalEntries.length}
                             </span>
@@ -380,7 +382,7 @@ export const AccountDetailPage: React.FC = () => {
                             }`}
                         >
                             <ClipboardDocumentListIcon className="w-4 h-4" />
-                            <span>Alt Hesablar</span>
+                            <span>{t('accounting.subAccounts', {}, 'Alt Hesablar')}</span>
                             <span className="w-5 h-5 rounded-full bg-[#27272A] text-white text-[10px] font-bold flex items-center justify-center">
                                 {subAccounts.length}
                             </span>
@@ -397,7 +399,7 @@ export const AccountDetailPage: React.FC = () => {
                             }`}
                         >
                             <ScaleIcon className="w-4 h-4" />
-                            <span>Maliyyə Hərəkəti</span>
+                            <span>{t('accounting.financialMovement', {}, 'Maliyyə Hərəkəti')}</span>
                         </button>
                     </div>
 
@@ -407,18 +409,18 @@ export const AccountDetailPage: React.FC = () => {
                             <table className="w-full text-left text-xs border-collapse">
                                 <thead>
                                     <tr className="border-b border-[#27272A] text-[#71717A] font-medium uppercase tracking-wider text-[11px]">
-                                        <th className="py-3 px-4">NÖMRƏ</th>
-                                        <th className="py-3 px-4">TARİX</th>
-                                        <th className="py-3 px-4">TƏSVİR</th>
-                                        <th className="py-3 px-4 text-right">MƏBLƏĞ</th>
-                                        <th className="py-3 px-4 text-center">STATUS</th>
+                                        <th className="py-3 px-4">{t('accounting.entryNumber', {}, 'NÖMRƏ')}</th>
+                                        <th className="py-3 px-4">{t('common.date', {}, 'TARİX')}</th>
+                                        <th className="py-3 px-4">{t('common.description', {}, 'TƏSVİR')}</th>
+                                        <th className="py-3 px-4 text-right">{t('common.amount', {}, 'MƏBLƏĞ')}</th>
+                                        <th className="py-3 px-4 text-center">{t('common.status', {}, 'STATUS')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#27272A]/50 text-[#D4D4D8]">
                                     {journalEntries.length === 0 ? (
                                         <tr>
                                             <td colSpan={5} className="py-16 text-center text-[#71717A]">
-                                                Bu hesab üzrə hələ heç bir jurnal qeydi aparılmayıb.
+                                                {t('accounting.noJournalForAccount', {}, 'Bu hesab üzrə hələ heç bir jurnal qeydi aparılmayıb.')}
                                             </td>
                                         </tr>
                                     ) : (
@@ -431,7 +433,7 @@ export const AccountDetailPage: React.FC = () => {
                                                     {formatDate(entry.date, '—')}
                                                 </td>
                                                 <td className="py-3.5 px-4 text-white">
-                                                    {entry.description || 'Jurnal əməliyyatı'}
+                                                    {entry.description || t('accounting.journalEntry', {}, 'Jurnal əməliyyatı')}
                                                 </td>
                                                 <td className="py-3.5 px-4 text-right font-mono font-bold text-white">
                                                     {formatCurrency(Number(entry.totalDebit || entry.totalCredit || 0), account.currency)}
@@ -444,7 +446,7 @@ export const AccountDetailPage: React.FC = () => {
                                                                 : 'bg-zinc-800 text-zinc-400'
                                                         }`}
                                                     >
-                                                        {entry.status === 'POSTED' ? 'Təsdiqlənib' : 'Qaralama'}
+                                                        {entry.status === 'POSTED' ? t('statuses.posted', {}, 'Təsdiqlənib') : t('statuses.draft', {}, 'Qaralama')}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -461,18 +463,18 @@ export const AccountDetailPage: React.FC = () => {
                             <table className="w-full text-left text-xs border-collapse">
                                 <thead>
                                     <tr className="border-b border-[#27272A] text-[#71717A] font-medium uppercase tracking-wider text-[11px]">
-                                        <th className="py-3 px-4">KOD</th>
-                                        <th className="py-3 px-4">HESABIN ADI</th>
-                                        <th className="py-3 px-4">TİPİ</th>
-                                        <th className="py-3 px-4 text-right">QALIQ</th>
-                                        <th className="py-3 px-4 text-center">STATUS</th>
+                                        <th className="py-3 px-4">{t('accounting.accountCode', {}, 'KOD')}</th>
+                                        <th className="py-3 px-4">{t('accounting.accountName', {}, 'HESABIN ADI')}</th>
+                                        <th className="py-3 px-4">{t('accounting.accountType', {}, 'TİPİ')}</th>
+                                        <th className="py-3 px-4 text-right">{t('accounting.balance', {}, 'QALIQ')}</th>
+                                        <th className="py-3 px-4 text-center">{t('common.status', {}, 'STATUS')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#27272A]/50 text-[#D4D4D8]">
                                     {subAccounts.length === 0 ? (
                                         <tr>
                                             <td colSpan={5} className="py-16 text-center text-[#71717A]">
-                                                Bu hesaba bağlı heç bir alt hesab mövcud deyil.
+                                                {t('accounting.noSubAccounts', {}, 'Bu hesaba bağlı heç bir alt hesab mövcud deyil.')}
                                             </td>
                                         </tr>
                                     ) : (
@@ -488,7 +490,7 @@ export const AccountDetailPage: React.FC = () => {
                                                         {sub.name}
                                                     </Link>
                                                 </td>
-                                                <td className="py-3.5 px-4 text-[#A1A1AA]">{sub.type}</td>
+                                                <td className="py-3.5 px-4 text-[#A1A1AA]">{getTypeName(sub.type)}</td>
                                                 <td className="py-3.5 px-4 text-right font-mono font-bold text-white">
                                                     {formatCurrency(Number(sub.balance ?? (sub as any).currentBalance) || 0, sub.currency)}
                                                 </td>
@@ -507,19 +509,19 @@ export const AccountDetailPage: React.FC = () => {
                     {activeTab === 'summary' && (
                         <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div className="bg-[#18181B] p-5 rounded-2xl border border-[#27272A] space-y-1">
-                                <span className="text-[11px] text-[#A1A1AA] block">Ümumi Cari Qalıq</span>
+                                <span className="text-[11px] text-[#A1A1AA] block">{t('accounting.totalCurrentBalance', {}, 'Ümumi Cari Qalıq')}</span>
                                 <span className="text-2xl font-bold font-mono text-white block">
                                     {formatCurrency(currentBal, account.currency)}
                                 </span>
                             </div>
                             <div className="bg-[#18181B] p-5 rounded-2xl border border-[#27272A] space-y-1">
-                                <span className="text-[11px] text-[#A1A1AA] block">Əlaqəli Əməliyyat Sayı</span>
+                                <span className="text-[11px] text-[#A1A1AA] block">{t('accounting.relatedTxCount', {}, 'Əlaqəli Əməliyyat Sayı')}</span>
                                 <span className="text-2xl font-bold font-mono text-white block">
                                     {journalEntries.length}
                                 </span>
                             </div>
                             <div className="bg-[#18181B] p-5 rounded-2xl border border-[#27272A] space-y-1">
-                                <span className="text-[11px] text-[#A1A1AA] block">Alt Hesabların Sayı</span>
+                                <span className="text-[11px] text-[#A1A1AA] block">{t('accounting.subAccountsCount', {}, 'Alt Hesabların Sayı')}</span>
                                 <span className="text-2xl font-bold font-mono text-white block">
                                     {subAccounts.length}
                                 </span>
@@ -535,7 +537,7 @@ export const AccountDetailPage: React.FC = () => {
                     <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg text-[#E4E4E7] overflow-hidden animate-in fade-in duration-200">
                         <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 p-5">
                             <div>
-                                <h3 className="text-base font-bold text-white">İlkin Qalıq Təyin Et</h3>
+                                <h3 className="text-base font-bold text-white">{t('accounting.setInitialBalance', {}, 'İlkin Qalıq Təyin Et')}</h3>
                                 <p className="text-xs text-[#71717A]">
                                     {account.code} - {account.name}
                                 </p>
@@ -560,7 +562,7 @@ export const AccountDetailPage: React.FC = () => {
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="text-[#A1A1AA] font-medium">Debet Məbləği</label>
+                                    <label className="text-[#A1A1AA] font-medium">{t('accounting.debitAmount', {}, 'Debet Məbləği')}</label>
                                     <input
                                         type="number"
                                         step="0.01"
@@ -576,7 +578,7 @@ export const AccountDetailPage: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-[#A1A1AA] font-medium">Kredit Məbləği</label>
+                                    <label className="text-[#A1A1AA] font-medium">{t('accounting.creditAmount', {}, 'Kredit Məbləği')}</label>
                                     <input
                                         type="number"
                                         step="0.01"
@@ -594,7 +596,7 @@ export const AccountDetailPage: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="text-[#A1A1AA] font-medium">Qalıq Tarixi</label>
+                                <label className="text-[#A1A1AA] font-medium">{t('common.asOfDate', {}, 'Qalıq Tarixi')}</label>
                                 <input
                                     type="date"
                                     required
@@ -605,10 +607,10 @@ export const AccountDetailPage: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="text-[#A1A1AA] font-medium">Qeydlər</label>
+                                <label className="text-[#A1A1AA] font-medium">{t('common.notes', {}, 'Qeydlər')}</label>
                                 <input
                                     type="text"
-                                    placeholder="İlkin saldo qeydi..."
+                                    placeholder={t('common.notesPlaceholder', {}, 'İlkin saldo qeydi...')}
                                     value={balanceForm.notes}
                                     onChange={(e) => setBalanceForm({ ...balanceForm, notes: e.target.value })}
                                     className="w-full mt-1 px-3 py-2 rounded-xl bg-[#141416] border border-[#2C2C2E] text-white placeholder:text-[#71717A] focus:outline-none focus:border-white"
@@ -621,14 +623,14 @@ export const AccountDetailPage: React.FC = () => {
                                     onClick={() => setShowBalanceModal(false)}
                                     className="px-4 py-2 rounded-xl border border-[#2C2C2E] text-xs font-semibold text-[#A1A1AA] hover:text-white"
                                 >
-                                    İmtina
+                                    {t('common.cancel', {}, 'İmtina')}
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={balanceLoading}
                                     className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
                                 >
-                                    {balanceLoading ? 'Yadda saxlanılır...' : 'Təsdiqlə'}
+                                    {balanceLoading ? t('common.saving', {}, 'Yadda saxlanılır...') : t('common.confirm', {}, 'Təsdiqlə')}
                                 </button>
                             </div>
                         </form>

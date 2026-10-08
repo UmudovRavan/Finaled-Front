@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { inventoryService, accountsService, customersService } from '../../api';
 import type { WarehouseDto, AccountDto, StockLedgerEntryDto, ItemDto } from '../../dto';
+import { useLanguage } from '../../i18n';
 import {
     ArrowLeftIcon,
     ArrowPathIcon,
@@ -27,6 +28,7 @@ import {
 export const WarehouseDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { t } = useLanguage();
 
     const [warehouse, setWarehouse] = useState<WarehouseDto | null>(null);
     const [accounts, setAccounts] = useState<AccountDto[]>([]);
@@ -208,7 +210,7 @@ export const WarehouseDetailPage: React.FC = () => {
         return (
             <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3 font-sans text-white">
                 <ArrowPathIcon className="w-8 h-8 animate-spin text-zinc-400" />
-                <span className="text-xs text-zinc-400">Anbar məlumatları yüklənir...</span>
+                <span className="text-xs text-zinc-400">{t('common.loading', {}, 'Anbar məlumatları yüklənir...')}</span>
             </div>
         );
     }
@@ -219,14 +221,14 @@ export const WarehouseDetailPage: React.FC = () => {
                 <div className="w-12 h-12 rounded-2xl bg-white/5 border border-[#27272A] mx-auto flex items-center justify-center text-zinc-400">
                     <BuildingStorefrontIcon className="w-6 h-6" />
                 </div>
-                <h2 className="text-base font-bold">Anbar tapılmadı</h2>
-                <p className="text-xs text-zinc-400">Axtardığınız anbar mövcud deyil və ya silinib.</p>
+                <h2 className="text-base font-bold">{t('common.noRecordsFound', {}, 'Anbar tapılmadı')}</h2>
+                <p className="text-xs text-zinc-400">{t('common.noRecordsFound', {}, 'Axtardığınız anbar mövcud deyil və ya silinib.')}</p>
                 <Link
                     to="/warehouses"
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors"
                 >
                     <ArrowLeftIcon className="w-4 h-4" />
-                    <span>Anbarlar siyahısına qayıt</span>
+                    <span>{t('inventory.warehousesTitle', {}, 'Anbarlar siyahısına qayıt')}</span>
                 </Link>
             </div>
         );
@@ -240,7 +242,7 @@ export const WarehouseDetailPage: React.FC = () => {
                     <button
                         onClick={() => navigate('/warehouses')}
                         className="p-2 rounded-xl bg-[#18181B] border border-[#27272A] text-zinc-400 hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer"
-                        title="Geri"
+                        title={t('common.back', {}, 'Geri')}
                     >
                         <ArrowLeftIcon className="w-4 h-4" />
                     </button>
@@ -256,11 +258,11 @@ export const WarehouseDetailPage: React.FC = () => {
                                         : 'bg-zinc-800 text-zinc-400 border-zinc-700'
                                 }`}
                             >
-                                {warehouse.isActive ? 'Aktiv Anbar' : 'Qeyri-aktiv'}
+                                {warehouse.isActive ? t('statuses.active', {}, 'Aktiv Anbar') : t('statuses.inactive', {}, 'Qeyri-aktiv')}
                             </span>
                         </div>
                         <p className="text-xs text-zinc-400 mt-0.5">
-                            {warehouse.location || 'Fiziki ünvan qeyd olunmayıb'}
+                            {warehouse.location || t('inventory.location', {}, 'Fiziki ünvan qeyd olunmayıb')}
                         </p>
                     </div>
                 </div>
@@ -270,7 +272,7 @@ export const WarehouseDetailPage: React.FC = () => {
                         onClick={() => loadWarehouseDetails(true)}
                         disabled={isRefreshing}
                         className="p-2 rounded-xl bg-[#18181B] border border-[#27272A] text-zinc-400 hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer disabled:opacity-50"
-                        title="Yenilə"
+                        title={t('common.refresh', {}, 'Yenilə')}
                     >
                         <ArrowPathIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                     </button>
@@ -279,7 +281,7 @@ export const WarehouseDetailPage: React.FC = () => {
                         className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-semibold transition-all shadow-xs cursor-pointer"
                     >
                         <PlusIcon className="w-4 h-4 text-black" />
-                        <span>Məhsul Qəbulu (İrsaliyə)</span>
+                        <span>{t('procurement.newGrn', {}, 'Məhsul Qəbulu (İrsaliyə)')}</span>
                     </Link>
                 </div>
             </div>
@@ -288,11 +290,11 @@ export const WarehouseDetailPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between">
                     <div>
-                        <div className="text-[11px] font-medium text-zinc-400">Toplam Stok Dəyəri</div>
+                        <div className="text-[11px] font-medium text-zinc-400">{t('inventory.stockValue', {}, 'Toplam Stok Dəyəri')}</div>
                         <div className="text-xl font-bold text-white mt-0.5">
                             {formatCurrency(warehouseStockSummary.totalStockValue)}
                         </div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">Anbardakı cari balans</div>
+                        <div className="text-[10px] text-zinc-500 mt-0.5">{t('inventory.stockValue', {}, 'Anbardakı cari balans')}</div>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-300">
                         <BanknotesIcon className="w-5 h-5" />
@@ -301,11 +303,11 @@ export const WarehouseDetailPage: React.FC = () => {
 
                 <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between">
                     <div>
-                        <div className="text-[11px] font-medium text-zinc-400">Məhsul Çeşidi</div>
+                        <div className="text-[11px] font-medium text-zinc-400">{t('common.itemsCount', {}, 'Məhsul Çeşidi')}</div>
                         <div className="text-xl font-bold text-white mt-0.5">
-                            {warehouseStockSummary.totalItemsCount} növ
+                            {warehouseStockSummary.totalItemsCount}
                         </div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">Mövcud qalıqlı məhsullar</div>
+                        <div className="text-[10px] text-zinc-500 mt-0.5">{t('inventory.stockItemsList', {}, 'Mövcud qalıqlı məhsullar')}</div>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-300">
                         <CubeIcon className="w-5 h-5" />
@@ -314,11 +316,11 @@ export const WarehouseDetailPage: React.FC = () => {
 
                 <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between">
                     <div>
-                        <div className="text-[11px] font-medium text-zinc-400">Ümumi Qalıq Sayı</div>
+                        <div className="text-[11px] font-medium text-zinc-400">{t('common.totalQuantity', {}, 'Ümumi Qalıq Sayı')}</div>
                         <div className="text-xl font-bold text-white mt-0.5">
-                            {warehouseStockSummary.totalStockOnHand.toLocaleString('az-AZ')}
+                            {warehouseStockSummary.totalStockOnHand.toLocaleString()}
                         </div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">Bütün vahidlər cəmi</div>
+                        <div className="text-[10px] text-zinc-500 mt-0.5">{t('common.totalQuantity', {}, 'Bütün vahidlər cəmi')}</div>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-300">
                         <CircleStackIcon className="w-5 h-5" />
@@ -327,12 +329,12 @@ export const WarehouseDetailPage: React.FC = () => {
 
                 <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between">
                     <div>
-                        <div className="text-[11px] font-medium text-zinc-400">Son Stok Hərəkəti</div>
+                        <div className="text-[11px] font-medium text-zinc-400">{t('inventory.stockLedgerTitle', {}, 'Son Stok Hərəkəti')}</div>
                         <div className="text-xs font-bold text-white mt-1">
-                            {lastTransaction ? formatDate(lastTransaction.postingDate || lastTransaction.date) : 'Hərəkət yoxdur'}
+                            {lastTransaction ? formatDate(lastTransaction.postingDate || lastTransaction.date) : t('common.noRecordsFound', {}, 'Hərəkət yoxdur')}
                         </div>
                         <div className="text-[10px] text-zinc-500 mt-0.5">
-                            {lastTransaction ? `${lastTransaction.itemCode || ''} (${lastTransaction.qtyIn ? '+' + lastTransaction.qtyIn : '-' + lastTransaction.qtyOut})` : 'Stok hərəkəti qeydə alınmayıb'}
+                            {lastTransaction ? `${lastTransaction.itemCode || ''} (${lastTransaction.qtyIn ? '+' + lastTransaction.qtyIn : '-' + lastTransaction.qtyOut})` : t('common.noRecordsFound', {}, 'Stok hərəkəti qeydə alınmayıb')}
                         </div>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-300">
@@ -349,39 +351,39 @@ export const WarehouseDetailPage: React.FC = () => {
                         <div className="flex items-center justify-between pb-3 border-b border-[#27272A]">
                             <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
                                 <BuildingStorefrontIcon className="w-4 h-4 text-zinc-500" />
-                                <span>Anbar Parametrləri</span>
+                                <span>{t('inventory.warehouseDetails', {}, 'Anbar Parametrləri')}</span>
                             </h3>
                         </div>
 
                         <div className="space-y-3 text-xs">
                             <div>
-                                <span className="text-[11px] text-zinc-500 block">Anbar Kodu</span>
+                                <span className="text-[11px] text-zinc-500 block">{t('inventory.warehouseCode', {}, 'Anbar Kodu')}</span>
                                 <span className="font-mono font-bold text-white mt-0.5 block">{warehouse.code}</span>
                             </div>
 
                             <div>
-                                <span className="text-[11px] text-zinc-500 block">Anbar Adı</span>
+                                <span className="text-[11px] text-zinc-500 block">{t('inventory.warehouseName', {}, 'Anbar Adı')}</span>
                                 <span className="font-semibold text-white mt-0.5 block">{warehouse.name}</span>
                             </div>
 
                             <div>
-                                <span className="text-[11px] text-zinc-500 block">Yerləşmə / Ünvan</span>
+                                <span className="text-[11px] text-zinc-500 block">{t('inventory.location', {}, 'Yerləşmə / Ünvan')}</span>
                                 <div className="flex items-start gap-1.5 mt-0.5 text-zinc-300">
                                     <MapPinIcon className="w-3.5 h-3.5 text-zinc-500 shrink-0 mt-0.5" />
-                                    <span>{warehouse.location || 'Ünvan daxil edilməyib'}</span>
+                                    <span>{warehouse.location || t('inventory.location', {}, 'Ünvan daxil edilməyib')}</span>
                                 </div>
                             </div>
 
                             <div>
-                                <span className="text-[11px] text-zinc-500 block">Məsul Şəxs (Menecer)</span>
+                                <span className="text-[11px] text-zinc-500 block">{t('inventory.manager', {}, 'Məsul Şəxs (Menecer)')}</span>
                                 <div className="flex items-center gap-1.5 mt-0.5 text-zinc-300">
                                     <UserIcon className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-                                    <span>{warehouse.managerName || 'Təyin edilməyib'}</span>
+                                    <span>{warehouse.managerName || t('common.none', {}, 'Təyin edilməyib')}</span>
                                 </div>
                             </div>
 
                             <div>
-                                <span className="text-[11px] text-zinc-500 block">Əlaqə Nömrəsi</span>
+                                <span className="text-[11px] text-zinc-500 block">{t('customers.phone', {}, 'Əlaqə Nömrəsi')}</span>
                                 <div className="flex items-center gap-1.5 mt-0.5 text-zinc-300">
                                     <PhoneIcon className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                                     <span>{warehouse.phone || '—'}</span>
@@ -389,21 +391,21 @@ export const WarehouseDetailPage: React.FC = () => {
                             </div>
 
                             <div>
-                                <span className="text-[11px] text-zinc-500 block">Mühasibatlıq Stok Hesabı (GL)</span>
+                                <span className="text-[11px] text-zinc-500 block">{t('customers.inventoryAccount', {}, 'Mühasibatlıq Stok Hesabı (GL)')}</span>
                                 <div className="mt-0.5 p-2 rounded-xl bg-[#18181B] border border-[#27272A] text-zinc-300">
                                     {defaultGlAccount ? (
                                         <div className="font-mono text-[11px]">
                                             <span className="font-bold text-white">{defaultGlAccount.code}</span> - {defaultGlAccount.name}
                                         </div>
                                     ) : (
-                                        <span className="text-zinc-500 text-[11px]">Standart Şirkət Stok Hesabı</span>
+                                        <span className="text-zinc-500 text-[11px]">{t('common.none', {}, 'Standart Şirkət Stok Hesabı')}</span>
                                     )}
                                 </div>
                             </div>
 
                             {warehouse.notes && (
                                 <div>
-                                    <span className="text-[11px] text-zinc-500 block">Qeydlər</span>
+                                    <span className="text-[11px] text-zinc-500 block">{t('common.notes', {}, 'Qeydlər')}</span>
                                     <p className="mt-0.5 p-2.5 rounded-xl bg-[#18181B] border border-[#27272A] text-zinc-300 text-xs">
                                         {warehouse.notes}
                                     </p>
@@ -427,7 +429,7 @@ export const WarehouseDetailPage: React.FC = () => {
                                             : 'text-zinc-400 hover:text-white'
                                     }`}
                                 >
-                                    Məhsul Qalıqları ({warehouseStockSummary.items.length})
+                                    {t('inventory.stockItemsList', {}, 'Məhsul Qalıqları')} ({warehouseStockSummary.items.length})
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('ledger')}
@@ -437,7 +439,7 @@ export const WarehouseDetailPage: React.FC = () => {
                                             : 'text-zinc-400 hover:text-white'
                                     }`}
                                 >
-                                    Stok Hərəkətləri ({ledgerEntries.length})
+                                    {t('inventory.stockLedgerTitle', {}, 'Stok Hərəkətləri')} ({ledgerEntries.length})
                                 </button>
                             </div>
 
@@ -447,7 +449,7 @@ export const WarehouseDetailPage: React.FC = () => {
                                     type="text"
                                     value={tableSearch}
                                     onChange={(e) => setTableSearch(e.target.value)}
-                                    placeholder="Cədvəldə axtar..."
+                                    placeholder={t('common.searchPlaceholder', {}, 'Cədvəldə axtar...')}
                                     className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white placeholder-zinc-500 focus:border-zinc-500 focus:outline-hidden transition-colors"
                                 />
                                 {tableSearch && (
@@ -467,11 +469,11 @@ export const WarehouseDetailPage: React.FC = () => {
                                 <table className="w-full text-left text-xs">
                                     <thead>
                                         <tr className="border-b border-[#27272A] bg-[#18181B] text-zinc-400 uppercase text-[10px] font-bold tracking-wider">
-                                            <th className="py-3 px-4">Məhsul Kodu</th>
-                                            <th className="py-3 px-4">Məhsul Adı</th>
-                                            <th className="py-3 px-4 text-right">Qalıq (Say)</th>
-                                            <th className="py-3 px-4 text-right">Orta Maya Dəyəri</th>
-                                            <th className="py-3 px-4 text-right">Toplam Dəyər</th>
+                                            <th className="py-3 px-4">{t('customers.itemCode', {}, 'Məhsul Kodu')}</th>
+                                            <th className="py-3 px-4">{t('customers.itemName', {}, 'Məhsul Adı')}</th>
+                                            <th className="py-3 px-4 text-right">{t('inventory.stockItemsList', {}, 'Qalıq (Say)')}</th>
+                                            <th className="py-3 px-4 text-right">{t('customers.averageCost', {}, 'Orta Maya Dəyəri')}</th>
+                                            <th className="py-3 px-4 text-right">{t('inventory.stockValue', {}, 'Toplam Dəyər')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[#27272A]">
@@ -480,10 +482,10 @@ export const WarehouseDetailPage: React.FC = () => {
                                                 <td colSpan={5} className="py-12 text-center text-zinc-500">
                                                     <CubeIcon className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
                                                     <p className="text-xs font-semibold text-zinc-400">
-                                                        Bu anbarda heç bir məhsul qalığı qeydə alınmayıb.
+                                                        {t('common.noRecordsFound', {}, 'Bu anbarda heç bir məhsul qalığı qeydə alınmayıb.')}
                                                     </p>
                                                     <p className="text-[11px] text-zinc-500 mt-1">
-                                                        Məhsul qəbulu və ya transfer əməliyyatı həyata keçirdikdə qalıqlar burada əks olunacaq.
+                                                        {t('inventory.warehousesSubtitle', {}, 'Məhsul qəbulu və ya transfer əməliyyatı həyata keçirdikdə qalıqlar burada əks olunacaq.')}
                                                     </p>
                                                 </td>
                                             </tr>
@@ -506,7 +508,7 @@ export const WarehouseDetailPage: React.FC = () => {
                                                         {item.itemName}
                                                     </td>
                                                     <td className="py-3 px-4 text-right font-mono font-semibold text-white">
-                                                        {item.balanceQty.toLocaleString('az-AZ')}
+                                                        {item.balanceQty.toLocaleString()}
                                                     </td>
                                                     <td className="py-3 px-4 text-right font-mono text-zinc-400">
                                                         {formatCurrency(item.valuationRate)}
@@ -528,13 +530,13 @@ export const WarehouseDetailPage: React.FC = () => {
                                 <table className="w-full text-left text-xs">
                                     <thead>
                                         <tr className="border-b border-[#27272A] bg-[#18181B] text-zinc-400 uppercase text-[10px] font-bold tracking-wider">
-                                            <th className="py-3 px-4">Tarix</th>
-                                            <th className="py-3 px-4">Məhsul</th>
-                                            <th className="py-3 px-4">Sənəd / Əməliyyat</th>
-                                            <th className="py-3 px-4 text-right">Giriş (+)</th>
-                                            <th className="py-3 px-4 text-right">Çıxış (-)</th>
-                                            <th className="py-3 px-4 text-right">Son Qalıq</th>
-                                            <th className="py-3 px-4 text-right">Balans Dəyəri</th>
+                                            <th className="py-3 px-4">{t('common.date', {}, 'Tarix')}</th>
+                                            <th className="py-3 px-4">{t('inventory.stockLedgerTitle', {}, 'Məhsul')}</th>
+                                            <th className="py-3 px-4">{t('common.details', {}, 'Sənəd / Əməliyyat')}</th>
+                                            <th className="py-3 px-4 text-right">{t('inventory.typeReceipt', {}, 'Giriş (+)')}</th>
+                                            <th className="py-3 px-4 text-right">{t('inventory.typeIssue', {}, 'Çıxış (-)')}</th>
+                                            <th className="py-3 px-4 text-right">{t('inventory.stockItemsList', {}, 'Son Qalıq')}</th>
+                                            <th className="py-3 px-4 text-right">{t('inventory.stockValue', {}, 'Balans Dəyəri')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[#27272A]">
@@ -543,7 +545,7 @@ export const WarehouseDetailPage: React.FC = () => {
                                                 <td colSpan={7} className="py-12 text-center text-zinc-500">
                                                     <ClockIcon className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
                                                     <p className="text-xs font-semibold text-zinc-400">
-                                                        Heç bir stok hərəkəti qeydi tapılmadı.
+                                                        {t('common.noRecordsFound', {}, 'Heç bir stok hərəkəti qeydi tapılmadı.')}
                                                     </p>
                                                 </td>
                                             </tr>
@@ -570,13 +572,13 @@ export const WarehouseDetailPage: React.FC = () => {
                                                                 {entry.sourceDocumentNumber || entry.referenceNumber || '—'}
                                                             </div>
                                                             <div className="text-[10px] text-zinc-500">
-                                                                {String(entry.sourceDocumentType || entry.transactionType || 'Hərəkət')}
+                                                                {String(entry.sourceDocumentType || entry.transactionType || t('inventory.stockLedgerTitle', {}, 'Hərəkət'))}
                                                             </div>
                                                         </td>
                                                         <td className="py-3 px-4 text-right font-mono">
                                                             {qtyIn > 0 ? (
                                                                 <span className="text-emerald-400 font-bold">
-                                                                    +{qtyIn.toLocaleString('az-AZ')}
+                                                                    +{qtyIn.toLocaleString()}
                                                                 </span>
                                                             ) : (
                                                                 <span className="text-zinc-600">—</span>
@@ -585,14 +587,14 @@ export const WarehouseDetailPage: React.FC = () => {
                                                         <td className="py-3 px-4 text-right font-mono">
                                                             {qtyOut > 0 ? (
                                                                 <span className="text-rose-400 font-bold">
-                                                                    -{qtyOut.toLocaleString('az-AZ')}
+                                                                    -{qtyOut.toLocaleString()}
                                                                 </span>
                                                             ) : (
                                                                 <span className="text-zinc-600">—</span>
                                                             )}
                                                         </td>
                                                         <td className="py-3 px-4 text-right font-mono font-semibold text-white">
-                                                            {Number(entry.balanceQty ?? entry.runningBalance ?? 0).toLocaleString('az-AZ')}
+                                                            {Number(entry.balanceQty ?? entry.runningBalance ?? 0).toLocaleString()}
                                                         </td>
                                                         <td className="py-3 px-4 text-right font-mono font-bold text-white">
                                                             {formatCurrency(entry.balanceValue)}

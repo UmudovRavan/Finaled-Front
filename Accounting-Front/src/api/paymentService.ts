@@ -550,50 +550,91 @@ export const paymentService = {
             Boolean(id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id).trim()));
 
         // 1. Resolve Bank/Cash GL Account ID (Must reference Accounts table)
-        let glAccountId = isValidGuid(data.glAccountId)
+        let candidateId = isValidGuid(data.glAccountId)
             ? String(data.glAccountId).trim()
             : (isValidGuid(data.bankOrCashAccountId) ? String(data.bankOrCashAccountId).trim() : undefined);
 
-        // If not directly given, check bankAccountId
-        if (!glAccountId && data.bankAccountId) {
+        let glAccountId: string | undefined = undefined;
+
+        // Fetch GL accounts from accountsService to ensure we point to the Accounts table
+        let accounts: any[] = [];
+        try {
+            accounts = await accountsService.getAccounts();
+        } catch (err) {
+            console.warn('[paymentService] Failed to fetch accounts:', err);
+        }
+
+        // Verify if candidateId exists directly in the GL Accounts table
+        if (candidateId && accounts.some((a: any) => a.id === candidateId)) {
+            glAccountId = candidateId;
+        }
+
+        // If candidateId is not a GL Account (e.g. it is a Treasury BankAccount ID), check bank accounts
+        const bankAccId = data.bankAccountId || (!glAccountId && candidateId ? candidateId : undefined);
+        if (!glAccountId && bankAccId) {
             try {
                 const banks = await paymentService.getBankAccounts();
-                const matchedBank = banks.find((b) => b.id === data.bankAccountId);
-                if (matchedBank?.glAccountId && isValidGuid(matchedBank.glAccountId)) {
+                const matchedBank = banks.find((b) => b.id === bankAccId);
+                if (matchedBank?.glAccountId && accounts.some((a: any) => a.id === matchedBank.glAccountId)) {
                     glAccountId = matchedBank.glAccountId;
+                } else if (matchedBank?.accountName || matchedBank?.bankName) {
+                    const bName = String(matchedBank.bankName || matchedBank.accountName || '').toLowerCase();
+                    const matchedGlByName = accounts.find((a: any) =>
+                        a.name && (bName.includes(a.name.toLowerCase()) || a.name.toLowerCase().includes(bName))
+                    );
+                    if (matchedGlByName?.id) {
+                        glAccountId = matchedGlByName.id;
+                    }
                 }
             } catch {
                 // ignore
             }
         }
 
-        // If still not resolved, query GL accounts from accountsService
-        if (!glAccountId) {
-            try {
-                const accounts = await accountsService.getAccounts();
-                const isCash = data.paymentMethod === 'Cash' || String(data.bankAccountName || '').toLowerCase().includes('kassa');
+        // If still not resolved, query GL accounts for standard Bank/Cash accounts
+        if (!glAccountId && accounts.length > 0) {
+            const isCash = data.paymentMethod === 'Cash' ||
+                String(data.bankAccountName || '').toLowerCase().includes('kassa') ||
+                String(data.notes || '').toLowerCase().includes('kassa');
 
-                if (isCash) {
-                    const cashAcc = accounts.find((a: any) => a.code === '1010' || String(a.name || '').toLowerCase().includes('kassa') || Number(a.type) === 2);
-                    if (cashAcc?.id && isValidGuid(cashAcc.id)) {
-                        glAccountId = cashAcc.id;
-                    }
-                } else {
-                    const bankAcc = accounts.find((a: any) => a.code === '1020' || String(a.name || '').toLowerCase().includes('bank') || Number(a.type) === 3);
-                    if (bankAcc?.id && isValidGuid(bankAcc.id)) {
-                        glAccountId = bankAcc.id;
-                    }
+            if (isCash) {
+                // Look for code 1010, 101, or Cash account
+                const cashAcc = accounts.find((a: any) =>
+                    a.code === '1010' || a.code === '101' ||
+                    Number(a.type) === 4 || Number(a.type) === 2 ||
+                    String(a.name || '').toLowerCase().includes('kassa') ||
+                    String(a.name || '').toLowerCase().includes('cash')
+                );
+                if (cashAcc?.id) {
+                    glAccountId = cashAcc.id;
                 }
+            } else {
+                // Look for code 1020, 102, or Bank account
+                const bankAcc = accounts.find((a: any) =>
+                    a.code === '1020' || a.code === '102' ||
+                    Number(a.type) === 3 ||
+                    String(a.name || '').toLowerCase().includes('bank')
+                );
+                if (bankAcc?.id) {
+                    glAccountId = bankAcc.id;
+                }
+            }
 
-                // If still not found, fallback to any Asset account
-                if (!glAccountId) {
-                    const assetAcc = accounts.find((a: any) => Number(a.category) === 1 || String(a.category || a.type || '').toLowerCase() === 'asset');
-                    if (assetAcc?.id && isValidGuid(assetAcc.id)) {
-                        glAccountId = assetAcc.id;
-                    }
+            // Fallback: any Asset account (category 1)
+            if (!glAccountId) {
+                const assetAcc = accounts.find((a: any) =>
+                    Number(a.category) === 1 ||
+                    String(a.category || a.type || '').toLowerCase() === 'asset' ||
+                    String(a.category || a.type || '').toLowerCase() === 'active'
+                );
+                if (assetAcc?.id) {
+                    glAccountId = assetAcc.id;
                 }
-            } catch {
-                // ignore
+            }
+
+            // Fallback: first account in list
+            if (!glAccountId && accounts[0]?.id) {
+                glAccountId = accounts[0].id;
             }
         }
 

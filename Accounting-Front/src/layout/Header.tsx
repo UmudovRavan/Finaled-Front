@@ -113,7 +113,7 @@ export const Header: React.FC<HeaderProps> = ({
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Axtarış (Ctrl+K)..."
+                        placeholder={`${t('common.search', {}, 'Axtarış...')} (Ctrl+K)`}
                         className="w-full pl-9 pr-8 py-1.5 rounded-lg bg-[#18181B] border border-[#27272A] text-xs text-white placeholder-[#71717A] focus:outline-none focus:border-emerald-500 transition-colors"
                     />
                     <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-[#71717A] font-mono pointer-events-none hidden sm:inline">
@@ -128,14 +128,14 @@ export const Header: React.FC<HeaderProps> = ({
                 <div ref={langRef} className="relative">
                     <button
                         onClick={() => setShowLangDropdown(!showLangDropdown)}
-                        className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors"
+                        className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-semibold text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
                     >
-                        <span>{language.toUpperCase()}</span>
+                        <span>{language === 'az' ? '🇦🇿 AZ' : language === 'en' ? '🇬🇧 EN' : '🇷🇺 RU'}</span>
                         <ChevronDownIcon className="w-3 h-3" />
                     </button>
 
                     {showLangDropdown && (
-                        <div className="absolute right-0 mt-1 w-40 rounded-xl bg-[#18181B] border border-[#27272A] shadow-xl py-1 z-50 text-xs">
+                        <div className="absolute right-0 mt-1 w-44 rounded-xl bg-[#18181B] border border-[#27272A] shadow-xl py-1 z-50 text-xs animate-in fade-in duration-150">
                             {languages.map((l) => (
                                 <button
                                     key={l.code}
@@ -143,11 +143,14 @@ export const Header: React.FC<HeaderProps> = ({
                                         setLanguage(l.code);
                                         setShowLangDropdown(false);
                                     }}
-                                    className={`w-full flex items-center justify-between px-3 py-2 hover:bg-white/5 transition-colors ${
-                                        language === l.code ? 'text-emerald-400 font-bold' : 'text-[#D4D4D8]'
+                                    className={`w-full flex items-center justify-between px-3 py-2 hover:bg-white/5 transition-colors cursor-pointer ${
+                                        language === l.code ? 'text-emerald-400 font-bold bg-emerald-500/10' : 'text-[#D4D4D8]'
                                     }`}
                                 >
-                                    <span>{l.label}</span>
+                                    <span className="flex items-center gap-2">
+                                        <span>{l.flag}</span>
+                                        <span>{l.name}</span>
+                                    </span>
                                     {language === l.code && <CheckIcon className="w-3.5 h-3.5 text-emerald-400" />}
                                 </button>
                             ))}
@@ -158,8 +161,8 @@ export const Header: React.FC<HeaderProps> = ({
                 {/* Theme Toggle Button */}
                 <button
                     onClick={toggleTheme}
-                    className="p-1.5 rounded-lg text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors"
-                    title={isDark ? 'Açıq rejim' : 'Qaranlıq rejim'}
+                    className="p-1.5 rounded-lg text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                    title={isDark ? t('settings.themeLight', {}, 'Açıq rejim') : t('settings.themeDark', {}, 'Qaranlıq rejim')}
                 >
                     {isDark ? <SunIcon className="w-4 h-4 text-amber-400" /> : <MoonIcon className="w-4 h-4 text-indigo-400" />}
                 </button>
@@ -168,7 +171,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <div ref={userRef} className="relative">
                     <button
                         onClick={() => setShowUserDropdown(!showUserDropdown)}
-                        className="flex items-center gap-2 p-1 pl-2 rounded-xl hover:bg-white/5 transition-colors"
+                        className="flex items-center gap-2 p-1 pl-2 rounded-xl hover:bg-white/5 transition-colors cursor-pointer"
                     >
                         <div className="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
                             {displayName.slice(0, 2).toUpperCase()}
@@ -181,7 +184,7 @@ export const Header: React.FC<HeaderProps> = ({
                     </button>
 
                     {showUserDropdown && (
-                        <div className="absolute right-0 mt-1 w-56 rounded-2xl bg-[#18181B] border border-[#27272A] shadow-2xl py-1 z-50 text-xs">
+                        <div className="absolute right-0 mt-1 w-56 rounded-2xl bg-[#18181B] border border-[#27272A] shadow-2xl py-1 z-50 text-xs animate-in fade-in duration-150">
                             <div className="px-4 py-3 border-b border-[#27272A]">
                                 <p className="font-bold text-white truncate">{displayName}</p>
                                 <p className="text-[11px] text-[#71717A] truncate">{displayEmail}</p>
@@ -190,20 +193,20 @@ export const Header: React.FC<HeaderProps> = ({
                             <div className="py-1">
                                 <button
                                     onClick={openSettings}
-                                    className="w-full flex items-center gap-2.5 px-4 py-2 text-[#D4D4D8] hover:bg-white/5 hover:text-white transition-colors"
+                                    className="w-full flex items-center gap-2.5 px-4 py-2 text-[#D4D4D8] hover:bg-white/5 hover:text-white transition-colors cursor-pointer"
                                 >
                                     <Cog6ToothIcon className="w-4 h-4 text-[#A1A1AA]" />
-                                    <span>Tənzimləmələr</span>
+                                    <span>{t('nav.settings', {}, 'Tənzimləmələr')}</span>
                                 </button>
                             </div>
 
                             <div className="pt-1 border-t border-[#27272A]">
                                 <button
                                     onClick={handleLogout}
-                                    className="w-full flex items-center gap-2.5 px-4 py-2 text-rose-400 hover:bg-rose-500/10 transition-colors font-semibold"
+                                    className="w-full flex items-center gap-2.5 px-4 py-2 text-rose-400 hover:bg-rose-500/10 transition-colors font-semibold cursor-pointer"
                                 >
                                     <ArrowRightOnRectangleIcon className="w-4 h-4" />
-                                    <span>Çıxış et</span>
+                                    <span>{t('nav.logout', {}, 'Çıxış')}</span>
                                 </button>
                             </div>
                         </div>

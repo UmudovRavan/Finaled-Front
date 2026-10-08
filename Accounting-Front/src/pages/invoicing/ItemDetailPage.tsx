@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { customersService, accountsService, inventoryService } from '../../api';
 import type { ItemDto, AccountDto, StockLedgerEntryDto } from '../../dto';
 import { formatDate } from '../../utils';
+import { useLanguage } from '../../context/LanguageContext';
 import {
     ArrowLeftIcon,
     ArrowPathIcon,
@@ -19,6 +20,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 export const ItemDetailPage: React.FC = () => {
+    const { t } = useLanguage();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
 
@@ -77,7 +79,7 @@ export const ItemDetailPage: React.FC = () => {
             return (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
                     <CubeIcon className="w-3.5 h-3.5" />
-                    <span>Stok Məhsulu</span>
+                    <span>{t('items.stockItem', {}, 'Stok Məhsulu')}</span>
                 </span>
             );
         }
@@ -85,14 +87,14 @@ export const ItemDetailPage: React.FC = () => {
             return (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                     <SparklesIcon className="w-3.5 h-3.5" />
-                    <span>Xidmət</span>
+                    <span>{t('items.service', {}, 'Xidmət')}</span>
                 </span>
             );
         }
         return (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
                 <TagIcon className="w-3.5 h-3.5" />
-                <span>Qeyri-stok Məhsulu</span>
+                <span>{t('items.nonStockItem', {}, 'Qeyri-stok Məhsulu')}</span>
             </span>
         );
     };
@@ -109,7 +111,7 @@ export const ItemDetailPage: React.FC = () => {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-[#71717A] space-y-3">
                 <ArrowPathIcon className="w-8 h-8 animate-spin text-white" />
-                <p className="text-sm font-medium">Məhsul məlumatları yüklənir...</p>
+                <p className="text-sm font-medium">{t('common.loading', {}, 'Məhsul məlumatları yüklənir...')}</p>
             </div>
         );
     }
@@ -117,12 +119,12 @@ export const ItemDetailPage: React.FC = () => {
     if (!item) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-                <p className="text-base font-semibold text-white mb-4">Məhsul və ya xidmət tapılmadı.</p>
+                <p className="text-base font-semibold text-white mb-4">{t('common.notFound', {}, 'Məhsul və ya xidmət tapılmadı.')}</p>
                 <Link
                     to="/items"
                     className="inline-flex items-center gap-2 px-4 py-2 text-xs font-medium text-white bg-[#27272A] rounded-xl hover:bg-[#3F3F46] transition-colors"
                 >
-                    <ArrowLeftIcon className="w-4 h-4" /> Məhsullar Siyahısına Qayıt
+                    <ArrowLeftIcon className="w-4 h-4" /> {t('items.title', {}, 'Məhsullar')}
                 </Link>
             </div>
         );
@@ -136,13 +138,13 @@ export const ItemDetailPage: React.FC = () => {
                     <button
                         onClick={() => navigate('/items')}
                         className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                        title="Geri"
+                        title={t('common.back', {}, 'Geri')}
                     >
                         <ArrowLeftIcon className="w-4 h-4" />
                     </button>
                     <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
                         <Link to="/items" className="hover:text-zinc-300 transition-colors">
-                            Məhsul və Xidmətlər
+                            {t('items.title', {}, 'Məhsul və Xidmətlər')}
                         </Link>
                         <span className="text-[#52525B]">/</span>
                         <span className="font-mono text-white">{item.code}</span>
@@ -154,7 +156,7 @@ export const ItemDetailPage: React.FC = () => {
                     <button
                         onClick={fetchItemDetails}
                         className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                        title="Yenilə"
+                        title={t('common.refresh', {}, 'Yenilə')}
                     >
                         <ArrowPathIcon className="w-4 h-4" />
                     </button>
@@ -173,10 +175,10 @@ export const ItemDetailPage: React.FC = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {/* Current Stock */}
                 <div className="p-4 rounded-2xl bg-[#121214] border border-[#27272A]">
-                    <span className="text-xs text-[#A1A1AA] font-semibold block">Mövcud Stok Qalığı</span>
+                    <span className="text-xs text-[#A1A1AA] font-semibold block">{t('items.stockOnHand', {}, 'Mövcud Stok Qalığı')}</span>
                     <span className="text-base font-mono font-bold text-white mt-1 block">
                         {String(item.type) === 'Service' || String(item.type) === '3' ? (
-                            <span className="text-[#52525B]">Xidmət</span>
+                            <span className="text-[#52525B]">{t('items.service', {}, 'Xidmət')}</span>
                         ) : (
                             <span>{Number(item.totalStockOnHand) || 0} {item.baseUOM || 'PCS'}</span>
                         )}
@@ -185,7 +187,7 @@ export const ItemDetailPage: React.FC = () => {
 
                 {/* Stock Total Value */}
                 <div className="p-4 rounded-2xl bg-[#121214] border border-[#27272A]">
-                    <span className="text-xs text-[#A1A1AA] font-semibold block">Ümumi Stok Dəyəri</span>
+                    <span className="text-xs text-[#A1A1AA] font-semibold block">{t('items.stockValue', {}, 'Ümumi Stok Dəyəri')}</span>
                     <span className="text-base font-mono font-bold text-emerald-400 mt-1 block">
                         {String(item.type) === 'Service' || String(item.type) === '3' ? (
                             <span className="text-[#52525B]">—</span>
@@ -197,7 +199,7 @@ export const ItemDetailPage: React.FC = () => {
 
                 {/* Buying / Cost Price */}
                 <div className="p-4 rounded-2xl bg-[#121214] border border-[#27272A]">
-                    <span className="text-xs text-[#A1A1AA] font-semibold block">Alış / Maya Qiyməti</span>
+                    <span className="text-xs text-[#A1A1AA] font-semibold block">{t('items.costPrice', {}, 'Alış / Maya Qiyməti')}</span>
                     <span className="text-base font-mono font-bold text-[#A1A1AA] mt-1 block">
                         {formatCurrency(item.standardBuyingPrice !== undefined ? item.standardBuyingPrice : (item.costPrice || 0))}
                     </span>
@@ -205,7 +207,7 @@ export const ItemDetailPage: React.FC = () => {
 
                 {/* Selling Price */}
                 <div className="p-4 rounded-2xl bg-[#121214] border border-[#27272A]">
-                    <span className="text-xs text-[#A1A1AA] font-semibold block">Standart Satış Qiyməti</span>
+                    <span className="text-xs text-[#A1A1AA] font-semibold block">{t('items.unitPrice', {}, 'Standart Satış Qiyməti')}</span>
                     <span className="text-base font-mono font-bold text-white mt-1 block">
                         {formatCurrency(item.standardSellingPrice !== undefined ? item.standardSellingPrice : (item.unitPrice || 0))}
                     </span>
@@ -216,59 +218,59 @@ export const ItemDetailPage: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Left (2 cols): Details */}
                 <div className="lg:col-span-2 p-5 rounded-2xl bg-[#121214] border border-[#27272A] space-y-4">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1A1AA]">Məhsul / Xidmət Məlumatları</h3>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1A1AA]">{t('common.details', {}, 'Məhsul / Xidmət Məlumatları')}</h3>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                         <div>
-                            <span className="text-[#71717A] block">Ad</span>
+                            <span className="text-[#71717A] block">{t('items.name', {}, 'Ad')}</span>
                             <span className="text-white font-semibold text-sm mt-0.5 block">{item.name}</span>
                         </div>
 
                         <div>
-                            <span className="text-[#71717A] block">SKU / Kod</span>
+                            <span className="text-[#71717A] block">{t('items.code', {}, 'SKU / Kod')}</span>
                             <span className="text-white font-mono font-semibold text-sm mt-0.5 block">{item.code}</span>
                         </div>
 
                         <div>
-                            <span className="text-[#71717A] block">Ölçü Vahidi (UOM)</span>
+                            <span className="text-[#71717A] block">{t('items.uom', {}, 'Ölçü Vahidi (UOM)')}</span>
                             <span className="text-white font-medium mt-0.5 block">{item.baseUOM || item.unitOfMeasure || 'PCS'}</span>
                         </div>
 
                         <div>
-                            <span className="text-[#71717A] block">Qiymətləndirmə Metodu</span>
+                            <span className="text-[#71717A] block">{t('items.valuationMethod', {}, 'Qiymətləndirmə Metodu')}</span>
                             <span className="text-white font-medium mt-0.5 block">
-                                {String(item.valuationMethod) === 'FIFO' || String(item.valuationMethod) === '2' ? 'FIFO (İlk Gələn İlk Çıxar)' : 'Orta Maya Dəyəri (Moving Average)'}
+                                {String(item.valuationMethod) === 'FIFO' || String(item.valuationMethod) === '2' ? 'FIFO (First In First Out)' : 'Moving Average (Orta Dəyər)'}
                             </span>
                         </div>
 
                         <div className="sm:col-span-2">
-                            <span className="text-[#71717A] block">Təsvir</span>
-                            <p className="text-zinc-300 mt-1 leading-relaxed">{item.description || 'Heç bir təsvir qeyd olunmayıb.'}</p>
+                            <span className="text-[#71717A] block">{t('common.description', {}, 'Təsvir')}</span>
+                            <p className="text-zinc-300 mt-1 leading-relaxed">{item.description || t('common.noData', {}, 'Heç bir təsvir qeyd olunmayıb.')}</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Right (1 col): GL Accounts Mapping */}
                 <div className="p-5 rounded-2xl bg-[#121214] border border-[#27272A] space-y-4">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1A1AA]">Mühasibat Hesabları (GL)</h3>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1A1AA]">{t('accounts.title', {}, 'Mühasibat Hesabları (GL)')}</h3>
 
                     <div className="space-y-3.5 text-xs">
                         <div className="p-3 rounded-xl bg-[#18181B] border border-[#27272A]">
-                            <span className="text-[#71717A] text-[11px] block">Stok Aktiv Hesabı (Asset)</span>
+                            <span className="text-[#71717A] text-[11px] block">{t('items.inventoryAccount', {}, 'Stok Aktiv Hesabı (Asset)')}</span>
                             <span className="text-white font-medium mt-0.5 block font-mono">
                                 {getAccountName(item.inventoryAccountId, '1100 - Mallar və Materiallar (Default)')}
                             </span>
                         </div>
 
                         <div className="p-3 rounded-xl bg-[#18181B] border border-[#27272A]">
-                            <span className="text-[#71717A] text-[11px] block">Maya Dəyəri Hesabı (COGS)</span>
+                            <span className="text-[#71717A] text-[11px] block">{t('items.cogsAccount', {}, 'Maya Dəyəri Hesabı (COGS)')}</span>
                             <span className="text-white font-medium mt-0.5 block font-mono">
                                 {getAccountName(item.cogsAccountId, '7010 - Satılmış Malların Maya Dəyəri (Default)')}
                             </span>
                         </div>
 
                         <div className="p-3 rounded-xl bg-[#18181B] border border-[#27272A]">
-                            <span className="text-[#71717A] text-[11px] block">Satış Gəliri Hesabı (Revenue)</span>
+                            <span className="text-[#71717A] text-[11px] block">{t('items.revenueAccount', {}, 'Satış Gəliri Hesabı (Revenue)')}</span>
                             <span className="text-white font-medium mt-0.5 block font-mono">
                                 {getAccountName(item.revenueAccountId, '6010 - Satış Gəliri (Default)')}
                             </span>
@@ -282,7 +284,7 @@ export const ItemDetailPage: React.FC = () => {
                 <div className="p-4 border-b border-[#27272A] flex items-center justify-between">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
                         <ClockIcon className="w-4 h-4 text-[#A1A1AA]" />
-                        <span>Anbar Hərəkəti Tarixçəsi (Stock Ledger)</span>
+                        <span>{t('inventory.stockLedger', {}, 'Anbar Hərəkəti Tarixçəsi (Stock Ledger)')}</span>
                     </h3>
                 </div>
 
@@ -290,20 +292,20 @@ export const ItemDetailPage: React.FC = () => {
                     <table className="w-full text-left text-xs text-[#E4E4E7]">
                         <thead>
                             <tr className="border-b border-[#27272A] bg-[#18181B] text-[#A1A1AA] text-[11px] font-bold">
-                                <th className="py-3 px-4">Tarix</th>
-                                <th className="py-3 px-4">Əməliyyat Növü</th>
-                                <th className="py-3 px-4">İstinad №</th>
-                                <th className="py-3 px-4 text-right">Daxil olan</th>
-                                <th className="py-3 px-4 text-right">Xaric olan</th>
-                                <th className="py-3 px-4 text-right">Vahid Dəyər</th>
-                                <th className="py-3 px-4 text-right">Cari Qalıq</th>
+                                <th className="py-3 px-4">{t('common.date', {}, 'Tarix')}</th>
+                                <th className="py-3 px-4">{t('common.type', {}, 'Əməliyyat Növü')}</th>
+                                <th className="py-3 px-4">{t('journal.referenceNumber', {}, 'İstinad №')}</th>
+                                <th className="py-3 px-4 text-right">{t('inventory.qtyIn', {}, 'Daxil olan')}</th>
+                                <th className="py-3 px-4 text-right">{t('inventory.qtyOut', {}, 'Xaric olan')}</th>
+                                <th className="py-3 px-4 text-right">{t('inventory.unitCost', {}, 'Vahid Dəyər')}</th>
+                                <th className="py-3 px-4 text-right">{t('inventory.runningBalance', {}, 'Cari Qalıq')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#27272A]/60">
                             {ledgerEntries.length === 0 ? (
                                 <tr>
                                     <td colSpan={7} className="py-8 text-center text-[#71717A]">
-                                        Bu məhsul üzrə hələlik heç bir anbar hərəkəti qeydə alınmayıb
+                                        {t('common.noData', {}, 'Bu məhsul üzrə hələlik heç bir anbar hərəkəti qeydə alınmayıb')}
                                     </td>
                                 </tr>
                             ) : (

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { paymentService, accountsService, customersService, procurementService } from '../../api';
 import type { PaymentDto, BankAccountDto, AccountDto, CustomerDto, SupplierDto } from '../../dto';
+import { useLanguage } from '../../context/LanguageContext';
 import {
     ArrowLeftIcon,
     ArrowPathIcon,
@@ -16,12 +17,12 @@ import {
     ExclamationTriangleIcon,
     ClipboardDocumentIcon,
     UserIcon,
-    TagIcon,
     CalendarIcon,
     ArrowsRightLeftIcon,
 } from '@heroicons/react/24/outline';
 
 export const PaymentDetailPage: React.FC = () => {
+    const { t } = useLanguage();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
 
@@ -50,7 +51,7 @@ export const PaymentDetailPage: React.FC = () => {
         if (data?.message) return data.message;
         if (data?.title) return data.title;
         if (data?.error) return data.error;
-        return err.message || 'Xəta baş verdi';
+        return err.message || t('common.error', {}, 'Xəta baş verdi');
     };
 
     const loadData = async (silent = false) => {
@@ -74,7 +75,7 @@ export const PaymentDetailPage: React.FC = () => {
             setSuppliers(supps);
         } catch (err) {
             console.error('Failed to load payment detail:', err);
-            showToast('Ödəniş məlumatları yüklənərkən xəta baş verdi', 'error');
+            showToast(t('treasury.paymentsLoadFailed', {}, 'Ödəniş məlumatları yüklənərkən xəta baş verdi'), 'error');
         } finally {
             setLoading(false);
             setIsRefreshing(false);
@@ -98,7 +99,7 @@ export const PaymentDetailPage: React.FC = () => {
         try {
             const updated = await paymentService.postPayment(payment.id);
             setPayment(updated);
-            showToast(`${payment.paymentNumber} ödənişi uğurla icra edildi və uçota alındı!`);
+            showToast(`${payment.paymentNumber} ${t('treasury.paymentPostedSuccess', {}, 'ödənişi uğurla icra edildi və uçota alındı!')}`);
             loadData(true);
         } catch (err: any) {
             console.error('Failed to post payment:', err);
@@ -130,7 +131,6 @@ export const PaymentDetailPage: React.FC = () => {
         }
     };
 
-
     // Matched Entities
     const matchedPartyName = useMemo(() => {
         if (!payment) return '—';
@@ -156,45 +156,45 @@ export const PaymentDetailPage: React.FC = () => {
     }, [payment, glAccounts]);
 
     const getTypeBadge = (type: any, pType?: string) => {
-        const t = String(type || '').toLowerCase();
+        const tVal = String(type || '').toLowerCase();
         const pt = String(pType || '').toLowerCase();
 
-        if (t === '1' || t.includes('customerreceipt') || pt === 'incoming') {
+        if (tVal === '1' || tVal.includes('customerreceipt') || pt === 'incoming') {
             return (
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                     <ArrowTrendingUpIcon className="w-3.5 h-3.5" />
-                    <span>Müştəri Mədaxili (Receipt)</span>
+                    <span>{t('treasury.typeCustomerReceipt', {}, 'Müştəri Mədaxili (Receipt)')}</span>
                 </span>
             );
         }
-        if (t === '2' || t.includes('customeradvance')) {
+        if (tVal === '2' || tVal.includes('customeradvance')) {
             return (
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
                     <ArrowTrendingUpIcon className="w-3.5 h-3.5" />
-                    <span>Müştəri Avansı</span>
+                    <span>{t('treasury.customerAdvance', {}, 'Müştəri Avansı')}</span>
                 </span>
             );
         }
-        if (t === '3' || t.includes('supplierpayment') || pt === 'outgoing') {
+        if (tVal === '3' || tVal.includes('supplierpayment') || pt === 'outgoing') {
             return (
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
                     <ArrowTrendingDownIcon className="w-3.5 h-3.5" />
-                    <span>Təchizatçı Ödənişi</span>
+                    <span>{t('treasury.typeSupplierPayment', {}, 'Təchizatçı Ödənişi')}</span>
                 </span>
             );
         }
-        if (t === '4' || t.includes('supplieradvance')) {
+        if (tVal === '4' || tVal.includes('supplieradvance')) {
             return (
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
                     <ArrowTrendingDownIcon className="w-3.5 h-3.5" />
-                    <span>Təchizatçı Avansı</span>
+                    <span>{t('treasury.supplierAdvance', {}, 'Təchizatçı Avansı')}</span>
                 </span>
             );
         }
         return (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
                 <ArrowsRightLeftIcon className="w-3.5 h-3.5" />
-                <span>Daxili Köçürmə</span>
+                <span>{t('treasury.typeInternalTransfer', {}, 'Daxili Köçürmə')}</span>
             </span>
         );
     };
@@ -206,7 +206,7 @@ export const PaymentDetailPage: React.FC = () => {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] gap-3 text-zinc-400">
                 <ArrowPathIcon className="w-8 h-8 animate-spin text-white" />
-                <span className="text-sm">Ödəniş məlumatları yüklənir...</span>
+                <span className="text-sm">{t('common.loading', {}, 'Ödəniş məlumatları yüklənir...')}</span>
             </div>
         );
     }
@@ -217,14 +217,14 @@ export const PaymentDetailPage: React.FC = () => {
                 <div className="w-12 h-12 rounded-2xl bg-[#18181B] border border-[#27272A] flex items-center justify-center mx-auto text-zinc-500">
                     <BanknotesIcon className="w-6 h-6" />
                 </div>
-                <h2 className="text-lg font-bold text-white">Ödəniş Sənədi Tapılmadı</h2>
-                <p className="text-xs text-zinc-400">Axtardığınız ödəniş mövcud deyil və ya silinib.</p>
+                <h2 className="text-lg font-bold text-white">{t('treasury.noPaymentsFound', {}, 'Ödəniş Sənədi Tapılmadı')}</h2>
+                <p className="text-xs text-zinc-400">{t('treasury.paymentNotFoundDesc', {}, 'Axtardığınız ödəniş mövcud deyil və ya silinib.')}</p>
                 <Link
                     to="/payments"
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors"
                 >
                     <ArrowLeftIcon className="w-4 h-4" />
-                    <span>Ödənişlərə Qayıt</span>
+                    <span>{t('treasury.backToPayments', {}, 'Ödənişlərə Qayıt')}</span>
                 </Link>
             </div>
         );
@@ -241,14 +241,14 @@ export const PaymentDetailPage: React.FC = () => {
                             className="text-xs font-semibold text-zinc-400 hover:text-white transition-colors flex items-center gap-1"
                         >
                             <ArrowLeftIcon className="w-3.5 h-3.5" />
-                            <span>Ödənişlər</span>
+                            <span>{t('treasury.paymentsTitle', {}, 'Ödənişlər')}</span>
                         </Link>
                         <span className="text-xs text-zinc-600">/</span>
                         <h1 className="text-2xl font-bold tracking-tight text-white font-mono">{payment.paymentNumber}</h1>
                         <button
                             onClick={() => handleCopy(payment.paymentNumber)}
                             className="text-zinc-500 hover:text-white transition-colors cursor-pointer"
-                            title="Kopyala"
+                            title={t('common.copy', {}, 'Kopyala')}
                         >
                             {copiedNumber ? (
                                 <CheckIcon className="w-4 h-4 text-emerald-400" />
@@ -268,11 +268,11 @@ export const PaymentDetailPage: React.FC = () => {
                                     : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                             }`}
                         >
-                            {isPosted ? 'Uçota alınıb (Posted)' : 'Qaralama (Draft)'}
+                            {isPosted ? t('statuses.posted', {}, 'Uçota alınıb (Posted)') : t('statuses.draft', {}, 'Qaralama (Draft)')}
                         </span>
 
                         <span className="text-zinc-400">
-                            Tarix: <strong className="text-white">{formatDate(payment.paymentDate)}</strong>
+                            {t('common.date', {}, 'Tarix')}: <strong className="text-white">{formatDate(payment.paymentDate)}</strong>
                         </span>
                     </div>
                 </div>
@@ -282,7 +282,7 @@ export const PaymentDetailPage: React.FC = () => {
                         onClick={() => loadData(false)}
                         disabled={loading || isRefreshing}
                         className="p-2 rounded-xl bg-[#18181B] border border-[#27272A] text-zinc-400 hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer disabled:opacity-50"
-                        title="Yenilə"
+                        title={t('common.refresh', {}, 'Yenilə')}
                     >
                         <ArrowPathIcon className={`w-4 h-4 ${isRefreshing || loading ? 'animate-spin' : ''}`} />
                     </button>
@@ -298,7 +298,7 @@ export const PaymentDetailPage: React.FC = () => {
                             ) : (
                                 <CheckIcon className="w-4 h-4 text-black" />
                             )}
-                            <span>Sənədi İcra Et (Post)</span>
+                            <span>{t('treasury.postPayment', {}, 'Sənədi İcra Et (Post)')}</span>
                         </button>
                     )}
                 </div>
@@ -326,7 +326,7 @@ export const PaymentDetailPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between">
                     <div>
-                        <div className="text-[11px] font-medium text-zinc-400">Toplam Ödəniş Məbləği</div>
+                        <div className="text-[11px] font-medium text-zinc-400">{t('treasury.totalPaymentAmount', {}, 'Toplam Ödəniş Məbləği')}</div>
                         <div
                             className={`text-xl font-bold font-mono mt-0.5 ${
                                 isIncoming ? 'text-emerald-400' : 'text-rose-400'
@@ -334,7 +334,7 @@ export const PaymentDetailPage: React.FC = () => {
                         >
                             {isIncoming ? '+' : '-'}{formatCurrency(payment.amount, payment.currency)}
                         </div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">Sənəd üzrə ümumi həcm</div>
+                        <div className="text-[10px] text-zinc-500 mt-0.5">{t('treasury.totalDocumentVolume', {}, 'Sənəd üzrə ümumi həcm')}</div>
                     </div>
                     <div
                         className={`w-10 h-10 rounded-xl border flex items-center justify-center ${
@@ -353,11 +353,11 @@ export const PaymentDetailPage: React.FC = () => {
 
                 <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between">
                     <div>
-                        <div className="text-[11px] font-medium text-zinc-400">Qaimələrə Bölüşdürülən</div>
+                        <div className="text-[11px] font-medium text-zinc-400">{t('treasury.allocatedToInvoices', {}, 'Qaimələrə Bölüşdürülən')}</div>
                         <div className="text-xl font-bold font-mono text-white mt-0.5">
                             {formatCurrency(payment.allocatedAmount || 0, payment.currency)}
                         </div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">Faktura ödənişlərinə silinib</div>
+                        <div className="text-[10px] text-zinc-500 mt-0.5">{t('treasury.appliedToInvoices', {}, 'Faktura ödənişlərinə silinib')}</div>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-300">
                         <DocumentTextIcon className="w-5 h-5" />
@@ -366,11 +366,11 @@ export const PaymentDetailPage: React.FC = () => {
 
                 <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between">
                     <div>
-                        <div className="text-[11px] font-medium text-zinc-400">Bölüşdürülməmiş / Avans</div>
+                        <div className="text-[11px] font-medium text-zinc-400">{t('treasury.unallocatedAdvance', {}, 'Bölüşdürülməmiş / Avans')}</div>
                         <div className="text-xl font-bold font-mono text-cyan-400 mt-0.5">
                             {formatCurrency(payment.unallocatedAmount ?? (payment.amount - (payment.allocatedAmount || 0)), payment.currency)}
                         </div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">Qarşı tərəf balansında qalan</div>
+                        <div className="text-[10px] text-zinc-500 mt-0.5">{t('treasury.remainingInBalance', {}, 'Qarşı tərəf balansında qalan')}</div>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
                         <CreditCardIcon className="w-5 h-5" />
@@ -379,12 +379,12 @@ export const PaymentDetailPage: React.FC = () => {
 
                 <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between">
                     <div>
-                        <div className="text-[11px] font-medium text-zinc-400">Uçot Tarixi</div>
+                        <div className="text-[11px] font-medium text-zinc-400">{t('procurement.postingDate', {}, 'Uçot Tarixi')}</div>
                         <div className="text-sm font-bold text-white mt-0.5">
                             {formatDate(payment.postingDate || payment.paymentDate)}
                         </div>
                         <div className="text-[10px] text-zinc-500 mt-0.5">
-                            {isPosted ? 'Mühasibatlıqda qeyd edilib' : 'Qaralama statusunda'}
+                            {isPosted ? t('treasury.postedInAccounting', {}, 'Mühasibatlıqda qeyd edilib') : t('treasury.inDraftStatus', {}, 'Qaralama statusunda')}
                         </div>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-300">
@@ -398,14 +398,14 @@ export const PaymentDetailPage: React.FC = () => {
                 <div className="flex items-center justify-between pb-3 border-b border-[#27272A]">
                     <div className="flex items-center gap-2">
                         <BanknotesIcon className="w-4 h-4 text-zinc-400" />
-                        <h2 className="text-sm font-bold text-white">Ödəniş Rekvizitləri və Təyinatı</h2>
+                        <h2 className="text-sm font-bold text-white">{t('treasury.paymentSpecifications', {}, 'Ödəniş Rekvizitləri və Təyinatı')}</h2>
                     </div>
                     <span className="font-mono text-xs text-zinc-500">ID: {payment.id}</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
                     <div>
-                        <span className="text-zinc-500 block mb-1">Qarşı Tərəf</span>
+                        <span className="text-zinc-500 block mb-1">{t('treasury.party', {}, 'Qarşı Tərəf')}</span>
                         <div className="flex items-center gap-1.5 font-semibold text-white">
                             <UserIcon className="w-3.5 h-3.5 text-zinc-400" />
                             <span>{matchedPartyName}</span>
@@ -413,53 +413,53 @@ export const PaymentDetailPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <span className="text-zinc-500 block mb-1">Tərəf Tipi</span>
+                        <span className="text-zinc-500 block mb-1">{t('treasury.partyType', {}, 'Tərəf Tipi')}</span>
                         <span className="font-semibold text-zinc-300">
-                            {payment.partyType === 'Customer' ? 'Müştəri (Customer)' : payment.partyType === 'Supplier' ? 'Təchizatçı (Supplier)' : 'Daxili Təşkilat'}
+                            {payment.partyType === 'Customer' ? `${t('customers.customer', {}, 'Müştəri')} (Customer)` : payment.partyType === 'Supplier' ? `${t('procurement.supplier', {}, 'Təchizatçı')} (Supplier)` : t('treasury.internalOrg', {}, 'Daxili Təşkilat')}
                         </span>
                     </div>
 
                     <div>
-                        <span className="text-zinc-500 block mb-1">Bank / Kassa Hesabı</span>
+                        <span className="text-zinc-500 block mb-1">{t('treasury.bankOrCashAccount', {}, 'Bank / Kassa Hesabı')}</span>
                         <div className="flex items-center gap-1.5 font-semibold text-white">
                             <BuildingLibraryIcon className="w-3.5 h-3.5 text-zinc-400" />
-                            <span>{matchedBank ? matchedBank.bankName : (payment.bankAccountName || 'Bank / Kassa')}</span>
+                            <span>{matchedBank ? matchedBank.bankName : (payment.bankAccountName || t('treasury.bankOrCash', {}, 'Bank / Kassa'))}</span>
                         </div>
                     </div>
 
                     <div>
-                        <span className="text-zinc-500 block mb-1">Mühasibatlıq (GL) Hesabı</span>
+                        <span className="text-zinc-500 block mb-1">{t('treasury.glAccount', {}, 'Mühasibatlıq (GL) Hesabı')}</span>
                         <span className="font-mono text-zinc-300">
                             {matchedGl ? `${matchedGl.code} - ${matchedGl.name}` : (payment.glAccountId ? payment.glAccountId : '1020 - Bank Hesabı')}
                         </span>
                     </div>
 
                     <div>
-                        <span className="text-zinc-500 block mb-1">Valyuta və Məzənnə</span>
+                        <span className="text-zinc-500 block mb-1">{t('treasury.currencyAndRate', {}, 'Valyuta və Məzənnə')}</span>
                         <span className="font-semibold text-white">
-                            {payment.currency} (Məzənnə: {payment.exchangeRate || 1.0})
+                            {payment.currency} ({t('common.exchangeRate', {}, 'Məzənnə')}: {payment.exchangeRate || 1.0})
                         </span>
                     </div>
 
                     <div>
-                        <span className="text-zinc-500 block mb-1">Ödəniş Metodu</span>
-                        <span className="text-zinc-300">{payment.paymentMethod || 'Bank Köçürməsi'}</span>
+                        <span className="text-zinc-500 block mb-1">{t('treasury.paymentMethod', {}, 'Ödəniş Metodu')}</span>
+                        <span className="text-zinc-300">{payment.paymentMethod || t('treasury.bankTransfer', {}, 'Bank Köçürməsi')}</span>
                     </div>
 
                     <div>
-                        <span className="text-zinc-500 block mb-1">Referans / Çek №</span>
+                        <span className="text-zinc-500 block mb-1">{t('treasury.referenceOrCheque', {}, 'Referans / Çek №')}</span>
                         <span className="font-mono text-zinc-300">{payment.reference || '—'}</span>
                     </div>
 
                     <div>
-                        <span className="text-zinc-500 block mb-1">Yaradılma Tarixi</span>
+                        <span className="text-zinc-500 block mb-1">{t('treasury.registrationDate', {}, 'Yaradılma Tarixi')}</span>
                         <span className="text-zinc-300">{formatDate(payment.createdAt)}</span>
                     </div>
                 </div>
 
                 {payment.notes && (
                     <div className="pt-3 border-t border-[#27272A] text-xs">
-                        <span className="text-zinc-500 block mb-1">Qeydlər və Əlavə Məlumat:</span>
+                        <span className="text-zinc-500 block mb-1">{t('common.notes', {}, 'Qeydlər və Əlavə Məlumat')}:</span>
                         <p className="text-zinc-300 bg-[#18181B] p-2.5 rounded-xl border border-[#27272A]">
                             {payment.notes}
                         </p>
@@ -472,9 +472,9 @@ export const PaymentDetailPage: React.FC = () => {
                 <div className="p-4 border-b border-[#27272A] bg-[#18181B] flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <DocumentTextIcon className="w-4 h-4 text-zinc-400" />
-                        <h2 className="text-sm font-bold text-white">Faktura və Qaimə Bölüşdürmələri</h2>
+                        <h2 className="text-sm font-bold text-white">{t('treasury.invoiceAllocations', {}, 'Faktura və Qaimə Bölüşdürmələri')}</h2>
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#121214] text-zinc-400 border border-[#27272A]">
-                            {(payment.allocations || []).length} faktura
+                            {(payment.allocations || []).length} {t('treasury.invoicesCount', {}, 'faktura')}
                         </span>
                     </div>
                 </div>
@@ -484,11 +484,11 @@ export const PaymentDetailPage: React.FC = () => {
                         <thead>
                             <tr className="border-b border-[#27272A] bg-[#18181B] text-zinc-400 uppercase text-[10px] font-bold tracking-wider">
                                 <th className="py-3.5 px-4">#</th>
-                                <th className="py-3.5 px-4">Sənəd Tipi</th>
-                                <th className="py-3.5 px-4">Qaimə / Faktura №</th>
-                                <th className="py-3.5 px-4">Bölüşdürmə Tarixi</th>
-                                <th className="py-3.5 px-4 text-right">Bölüşdürülən Məbləğ</th>
-                                <th className="py-3.5 px-4 text-center">Status</th>
+                                <th className="py-3.5 px-4">{t('treasury.documentType', {}, 'Sənəd Tipi')}</th>
+                                <th className="py-3.5 px-4">{t('treasury.invoiceNumber', {}, 'Qaimə / Faktura №')}</th>
+                                <th className="py-3.5 px-4">{t('treasury.allocationDate', {}, 'Bölüşdürmə Tarixi')}</th>
+                                <th className="py-3.5 px-4 text-right">{t('treasury.allocatedAmount', {}, 'Bölüşdürülən Məbləğ')}</th>
+                                <th className="py-3.5 px-4 text-center">{t('common.status', {}, 'Status')}</th>
                             </tr>
                         </thead>
 
@@ -498,9 +498,9 @@ export const PaymentDetailPage: React.FC = () => {
                                     <td colSpan={6} className="py-12 text-center text-zinc-500">
                                         <div className="flex flex-col items-center justify-center gap-2">
                                             <DocumentTextIcon className="w-8 h-8 text-zinc-600" />
-                                            <span className="font-semibold text-zinc-400">Heç bir faktura bölüşdürülməsi yoxdur</span>
+                                            <span className="font-semibold text-zinc-400">{t('treasury.noAllocations', {}, 'Heç bir faktura bölüşdürülməsi yoxdur')}</span>
                                             <p className="text-[11px] text-zinc-500 max-w-sm">
-                                                Bu ödəniş birbaşa avans / cari hesab mədaxili kimi qeyd edilib.
+                                                {t('treasury.noAllocationsDesc', {}, 'Bu ödəniş birbaşa avans / cari hesab mədaxili kimi qeyd edilib.')}
                                             </p>
                                         </div>
                                     </td>
@@ -511,7 +511,7 @@ export const PaymentDetailPage: React.FC = () => {
                                         <td className="py-3.5 px-4 font-mono text-zinc-500">{idx + 1}</td>
 
                                         <td className="py-3.5 px-4 text-zinc-300">
-                                            {alloc.targetDocumentType === 1 || alloc.targetDocumentType === 'CustomerInvoice' ? 'Satış Qaiməsi' : 'Alış Fakturası'}
+                                            {alloc.targetDocumentType === 1 || alloc.targetDocumentType === 'CustomerInvoice' ? t('customers.salesInvoice', {}, 'Satış Qaiməsi') : t('procurement.supplierInvoice', {}, 'Alış Fakturası')}
                                         </td>
 
                                         <td className="py-3.5 px-4 font-mono font-bold text-white">
@@ -528,7 +528,7 @@ export const PaymentDetailPage: React.FC = () => {
 
                                         <td className="py-3.5 px-4 text-center">
                                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                                Silinib
+                                                {t('treasury.applied', {}, 'Silinib')}
                                             </span>
                                         </td>
                                     </tr>

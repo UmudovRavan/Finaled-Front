@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { customersService, paymentService } from '../../api';
 import type { CustomerInvoiceDto, BankAccountDto, PayInvoiceRequest } from '../../dto';
 import { formatDate, extractErrorMessage } from '../../utils';
+import { useLanguage } from '../../context/LanguageContext';
 import {
     ArrowLeftIcon,
     ArrowPathIcon,
@@ -18,6 +19,7 @@ import {
 export const CustomerInvoiceDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { t } = useLanguage();
 
     const [invoice, setInvoice] = useState<CustomerInvoiceDto | null>(null);
     const [bankAccounts, setBankAccounts] = useState<BankAccountDto[]>([]);
@@ -73,10 +75,10 @@ export const CustomerInvoiceDetailPage: React.FC = () => {
         setApproveLoading(true);
         try {
             await customersService.approveInvoice(invoice.id, invoice.issueDate || invoice.invoiceDate);
-            showToast('Qaimə baş kitaba uğurla keçirildi (Posted)!', 'success');
+            showToast(t('customers.invoicePostedSuccess', {}, 'Qaimə baş kitaba uğurla keçirildi (Posted)!'), 'success');
             await fetchInvoiceData();
         } catch (err: any) {
-            showToast(extractErrorMessage(err, 'Qaiməni təsdiqləmək mümkün olmadı.'), 'error');
+            showToast(extractErrorMessage(err, t('common.error', {}, 'Qaiməni təsdiqləmək mümkün olmadı.')), 'error');
         } finally {
             setApproveLoading(false);
         }
@@ -97,7 +99,7 @@ export const CustomerInvoiceDetailPage: React.FC = () => {
         e.preventDefault();
         if (!invoice) return;
         if (!payBankAccountId) {
-            setPayError('Zəhmət olmasa kassa və ya bank hesabı seçin.');
+            setPayError(t('validation.accountRequired', {}, 'Zəhmət olmasa kassa və ya bank hesabı seçin.'));
             return;
         }
 
@@ -113,10 +115,10 @@ export const CustomerInvoiceDetailPage: React.FC = () => {
                 customerId: invoice.customerId,
             });
             setShowPayModal(false);
-            showToast('Ödəniş uğurla qəbul edildi!');
+            showToast(t('customers.invoicePaySuccess', {}, 'Ödəniş uğurla qəbul edildi!'));
             fetchInvoiceData();
         } catch (err: any) {
-            setPayError(err.response?.data?.detail || err.response?.data?.message || err.message || 'Ödəniş qeyd olunarkən xəta baş verdi.');
+            setPayError(err.response?.data?.detail || err.response?.data?.message || err.message || t('common.error', {}, 'Ödəniş qeyd olunarkən xəta baş verdi.'));
         } finally {
             setPayLoading(false);
         }
@@ -132,37 +134,38 @@ export const CustomerInvoiceDetailPage: React.FC = () => {
 
     const getStatusBadge = (status: string) => {
         const s = String(status || '').toLowerCase();
+        const localizedLabel = t(`statuses.${status.toUpperCase()}`, {}, status);
         if (s === 'paid') {
             return (
                 <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-[#14291F] text-[#4ADE80] border border-[#22C55E]/30">
-                    Paid
+                    {localizedLabel}
                 </span>
             );
         }
         if (s === 'partiallypaid') {
             return (
                 <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-[#142638] text-[#38BDF8] border border-[#0284C7]/30">
-                    Partially Paid
+                    {localizedLabel}
                 </span>
             );
         }
         if (s === 'posted' || s === 'approved' || s === 'unpaid') {
             return (
                 <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-[#292214] text-[#FBBF24] border border-[#F59E0B]/30">
-                    {s === 'unpaid' ? 'Unpaid' : 'Posted'}
+                    {localizedLabel}
                 </span>
             );
         }
         if (s === 'overdue' || s === 'cancelled') {
             return (
                 <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-[#2E1619] text-[#F87171] border border-[#EF4444]/30">
-                    {s === 'overdue' ? 'Overdue' : 'Cancelled'}
+                    {localizedLabel}
                 </span>
             );
         }
         return (
             <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-[#27272A] text-[#D4D4D8] border border-[#3F3F46]">
-                Draft
+                {localizedLabel}
             </span>
         );
     };
@@ -172,7 +175,7 @@ export const CustomerInvoiceDetailPage: React.FC = () => {
             <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="flex items-center gap-3 text-white text-sm">
                     <ArrowPathIcon className="w-5 h-5 animate-spin" />
-                    <span>Qaimə məlumatları yüklənir...</span>
+                    <span>{t('common.loading', {}, 'Qaimə məlumatları yüklənir...')}</span>
                 </div>
             </div>
         );
@@ -181,13 +184,13 @@ export const CustomerInvoiceDetailPage: React.FC = () => {
     if (!invoice) {
         return (
             <div className="p-8 text-center space-y-4">
-                <p className="text-white text-base font-semibold">Qaimə tapılmadı.</p>
+                <p className="text-white text-base font-semibold">{t('common.noData', {}, 'Qaimə tapılmadı.')}</p>
                 <Link
                     to="/customer-invoices"
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-colors"
                 >
                     <ArrowLeftIcon className="w-4 h-4" />
-                    <span>Qaimələr Siyahısına Qayıt</span>
+                    <span>{t('common.back', {}, 'Qaimələr Siyahısına Qayıt')}</span>
                 </Link>
             </div>
         );
@@ -201,12 +204,12 @@ export const CustomerInvoiceDetailPage: React.FC = () => {
                     <button
                         onClick={() => navigate('/customer-invoices')}
                         className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-                        title="Geri"
+                        title={t('common.back', {}, 'Geri')}
                     >
                         <ArrowLeftIcon className="w-4 h-4" />
                     </button>
                     <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                        <Link to="/customer-invoices" className="hover:text-zinc-300 transition-colors">Satış Qaimələri</Link>
+                        <Link to="/customer-invoices" className="hover:text-zinc-300 transition-colors">{t('nav.customerInvoices', {}, 'Satış Qaimələri')}</Link>
                         <span className="text-[#52525B]">/</span>
                         <span className="font-mono text-white">{invoice.invoiceNumber}</span>
                     </h1>
@@ -224,12 +227,12 @@ export const CustomerInvoiceDetailPage: React.FC = () => {
                             {approveLoading ? (
                                 <>
                                     <ArrowPathIcon className="w-4 h-4 animate-spin text-black" />
-                                    <span>Təsdiqlənir...</span>
+                                    <span>{t('common.saving', {}, 'Təsdiqlənir...')}</span>
                                 </>
                             ) : (
                                 <>
                                     <CheckCircleIcon className="w-4 h-4" />
-                                    <span>Baş Kitaba Keçir (Post)</span>
+                                    <span>{t('customers.postInvoice', {}, 'Baş Kitaba Keçir (Post)')}</span>
                                 </>
                             )}
                         </button>
@@ -241,7 +244,7 @@ export const CustomerInvoiceDetailPage: React.FC = () => {
                             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white hover:bg-zinc-200 text-black text-xs font-bold shadow-md transition-colors cursor-pointer"
                         >
                             <CreditCardIcon className="w-4 h-4" />
-                            <span>Ödəniş Qəbul Et</span>
+                            <span>{t('customers.payInvoice', {}, 'Ödəniş Qəbul Et')}</span>
                         </button>
                     )}
                 </div>
@@ -266,28 +269,28 @@ export const CustomerInvoiceDetailPage: React.FC = () => {
             {/* Summary Metrics */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="p-4 rounded-2xl bg-[#121214] border border-[#27272A]">
-                    <span className="text-xs text-[#A1A1AA] font-semibold block">Yekun Məbləğ</span>
+                    <span className="text-xs text-[#A1A1AA] font-semibold block">{t('common.grandTotal', {}, 'Yekun Məbləğ')}</span>
                     <span className="text-base font-mono font-bold text-white mt-1 block">
                         {formatCurrency(invoice.totalAmount || invoice.grandTotal || 0, invoice.currency)}
                     </span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[#121214] border border-[#27272A]">
-                    <span className="text-xs text-[#A1A1AA] font-semibold block">Ödənilən Məbləğ</span>
+                    <span className="text-xs text-[#A1A1AA] font-semibold block">{t('common.paidAmount', {}, 'Ödənilən Məbləğ')}</span>
                     <span className="text-base font-mono font-bold text-emerald-400 mt-1 block">
                         {formatCurrency(invoice.paidAmount || 0, invoice.currency)}
                     </span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[#121214] border border-[#27272A]">
-                    <span className="text-xs text-[#A1A1AA] font-semibold block">Qalıq Borc</span>
+                    <span className="text-xs text-[#A1A1AA] font-semibold block">{t('common.remainingAmount', {}, 'Qalıq Borc')}</span>
                     <span className={`text-base font-mono font-bold mt-1 block ${(invoice.remainingAmount !== undefined ? invoice.remainingAmount : (invoice.outstandingAmount || 0)) > 0 ? 'text-amber-400' : 'text-white'}`}>
                         {formatCurrency(invoice.remainingAmount !== undefined ? invoice.remainingAmount : (invoice.outstandingAmount || 0), invoice.currency)}
                     </span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[#121214] border border-[#27272A]">
-                    <span className="text-xs text-[#A1A1AA] font-semibold block">Sətirlərin Sayı</span>
+                    <span className="text-xs text-[#A1A1AA] font-semibold block">{t('accounting.lines', {}, 'Sətirlərin Sayı')}</span>
                     <span className="text-base font-mono font-bold text-white mt-1 block">
                         {(invoice.lines || []).length || 1}
                     </span>
@@ -296,31 +299,31 @@ export const CustomerInvoiceDetailPage: React.FC = () => {
 
             {/* General Info Card */}
             <div className="p-5 rounded-2xl bg-[#121214] border border-[#27272A] space-y-3.5">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1A1AA]">Qaimə Məlumatları</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1A1AA]">{t('customers.invoiceDetails', {}, 'Qaimə Məlumatları')}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
                     <div>
-                        <span className="text-[#71717A] block">Müştəri</span>
+                        <span className="text-[#71717A] block">{t('customers.customer', {}, 'Müştəri')}</span>
                         <Link to={`/customers/${invoice.customerId}`} className="text-white font-semibold mt-0.5 block hover:underline">
-                            {invoice.customerName || 'Müştəri'}
+                            {invoice.customerName || t('customers.customer', {}, 'Müştəri')}
                         </Link>
                     </div>
 
                     <div>
-                        <span className="text-[#71717A] block">Qaimə Tarixi</span>
+                        <span className="text-[#71717A] block">{t('customers.invoiceDate', {}, 'Qaimə Tarixi')}</span>
                         <span className="text-white font-medium mt-0.5 block">
                             {formatDate(invoice.issueDate || invoice.invoiceDate)}
                         </span>
                     </div>
 
                     <div>
-                        <span className="text-[#71717A] block">Son Ödəniş Tarixi</span>
+                        <span className="text-[#71717A] block">{t('customers.dueDate', {}, 'Son Ödəniş Tarixi')}</span>
                         <span className="text-white font-medium mt-0.5 block">
                             {formatDate(invoice.dueDate)}
                         </span>
                     </div>
 
                     <div>
-                        <span className="text-[#71717A] block">Qeydlər</span>
+                        <span className="text-[#71717A] block">{t('common.notes', {}, 'Qeydlər')}</span>
                         <span className="text-white font-medium mt-0.5 block truncate">{invoice.notes || '—'}</span>
                     </div>
                 </div>
@@ -329,24 +332,24 @@ export const CustomerInvoiceDetailPage: React.FC = () => {
             {/* Lines Table */}
             <div className="rounded-2xl border border-[#27272A] bg-[#121214] overflow-hidden shadow-2xl">
                 <div className="p-4 border-b border-[#27272A] flex items-center justify-between">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-white">Qaimə Sətirləri</h3>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-white">{t('customers.itemsTable', {}, 'Qaimə Sətirləri')}</h3>
                 </div>
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs text-[#E4E4E7]">
                         <thead>
                             <tr className="border-b border-[#27272A] bg-[#18181B] text-[#A1A1AA] text-[11px] font-bold">
-                                <th className="py-3 px-4">Təsvir / Məhsul</th>
-                                <th className="py-3 px-4 text-center">Say</th>
-                                <th className="py-3 px-4 text-right">Qiymət (AZN)</th>
-                                <th className="py-3 px-4 text-right">Endirim %</th>
-                                <th className="py-3 px-4 text-right">Cəm (AZN)</th>
+                                <th className="py-3 px-4">{t('common.description', {}, 'Təsvir / Məhsul')}</th>
+                                <th className="py-3 px-4 text-center">{t('common.quantity', {}, 'Say')}</th>
+                                <th className="py-3 px-4 text-right">{t('common.unitPrice', {}, 'Qiymət (AZN)')}</th>
+                                <th className="py-3 px-4 text-right">{t('customers.discount', {}, 'Endirim %')}</th>
+                                <th className="py-3 px-4 text-right">{t('common.total', {}, 'Cəm (AZN)')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#27272A]/60">
                             {(!invoice.lines || invoice.lines.length === 0) ? (
                                 <tr>
-                                    <td className="py-3 px-4 font-medium text-white">{invoice.notes || 'Məhsul / Xidmət satışı'}</td>
+                                    <td className="py-3 px-4 font-medium text-white">{invoice.notes || t('customers.item', {}, 'Məhsul / Xidmət satışı')}</td>
                                     <td className="py-3 px-4 text-center font-mono">1</td>
                                     <td className="py-3 px-4 text-right font-mono font-bold text-white">{formatCurrency(invoice.subTotal || invoice.totalAmount || 0)}</td>
                                     <td className="py-3 px-4 text-right font-mono">0%</td>
@@ -355,7 +358,7 @@ export const CustomerInvoiceDetailPage: React.FC = () => {
                             ) : (
                                 invoice.lines.map((line, idx) => (
                                     <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
-                                        <td className="py-3 px-4 font-medium text-white">{line.description || 'Məhsul'}</td>
+                                        <td className="py-3 px-4 font-medium text-white">{line.description || t('customers.item', {}, 'Məhsul')}</td>
                                         <td className="py-3 px-4 text-center font-mono">{line.quantity}</td>
                                         <td className="py-3 px-4 text-right font-mono font-bold text-white">{formatCurrency(line.unitPrice)}</td>
                                         <td className="py-3 px-4 text-right font-mono">{line.taxRate ? `${line.taxRate}%` : '0%'}</td>
@@ -366,7 +369,7 @@ export const CustomerInvoiceDetailPage: React.FC = () => {
                         </tbody>
                         <tfoot>
                             <tr className="border-t border-[#27272A] bg-[#18181B] font-bold font-mono text-white text-xs">
-                                <td colSpan={4} className="py-3 px-4 text-right uppercase tracking-wider text-[#A1A1AA]">Yekun Cəm:</td>
+                                <td colSpan={4} className="py-3 px-4 text-right uppercase tracking-wider text-[#A1A1AA]">{t('common.grandTotal', {}, 'Yekun Cəm')}:</td>
                                 <td className="py-3 px-4 text-right text-emerald-400">{formatCurrency(invoice.totalAmount || invoice.grandTotal || 0, invoice.currency)}</td>
                             </tr>
                         </tfoot>
@@ -380,7 +383,7 @@ export const CustomerInvoiceDetailPage: React.FC = () => {
                     <div className="bg-[#18181B] border border-[#27272A] rounded-2xl w-full max-w-md p-6 space-y-4 text-white shadow-2xl">
                         <div className="flex items-center justify-between pb-3 border-b border-[#27272A]">
                             <div>
-                                <h3 className="text-sm font-bold text-white">Ödəniş Qəbul Et</h3>
+                                <h3 className="text-sm font-bold text-white">{t('customers.payInvoice', {}, 'Ödəniş Qəbul Et')}</h3>
                                 <p className="text-xs text-[#A1A1AA] font-mono mt-0.5">{invoice.invoiceNumber} - {invoice.customerName}</p>
                             </div>
                             <button
@@ -399,7 +402,7 @@ export const CustomerInvoiceDetailPage: React.FC = () => {
 
                         <form onSubmit={handlePaySubmit} className="space-y-3.5">
                             <div>
-                                <label className="text-xs font-semibold text-[#A1A1AA]">Ödənilən Məbləğ (AZN) *</label>
+                                <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.paidAmount', {}, 'Ödənilən Məbləğ')} (AZN) *</label>
                                 <input
                                     type="number"
                                     step="0.01"
@@ -412,7 +415,7 @@ export const CustomerInvoiceDetailPage: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="text-xs font-semibold text-[#A1A1AA]">Ödəniş Tarixi *</label>
+                                <label className="text-xs font-semibold text-[#A1A1AA]">{t('customers.paymentDate', {}, 'Ödəniş Tarixi')} *</label>
                                 <input
                                     type="date"
                                     required
@@ -423,14 +426,14 @@ export const CustomerInvoiceDetailPage: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="text-xs font-semibold text-[#A1A1AA]">Ödəniş Hesabı (Bank / Kassa) *</label>
+                                <label className="text-xs font-semibold text-[#A1A1AA]">{t('customers.bankOrCashAccount', {}, 'Ödəniş Hesabı (Bank / Kassa)')} *</label>
                                 <select
                                     required
                                     value={payBankAccountId}
                                     onChange={(e) => setPayBankAccountId(e.target.value)}
                                     className="w-full mt-1 px-3 py-2 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white focus:border-white focus:outline-none"
                                 >
-                                    <option value="">Hesab seçin...</option>
+                                    <option value="">{t('common.select', {}, 'Hesab seçin...')}</option>
                                     {bankAccounts.map((b) => (
                                         <option key={b.id} value={b.id}>
                                             {b.accountName} ({b.accountNumber || b.currency || 'AZN'})
@@ -440,7 +443,7 @@ export const CustomerInvoiceDetailPage: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="text-xs font-semibold text-[#A1A1AA]">İstinad № / Qəbz</label>
+                                <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.reference', {}, 'İstinad № / Qəbz')}</label>
                                 <input
                                     type="text"
                                     value={payReference}
@@ -455,14 +458,14 @@ export const CustomerInvoiceDetailPage: React.FC = () => {
                                     onClick={() => setShowPayModal(false)}
                                     className="px-4 py-2 rounded-xl bg-[#18181B] border border-[#27272A] hover:bg-[#27272A] text-xs font-semibold text-white cursor-pointer"
                                 >
-                                    İmtina
+                                    {t('common.cancel', {}, 'İmtina')}
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={payLoading}
                                     className="px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-xs font-bold text-black transition-colors cursor-pointer"
                                 >
-                                    {payLoading ? 'Qeyd edilir...' : 'Ödənişi Təsdiqlə'}
+                                    {payLoading ? t('common.saving', {}, 'Qeyd edilir...') : t('common.confirm', {}, 'Ödənişi Təsdiqlə')}
                                 </button>
                             </div>
                         </form>

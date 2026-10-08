@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { customersService, accountsService } from '../../api';
 import type { ItemDto, AccountDto } from '../../dto';
 import CustomSelect from '../../components/CustomSelect';
+import { useLanguage } from '../../context/LanguageContext';
 import {
     PlusIcon,
     MagnifyingGlassIcon,
@@ -25,11 +26,13 @@ import {
 interface ColumnConfig {
     key: string;
     label: string;
+    i18nKey?: string;
     visible: boolean;
 }
 
 export const ItemsPage: React.FC = () => {
     const navigate = useNavigate();
+    const { t } = useLanguage();
 
     // Data states
     const [items, setItems] = useState<ItemDto[]>([]);
@@ -69,15 +72,15 @@ export const ItemsPage: React.FC = () => {
 
     // Columns config
     const [columns, setColumns] = useState<ColumnConfig[]>([
-        { key: 'code', label: 'SKU / Kod', visible: true },
-        { key: 'name', label: 'Məhsul / Xidmət', visible: true },
-        { key: 'type', label: 'Növ', visible: true },
-        { key: 'uom', label: 'Ölçü Vahidi', visible: true },
-        { key: 'costPrice', label: 'Alış / Maya Qiyməti', visible: true },
-        { key: 'unitPrice', label: 'Satış Qiyməti', visible: true },
-        { key: 'stock', label: 'Mövcud Stok', visible: true },
-        { key: 'stockValue', label: 'Stok Dəyəri', visible: true },
-        { key: 'status', label: 'Status', visible: true },
+        { key: 'code', label: 'SKU / Kod', i18nKey: 'customers.itemCode', visible: true },
+        { key: 'name', label: 'Məhsul / Xidmət', i18nKey: 'customers.itemName', visible: true },
+        { key: 'type', label: 'Növ', i18nKey: 'customers.itemType', visible: true },
+        { key: 'uom', label: 'Ölçü Vahidi', i18nKey: 'customers.uom', visible: true },
+        { key: 'costPrice', label: 'Alış / Maya Qiyməti', i18nKey: 'customers.defaultPurchasePrice', visible: true },
+        { key: 'unitPrice', label: 'Satış Qiyməti', i18nKey: 'customers.defaultSalePrice', visible: true },
+        { key: 'stock', label: 'Mövcud Stok', i18nKey: 'inventory.quantityOnHand', visible: true },
+        { key: 'stockValue', label: 'Stok Dəyəri', i18nKey: 'inventory.totalValue', visible: true },
+        { key: 'status', label: 'Status', i18nKey: 'common.status', visible: true },
     ]);
 
     // Create Modal state
@@ -255,7 +258,7 @@ export const ItemsPage: React.FC = () => {
             return (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
                     <CubeIcon className="w-3 h-3" />
-                    <span>Stok Məhsulu</span>
+                    <span>{t('customers.typeStock', {}, 'Stok Məhsulu')}</span>
                 </span>
             );
         }
@@ -263,14 +266,14 @@ export const ItemsPage: React.FC = () => {
             return (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                     <SparklesIcon className="w-3 h-3" />
-                    <span>Xidmət</span>
+                    <span>{t('customers.typeService', {}, 'Xidmət')}</span>
                 </span>
             );
         }
         return (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
                 <TagIcon className="w-3 h-3" />
-                <span>Qeyri-stok</span>
+                <span>{t('customers.typeNonStock', {}, 'Qeyri-stok')}</span>
             </span>
         );
     };
@@ -295,7 +298,7 @@ export const ItemsPage: React.FC = () => {
     const handleCreateSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!createName.trim()) {
-            setCreateError('Zəhmət olmasa məhsul və ya xidmətin adını qeyd edin.');
+            setCreateError(t('validation.itemNameRequired', {}, 'Zəhmət olmasa məhsul və ya xidmətin adını qeyd edin.'));
             return;
         }
 
@@ -316,11 +319,11 @@ export const ItemsPage: React.FC = () => {
                 revenueAccountId: createRevenueAccountId || undefined,
             });
 
-            showToast('Yeni məhsul/xidmət uğurla yaradıldı!');
+            showToast(t('customers.itemCreatedSuccess', {}, 'Yeni məhsul/xidmət uğurla yaradıldı!'));
             setShowCreateModal(false);
             loadData();
         } catch (err: any) {
-            setCreateError(err.response?.data?.detail || err.response?.data?.message || err.message || 'Məhsul yaradılarkən xəta baş verdi.');
+            setCreateError(err.response?.data?.detail || err.response?.data?.message || err.message || t('common.error', {}, 'Məhsul yaradılarkən xəta baş verdi.'));
         } finally {
             setCreateLoading(false);
         }
@@ -332,11 +335,11 @@ export const ItemsPage: React.FC = () => {
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                        <span>Məhsul və Xidmətlər</span>
+                        <span>{t('nav.items', {}, 'Məhsul və Xidmətlər')}</span>
                         <span className="text-[#52525B]">/</span>
                         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#18181B] border border-[#27272A] text-xs font-semibold text-[#E4E4E7]">
                             <Bars3Icon className="w-3.5 h-3.5 text-[#A1A1AA]" />
-                            <span>Siyahı</span>
+                            <span>{t('accounting.listView', {}, 'Siyahı')}</span>
                         </div>
                     </h1>
                 </div>
@@ -349,7 +352,7 @@ export const ItemsPage: React.FC = () => {
                         }}
                         disabled={isRefreshing}
                         className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                        title="Yenilə"
+                        title={t('common.refresh', {}, 'Yenilə')}
                     >
                         <ArrowPathIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-white' : ''}`} />
                     </button>
@@ -359,7 +362,7 @@ export const ItemsPage: React.FC = () => {
                         className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white hover:bg-zinc-200 text-black text-xs font-semibold shadow-md transition-colors cursor-pointer"
                     >
                         <PlusIcon className="w-4 h-4 stroke-[2.5]" />
-                        <span>Yarat</span>
+                        <span>{t('common.create', {}, 'Yarat')}</span>
                     </button>
                 </div>
             </div>
@@ -388,7 +391,7 @@ export const ItemsPage: React.FC = () => {
                         <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-2.5 text-[#71717A]" />
                         <input
                             type="text"
-                            placeholder="Məhsul adı və ya SKU..."
+                            placeholder={t('common.searchPlaceholder', {}, 'Məhsul adı və ya SKU...')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-[#18181B] border border-[#27272A] rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
@@ -400,33 +403,39 @@ export const ItemsPage: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => setIsTypeDropdownOpen(!isTypeDropdownOpen)}
-                            className="flex items-center justify-between w-36 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                            className="flex items-center justify-between w-40 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
                         >
                             <span className="truncate">
-                                {filterType === 'ALL' ? 'Bütün Növlər' : filterType === 'StockItem' ? 'Stok Məhsulu' : filterType === 'Service' ? 'Xidmət' : 'Qeyri-stok'}
+                                {filterType === 'ALL'
+                                    ? t('common.all', {}, 'Bütün Növlər')
+                                    : filterType === 'StockItem'
+                                    ? t('customers.typeStock', {}, 'Stok Məhsulu')
+                                    : filterType === 'Service'
+                                    ? t('customers.typeService', {}, 'Xidmət')
+                                    : t('customers.typeNonStock', {}, 'Qeyri-stok')}
                             </span>
                         </button>
 
                         {isTypeDropdownOpen && (
-                            <div className="absolute top-9 left-0 w-44 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-50 flex flex-col text-xs text-[#E4E4E7] animate-in fade-in duration-150">
+                            <div className="absolute top-9 left-0 w-48 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-50 flex flex-col text-xs text-[#E4E4E7] animate-in fade-in duration-150">
                                 {[
-                                    { id: 'ALL', label: 'Bütün Növlər' },
-                                    { id: 'StockItem', label: 'Stok Məhsulu' },
-                                    { id: 'NonStockItem', label: 'Qeyri-stok Məhsulu' },
-                                    { id: 'Service', label: 'Xidmət' },
-                                ].map((t) => (
+                                    { id: 'ALL', label: t('common.all', {}, 'Bütün Növlər') },
+                                    { id: 'StockItem', label: t('customers.typeStock', {}, 'Stok Məhsulu') },
+                                    { id: 'NonStockItem', label: t('customers.typeNonStock', {}, 'Qeyri-stok Məhsulu') },
+                                    { id: 'Service', label: t('customers.typeService', {}, 'Xidmət') },
+                                ].map((tObj) => (
                                     <button
-                                        key={t.id}
+                                        key={tObj.id}
                                         type="button"
                                         onClick={() => {
-                                            setFilterType(t.id);
+                                            setFilterType(tObj.id);
                                             setIsTypeDropdownOpen(false);
                                         }}
                                         className={`px-3 py-1.5 rounded-xl text-left cursor-pointer transition-colors ${
-                                            filterType === t.id ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
+                                            filterType === tObj.id ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
                                         }`}
                                     >
-                                        {t.label}
+                                        {tObj.label}
                                     </button>
                                 ))}
                             </div>
@@ -445,7 +454,7 @@ export const ItemsPage: React.FC = () => {
                             }`}
                         >
                             <FunnelIcon className="w-3.5 h-3.5" />
-                            <span>Filtr</span>
+                            <span>{t('common.filter', {}, 'Filtr')}</span>
                             {activeFilterCount > 0 && (
                                 <span className="w-4 h-4 rounded-full bg-white text-black text-[10px] flex items-center justify-center font-bold ml-0.5">
                                     {activeFilterCount}
@@ -456,25 +465,25 @@ export const ItemsPage: React.FC = () => {
                         {isFilterPopoverOpen && (
                             <div className="absolute top-9 left-0 w-80 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-4 z-50 text-xs text-[#E4E4E7] space-y-4 animate-in fade-in duration-150">
                                 <div className="flex items-center justify-between pb-2 border-b border-[#2C2C2E]">
-                                    <span className="font-bold text-white text-xs">Məhsul Filtrləri</span>
+                                    <span className="font-bold text-white text-xs">{t('common.allFilters', {}, 'Məhsul Filtrləri')}</span>
                                     {activeFilterCount > 0 && (
                                         <button
                                             onClick={clearAllFilters}
                                             className="text-[11px] text-zinc-400 hover:text-white cursor-pointer"
                                         >
-                                            Sıfırla
+                                            {t('common.reset', {}, 'Sıfırla')}
                                         </button>
                                     )}
                                 </div>
 
                                 {/* UOM Filter */}
                                 <div className="space-y-1">
-                                    <label className="text-[11px] text-[#A1A1AA] font-semibold">Ölçü Vahidi (UOM)</label>
+                                    <label className="text-[11px] text-[#A1A1AA] font-semibold">{t('customers.uom', {}, 'Ölçü Vahidi (UOM)')}</label>
                                     <CustomSelect
                                         value={filterUom}
                                         onChange={(val) => setFilterUom(String(val))}
                                         options={[
-                                            { value: 'ALL', label: 'Bütün ölçü vahidləri' },
+                                            { value: 'ALL', label: t('common.all', {}, 'Bütün ölçü vahidləri') },
                                             { value: 'PCS', label: 'Ədəd (PCS)' },
                                             { value: 'KG', label: 'Kiloqram (KG)' },
                                             { value: 'L', label: 'Litr (L)' },
@@ -487,7 +496,7 @@ export const ItemsPage: React.FC = () => {
 
                                 {/* Price Range */}
                                 <div className="space-y-1">
-                                    <label className="text-[11px] text-[#A1A1AA] font-semibold">Satış Qiyməti (AZN)</label>
+                                    <label className="text-[11px] text-[#A1A1AA] font-semibold">{t('customers.defaultSalePrice', {}, 'Satış Qiyməti (AZN)')}</label>
                                     <div className="grid grid-cols-2 gap-2">
                                         <input
                                             type="number"
@@ -508,7 +517,7 @@ export const ItemsPage: React.FC = () => {
 
                                 {/* Stock Range */}
                                 <div className="space-y-1">
-                                    <label className="text-[11px] text-[#A1A1AA] font-semibold">Mövcud Stok Sayı</label>
+                                    <label className="text-[11px] text-[#A1A1AA] font-semibold">{t('inventory.quantityOnHand', {}, 'Mövcud Stok Sayı')}</label>
                                     <div className="grid grid-cols-2 gap-2">
                                         <input
                                             type="number"
@@ -533,7 +542,7 @@ export const ItemsPage: React.FC = () => {
                                         onClick={() => setIsFilterPopoverOpen(false)}
                                         className="px-3 py-1.5 bg-white text-black text-xs font-semibold rounded-xl hover:bg-zinc-200 cursor-pointer"
                                     >
-                                        Tətbiq et
+                                        {t('common.apply', {}, 'Tətbiq et')}
                                     </button>
                                 </div>
                             </div>
@@ -549,13 +558,13 @@ export const ItemsPage: React.FC = () => {
                             type="button"
                             onClick={() => setIsColumnsOpen(!isColumnsOpen)}
                             className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                            title="Sütunlar"
+                            title={t('common.columns', {}, 'Sütunlar')}
                         >
                             <AdjustmentsHorizontalIcon className="w-4 h-4" />
                         </button>
                         {isColumnsOpen && (
                             <div className="absolute top-9 right-0 w-52 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-2 z-50 text-xs text-[#E4E4E7] space-y-1.5 animate-in fade-in duration-150">
-                                <span className="font-bold text-white px-2 py-1 block text-[11px]">Görünən Sütunlar</span>
+                                <span className="font-bold text-white px-2 py-1 block text-[11px]">{t('common.columns', {}, 'Görünən Sütunlar')}</span>
                                 {columns.map((col) => (
                                     <label
                                         key={col.key}
@@ -573,7 +582,7 @@ export const ItemsPage: React.FC = () => {
                                             }
                                             className="rounded bg-[#121214] border-[#3F3F46] text-white focus:ring-0"
                                         />
-                                        <span>{col.label}</span>
+                                        <span>{t(col.i18nKey || col.key, {}, col.label)}</span>
                                     </label>
                                 ))}
                             </div>
@@ -586,7 +595,7 @@ export const ItemsPage: React.FC = () => {
                             type="button"
                             onClick={() => setIsSortOpen(!isSortOpen)}
                             className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                            title="Sıralama"
+                            title={t('common.sort', {}, 'Sıralama')}
                         >
                             <ArrowsUpDownIcon className="w-4 h-4" />
                         </button>
@@ -596,25 +605,25 @@ export const ItemsPage: React.FC = () => {
                                     onClick={() => { setSortField('code'); setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc'); setIsSortOpen(false); }}
                                     className="px-3 py-1.5 rounded-xl text-left hover:bg-[#2C2C2E]/60 cursor-pointer"
                                 >
-                                    SKU üzrə ({sortDirection === 'asc' ? 'Artan' : 'Azalan'})
+                                    {t('customers.itemCode', {}, 'SKU')} ({sortDirection === 'asc' ? '↑' : '↓'})
                                 </button>
                                 <button
                                     onClick={() => { setSortField('name'); setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc'); setIsSortOpen(false); }}
                                     className="px-3 py-1.5 rounded-xl text-left hover:bg-[#2C2C2E]/60 cursor-pointer"
                                 >
-                                    Ad üzrə
+                                    {t('customers.itemName', {}, 'Ad')}
                                 </button>
                                 <button
                                     onClick={() => { setSortField('price'); setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc'); setIsSortOpen(false); }}
                                     className="px-3 py-1.5 rounded-xl text-left hover:bg-[#2C2C2E]/60 cursor-pointer"
                                 >
-                                    Qiymət üzrə
+                                    {t('customers.defaultSalePrice', {}, 'Qiymət')}
                                 </button>
                                 <button
                                     onClick={() => { setSortField('stock'); setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc'); setIsSortOpen(false); }}
                                     className="px-3 py-1.5 rounded-xl text-left hover:bg-[#2C2C2E]/60 cursor-pointer"
                                 >
-                                    Stok üzrə
+                                    {t('inventory.quantityOnHand', {}, 'Stok')}
                                 </button>
                             </div>
                         )}
@@ -636,16 +645,16 @@ export const ItemsPage: React.FC = () => {
                                         className="rounded bg-[#121214] border-[#2C2C2E] text-white focus:ring-0 cursor-pointer"
                                     />
                                 </th>
-                                {columns.find((c) => c.key === 'code')?.visible && <th className="py-3 px-3">SKU / Kod</th>}
-                                {columns.find((c) => c.key === 'name')?.visible && <th className="py-3 px-3">Məhsul / Xidmət Adı</th>}
-                                {columns.find((c) => c.key === 'type')?.visible && <th className="py-3 px-3">Növ</th>}
-                                {columns.find((c) => c.key === 'uom')?.visible && <th className="py-3 px-3 text-center">Ölçü Vahidi</th>}
-                                {columns.find((c) => c.key === 'costPrice')?.visible && <th className="py-3 px-3 text-right">Alış Qiyməti</th>}
-                                {columns.find((c) => c.key === 'unitPrice')?.visible && <th className="py-3 px-3 text-right">Satış Qiyməti</th>}
-                                {columns.find((c) => c.key === 'stock')?.visible && <th className="py-3 px-3 text-right">Mövcud Stok</th>}
-                                {columns.find((c) => c.key === 'stockValue')?.visible && <th className="py-3 px-3 text-right">Stok Dəyəri</th>}
-                                {columns.find((c) => c.key === 'status')?.visible && <th className="py-3 px-3 text-center">Status</th>}
-                                <th className="py-3 px-3 text-right">Əməliyyatlar</th>
+                                {columns.find((c) => c.key === 'code')?.visible && <th className="py-3 px-3">{t('customers.itemCode', {}, 'SKU / Kod')}</th>}
+                                {columns.find((c) => c.key === 'name')?.visible && <th className="py-3 px-3">{t('customers.itemName', {}, 'Məhsul / Xidmət Adı')}</th>}
+                                {columns.find((c) => c.key === 'type')?.visible && <th className="py-3 px-3">{t('customers.itemType', {}, 'Növ')}</th>}
+                                {columns.find((c) => c.key === 'uom')?.visible && <th className="py-3 px-3 text-center">{t('customers.uom', {}, 'Ölçü Vahidi')}</th>}
+                                {columns.find((c) => c.key === 'costPrice')?.visible && <th className="py-3 px-3 text-right">{t('customers.defaultPurchasePrice', {}, 'Alış Qiyməti')}</th>}
+                                {columns.find((c) => c.key === 'unitPrice')?.visible && <th className="py-3 px-3 text-right">{t('customers.defaultSalePrice', {}, 'Satış Qiyməti')}</th>}
+                                {columns.find((c) => c.key === 'stock')?.visible && <th className="py-3 px-3 text-right">{t('inventory.quantityOnHand', {}, 'Mövcud Stok')}</th>}
+                                {columns.find((c) => c.key === 'stockValue')?.visible && <th className="py-3 px-3 text-right">{t('inventory.totalValue', {}, 'Stok Dəyəri')}</th>}
+                                {columns.find((c) => c.key === 'status')?.visible && <th className="py-3 px-3 text-center">{t('common.status', {}, 'Status')}</th>}
+                                <th className="py-3 px-3 text-right">{t('common.actions', {}, 'Əməliyyatlar')}</th>
                             </tr>
                         </thead>
 
@@ -655,7 +664,7 @@ export const ItemsPage: React.FC = () => {
                                     <td colSpan={11} className="py-12 text-center text-[#71717A]">
                                         <div className="flex items-center justify-center gap-2">
                                             <ArrowPathIcon className="w-4 h-4 animate-spin text-white" />
-                                            <span>Məhsullar və xidmətlər yüklənir...</span>
+                                            <span>{t('common.loading', {}, 'Məhsullar və xidmətlər yüklənir...')}</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -667,15 +676,15 @@ export const ItemsPage: React.FC = () => {
                                                 <CubeIcon className="w-6 h-6" />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-bold text-white">Heç bir məhsul və ya xidmət tapılmadı</p>
-                                                <p className="text-xs text-[#71717A] mt-1 max-w-sm">Müəssisəniz üçün yeni məhsul, xammal və ya xidmət əlavə edin</p>
+                                                <p className="text-sm font-bold text-white">{t('common.noData', {}, 'Heç bir məhsul və ya xidmət tapılmadı')}</p>
+                                                <p className="text-xs text-[#71717A] mt-1 max-w-sm">{t('customers.itemsSubtitle', {}, 'Müəssisəniz üçün yeni məhsul, xammal və ya xidmət əlavə edin')}</p>
                                             </div>
                                             <button
                                                 onClick={openCreateModal}
                                                 className="mt-2 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-semibold transition-colors cursor-pointer"
                                             >
                                                 <PlusIcon className="w-3.5 h-3.5" />
-                                                <span>İlk Məhsulu Yarat</span>
+                                                <span>{t('customers.newItem', {}, 'İlk Məhsulu Yarat')}</span>
                                             </button>
                                         </div>
                                     </td>
@@ -765,7 +774,7 @@ export const ItemsPage: React.FC = () => {
                                             <td className="py-3 px-3 text-center">
                                                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                                                    Aktiv
+                                                    {t('common.active', {}, 'Aktiv')}
                                                 </span>
                                             </td>
                                         )}
@@ -775,7 +784,7 @@ export const ItemsPage: React.FC = () => {
                                                 <Link
                                                     to={`/items/${it.id}`}
                                                     className="p-1 rounded-lg bg-[#18181B] hover:bg-[#27272A] text-[#A1A1AA] hover:text-white transition-colors"
-                                                    title="Detallara Bax"
+                                                    title={t('common.details', {}, 'Detallara Bax')}
                                                 >
                                                     <EyeIcon className="w-4 h-4" />
                                                 </Link>
@@ -809,16 +818,16 @@ export const ItemsPage: React.FC = () => {
 
                     <span>
                         {filteredItems.length === 0
-                            ? '0 of 0'
+                            ? '0 / 0'
                             : `${(currentPage - 1) * pageSize + 1}-${Math.min(
                                   currentPage * pageSize,
                                   filteredItems.length
-                              )} of ${filteredItems.length}`}
+                              )} / ${filteredItems.length}`}
                     </span>
                 </div>
             </div>
 
-            {/* ─── CREATE ITEM MODAL (Soft CRM Design) ─── */}
+            {/* ─── CREATE ITEM MODAL ─── */}
             {showCreateModal && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in"
@@ -833,8 +842,8 @@ export const ItemsPage: React.FC = () => {
                         {/* Modal Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-[#27272A] shrink-0">
                             <div>
-                                <h3 className="text-base font-bold text-white">Yeni Məhsul / Xidmət Yarat</h3>
-                                <p className="text-xs text-[#A1A1AA] mt-0.5">Anbar və satış üçün yeni element qeydiyyatı</p>
+                                <h3 className="text-base font-bold text-white">{t('customers.newItem', {}, 'Yeni Məhsul / Xidmət Yarat')}</h3>
+                                <p className="text-xs text-[#A1A1AA] mt-0.5">{t('customers.itemsSubtitle', {}, 'Anbar və satış üçün yeni element qeydiyyatı')}</p>
                             </div>
                             <button
                                 type="button"
@@ -860,28 +869,28 @@ export const ItemsPage: React.FC = () => {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-semibold text-[#A1A1AA] block">
-                                            SKU / Kod <span className="text-rose-400">*</span>
+                                            {t('customers.itemCode', {}, 'SKU / Kod')} <span className="text-rose-400">*</span>
                                         </label>
                                         <input
                                             type="text"
                                             required
                                             value={createCode}
                                             onChange={(e) => setCreateCode(e.target.value)}
-                                            placeholder="məs. SKU-1001"
+                                            placeholder="SKU-1001"
                                             className="w-full bg-[#121214] border border-[#27272A] rounded-xl px-3.5 py-2.5 text-xs text-white font-mono placeholder:text-[#52525B] focus:outline-none focus:border-white transition-colors"
                                         />
                                     </div>
 
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-semibold text-[#A1A1AA] block">
-                                            Məhsul / Xidmət Adı <span className="text-rose-400">*</span>
+                                            {t('customers.itemName', {}, 'Məhsul / Xidmət Adı')} <span className="text-rose-400">*</span>
                                         </label>
                                         <input
                                             type="text"
                                             required
                                             value={createName}
                                             onChange={(e) => setCreateName(e.target.value)}
-                                            placeholder="məs. MacBook Pro M3 və ya Logistika Xidməti"
+                                            placeholder={t('customers.itemName', {}, 'Məhsulun adı')}
                                             className="w-full bg-[#121214] border border-[#27272A] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-[#52525B] focus:outline-none focus:border-white transition-colors"
                                         />
                                     </div>
@@ -890,20 +899,20 @@ export const ItemsPage: React.FC = () => {
                                 {/* Row 2: Type, UOM, Valuation Method */}
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-[#A1A1AA] block">Element Növü</label>
+                                        <label className="text-xs font-semibold text-[#A1A1AA] block">{t('customers.itemType', {}, 'Element Növü')}</label>
                                         <CustomSelect
                                             value={createType}
                                             onChange={(val) => setCreateType(val as any)}
                                             options={[
-                                                { value: 'StockItem', label: 'Stok Məhsulu (Stock)' },
-                                                { value: 'NonStockItem', label: 'Qeyri-stok Məhsulu' },
-                                                { value: 'Service', label: 'Xidmət (Service)' },
+                                                { value: 'StockItem', label: t('customers.typeStock', {}, 'Stok Məhsulu (Stock)') },
+                                                { value: 'NonStockItem', label: t('customers.typeNonStock', {}, 'Qeyri-stok Məhsulu') },
+                                                { value: 'Service', label: t('customers.typeService', {}, 'Xidmət (Service)') },
                                             ]}
                                         />
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-[#A1A1AA] block">Ölçü Vahidi (UOM)</label>
+                                        <label className="text-xs font-semibold text-[#A1A1AA] block">{t('customers.uom', {}, 'Ölçü Vahidi (UOM)')}</label>
                                         <CustomSelect
                                             value={createUOM}
                                             onChange={(val) => setCreateUOM(String(val))}
@@ -919,13 +928,13 @@ export const ItemsPage: React.FC = () => {
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-[#A1A1AA] block">Qiymətləndirmə Metodu</label>
+                                        <label className="text-xs font-semibold text-[#A1A1AA] block">{t('customers.valuationMethod', {}, 'Qiymətləndirmə Metodu')}</label>
                                         <CustomSelect
                                             value={createValuation}
                                             onChange={(val) => setCreateValuation(val as any)}
                                             options={[
-                                                { value: 'MovingAverage', label: 'Orta Qiymət (Moving Avg)' },
-                                                { value: 'FIFO', label: 'FIFO (İlk Gələn İlk Çıxar)' },
+                                                { value: 'MovingAverage', label: t('customers.methodMovingAvg', {}, 'Orta Qiymət (Moving Avg)') },
+                                                { value: 'FIFO', label: t('customers.methodFifo', {}, 'FIFO (İlk Gələn İlk Çıxar)') },
                                             ]}
                                         />
                                     </div>
@@ -934,7 +943,7 @@ export const ItemsPage: React.FC = () => {
                                 {/* Row 3: Buying & Selling Price */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-[#A1A1AA] block">Standart Alış / Maya Qiyməti (AZN)</label>
+                                        <label className="text-xs font-semibold text-[#A1A1AA] block">{t('customers.defaultPurchasePrice', {}, 'Standart Alış / Maya Qiyməti (AZN)')}</label>
                                         <input
                                             type="number"
                                             step="0.01"
@@ -947,7 +956,7 @@ export const ItemsPage: React.FC = () => {
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-[#A1A1AA] block">Standart Satış Qiyməti (AZN)</label>
+                                        <label className="text-xs font-semibold text-[#A1A1AA] block">{t('customers.defaultSalePrice', {}, 'Standart Satış Qiyməti (AZN)')}</label>
                                         <input
                                             type="number"
                                             step="0.01"
@@ -963,13 +972,13 @@ export const ItemsPage: React.FC = () => {
                                 {/* Row 4: GL Accounts Mapping */}
                                 <div className="p-4 rounded-2xl bg-[#121214]/60 border border-[#27272A] space-y-3">
                                     <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider block">
-                                        Mühasibat Hesabları (GL Accounts)
+                                        {t('accounting.accountsTitle', {}, 'Mühasibat Hesabları (GL Accounts)')}
                                     </span>
 
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                         {createType === 'StockItem' && (
                                             <div className="space-y-1.5">
-                                                <label className="text-[11px] text-[#A1A1AA] font-semibold block">Stok Hesabı (Asset)</label>
+                                                <label className="text-[11px] text-[#A1A1AA] font-semibold block">{t('customers.inventoryAccount', {}, 'Stok Hesabı (Asset)')}</label>
                                                 <CustomSelect
                                                     value={createInventoryAccountId}
                                                     onChange={(val) => setCreateInventoryAccountId(String(val))}
@@ -986,7 +995,7 @@ export const ItemsPage: React.FC = () => {
 
                                         {createType === 'StockItem' && (
                                             <div className="space-y-1.5">
-                                                <label className="text-[11px] text-[#A1A1AA] font-semibold block">Maya Dəyəri (COGS)</label>
+                                                <label className="text-[11px] text-[#A1A1AA] font-semibold block">{t('accounting.typeCOGS', {}, 'Maya Dəyəri (COGS)')}</label>
                                                 <CustomSelect
                                                     value={createCogsAccountId}
                                                     onChange={(val) => setCreateCogsAccountId(String(val))}
@@ -1002,7 +1011,7 @@ export const ItemsPage: React.FC = () => {
                                         )}
 
                                         <div className={`space-y-1.5 ${createType !== 'StockItem' ? 'sm:col-span-3' : ''}`}>
-                                            <label className="text-[11px] text-[#A1A1AA] font-semibold block">Gəlir Hesabı (Revenue)</label>
+                                            <label className="text-[11px] text-[#A1A1AA] font-semibold block">{t('accounting.typeRevenue', {}, 'Gəlir Hesabı (Revenue)')}</label>
                                             <CustomSelect
                                                 value={createRevenueAccountId}
                                                 onChange={(val) => setCreateRevenueAccountId(String(val))}
@@ -1020,12 +1029,12 @@ export const ItemsPage: React.FC = () => {
 
                                 {/* Row 5: Description */}
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-[#A1A1AA] block">Təsvir və Qeydlər</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA] block">{t('common.description', {}, 'Təsvir və Qeydlər')}</label>
                                     <textarea
                                         rows={2}
                                         value={createDescription}
                                         onChange={(e) => setCreateDescription(e.target.value)}
-                                        placeholder="Məhsulun xüsusiyyətləri, texniki parametrləri və s."
+                                        placeholder={t('common.description', {}, 'Məhsulun xüsusiyyətləri, texniki parametrləri və s.')}
                                         className="w-full bg-[#121214] border border-[#27272A] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-[#52525B] focus:outline-none focus:border-white transition-colors resize-none"
                                     />
                                 </div>
@@ -1038,7 +1047,7 @@ export const ItemsPage: React.FC = () => {
                                     onClick={() => setShowCreateModal(false)}
                                     className="px-4 py-2 rounded-xl bg-[#18181B] border border-[#27272A] hover:bg-[#27272A] text-xs font-semibold text-white transition-colors cursor-pointer"
                                 >
-                                    Ləğv et
+                                    {t('common.cancel', {}, 'Ləğv et')}
                                 </button>
                                 <button
                                     type="submit"
@@ -1048,12 +1057,12 @@ export const ItemsPage: React.FC = () => {
                                     {createLoading ? (
                                         <>
                                             <ArrowPathIcon className="w-4 h-4 animate-spin text-black" />
-                                            <span>Yaradılır...</span>
+                                            <span>{t('common.saving', {}, 'Yaradılır...')}</span>
                                         </>
                                     ) : (
                                         <>
                                             <CheckIcon className="w-4 h-4 stroke-[2.5]" />
-                                            <span>Məhsulu Yarat</span>
+                                            <span>{t('customers.newItem', {}, 'Məhsulu Yarat')}</span>
                                         </>
                                     )}
                                 </button>

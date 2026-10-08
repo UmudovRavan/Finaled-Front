@@ -8,17 +8,16 @@ import type {
     JournalEntryDto,
 } from '../../dto';
 import { formatDate } from '../../utils';
+import { useLanguage } from '../../context/LanguageContext';
 import {
     ScaleIcon,
     ArrowPathIcon,
     CheckCircleIcon,
     ExclamationTriangleIcon,
-    MagnifyingGlassIcon,
     FunnelIcon,
     ArrowsUpDownIcon,
     ViewColumnsIcon,
     ArrowDownTrayIcon,
-    PrinterIcon,
     PlusIcon,
     XMarkIcon,
     EyeIcon,
@@ -31,6 +30,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 export const TrialBalancePage: React.FC = () => {
+    const { t } = useLanguage();
     const navigate = useNavigate();
     const [asOfDate, setAsOfDate] = useState(new Date().toISOString().split('T')[0]);
     const [data, setData] = useState<TrialBalanceResponse | null>(null);
@@ -42,7 +42,7 @@ export const TrialBalancePage: React.FC = () => {
 
     // Filters
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState<string>('Kateqoriya');
+    const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
     const [onlyWithBalance, setOnlyWithBalance] = useState(false);
     const [minAmount, setMinAmount] = useState('');
     const [maxAmount, setMaxAmount] = useState('');
@@ -62,13 +62,13 @@ export const TrialBalancePage: React.FC = () => {
 
     // Column Visibility
     const [columns, setColumns] = useState([
-        { key: 'code', label: 'Hesab Kodu', visible: true },
-        { key: 'name', label: 'Hesabın Adı', visible: true },
-        { key: 'category', label: 'Kateqoriya', visible: true },
-        { key: 'opening', label: 'İlkin Qalıq', visible: true },
-        { key: 'debit', label: 'Debet Dövriyyəsi', visible: true },
-        { key: 'credit', label: 'Kredit Dövriyyəsi', visible: true },
-        { key: 'balance', label: 'Xalis Son Qalıq', visible: true },
+        { key: 'code', label: t('reports.accountCode', {}, 'Hesab Kodu'), visible: true },
+        { key: 'name', label: t('reports.accountName', {}, 'Hesabın Adı'), visible: true },
+        { key: 'category', label: t('common.category', {}, 'Kateqoriya'), visible: true },
+        { key: 'opening', label: t('reports.openingBalance', {}, 'İlkin Qalıq'), visible: true },
+        { key: 'debit', label: t('reports.debitTurnover', {}, 'Debet Dövriyyəsi'), visible: true },
+        { key: 'credit', label: t('reports.creditTurnover', {}, 'Kredit Dövriyyəsi'), visible: true },
+        { key: 'balance', label: t('reports.netClosingBalance', {}, 'Xalis Son Qalıq'), visible: true },
     ]);
 
     // Detail Drawer State
@@ -138,7 +138,7 @@ export const TrialBalancePage: React.FC = () => {
                 setError(
                     reportRes.reason?.response?.data?.detail ||
                     reportRes.reason?.response?.data?.message ||
-                    'Sınaq balansını yükləyərkən xəta baş verdi.'
+                    t('reports.trialBalanceLoadError', {}, 'Sınaq balansını yükləyərkən xəta baş verdi.')
                 );
             }
 
@@ -188,7 +188,7 @@ export const TrialBalancePage: React.FC = () => {
     const activeFilterCount = useMemo(() => {
         let count = 0;
         if (searchQuery.trim()) count++;
-        if (selectedCategory !== 'Kateqoriya' && selectedCategory !== 'ALL') count++;
+        if (selectedCategory !== 'ALL' && selectedCategory !== 'Kateqoriya') count++;
         if (onlyWithBalance) count++;
         if (minAmount) count++;
         if (maxAmount) count++;
@@ -204,7 +204,7 @@ export const TrialBalancePage: React.FC = () => {
             const net = Number(item.netBalance ?? item.closingBalance ?? (deb - crd));
 
             // Category filter
-            if (selectedCategory !== 'Kateqoriya' && selectedCategory !== 'ALL' && cat !== selectedCategory) {
+            if (selectedCategory !== 'ALL' && selectedCategory !== 'Kateqoriya' && cat !== selectedCategory) {
                 return false;
             }
 
@@ -316,7 +316,15 @@ export const TrialBalancePage: React.FC = () => {
 
     // Export to CSV
     const exportToCsv = () => {
-        const headers = ['Hesab Kodu', 'Hesab Adı', 'Kateqoriya', 'İlkin Qalıq', 'Debet Dövriyyəsi', 'Kredit Dövriyyəsi', 'Son Qalıq'];
+        const headers = [
+            t('reports.accountCode', {}, 'Hesab Kodu'),
+            t('reports.accountName', {}, 'Hesab Adı'),
+            t('common.category', {}, 'Kateqoriya'),
+            t('reports.openingBalance', {}, 'İlkin Qalıq'),
+            t('reports.debitTurnover', {}, 'Debet Dövriyyəsi'),
+            t('reports.creditTurnover', {}, 'Kredit Dövriyyəsi'),
+            t('reports.netClosingBalance', {}, 'Son Qalıq'),
+        ];
         const rows = sortedItems.map((it) => [
             `"${it.accountCode}"`,
             `"${it.accountName.replace(/"/g, '""')}"`,
@@ -335,7 +343,7 @@ export const TrialBalancePage: React.FC = () => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        showToast('Sınaq Balansı CSV faylı uğurla endirildi.');
+        showToast(t('reports.csvExportSuccess', {}, 'Sınaq Balansı CSV faylı uğurla endirildi.'));
     };
 
     // Create Modal Line Management
@@ -374,18 +382,18 @@ export const TrialBalancePage: React.FC = () => {
         setCreateError('');
 
         if (!createDesc.trim()) {
-            setCreateError('Zəhmət olmasa əməliyyat təsvirini daxil edin.');
+            setCreateError(t('accounting.specifyDescription', {}, 'Zəhmət olmasa əməliyyat təsvirini daxil edin.'));
             return;
         }
 
         if (!isModalBalanced) {
-            setCreateError('Debet və Kredit məbləğləri bir-birinə bərabər və 0-dan böyük olmalıdır!');
+            setCreateError(t('accounting.debitCreditMustMatch', {}, 'Debet və Kredit məbləğləri bir-birinə bərabər və 0-dan böyük olmalıdır!'));
             return;
         }
 
         const validLines = createLines.filter((l) => l.accountId && (Number(l.debit) > 0 || Number(l.credit) > 0));
         if (validLines.length < 2) {
-            setCreateError('Ən azı 2 hesab üzrə sətr doldurulmalıdır.');
+            setCreateError(t('accounting.atLeastTwoLines', {}, 'Ən azı 2 hesab üzrə sətr doldurulmalıdır.'));
             return;
         }
 
@@ -405,7 +413,7 @@ export const TrialBalancePage: React.FC = () => {
                 })),
             });
 
-            showToast('Jurnal qeydi uğurla yaradıldı və sınaq balansı yeniləndi.');
+            showToast(t('accounting.journalCreatedSuccess', {}, 'Jurnal qeydi uğurla yaradıldı və sınaq balansı yeniləndi.'));
             setShowCreateModal(false);
             setCreateDesc('');
             setCreateRef('');
@@ -419,7 +427,7 @@ export const TrialBalancePage: React.FC = () => {
             setCreateError(
                 err.response?.data?.detail ||
                 err.response?.data?.message ||
-                'Jurnal qeydini yaradarkən xəta baş verdi.'
+                t('accounting.journalCreateError', {}, 'Jurnal qeydini yaradarkən xəta baş verdi.')
             );
         } finally {
             setCreateLoading(false);
@@ -443,11 +451,11 @@ export const TrialBalancePage: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                     <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                        <span>Maliyyə Hesabatları</span>
+                        <span>{t('nav.reports', {}, 'Maliyyə Hesabatları')}</span>
                         <span className="text-[#52525B]">/</span>
                         <div className="inline-flex items-center gap-1.5 text-white font-bold">
                             <Bars3Icon className="w-4 h-4 text-[#A1A1AA]" />
-                            <span>Sınaq Balansı</span>
+                            <span>{t('reports.trialBalanceTitle', {}, 'Sınaq Balansı')}</span>
                         </div>
                     </h1>
                 </div>
@@ -455,7 +463,7 @@ export const TrialBalancePage: React.FC = () => {
                 <div className="flex items-center gap-2">
                     {/* Date Selector */}
                     <div className="flex items-center gap-2 bg-[#18181B] border border-[#27272A] hover:border-zinc-700 rounded-xl px-3 py-1.5 transition-colors">
-                        <span className="text-[11px] text-[#A1A1AA] font-semibold select-none">Tarix:</span>
+                        <span className="text-[11px] text-[#A1A1AA] font-semibold select-none">{t('common.date', {}, 'Tarix')}:</span>
                         <input
                             type="date"
                             value={asOfDate}
@@ -464,12 +472,11 @@ export const TrialBalancePage: React.FC = () => {
                         />
                     </div>
 
-
                     {/* Refresh */}
                     <button
                         onClick={() => loadData(true)}
                         className="p-2 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-                        title="Yenilə"
+                        title={t('common.refresh', {}, 'Yenilə')}
                     >
                         <ArrowPathIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                     </button>
@@ -478,7 +485,7 @@ export const TrialBalancePage: React.FC = () => {
                     <button
                         onClick={exportToCsv}
                         className="p-2 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-                        title="İxrac (CSV)"
+                        title={t('common.exportCsv', {}, 'İxrac (CSV)')}
                     >
                         <ArrowDownTrayIcon className="w-4 h-4" />
                     </button>
@@ -489,7 +496,7 @@ export const TrialBalancePage: React.FC = () => {
                         className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white hover:bg-zinc-200 text-black text-xs font-semibold shadow-md transition-colors cursor-pointer"
                     >
                         <PlusIcon className="w-4 h-4 stroke-[2.5]" />
-                        <span>Yarat</span>
+                        <span>{t('common.create', {}, 'Yarat')}</span>
                     </button>
                 </div>
             </div>
@@ -513,7 +520,7 @@ export const TrialBalancePage: React.FC = () => {
                         onClick={() => loadData(true)}
                         className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-[11px] font-bold text-rose-300 transition-colors cursor-pointer"
                     >
-                        Yenidən yoxla
+                        {t('common.retry', {}, 'Yenidən yoxla')}
                     </button>
                 </div>
             )}
@@ -522,68 +529,68 @@ export const TrialBalancePage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                 <div className="p-4 rounded-2xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between shadow-lg">
                     <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">Cəmi Debet</span>
+                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">{t('reports.totalDebit', {}, 'Cəmi Debet')}</span>
                         <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#14291F] text-[#4ADE80] border border-[#22C55E]/30">
-                            Dövriyyə
+                            {t('reports.turnover', {}, 'Dövriyyə')}
                         </span>
                     </div>
                     <div className="text-xl font-black font-mono text-emerald-400 mt-2">
                         {formatCurrency(totals.totalDebit)}
                     </div>
-                    <span className="text-[10px] text-[#71717A] mt-1">Dövr üzrə ümumi debet dövriyyəsi</span>
+                    <span className="text-[10px] text-[#71717A] mt-1">{t('reports.totalDebitDesc', {}, 'Dövr üzrə ümumi debet dövriyyəsi')}</span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between shadow-lg">
                     <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">Cəmi Kredit</span>
+                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">{t('reports.totalCredit', {}, 'Cəmi Kredit')}</span>
                         <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#122336] text-[#60A5FA] border border-[#3B82F6]/30">
-                            Dövriyyə
+                            {t('reports.turnover', {}, 'Dövriyyə')}
                         </span>
                     </div>
                     <div className="text-xl font-black font-mono text-blue-400 mt-2">
                         {formatCurrency(totals.totalCredit)}
                     </div>
-                    <span className="text-[10px] text-[#71717A] mt-1">Dövr üzrə ümumi kredit dövriyyəsi</span>
+                    <span className="text-[10px] text-[#71717A] mt-1">{t('reports.totalCreditDesc', {}, 'Dövr üzrə ümumi kredit dövriyyəsi')}</span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between shadow-lg">
                     <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">Balans Statusu</span>
+                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">{t('reports.balanceStatus', {}, 'Balans Statusu')}</span>
                         <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
                             totals.isBalanced
                                 ? 'bg-[#14291F] text-[#4ADE80] border border-[#22C55E]/30'
                                 : 'bg-[#2E1619] text-[#F87171] border border-[#EF4444]/30'
                         }`}>
-                            {totals.isBalanced ? 'Bərabərdir' : 'Fərq var'}
+                            {totals.isBalanced ? t('reports.balanced', {}, 'Bərabərdir') : t('reports.unbalanced', {}, 'Fərq var')}
                         </span>
                     </div>
                     <div className="flex items-center gap-2 mt-2">
                         {totals.isBalanced ? (
                             <>
                                 <CheckCircleIcon className="w-5 h-5 text-emerald-400 shrink-0" />
-                                <span className="text-sm font-bold text-emerald-400">Balans Tamdır</span>
+                                <span className="text-sm font-bold text-emerald-400">{t('reports.balanceFull', {}, 'Balans Tamdır')}</span>
                             </>
                         ) : (
                             <>
                                 <ExclamationTriangleIcon className="w-5 h-5 text-rose-400 shrink-0" />
-                                <span className="text-sm font-bold text-rose-400">Fərq: {formatCurrency(totals.diff)}</span>
+                                <span className="text-sm font-bold text-rose-400">{t('reports.difference', {}, 'Fərq')}: {formatCurrency(totals.diff)}</span>
                             </>
                         )}
                     </div>
-                    <span className="text-[10px] text-[#71717A] mt-1">Debet = Kredit auditi</span>
+                    <span className="text-[10px] text-[#71717A] mt-1">{t('reports.debitCreditAudit', {}, 'Debet = Kredit auditi')}</span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between shadow-lg">
                     <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">Aktiv Hesablar</span>
+                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">{t('reports.activeAccounts', {}, 'Aktiv Hesablar')}</span>
                         <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#2C2C2E] text-[#A1A1AA] border border-[#3F3F46]">
-                            Say
+                            {t('common.count', {}, 'Say')}
                         </span>
                     </div>
                     <div className="text-xl font-black font-mono text-white mt-2">
-                        {rawItems.length} <span className="text-xs text-[#71717A] font-normal">hesab</span>
+                        {rawItems.length} <span className="text-xs text-[#71717A] font-normal">{t('treasury.accountsCount', {}, 'hesab')}</span>
                     </div>
-                    <span className="text-[10px] text-[#71717A] mt-1">Filtrlənmiş: {filteredItems.length} hesab</span>
+                    <span className="text-[10px] text-[#71717A] mt-1">{t('reports.filtered', {}, 'Filtrlənmiş')}: {filteredItems.length} {t('treasury.accountsCount', {}, 'hesab')}</span>
                 </div>
             </div>
 
@@ -593,7 +600,7 @@ export const TrialBalancePage: React.FC = () => {
                     {/* Search Input */}
                     <input
                         type="text"
-                        placeholder="Hesab kodu və ya adı ilə axtar..."
+                        placeholder={t('reports.searchTrialBalance', {}, 'Hesab kodu və ya adı ilə axtar...')}
                         value={searchQuery}
                         onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                         className="w-56 sm:w-72 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
@@ -606,7 +613,7 @@ export const TrialBalancePage: React.FC = () => {
                             onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
                             className="flex items-center justify-between min-w-[130px] bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
                         >
-                            <span className="truncate">{selectedCategory === 'ALL' ? 'Bütün Kateqoriyalar' : selectedCategory}</span>
+                            <span className="truncate">{selectedCategory === 'ALL' || selectedCategory === 'Kateqoriya' ? t('common.allCategories', {}, 'Bütün Kateqoriyalar') : selectedCategory}</span>
                             <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0 ml-1.5" />
                         </button>
 
@@ -625,7 +632,7 @@ export const TrialBalancePage: React.FC = () => {
                                             : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
                                     }`}
                                 >
-                                    Bütün Kateqoriyalar ({rawItems.length})
+                                    {t('common.allCategories', {}, 'Bütün Kateqoriyalar')} ({rawItems.length})
                                 </button>
                                 {categories.map((cat) => (
                                     <button
@@ -661,7 +668,7 @@ export const TrialBalancePage: React.FC = () => {
                             }`}
                         >
                             <FunnelIcon className="w-3.5 h-3.5" />
-                            <span>Filtr</span>
+                            <span>{t('common.filter', {}, 'Filtr')}</span>
                             {activeFilterCount > 0 && (
                                 <span className="ml-1 w-4 h-4 rounded-full bg-white text-black font-bold text-[10px] flex items-center justify-center">
                                     {activeFilterCount}
@@ -673,20 +680,20 @@ export const TrialBalancePage: React.FC = () => {
                         {isFilterPopoverOpen && (
                             <div className="absolute top-9 left-0 w-80 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-4 z-50 text-xs text-[#E4E4E7] space-y-3 animate-in fade-in duration-150">
                                 <div className="flex items-center justify-between pb-2 border-b border-[#2C2C2E]">
-                                    <span className="font-bold text-white">Sınaq Balansı Filtrləri</span>
+                                    <span className="font-bold text-white">{t('reports.trialBalanceFilters', {}, 'Sınaq Balansı Filtrləri')}</span>
                                     {activeFilterCount > 0 && (
                                         <button
                                             type="button"
                                             onClick={() => {
                                                 setSearchQuery('');
-                                                setSelectedCategory('Kateqoriya');
+                                                setSelectedCategory('ALL');
                                                 setOnlyWithBalance(false);
                                                 setMinAmount('');
                                                 setMaxAmount('');
                                             }}
                                             className="text-[11px] text-[#A1A1AA] hover:text-white underline cursor-pointer"
                                         >
-                                            Sıfırla
+                                            {t('common.reset', {}, 'Sıfırla')}
                                         </button>
                                     )}
                                 </div>
@@ -698,11 +705,11 @@ export const TrialBalancePage: React.FC = () => {
                                         onChange={(e) => setOnlyWithBalance(e.target.checked)}
                                         className="rounded bg-[#121214] border-[#2C2C2E] text-white focus:ring-0 cursor-pointer"
                                     />
-                                    <span>Yalnız qalıqlı hesabları göstər</span>
+                                    <span>{t('reports.onlyWithBalance', {}, 'Yalnız qalıqlı hesabları göstər')}</span>
                                 </label>
 
                                 <div>
-                                    <label className="text-[11px] text-[#A1A1AA] font-semibold block mb-1">Məbləğ Aralığı (AZN)</label>
+                                    <label className="text-[11px] text-[#A1A1AA] font-semibold block mb-1">{t('reports.amountRange', {}, 'Məbləğ Aralığı (AZN)')}</label>
                                     <div className="grid grid-cols-2 gap-2">
                                         <input
                                             type="number"
@@ -727,7 +734,7 @@ export const TrialBalancePage: React.FC = () => {
                                         onClick={() => setIsFilterPopoverOpen(false)}
                                         className="px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold text-xs transition-colors cursor-pointer"
                                     >
-                                        Tətbiq et
+                                        {t('common.apply', {}, 'Tətbiq et')}
                                     </button>
                                 </div>
                             </div>
@@ -743,13 +750,13 @@ export const TrialBalancePage: React.FC = () => {
                             type="button"
                             onClick={() => setIsColumnsOpen(!isColumnsOpen)}
                             className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                            title="Sütunlar"
+                            title={t('common.columns', {}, 'Sütunlar')}
                         >
                             <ViewColumnsIcon className="w-4 h-4" />
                         </button>
                         {isColumnsOpen && (
                             <div className="absolute top-9 right-0 w-48 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-2.5 z-50 text-xs text-[#E4E4E7] space-y-1.5 animate-in fade-in duration-150">
-                                <div className="font-bold text-white px-1.5 pb-1 border-b border-[#2C2C2E]">Sütunlar</div>
+                                <div className="font-bold text-white px-1.5 pb-1 border-b border-[#2C2C2E]">{t('common.columns', {}, 'Sütunlar')}</div>
                                 {columns.map((col) => (
                                     <label key={col.key} className="flex items-center gap-2 px-1.5 py-1 hover:bg-[#2C2C2E]/60 rounded-lg cursor-pointer">
                                         <input
@@ -771,18 +778,18 @@ export const TrialBalancePage: React.FC = () => {
                             type="button"
                             onClick={() => setIsSortOpen(!isSortOpen)}
                             className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                            title="Sıralama"
+                            title={t('common.sort', {}, 'Sıralama')}
                         >
                             <ArrowsUpDownIcon className="w-4 h-4" />
                         </button>
                         {isSortOpen && (
                             <div className="absolute top-9 right-0 w-44 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-50 text-xs text-[#E4E4E7] flex flex-col animate-in fade-in duration-150">
                                 {[
-                                    { key: 'code', label: 'Kod' },
-                                    { key: 'name', label: 'Hesab Adı' },
-                                    { key: 'debit', label: 'Debet' },
-                                    { key: 'credit', label: 'Kredit' },
-                                    { key: 'balance', label: 'Son Qalıq' },
+                                    { key: 'code', label: t('common.code', {}, 'Kod') },
+                                    { key: 'name', label: t('reports.accountName', {}, 'Hesab Adı') },
+                                    { key: 'debit', label: t('reports.debit', {}, 'Debet') },
+                                    { key: 'credit', label: t('reports.credit', {}, 'Kredit') },
+                                    { key: 'balance', label: t('reports.closingBalance', {}, 'Son Qalıq') },
                                 ].map((s) => (
                                     <button
                                         key={s.key}
@@ -830,36 +837,36 @@ export const TrialBalancePage: React.FC = () => {
                                 </th>
                                 {isColumnVisible('code') && (
                                     <th className="py-3 px-3 cursor-pointer hover:text-white" onClick={() => { setSortField('code'); setSortDirection((p) => (p === 'asc' ? 'desc' : 'asc')); }}>
-                                        Hesab Kodu {sortField === 'code' && (sortDirection === 'asc' ? '↑' : '↓')}
+                                        {t('reports.accountCode', {}, 'Hesab Kodu')} {sortField === 'code' && (sortDirection === 'asc' ? '↑' : '↓')}
                                     </th>
                                 )}
                                 {isColumnVisible('name') && (
                                     <th className="py-3 px-3 cursor-pointer hover:text-white" onClick={() => { setSortField('name'); setSortDirection((p) => (p === 'asc' ? 'desc' : 'asc')); }}>
-                                        Hesab Adı {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}
+                                        {t('reports.accountName', {}, 'Hesab Adı')} {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}
                                     </th>
                                 )}
                                 {isColumnVisible('category') && (
-                                    <th className="py-3 px-3 text-center">Kateqoriya</th>
+                                    <th className="py-3 px-3 text-center">{t('common.category', {}, 'Kateqoriya')}</th>
                                 )}
                                 {isColumnVisible('opening') && (
-                                    <th className="py-3 px-3 text-right">İlkin Qalıq</th>
+                                    <th className="py-3 px-3 text-right">{t('reports.openingBalance', {}, 'İlkin Qalıq')}</th>
                                 )}
                                 {isColumnVisible('debit') && (
                                     <th className="py-3 px-3 text-right cursor-pointer hover:text-white" onClick={() => { setSortField('debit'); setSortDirection((p) => (p === 'asc' ? 'desc' : 'asc')); }}>
-                                        Debet Dövriyyəsi {sortField === 'debit' && (sortDirection === 'asc' ? '↑' : '↓')}
+                                        {t('reports.debitTurnover', {}, 'Debet Dövriyyəsi')} {sortField === 'debit' && (sortDirection === 'asc' ? '↑' : '↓')}
                                     </th>
                                 )}
                                 {isColumnVisible('credit') && (
                                     <th className="py-3 px-3 text-right cursor-pointer hover:text-white" onClick={() => { setSortField('credit'); setSortDirection((p) => (p === 'asc' ? 'desc' : 'asc')); }}>
-                                        Kredit Dövriyyəsi {sortField === 'credit' && (sortDirection === 'asc' ? '↑' : '↓')}
+                                        {t('reports.creditTurnover', {}, 'Kredit Dövriyyəsi')} {sortField === 'credit' && (sortDirection === 'asc' ? '↑' : '↓')}
                                     </th>
                                 )}
                                 {isColumnVisible('balance') && (
                                     <th className="py-3 px-3 text-right cursor-pointer hover:text-white" onClick={() => { setSortField('balance'); setSortDirection((p) => (p === 'asc' ? 'desc' : 'asc')); }}>
-                                        Xalis Son Qalıq {sortField === 'balance' && (sortDirection === 'asc' ? '↑' : '↓')}
+                                        {t('reports.netClosingBalance', {}, 'Xalis Son Qalıq')} {sortField === 'balance' && (sortDirection === 'asc' ? '↑' : '↓')}
                                     </th>
                                 )}
-                                <th className="py-3 px-3 text-right">Fəaliyyət</th>
+                                <th className="py-3 px-3 text-right">{t('common.actions', {}, 'Fəaliyyət')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#27272A]">
@@ -868,7 +875,7 @@ export const TrialBalancePage: React.FC = () => {
                                     <td colSpan={9} className="py-14 text-center text-[#71717A]">
                                         <div className="flex items-center justify-center gap-2">
                                             <ArrowPathIcon className="w-4 h-4 animate-spin text-emerald-400" />
-                                            <span>Sınaq balansı məlumatları hesablanır...</span>
+                                            <span>{t('common.loading', {}, 'Sınaq balansı məlumatları hesablanır...')}</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -882,11 +889,11 @@ export const TrialBalancePage: React.FC = () => {
                                             <div>
                                                 <p className="text-sm font-bold text-white">
                                                     {searchQuery || (selectedCategory !== 'ALL' && selectedCategory !== 'Kateqoriya')
-                                                        ? 'Axtarış üzrə heç bir hesab tapılmadı'
-                                                        : 'Sınaq balansı üzrə qeyd tapılmadı'}
+                                                        ? t('reports.noSearchResults', {}, 'Axtarış üzrə heç bir hesab tapılmadı')
+                                                        : t('reports.noAccountsFound', {}, 'Sınaq balansı üzrə qeyd tapılmadı')}
                                                 </p>
                                                 <p className="text-xs text-[#71717A] mt-1 max-w-sm">
-                                                    Sınaq balansı jurnala təsdiqlənmiş əməliyyatlar daxil edildikdə avtomatik formalaşır
+                                                    {t('reports.trialBalanceDesc', {}, 'Sınaq balansı jurnala təsdiqlənmiş əməliyyatlar daxil edildikdə avtomatik formalaşır')}
                                                 </p>
                                             </div>
                                             <button
@@ -894,7 +901,7 @@ export const TrialBalancePage: React.FC = () => {
                                                 className="mt-2 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white hover:bg-zinc-200 text-black text-xs font-semibold shadow-md transition-colors cursor-pointer"
                                             >
                                                 <PlusIcon className="w-4 h-4 stroke-[2.5]" />
-                                                <span>İlk Qeydi Yarat</span>
+                                                <span>{t('accounting.newJournalEntry', {}, 'İlk Qeydi Yarat')}</span>
                                             </button>
                                         </div>
                                     </td>
@@ -968,14 +975,14 @@ export const TrialBalancePage: React.FC = () => {
                                                     <button
                                                         onClick={() => handleOpenDrawer(item)}
                                                         className="p-1 rounded-lg bg-[#18181B] hover:bg-white/10 text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                                                        title="Ətraflı Bax"
+                                                        title={t('common.view', {}, 'Ətraflı Bax')}
                                                     >
                                                         <EyeIcon className="w-3.5 h-3.5" />
                                                     </button>
                                                     <Link
                                                         to={`/accounts/${item.accountId}`}
                                                         className="p-1 rounded-lg bg-[#18181B] hover:bg-white/10 text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                                                        title="Hesab Səhifəsinə Keç"
+                                                        title={t('accounting.goToAccountPage', {}, 'Hesab Səhifəsinə Keç')}
                                                     >
                                                         <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5" />
                                                     </Link>
@@ -989,7 +996,7 @@ export const TrialBalancePage: React.FC = () => {
                         {filteredItems.length > 0 && (
                             <tfoot>
                                 <tr className="border-t border-[#27272A] bg-[#18181B] font-mono text-xs font-bold">
-                                    <td colSpan={4} className="py-3 px-3 font-sans text-white">Cəmi ({filteredItems.length} hesab):</td>
+                                    <td colSpan={4} className="py-3 px-3 font-sans text-white">{t('common.total', {}, 'Cəmi')} ({filteredItems.length} {t('treasury.accountsCount', {}, 'hesab')}):</td>
                                     {isColumnVisible('opening') && (
                                         <td className="py-3 px-3 text-right text-[#71717A]">
                                             {formatCurrency(filteredItems.reduce((s, it) => s + Number(it.openingBalance || 0), 0))}
@@ -1038,11 +1045,11 @@ export const TrialBalancePage: React.FC = () => {
 
                     <span>
                         {sortedItems.length === 0
-                            ? '0 of 0'
+                            ? `0 ${t('common.of', {}, 'of')} 0`
                             : `${(currentPage - 1) * pageSize + 1}-${Math.min(
                                   currentPage * pageSize,
                                   sortedItems.length
-                              )} of ${sortedItems.length}`}
+                              )} ${t('common.of', {}, 'of')} ${sortedItems.length}`}
                     </span>
                 </div>
             </div>
@@ -1082,19 +1089,19 @@ export const TrialBalancePage: React.FC = () => {
                             {/* Stats */}
                             <div className="grid grid-cols-3 gap-3">
                                 <div className="p-3 rounded-xl bg-[#121214] border border-[#27272A]">
-                                    <span className="text-[10px] text-[#A1A1AA] uppercase font-bold">Debet Dövriyyəsi</span>
+                                    <span className="text-[10px] text-[#A1A1AA] uppercase font-bold">{t('reports.debitTurnover', {}, 'Debet Dövriyyəsi')}</span>
                                     <p className="text-sm font-bold font-mono text-emerald-400 mt-1">
                                         {formatCurrency(Number(selectedItem.debit ?? selectedItem.debitTotal ?? 0))}
                                     </p>
                                 </div>
                                 <div className="p-3 rounded-xl bg-[#121214] border border-[#27272A]">
-                                    <span className="text-[10px] text-[#A1A1AA] uppercase font-bold">Kredit Dövriyyəsi</span>
+                                    <span className="text-[10px] text-[#A1A1AA] uppercase font-bold">{t('reports.creditTurnover', {}, 'Kredit Dövriyyəsi')}</span>
                                     <p className="text-sm font-bold font-mono text-blue-400 mt-1">
                                         {formatCurrency(Number(selectedItem.credit ?? selectedItem.creditTotal ?? 0))}
                                     </p>
                                 </div>
                                 <div className="p-3 rounded-xl bg-[#121214] border border-[#27272A]">
-                                    <span className="text-[10px] text-[#A1A1AA] uppercase font-bold">Son Qalıq</span>
+                                    <span className="text-[10px] text-[#A1A1AA] uppercase font-bold">{t('reports.netClosingBalance', {}, 'Son Qalıq')}</span>
                                     <p className="text-sm font-bold font-mono text-white mt-1">
                                         {formatCurrency(Number(selectedItem.netBalance ?? selectedItem.closingBalance ?? 0))}
                                     </p>
@@ -1106,13 +1113,13 @@ export const TrialBalancePage: React.FC = () => {
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
                                         <DocumentTextIcon className="w-4 h-4 text-emerald-400" />
-                                        <span>Son Jurnal Əməliyyatları</span>
+                                        <span>{t('accounting.recentJournalEntries', {}, 'Son Jurnal Əməliyyatları')}</span>
                                     </h3>
                                     <Link
                                         to={`/accounts/${selectedItem.accountId}`}
                                         className="text-[11px] text-emerald-400 hover:underline flex items-center gap-1"
                                     >
-                                        <span>Hesabın tam tarixçəsi</span>
+                                        <span>{t('accounting.fullAccountHistory', {}, 'Hesabın tam tarixçəsi')}</span>
                                         <ArrowTopRightOnSquareIcon className="w-3 h-3" />
                                     </Link>
                                 </div>
@@ -1120,11 +1127,11 @@ export const TrialBalancePage: React.FC = () => {
                                 {drawerLoading ? (
                                     <div className="py-8 text-center text-xs text-[#71717A] flex items-center justify-center gap-2">
                                         <ArrowPathIcon className="w-4 h-4 animate-spin text-emerald-400" />
-                                        <span>Əməliyyatlar yüklənir...</span>
+                                        <span>{t('common.loading', {}, 'Əməliyyatlar yüklənir...')}</span>
                                     </div>
                                 ) : drawerEntries.length === 0 ? (
                                     <div className="p-6 rounded-xl bg-[#121214] border border-[#27272A] text-center text-xs text-[#71717A]">
-                                        Bu hesab üzrə son jurnal qeydi tapılmadı
+                                        {t('accounting.noEntriesForAccount', {}, 'Bu hesab üzrə son jurnal qeydi tapılmadı')}
                                     </div>
                                 ) : (
                                     <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
@@ -1145,7 +1152,7 @@ export const TrialBalancePage: React.FC = () => {
                                                             </span>
                                                         </div>
                                                         <p className="text-[11px] text-[#A1A1AA] mt-0.5 line-clamp-1">
-                                                            {entry.description || 'Təsvir qeyd olunmayıb'}
+                                                            {entry.description || t('accounting.noDescription', {}, 'Təsvir qeyd olunmayıb')}
                                                         </p>
                                                     </div>
                                                     <div className="text-right font-mono font-bold">
@@ -1171,13 +1178,13 @@ export const TrialBalancePage: React.FC = () => {
                                 to={`/accounts/${selectedItem.accountId}`}
                                 className="flex-1 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-center text-xs font-semibold shadow-md transition-colors cursor-pointer"
                             >
-                                Hesabın Detallarına Keç
+                                {t('accounting.goToAccountDetails', {}, 'Hesabın Detallarına Keç')}
                             </Link>
                             <Link
                                 to="/journal"
                                 className="px-4 py-2 rounded-xl bg-[#121214] border border-[#27272A] text-xs font-semibold text-white hover:bg-white/5 transition-colors cursor-pointer"
                             >
-                                Jurnala Bax
+                                {t('accounting.viewJournal', {}, 'Jurnala Bax')}
                             </Link>
                         </div>
                     </div>
@@ -1191,8 +1198,8 @@ export const TrialBalancePage: React.FC = () => {
                         {/* Header */}
                         <div className="flex items-center justify-between pb-3 border-b border-[#27272A]">
                             <div>
-                                <h3 className="text-base font-bold text-white">Yeni Jurnal Əməliyyatı</h3>
-                                <p className="text-xs text-[#A1A1AA] mt-0.5">Baş kitaba yeni debet/kredit qeydi daxil edin</p>
+                                <h3 className="text-base font-bold text-white">{t('accounting.newJournalEntry', {}, 'Yeni Jurnal Əməliyyatı')}</h3>
+                                <p className="text-xs text-[#A1A1AA] mt-0.5">{t('accounting.newJournalEntrySubtitle', {}, 'Baş kitaba yeni debet/kredit qeydi daxil edin')}</p>
                             </div>
                             <button
                                 onClick={() => setShowCreateModal(false)}
@@ -1214,7 +1221,7 @@ export const TrialBalancePage: React.FC = () => {
                         <form onSubmit={handleCreateJournal} className="space-y-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                 <div>
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">Tarix *</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.date', {}, 'Tarix')} *</label>
                                     <input
                                         type="date"
                                         required
@@ -1224,7 +1231,7 @@ export const TrialBalancePage: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">İstinad № (Reference)</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('accounting.referenceNo', {}, 'İstinad № (Reference)')}</label>
                                     <input
                                         type="text"
                                         placeholder="məs. REF-2026-001"
@@ -1236,7 +1243,7 @@ export const TrialBalancePage: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="text-xs font-semibold text-[#A1A1AA]">Əməliyyatın Təsviri *</label>
+                                <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.description', {}, 'Əməliyyatın Təsviri')} *</label>
                                 <input
                                     type="text"
                                     required
@@ -1250,14 +1257,14 @@ export const TrialBalancePage: React.FC = () => {
                             {/* Lines Section */}
                             <div className="space-y-2 pt-2 border-t border-[#27272A]">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold text-white">Əməliyyat Sətirləri</span>
+                                    <span className="text-xs font-bold text-white">{t('accounting.transactionLines', {}, 'Əməliyyat Sətirləri')}</span>
                                     <button
                                         type="button"
                                         onClick={handleAddLine}
                                         className="flex items-center gap-1 text-xs font-semibold text-emerald-400 hover:text-emerald-300 cursor-pointer"
                                     >
                                         <PlusIcon className="w-3.5 h-3.5" />
-                                        <span>Sətir Əlavə Et</span>
+                                        <span>{t('accounting.addLine', {}, 'Sətir Əlavə Et')}</span>
                                     </button>
                                 </div>
 
@@ -1271,7 +1278,7 @@ export const TrialBalancePage: React.FC = () => {
                                                     onChange={(e) => handleLineChange(idx, 'accountId', e.target.value)}
                                                     className="w-full px-2.5 py-1.5 rounded-lg bg-[#18181B] border border-[#27272A] text-xs text-white focus:outline-none"
                                                 >
-                                                    <option value="">Hesab seçin...</option>
+                                                    <option value="">{t('accounting.selectAccount', {}, 'Hesab seçin...')}</option>
                                                     {accounts.map((acc) => (
                                                         <option key={acc.id} value={acc.id}>
                                                             {acc.code} - {acc.name}
@@ -1284,7 +1291,7 @@ export const TrialBalancePage: React.FC = () => {
                                                 <input
                                                     type="number"
                                                     step="0.01"
-                                                    placeholder="Debet"
+                                                    placeholder={t('reports.debit', {}, 'Debet')}
                                                     value={line.debit}
                                                     onChange={(e) => handleLineChange(idx, 'debit', e.target.value)}
                                                     className="w-full px-2.5 py-1.5 rounded-lg bg-[#18181B] border border-[#27272A] text-xs font-mono font-bold text-emerald-400 focus:outline-none"
@@ -1295,7 +1302,7 @@ export const TrialBalancePage: React.FC = () => {
                                                 <input
                                                     type="number"
                                                     step="0.01"
-                                                    placeholder="Kredit"
+                                                    placeholder={t('reports.credit', {}, 'Kredit')}
                                                     value={line.credit}
                                                     onChange={(e) => handleLineChange(idx, 'credit', e.target.value)}
                                                     className="w-full px-2.5 py-1.5 rounded-lg bg-[#18181B] border border-[#27272A] text-xs font-mono font-bold text-blue-400 focus:outline-none"
@@ -1307,7 +1314,7 @@ export const TrialBalancePage: React.FC = () => {
                                                 onClick={() => handleRemoveLine(idx)}
                                                 disabled={createLines.length <= 2}
                                                 className="p-1.5 text-[#71717A] hover:text-rose-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                                                title="Sil"
+                                                title={t('common.delete', {}, 'Sil')}
                                             >
                                                 <TrashIcon className="w-4 h-4" />
                                             </button>
@@ -1318,17 +1325,17 @@ export const TrialBalancePage: React.FC = () => {
                                 {/* Sum & Status */}
                                 <div className="p-3 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between text-xs font-mono">
                                     <div className="flex items-center gap-4">
-                                        <div>Debet Cəmi: <span className="text-emerald-400 font-bold">{formatCurrency(totalModalDebit)}</span></div>
-                                        <div>Kredit Cəmi: <span className="text-blue-400 font-bold">{formatCurrency(totalModalCredit)}</span></div>
+                                        <div>{t('reports.totalDebit', {}, 'Debet Cəmi')}: <span className="text-emerald-400 font-bold">{formatCurrency(totalModalDebit)}</span></div>
+                                        <div>{t('reports.totalCredit', {}, 'Kredit Cəmi')}: <span className="text-blue-400 font-bold">{formatCurrency(totalModalCredit)}</span></div>
                                     </div>
                                     <div className="font-sans font-bold">
                                         {isModalBalanced ? (
                                             <span className="text-emerald-400 flex items-center gap-1">
-                                                <CheckCircleIcon className="w-4 h-4" /> Bərabərdir
+                                                <CheckCircleIcon className="w-4 h-4" /> {t('reports.balanced', {}, 'Bərabərdir')}
                                             </span>
                                         ) : (
                                             <span className="text-rose-400">
-                                                Fərq: {formatCurrency(Math.abs(totalModalDebit - totalModalCredit))}
+                                                {t('reports.difference', {}, 'Fərq')}: {formatCurrency(Math.abs(totalModalDebit - totalModalCredit))}
                                             </span>
                                         )}
                                     </div>
@@ -1342,14 +1349,14 @@ export const TrialBalancePage: React.FC = () => {
                                     onClick={() => setShowCreateModal(false)}
                                     className="px-4 py-2 rounded-xl bg-[#18181B] border border-[#27272A] hover:bg-[#27272A] text-xs font-semibold text-white transition-colors cursor-pointer"
                                 >
-                                    İmtina
+                                    {t('common.cancel', {}, 'İmtina')}
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={createLoading || !isModalBalanced}
                                     className="px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-semibold shadow-md transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {createLoading ? 'Yaradılır...' : 'Qeydi Yarat'}
+                                    {createLoading ? t('common.saving', {}, 'Yaradılır...') : t('accounting.createEntrySubmit', {}, 'Qeydi Yarat')}
                                 </button>
                             </div>
                         </form>

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { customersService } from '../../api';
 import type { CustomerDto, CustomerInvoiceDto } from '../../dto';
 import { formatDate } from '../../utils';
+import { useLanguage } from '../../context/LanguageContext';
 import {
     ArrowLeftIcon,
     ArrowPathIcon,
@@ -22,6 +23,7 @@ import {
 export const CustomerDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { t } = useLanguage();
 
     const [customer, setCustomer] = useState<CustomerDto | null>(null);
     const [invoices, setInvoices] = useState<CustomerInvoiceDto[]>([]);
@@ -80,7 +82,7 @@ export const CustomerDetailPage: React.FC = () => {
             <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="flex items-center gap-3 text-white text-sm">
                     <ArrowPathIcon className="w-5 h-5 animate-spin" />
-                    <span>Müştəri məlumatları yüklənir...</span>
+                    <span>{t('common.loading', {}, 'Müştəri məlumatları yüklənir...')}</span>
                 </div>
             </div>
         );
@@ -89,13 +91,13 @@ export const CustomerDetailPage: React.FC = () => {
     if (!customer) {
         return (
             <div className="p-8 text-center space-y-4">
-                <p className="text-white text-base font-semibold">Müştəri tapılmadı.</p>
+                <p className="text-white text-base font-semibold">{t('common.noData', {}, 'Müştəri tapılmadı.')}</p>
                 <Link
                     to="/customers"
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-colors"
                 >
                     <ArrowLeftIcon className="w-4 h-4" />
-                    <span>Müştəri Siyahısına Qayıt</span>
+                    <span>{t('common.back', {}, 'Müştəri Siyahısına Qayıt')}</span>
                 </Link>
             </div>
         );
@@ -109,12 +111,12 @@ export const CustomerDetailPage: React.FC = () => {
                     <button
                         onClick={() => navigate('/customers')}
                         className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-                        title="Geri"
+                        title={t('common.back', {}, 'Geri')}
                     >
                         <ArrowLeftIcon className="w-4 h-4" />
                     </button>
                     <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                        <Link to="/customers" className="hover:text-zinc-300 transition-colors">Müştərilər</Link>
+                        <Link to="/customers" className="hover:text-zinc-300 transition-colors">{t('nav.customers', {}, 'Müştərilər')}</Link>
                         <span className="text-[#52525B]">/</span>
                         <span className="font-mono text-white">{customer.code}</span>
                         <span className="text-[#71717A] text-sm font-normal">({customer.name})</span>
@@ -124,11 +126,11 @@ export const CustomerDetailPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                     {customer.isActive !== false ? (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-[#14291F] text-[#4ADE80] border border-[#22C55E]/30">
-                            Aktiv
+                            {t('common.active', {}, 'Aktiv')}
                         </span>
                     ) : (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-[#2C2C2E] text-[#A1A1AA] border border-[#3F3F46]">
-                            Deaktiv
+                            {t('common.inactive', {}, 'Deaktiv')}
                         </span>
                     )}
 
@@ -137,7 +139,7 @@ export const CustomerDetailPage: React.FC = () => {
                         className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white hover:bg-zinc-200 text-black text-xs font-bold shadow-md transition-colors cursor-pointer"
                     >
                         <PlusIcon className="w-4 h-4 stroke-[2.5]" />
-                        <span>Yeni Faktura</span>
+                        <span>{t('customers.newInvoice', {}, 'Yeni Faktura')}</span>
                     </Link>
                 </div>
             </div>
@@ -153,28 +155,28 @@ export const CustomerDetailPage: React.FC = () => {
             {/* Summary Metrics */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="p-4 rounded-2xl bg-[#121214] border border-[#27272A]">
-                    <span className="text-xs text-[#A1A1AA] font-semibold block">Cari Borc / Qalıq</span>
+                    <span className="text-xs text-[#A1A1AA] font-semibold block">{t('customers.balanceDue', {}, 'Cari Borc / Qalıq')}</span>
                     <span className={`text-base font-mono font-bold mt-1 block ${totalOutstanding > 0 ? 'text-amber-400' : 'text-white'}`}>
                         {formatCurrency(totalOutstanding, customer.currency)}
                     </span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[#121214] border border-[#27272A]">
-                    <span className="text-xs text-[#A1A1AA] font-semibold block">Kredit Limiti</span>
+                    <span className="text-xs text-[#A1A1AA] font-semibold block">{t('customers.creditLimit', {}, 'Kredit Limiti')}</span>
                     <span className="text-base font-mono font-bold text-white mt-1 block">
                         {formatCurrency(customer.creditLimit || 0, customer.currency)}
                     </span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[#121214] border border-[#27272A]">
-                    <span className="text-xs text-[#A1A1AA] font-semibold block">Ödəniş Müddəti</span>
+                    <span className="text-xs text-[#A1A1AA] font-semibold block">{t('customers.paymentTermsDays', {}, 'Ödəniş Müddəti')}</span>
                     <span className="text-base font-bold text-white mt-1 block">
-                        {customer.paymentTermsDays ? `${customer.paymentTermsDays} gün` : '30 gün'}
+                        {customer.paymentTermsDays ? `${customer.paymentTermsDays} ${t('common.days', {}, 'gün')}` : `30 ${t('common.days', {}, 'gün')}`}
                     </span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[#121214] border border-[#27272A]">
-                    <span className="text-xs text-[#A1A1AA] font-semibold block">Fakturaların Sayı</span>
+                    <span className="text-xs text-[#A1A1AA] font-semibold block">{t('customers.invoicesTitle', {}, 'Fakturaların Sayı')}</span>
                     <span className="text-base font-mono font-bold text-white mt-1 block">
                         {invoices.length}
                     </span>
@@ -183,25 +185,25 @@ export const CustomerDetailPage: React.FC = () => {
 
             {/* Customer Details Info Card */}
             <div className="p-5 rounded-2xl bg-[#121214] border border-[#27272A] space-y-3.5">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1A1AA]">Müştəri Məlumatları</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1A1AA]">{t('customers.customerDetails', {}, 'Müştəri Məlumatları')}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
                     <div>
-                        <span className="text-[#71717A] block">VÖEN</span>
+                        <span className="text-[#71717A] block">{t('common.taxNumber', {}, 'VÖEN')}</span>
                         <span className="text-white font-mono font-bold mt-0.5 block">{customer.taxNumber || '—'}</span>
                     </div>
 
                     <div>
-                        <span className="text-[#71717A] block">Telefon</span>
+                        <span className="text-[#71717A] block">{t('common.phone', {}, 'Telefon')}</span>
                         <span className="text-white font-medium mt-0.5 block">{customer.phone || '—'}</span>
                     </div>
 
                     <div>
-                        <span className="text-[#71717A] block">Email</span>
+                        <span className="text-[#71717A] block">{t('common.email', {}, 'Email')}</span>
                         <span className="text-white font-medium mt-0.5 block truncate">{customer.email || '—'}</span>
                     </div>
 
                     <div>
-                        <span className="text-[#71717A] block">Ünvan</span>
+                        <span className="text-[#71717A] block">{t('common.address', {}, 'Ünvan')}</span>
                         <span className="text-white font-medium mt-0.5 block truncate">{customer.address || '—'}</span>
                     </div>
                 </div>
@@ -217,7 +219,7 @@ export const CustomerDetailPage: React.FC = () => {
                                 activeTab === 'invoices' ? 'text-white border-b-2 border-white pb-1' : 'text-[#71717A] hover:text-white'
                             }`}
                         >
-                            Fakturalar ({invoices.length})
+                            {t('customers.customerInvoicesList', {}, 'Fakturalar')} ({invoices.length})
                         </button>
                     </div>
 
@@ -225,7 +227,7 @@ export const CustomerDetailPage: React.FC = () => {
                         to="/customer-invoices"
                         className="text-xs text-[#A1A1AA] hover:text-white transition-colors"
                     >
-                        Bütün Fakturalar →
+                        {t('common.all', {}, 'Bütün Fakturalar')} →
                     </Link>
                 </div>
 
@@ -233,13 +235,13 @@ export const CustomerDetailPage: React.FC = () => {
                     <table className="w-full text-left text-xs text-[#E4E4E7]">
                         <thead>
                             <tr className="border-b border-[#27272A] bg-[#18181B] text-[#A1A1AA] text-[11px] font-bold">
-                                <th className="py-3 px-4">Faktura №</th>
-                                <th className="py-3 px-4">Tarix</th>
-                                <th className="py-3 px-4">Son Tarix</th>
-                                <th className="py-3 px-4 text-right">Məbləğ</th>
-                                <th className="py-3 px-4 text-right">Ödənilən</th>
-                                <th className="py-3 px-4 text-right">Qalıq</th>
-                                <th className="py-3 px-4 text-center">Status</th>
+                                <th className="py-3 px-4">{t('customers.invoiceNumber', {}, 'Faktura №')}</th>
+                                <th className="py-3 px-4">{t('common.date', {}, 'Tarix')}</th>
+                                <th className="py-3 px-4">{t('customers.dueDate', {}, 'Son Tarix')}</th>
+                                <th className="py-3 px-4 text-right">{t('common.amount', {}, 'Məbləğ')}</th>
+                                <th className="py-3 px-4 text-right">{t('common.paidAmount', {}, 'Ödənilən')}</th>
+                                <th className="py-3 px-4 text-right">{t('common.remainingAmount', {}, 'Qalıq')}</th>
+                                <th className="py-3 px-4 text-center">{t('common.status', {}, 'Status')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#27272A]/60">
@@ -248,7 +250,7 @@ export const CustomerDetailPage: React.FC = () => {
                                     <td colSpan={7} className="py-12 text-center text-[#71717A]">
                                         <div className="flex flex-col items-center justify-center gap-2">
                                             <DocumentTextIcon className="w-6 h-6 text-[#52525B]" />
-                                            <span>Bu müştəri üzrə heç bir faktura tapılmadı</span>
+                                            <span>{t('common.noData', {}, 'Bu müştəri üzrə heç bir faktura tapılmadı')}</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -275,7 +277,7 @@ export const CustomerDetailPage: React.FC = () => {
                                         </td>
                                         <td className="py-3 px-4 text-center">
                                             <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[#18181B] border border-[#27272A] text-white">
-                                                {inv.status}
+                                                {t(`statuses.${inv.status}`, {}, inv.status)}
                                             </span>
                                         </td>
                                     </tr>

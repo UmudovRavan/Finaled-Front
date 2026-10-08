@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { accountsService } from '../../api';
 import type { JournalEntryDto, AccountDto, CreateJournalEntryRequest } from '../../dto';
 import { formatDate, formatDateTime, extractErrorMessage } from '../../utils';
+import { useLanguage } from '../../context/LanguageContext';
 import {
     PlusIcon,
     ArrowPathIcon,
@@ -24,6 +25,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 export const JournalPage: React.FC = () => {
+    const { t } = useLanguage();
     const navigate = useNavigate();
     const [entries, setEntries] = useState<JournalEntryDto[]>([]);
     const [accounts, setAccounts] = useState<AccountDto[]>([]);
@@ -55,13 +57,13 @@ export const JournalPage: React.FC = () => {
 
     // Column Visibility
     const [columns, setColumns] = useState([
-        { key: 'number', label: 'Jurnal №', visible: true },
-        { key: 'date', label: 'Tarix', visible: true },
-        { key: 'description', label: 'Təsvir', visible: true },
-        { key: 'reference', label: 'İstinad №', visible: true },
-        { key: 'debit', label: 'Debet', visible: true },
-        { key: 'credit', label: 'Kredit', visible: true },
-        { key: 'status', label: 'Status', visible: true },
+        { key: 'number', label: t('accounting.journalNumber', {}, 'Jurnal №'), visible: true },
+        { key: 'date', label: t('common.date', {}, 'Tarix'), visible: true },
+        { key: 'description', label: t('common.description', {}, 'Təsvir'), visible: true },
+        { key: 'reference', label: t('common.reference', {}, 'İstinad №'), visible: true },
+        { key: 'debit', label: t('accounting.debit', {}, 'Debet'), visible: true },
+        { key: 'credit', label: t('accounting.credit', {}, 'Kredit'), visible: true },
+        { key: 'status', label: t('common.status', {}, 'Status'), visible: true },
     ]);
 
     // Toast
@@ -375,20 +377,20 @@ export const JournalPage: React.FC = () => {
         if (s === 'posted' || s === 'approved') {
             return (
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[#14291F] text-[#4ADE80] border border-[#22C55E]/30">
-                    Posted
+                    {t('statuses.POSTED', {}, 'Posted')}
                 </span>
             );
         }
         if (s === 'reversed' || s === 'cancelled') {
             return (
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[#2E1619] text-[#F87171] border border-[#EF4444]/30">
-                    Reversed
+                    {t('statuses.CANCELLED', {}, 'Reversed')}
                 </span>
             );
         }
         return (
             <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[#292214] text-[#FBBF24] border border-[#F59E0B]/30">
-                Draft
+                {t('statuses.DRAFT', {}, 'Draft')}
             </span>
         );
     };
@@ -404,11 +406,11 @@ export const JournalPage: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                     <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                        <span>Jurnal Qeydləri</span>
+                        <span>{t('accounting.journalTitle', {}, 'Jurnal Qeydləri')}</span>
                         <span className="text-[#52525B]">/</span>
                         <div className="inline-flex items-center gap-1.5 text-white font-bold">
                             <Bars3Icon className="w-4 h-4 text-[#A1A1AA]" />
-                            <span>Siyahı</span>
+                            <span>{t('common.list', {}, 'Siyahı')}</span>
                         </div>
                     </h1>
                 </div>
@@ -417,7 +419,7 @@ export const JournalPage: React.FC = () => {
                     <button
                         onClick={loadData}
                         className="p-2 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-                        title="Yenilə"
+                        title={t('common.refresh', {}, 'Yenilə')}
                     >
                         <ArrowPathIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                     </button>
@@ -426,7 +428,7 @@ export const JournalPage: React.FC = () => {
                         className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white hover:bg-zinc-200 text-black text-xs font-semibold shadow-md transition-colors cursor-pointer"
                     >
                         <PlusIcon className="w-4 h-4 stroke-[2.5]" />
-                        <span>Yarat</span>
+                        <span>{t('common.create', {}, 'Yarat')}</span>
                     </button>
                 </div>
             </div>
@@ -445,7 +447,7 @@ export const JournalPage: React.FC = () => {
                     {/* Jurnal № Input */}
                     <input
                         type="text"
-                        placeholder="Jurnal №"
+                        placeholder={t('accounting.journalNumber', {}, 'Jurnal №')}
                         value={filterNumber}
                         onChange={(e) => setFilterNumber(e.target.value)}
                         className="w-32 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
@@ -454,7 +456,7 @@ export const JournalPage: React.FC = () => {
                     {/* Təsvir Input */}
                     <input
                         type="text"
-                        placeholder="Təsvir və ya İstinad"
+                        placeholder={t('accounting.descOrRef', {}, 'Təsvir və ya İstinad')}
                         value={filterDesc}
                         onChange={(e) => setFilterDesc(e.target.value)}
                         className="w-44 sm:w-56 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
@@ -467,7 +469,7 @@ export const JournalPage: React.FC = () => {
                             onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
                             className="flex items-center justify-between w-28 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
                         >
-                            <span className="truncate">{selectedStatus === 'Status' ? 'Status' : selectedStatus}</span>
+                            <span className="truncate">{selectedStatus === 'Status' ? t('common.status', {}, 'Status') : selectedStatus}</span>
                             <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
                         </button>
 
@@ -485,7 +487,7 @@ export const JournalPage: React.FC = () => {
                                             selectedStatus === st ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
                                         }`}
                                     >
-                                        {st === 'Status' ? 'Bütün Statuslar' : st}
+                                        {st === 'Status' ? t('common.all', {}, 'Bütün Statuslar') : st}
                                     </button>
                                 ))}
                             </div>
@@ -504,7 +506,7 @@ export const JournalPage: React.FC = () => {
                             }`}
                         >
                             <FunnelIcon className="w-3.5 h-3.5" />
-                            <span>Filtr</span>
+                            <span>{t('common.filter', {}, 'Filtr')}</span>
                             {activeFilterCount > 0 && (
                                 <span className="ml-1 w-4 h-4 rounded-full bg-white text-black font-bold text-[10px] flex items-center justify-center">
                                     {activeFilterCount}
@@ -516,7 +518,7 @@ export const JournalPage: React.FC = () => {
                         {isFilterPopoverOpen && (
                             <div className="absolute top-9 left-0 w-80 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-4 z-50 text-xs text-[#E4E4E7] space-y-3 animate-in fade-in duration-150">
                                 <div className="flex items-center justify-between pb-2 border-b border-[#2C2C2E]">
-                                    <span className="font-bold text-white">Filtrlər</span>
+                                    <span className="font-bold text-white">{t('common.allFilters', {}, 'Filtrlər')}</span>
                                     {activeFilterCount > 0 && (
                                         <button
                                             type="button"
@@ -531,14 +533,14 @@ export const JournalPage: React.FC = () => {
                                             }}
                                             className="text-[11px] text-[#A1A1AA] hover:text-white underline cursor-pointer"
                                         >
-                                            Sıfırla
+                                            {t('common.reset', {}, 'Sıfırla')}
                                         </button>
                                     )}
                                 </div>
 
                                 <div className="space-y-2.5">
                                     <div>
-                                        <label className="text-[11px] text-[#A1A1AA] font-semibold block mb-1">Tarix Aralığı</label>
+                                        <label className="text-[11px] text-[#A1A1AA] font-semibold block mb-1">{t('common.customRange', {}, 'Tarix Aralığı')}</label>
                                         <div className="grid grid-cols-2 gap-2">
                                             <input
                                                 type="date"
@@ -556,7 +558,7 @@ export const JournalPage: React.FC = () => {
                                     </div>
 
                                     <div>
-                                        <label className="text-[11px] text-[#A1A1AA] font-semibold block mb-1">Məbləğ Aralığı (AZN)</label>
+                                        <label className="text-[11px] text-[#A1A1AA] font-semibold block mb-1">{t('accounting.amountRange', {}, 'Məbləğ Aralığı')} ({t('accounting.azn', {}, 'AZN')})</label>
                                         <div className="grid grid-cols-2 gap-2">
                                             <input
                                                 type="number"
@@ -582,7 +584,7 @@ export const JournalPage: React.FC = () => {
                                         onClick={() => setIsFilterPopoverOpen(false)}
                                         className="px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold text-xs transition-colors cursor-pointer"
                                     >
-                                        Tətbiq et
+                                        {t('common.apply', {}, 'Tətbiq et')}
                                     </button>
                                 </div>
                             </div>
@@ -598,13 +600,13 @@ export const JournalPage: React.FC = () => {
                             type="button"
                             onClick={() => setIsColumnsOpen(!isColumnsOpen)}
                             className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                            title="Sütunlar"
+                            title={t('accounting.columns', {}, 'Sütunlar')}
                         >
                             <ViewColumnsIcon className="w-4 h-4" />
                         </button>
                         {isColumnsOpen && (
                             <div className="absolute top-9 right-0 w-48 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-2.5 z-50 text-xs text-[#E4E4E7] space-y-1.5 animate-in fade-in duration-150">
-                                <div className="font-bold text-white px-1.5 pb-1 border-b border-[#2C2C2E]">Sütunlar</div>
+                                <div className="font-bold text-white px-1.5 pb-1 border-b border-[#2C2C2E]">{t('accounting.columns', {}, 'Sütunlar')}</div>
                                 {columns.map((col, idx) => (
                                     <label key={col.key} className="flex items-center gap-2 px-1.5 py-1 hover:bg-[#2C2C2E]/60 rounded-lg cursor-pointer">
                                         <input
@@ -630,7 +632,7 @@ export const JournalPage: React.FC = () => {
                             type="button"
                             onClick={() => setIsSortOpen(!isSortOpen)}
                             className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                            title="Sıralama"
+                            title={t('common.sort', {}, 'Sıralama')}
                         >
                             <ArrowsUpDownIcon className="w-4 h-4" />
                         </button>
@@ -640,19 +642,19 @@ export const JournalPage: React.FC = () => {
                                     onClick={() => { setSortField('date'); setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc'); setIsSortOpen(false); }}
                                     className="px-3 py-1.5 rounded-xl text-left hover:bg-[#2C2C2E]/60 cursor-pointer"
                                 >
-                                    Tarix üzrə ({sortDirection === 'asc' ? 'Artan' : 'Azalan'})
+                                    {t('common.date', {}, 'Tarix')} ({sortDirection === 'asc' ? 'Artan' : 'Azalan'})
                                 </button>
                                 <button
                                     onClick={() => { setSortField('number'); setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc'); setIsSortOpen(false); }}
                                     className="px-3 py-1.5 rounded-xl text-left hover:bg-[#2C2C2E]/60 cursor-pointer"
                                 >
-                                    Qeyd № üzrə
+                                    {t('accounting.journalNumber', {}, 'Qeyd №')}
                                 </button>
                                 <button
                                     onClick={() => { setSortField('amount'); setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc'); setIsSortOpen(false); }}
                                     className="px-3 py-1.5 rounded-xl text-left hover:bg-[#2C2C2E]/60 cursor-pointer"
                                 >
-                                    Məbləğ üzrə
+                                    {t('common.amount', {}, 'Məbləğ')}
                                 </button>
                             </div>
                         )}
@@ -674,14 +676,14 @@ export const JournalPage: React.FC = () => {
                                         className="rounded bg-[#121214] border-[#2C2C2E] text-white focus:ring-0 cursor-pointer"
                                     />
                                 </th>
-                                {columns.find((c) => c.key === 'number')?.visible && <th className="py-3 px-3">Jurnal №</th>}
-                                {columns.find((c) => c.key === 'date')?.visible && <th className="py-3 px-3">Tarix</th>}
-                                {columns.find((c) => c.key === 'description')?.visible && <th className="py-3 px-3">Təsvir</th>}
-                                {columns.find((c) => c.key === 'reference')?.visible && <th className="py-3 px-3">İstinad №</th>}
-                                {columns.find((c) => c.key === 'debit')?.visible && <th className="py-3 px-3 text-right">Debet</th>}
-                                {columns.find((c) => c.key === 'credit')?.visible && <th className="py-3 px-3 text-right">Kredit</th>}
-                                {columns.find((c) => c.key === 'status')?.visible && <th className="py-3 px-3 text-center">Status</th>}
-                                <th className="py-3 px-3 text-right">Əməliyyatlar</th>
+                                {columns.find((c) => c.key === 'number')?.visible && <th className="py-3 px-3">{t('accounting.journalNumber', {}, 'Jurnal №')}</th>}
+                                {columns.find((c) => c.key === 'date')?.visible && <th className="py-3 px-3">{t('common.date', {}, 'Tarix')}</th>}
+                                {columns.find((c) => c.key === 'description')?.visible && <th className="py-3 px-3">{t('common.description', {}, 'Təsvir')}</th>}
+                                {columns.find((c) => c.key === 'reference')?.visible && <th className="py-3 px-3">{t('common.reference', {}, 'İstinad №')}</th>}
+                                {columns.find((c) => c.key === 'debit')?.visible && <th className="py-3 px-3 text-right">{t('accounting.debit', {}, 'Debet')}</th>}
+                                {columns.find((c) => c.key === 'credit')?.visible && <th className="py-3 px-3 text-right">{t('accounting.credit', {}, 'Kredit')}</th>}
+                                {columns.find((c) => c.key === 'status')?.visible && <th className="py-3 px-3 text-center">{t('common.status', {}, 'Status')}</th>}
+                                <th className="py-3 px-3 text-right">{t('common.actions', {}, 'Əməliyyatlar')}</th>
                             </tr>
                         </thead>
 
@@ -691,7 +693,7 @@ export const JournalPage: React.FC = () => {
                                     <td colSpan={9} className="py-12 text-center text-[#71717A]">
                                         <div className="flex items-center justify-center gap-2">
                                             <ArrowPathIcon className="w-4 h-4 animate-spin text-white" />
-                                            <span>Məlumatlar yüklənir...</span>
+                                            <span>{t('common.loading', {}, 'Məlumatlar yüklənir...')}</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -703,15 +705,15 @@ export const JournalPage: React.FC = () => {
                                                 <DocumentTextIcon className="w-6 h-6" />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-bold text-white">Heç bir jurnal qeydi tapılmadı</p>
-                                                <p className="text-xs text-[#71717A] mt-1 max-w-sm">İkiqat qeydiyyat sistemi üzrə əməliyyat daxil edin</p>
+                                                <p className="text-sm font-bold text-white">{t('accounting.noEntriesFound', {}, 'Heç bir jurnal qeydi tapılmadı')}</p>
+                                                <p className="text-xs text-[#71717A] mt-1 max-w-sm">{t('accounting.noEntriesDesc', {}, 'İkiqat qeydiyyat sistemi üzrə əməliyyat daxil edin')}</p>
                                             </div>
                                             <button
                                                 onClick={() => setShowCreateModal(true)}
                                                 className="mt-2 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-semibold transition-colors cursor-pointer"
                                             >
                                                 <PlusIcon className="w-3.5 h-3.5" />
-                                                <span>İlk Qeydi Yarat</span>
+                                                <span>{t('accounting.createFirstEntry', {}, 'İlk Qeydi Yarat')}</span>
                                             </button>
                                         </div>
                                     </td>
@@ -779,7 +781,7 @@ export const JournalPage: React.FC = () => {
                                                 <button
                                                     onClick={() => setSelectedEntry(entry)}
                                                     className="p-1 rounded-lg bg-[#18181B] hover:bg-white/10 text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                                                    title="Ətraflı Bax"
+                                                    title={t('common.details', {}, 'Ətraflı Bax')}
                                                 >
                                                     <EyeIcon className="w-3.5 h-3.5" />
                                                 </button>
@@ -788,9 +790,9 @@ export const JournalPage: React.FC = () => {
                                                     <button
                                                         onClick={() => handlePost(entry.id, entry.date)}
                                                         className="px-2.5 py-1 rounded-lg bg-[#14291F] hover:bg-[#14291F]/80 border border-[#22C55E]/40 text-[#4ADE80] text-[11px] font-semibold transition-colors cursor-pointer"
-                                                        title="Baş Kitaba Keçir (Post)"
+                                                        title={t('accounting.postToLedger', {}, 'Baş Kitaba Keçir (Post)')}
                                                     >
-                                                        Təsdiq
+                                                        {t('accounting.post', {}, 'Təsdiq')}
                                                     </button>
                                                 )}
 
@@ -798,9 +800,9 @@ export const JournalPage: React.FC = () => {
                                                     <button
                                                         onClick={() => openReverseModal(entry.id)}
                                                         className="px-2.5 py-1 rounded-lg bg-[#2E1619] hover:bg-[#2E1619]/80 border border-[#EF4444]/40 text-[#F87171] text-[11px] font-semibold transition-colors cursor-pointer"
-                                                        title="Tərs Çevir (Reverse)"
+                                                        title={t('accounting.reverse', {}, 'Tərs Çevir (Reverse)')}
                                                     >
-                                                        Ləğv et
+                                                        {t('accounting.reverseAction', {}, 'Ləğv et')}
                                                     </button>
                                                 )}
                                             </div>
@@ -837,20 +839,20 @@ export const JournalPage: React.FC = () => {
                             : `${(currentPage - 1) * pageSize + 1}-${Math.min(
                                   currentPage * pageSize,
                                   filteredEntries.length
-                              )} of ${filteredEntries.length}`}
+                              )} ${t('common.of', {}, '/')} ${filteredEntries.length}`}
                     </span>
                 </div>
             </div>
 
-            {/* ─── CREATE JOURNAL ENTRY MODAL (Matching Accounts Create Modal) ─── */}
+            {/* ─── CREATE JOURNAL ENTRY MODAL ─── */}
             {showCreateModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in">
                     <div className="bg-[#18181B] border border-[#27272A] rounded-2xl w-full max-w-4xl p-6 space-y-4 text-white max-h-[90vh] overflow-y-auto shadow-2xl">
                         {/* Header */}
                         <div className="flex items-center justify-between pb-3 border-b border-[#27272A]">
                             <div>
-                                <h3 className="text-base font-bold text-white">Yeni Jurnal Qeydi (Double Entry)</h3>
-                                <p className="text-xs text-[#A1A1AA] mt-0.5">İkiqat müxabirləşmə üzrə balanslaşdırılmış qeyd</p>
+                                <h3 className="text-base font-bold text-white">{t('accounting.newJournalEntry', {}, 'Yeni Jurnal Qeydi (Double Entry)')}</h3>
+                                <p className="text-xs text-[#A1A1AA] mt-0.5">{t('accounting.doubleEntrySubtitle', {}, 'İkiqat müxabirləşmə üzrə balanslaşdırılmış qeyd')}</p>
                             </div>
                             <button
                                 onClick={() => setShowCreateModal(false)}
@@ -872,7 +874,7 @@ export const JournalPage: React.FC = () => {
                             {/* Header Fields */}
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <div>
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">Tarix *</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.date', {}, 'Tarix')} *</label>
                                     <input
                                         type="date"
                                         required
@@ -883,24 +885,24 @@ export const JournalPage: React.FC = () => {
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">İstinad № (Reference)</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.reference', {}, 'İstinad № (Reference)')}</label>
                                     <input
                                         type="text"
                                         value={createRef}
                                         onChange={(e) => setCreateRef(e.target.value)}
-                                        placeholder="məs. INV-2026-001 və ya Qaimə №"
+                                        placeholder={t('accounting.refPlaceholder', {}, 'məs. INV-2026-001 və ya Qaimə №')}
                                         className="w-full mt-1 px-3 py-2 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white placeholder:text-[#52525B] focus:border-white focus:outline-none transition-colors"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">Təsvir / Açıqlama *</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.description', {}, 'Təsvir / Açıqlama')} *</label>
                                     <input
                                         type="text"
                                         required
                                         value={createDesc}
                                         onChange={(e) => setCreateDesc(e.target.value)}
-                                        placeholder="məs. Əmək haqqı hesablanması"
+                                        placeholder={t('accounting.descPlaceholder', {}, 'məs. Əmək haqqı hesablanması')}
                                         className="w-full mt-1 px-3 py-2 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white placeholder:text-[#52525B] focus:border-white focus:outline-none transition-colors"
                                     />
                                 </div>
@@ -910,7 +912,7 @@ export const JournalPage: React.FC = () => {
                             <div className="space-y-2 pt-2">
                                 <div className="flex items-center justify-between">
                                     <h4 className="text-xs font-bold uppercase tracking-wider text-[#A1A1AA] flex items-center gap-1.5">
-                                        <span>Qeyd Sətirləri (Müxabirləşmə)</span>
+                                        <span>{t('accounting.entryLines', {}, 'Qeyd Sətirləri (Müxabirləşmə)')}</span>
                                     </h4>
                                     <button
                                         type="button"
@@ -918,7 +920,7 @@ export const JournalPage: React.FC = () => {
                                         className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#27272A] hover:bg-white hover:text-black text-xs font-semibold text-white transition-colors cursor-pointer"
                                     >
                                         <PlusIcon className="w-3.5 h-3.5" />
-                                        <span>Sətir Əlavə Et</span>
+                                        <span>{t('accounting.addLine', {}, 'Sətir Əlavə Et')}</span>
                                     </button>
                                 </div>
 
@@ -936,7 +938,7 @@ export const JournalPage: React.FC = () => {
                                                     onChange={(e) => handleLineChange(idx, 'accountId', e.target.value)}
                                                     className="w-full px-2.5 py-2 rounded-lg bg-[#18181B] border border-[#27272A] text-xs text-white focus:border-white focus:outline-none"
                                                 >
-                                                    <option value="">Hesab seçin...</option>
+                                                    <option value="">{t('accounting.selectAccount', {}, 'Hesab seçin...')}</option>
                                                     {accounts.map((a) => (
                                                         <option key={a.id} value={a.id}>
                                                             {a.code} - {a.name} ({a.currency || 'AZN'})
@@ -951,7 +953,7 @@ export const JournalPage: React.FC = () => {
                                                     type="text"
                                                     value={line.description}
                                                     onChange={(e) => handleLineChange(idx, 'description', e.target.value)}
-                                                    placeholder="Sətir açıqlaması..."
+                                                    placeholder={t('accounting.lineDescPlaceholder', {}, 'Sətir açıqlaması...')}
                                                     className="w-full px-2.5 py-2 rounded-lg bg-[#18181B] border border-[#27272A] text-xs text-white placeholder:text-[#52525B] focus:border-white focus:outline-none"
                                                 />
                                             </div>
@@ -964,7 +966,7 @@ export const JournalPage: React.FC = () => {
                                                     min="0"
                                                     value={line.debit}
                                                     onChange={(e) => handleLineChange(idx, 'debit', e.target.value)}
-                                                    placeholder="Debet"
+                                                    placeholder={t('accounting.debit', {}, 'Debet')}
                                                     className="w-full px-2.5 py-2 rounded-lg bg-[#18181B] border border-[#27272A] text-xs text-white text-right font-mono focus:border-white focus:outline-none"
                                                 />
                                             </div>
@@ -977,7 +979,7 @@ export const JournalPage: React.FC = () => {
                                                     min="0"
                                                     value={line.credit}
                                                     onChange={(e) => handleLineChange(idx, 'credit', e.target.value)}
-                                                    placeholder="Kredit"
+                                                    placeholder={t('accounting.credit', {}, 'Kredit')}
                                                     className="w-full px-2.5 py-2 rounded-lg bg-[#18181B] border border-[#27272A] text-xs text-white text-right font-mono focus:border-white focus:outline-none"
                                                 />
                                             </div>
@@ -988,7 +990,7 @@ export const JournalPage: React.FC = () => {
                                                 disabled={createLines.length <= 2}
                                                 onClick={() => handleRemoveLine(idx)}
                                                 className="p-1.5 rounded-lg text-[#71717A] hover:text-rose-400 hover:bg-rose-500/10 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-                                                title="Sətri Sil"
+                                                title={t('accounting.deleteLine', {}, 'Sətri Sil')}
                                             >
                                                 <TrashIcon className="w-4 h-4" />
                                             </button>
@@ -1000,26 +1002,26 @@ export const JournalPage: React.FC = () => {
                             {/* Balance Summary Box */}
                             <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[#A1A1AA]">Status:</span>
+                                    <span className="text-[#A1A1AA]">{t('common.status', {}, 'Status')}:</span>
                                     {isBalanced ? (
                                         <span className="inline-flex items-center gap-1.5 font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
                                             <CheckIcon className="w-3.5 h-3.5 stroke-[3]" />
-                                            Balanslaşdırılıb (Debet = Kredit)
+                                            {t('accounting.balanced', {}, 'Balanslaşdırılıb (Debet = Kredit)')}
                                         </span>
                                     ) : (
                                         <span className="inline-flex items-center gap-1.5 font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded-lg">
-                                            ✗ Balans bərabər deyil (Fərq: {formatCurrency(Math.abs(totalDebit - totalCredit))})
+                                            ✗ {t('accounting.unbalanced', {}, 'Balans bərabər deyil')} ({t('accounting.difference', {}, 'Fərq')}: {formatCurrency(Math.abs(totalDebit - totalCredit))})
                                         </span>
                                     )}
                                 </div>
 
                                 <div className="flex items-center gap-6 font-mono font-bold">
                                     <div>
-                                        <span className="text-[#A1A1AA] font-normal mr-1.5">Debet:</span>
+                                        <span className="text-[#A1A1AA] font-normal mr-1.5">{t('accounting.debit', {}, 'Debet')}:</span>
                                         <span className="text-white">{formatCurrency(totalDebit)}</span>
                                     </div>
                                     <div>
-                                        <span className="text-[#A1A1AA] font-normal mr-1.5">Kredit:</span>
+                                        <span className="text-[#A1A1AA] font-normal mr-1.5">{t('accounting.credit', {}, 'Kredit')}:</span>
                                         <span className="text-white">{formatCurrency(totalCredit)}</span>
                                     </div>
                                 </div>
@@ -1032,14 +1034,14 @@ export const JournalPage: React.FC = () => {
                                     onClick={() => setShowCreateModal(false)}
                                     className="px-4 py-2 rounded-xl bg-[#18181B] border border-[#27272A] hover:bg-[#27272A] text-xs font-semibold text-white transition-colors cursor-pointer"
                                 >
-                                    İmtina
+                                    {t('common.cancel', {}, 'İmtina')}
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={createLoading || !isBalanced || accounts.length === 0}
                                     className="px-4 py-2 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] text-xs font-bold text-white border border-white/20 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
-                                    {createLoading ? 'Saxlanılır...' : 'Qaralama Kimi Saxla'}
+                                    {createLoading ? t('common.saving', {}, 'Saxlanılır...') : t('accounting.saveAsDraft', {}, 'Qaralama Kimi Saxla')}
                                 </button>
                                 <button
                                     type="button"
@@ -1047,7 +1049,7 @@ export const JournalPage: React.FC = () => {
                                     onClick={(e) => handleCreateSubmit(e, true)}
                                     className="px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-xs font-bold text-black shadow-lg transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
-                                    {createLoading ? 'Saxlanılır...' : 'Saxla və Təsdiqlə (Post)'}
+                                    {createLoading ? t('common.saving', {}, 'Saxlanılır...') : t('accounting.saveAndPost', {}, 'Saxla və Təsdiqlə (Post)')}
                                 </button>
                             </div>
                         </form>
@@ -1060,7 +1062,7 @@ export const JournalPage: React.FC = () => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in">
                     <div className="bg-[#18181B] border border-[#27272A] rounded-2xl w-full max-w-md p-6 space-y-4 text-white shadow-2xl">
                         <div className="flex items-center justify-between pb-3 border-b border-[#27272A]">
-                            <h3 className="text-sm font-bold text-white">Jurnal Qeydinin Ləğvi (Reverse)</h3>
+                            <h3 className="text-sm font-bold text-white">{t('accounting.reverseEntryTitle', {}, 'Jurnal Qeydinin Ləğvi (Reverse)')}</h3>
                             <button
                                 onClick={() => setShowReverseModal(false)}
                                 className="p-1 rounded-lg text-[#71717A] hover:text-white hover:bg-white/5 cursor-pointer"
@@ -1077,19 +1079,19 @@ export const JournalPage: React.FC = () => {
 
                         <form onSubmit={handleReverseSubmit} className="space-y-3.5">
                             <div>
-                                <label className="text-xs font-semibold text-[#A1A1AA]">Ləğvetmə Səbəbi *</label>
+                                <label className="text-xs font-semibold text-[#A1A1AA]">{t('accounting.reversalReason', {}, 'Ləğvetmə Səbəbi')} *</label>
                                 <input
                                     type="text"
                                     required
                                     value={reversalReason}
                                     onChange={(e) => setReversalReason(e.target.value)}
-                                    placeholder="məs. Səhv hesab seçimi və ya dublikat"
+                                    placeholder={t('accounting.reversalReasonPlaceholder', {}, 'məs. Səhv hesab seçimi və ya dublikat')}
                                     className="w-full mt-1 px-3 py-2 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white focus:border-white focus:outline-none"
                                 />
                             </div>
 
                             <div>
-                                <label className="text-xs font-semibold text-[#A1A1AA]">Ləğvetmə Tarixi *</label>
+                                <label className="text-xs font-semibold text-[#A1A1AA]">{t('accounting.reversalDate', {}, 'Ləğvetmə Tarixi')} *</label>
                                 <input
                                     type="date"
                                     required
@@ -1100,7 +1102,7 @@ export const JournalPage: React.FC = () => {
                             </div>
 
                             <p className="text-[11px] text-[#A1A1AA] bg-[#121214] p-3 rounded-xl border border-[#27272A]">
-                                ⚠️ Bu əməliyyat baş kitabda əks-müxabirləşmə (Reverse entry) yaradacaq və qeydin statusunu "Reversed" edəcək.
+                                ⚠️ {t('accounting.reversalWarning', {}, 'Bu əməliyyat baş kitabda əks-müxabirləşmə (Reverse entry) yaradacaq və qeydin statusunu "Reversed" edəcək.')}
                             </p>
 
                             <div className="flex items-center justify-end gap-2.5 pt-2">
@@ -1109,14 +1111,14 @@ export const JournalPage: React.FC = () => {
                                     onClick={() => setShowReverseModal(false)}
                                     className="px-4 py-2 rounded-xl bg-[#18181B] border border-[#27272A] hover:bg-[#27272A] text-xs font-semibold text-white cursor-pointer"
                                 >
-                                    İmtina
+                                    {t('common.cancel', {}, 'İmtina')}
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={reverseLoading}
                                     className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white transition-colors cursor-pointer"
                                 >
-                                    {reverseLoading ? 'Ləğv edilir...' : 'Təsdiqlə və Ləğv Et'}
+                                    {reverseLoading ? t('common.processing', {}, 'Ləğv edilir...') : t('accounting.confirmReversal', {}, 'Təsdiqlə və Ləğv Et')}
                                 </button>
                             </div>
                         </form>
@@ -1150,28 +1152,28 @@ export const JournalPage: React.FC = () => {
                         {/* Summary Cards */}
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                             <div className="p-3 rounded-xl bg-[#121214] border border-[#27272A]">
-                                <span className="text-[11px] text-[#A1A1AA] block">Tarix</span>
+                                <span className="text-[11px] text-[#A1A1AA] block">{t('common.date', {}, 'Tarix')}</span>
                                 <span className="text-xs font-bold text-white mt-1 block">
                                     {formatDate(selectedEntry.date)}
                                 </span>
                             </div>
 
                             <div className="p-3 rounded-xl bg-[#121214] border border-[#27272A]">
-                                <span className="text-[11px] text-[#A1A1AA] block">İstinad №</span>
+                                <span className="text-[11px] text-[#A1A1AA] block">{t('common.reference', {}, 'İstinad №')}</span>
                                 <span className="text-xs font-mono font-bold text-white mt-1 block">
                                     {selectedEntry.reference || '—'}
                                 </span>
                             </div>
 
                             <div className="p-3 rounded-xl bg-[#121214] border border-[#27272A]">
-                                <span className="text-[11px] text-[#A1A1AA] block">Debet Cəmi</span>
+                                <span className="text-[11px] text-[#A1A1AA] block">{t('accounting.totalDebit', {}, 'Debet Cəmi')}</span>
                                 <span className="text-xs font-mono font-bold text-emerald-400 mt-1 block">
                                     {formatCurrency(selectedEntry.totalDebit || 0)}
                                 </span>
                             </div>
 
                             <div className="p-3 rounded-xl bg-[#121214] border border-[#27272A]">
-                                <span className="text-[11px] text-[#A1A1AA] block">Kredit Cəmi</span>
+                                <span className="text-[11px] text-[#A1A1AA] block">{t('accounting.totalCredit', {}, 'Kredit Cəmi')}</span>
                                 <span className="text-xs font-mono font-bold text-white mt-1 block">
                                     {formatCurrency(selectedEntry.totalCredit || 0)}
                                 </span>
@@ -1180,15 +1182,15 @@ export const JournalPage: React.FC = () => {
 
                         {/* Lines Table */}
                         <div className="space-y-2">
-                            <h4 className="text-xs font-bold uppercase tracking-wider text-[#A1A1AA]">Qeyd Sətirləri</h4>
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-[#A1A1AA]">{t('accounting.entryLines', {}, 'Qeyd Sətirləri')}</h4>
                             <div className="rounded-xl border border-[#27272A] bg-[#121214] overflow-hidden">
                                 <table className="w-full text-left text-xs text-[#E4E4E7]">
                                     <thead>
                                         <tr className="border-b border-[#27272A] bg-[#18181B] text-[#A1A1AA] text-[10px] uppercase font-bold">
-                                            <th className="py-2.5 px-3">Hesab</th>
-                                            <th className="py-2.5 px-3">Təsvir</th>
-                                            <th className="py-2.5 px-3 text-right">Debet</th>
-                                            <th className="py-2.5 px-3 text-right">Kredit</th>
+                                            <th className="py-2.5 px-3">{t('accounting.account', {}, 'Hesab')}</th>
+                                            <th className="py-2.5 px-3">{t('common.description', {}, 'Təsvir')}</th>
+                                            <th className="py-2.5 px-3 text-right">{t('accounting.debit', {}, 'Debet')}</th>
+                                            <th className="py-2.5 px-3 text-right">{t('accounting.credit', {}, 'Kredit')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[#27272A]/50">
@@ -1216,7 +1218,7 @@ export const JournalPage: React.FC = () => {
                         {/* Actions in Detail Modal */}
                         <div className="flex items-center justify-between pt-3 border-t border-[#27272A]">
                             <span className="text-[11px] text-[#71717A]">
-                                {selectedEntry.postedAt ? `Baş kitaba keçirilib: ${formatDateTime(selectedEntry.postedAt)}` : 'Qaralama statusundadır'}
+                                {selectedEntry.postedAt ? `${t('accounting.postedAt', {}, 'Baş kitaba keçirilib')}: ${formatDateTime(selectedEntry.postedAt)}` : t('accounting.isDraft', {}, 'Qaralama statusundadır')}
                             </span>
 
                             <div className="flex items-center gap-2">
@@ -1225,7 +1227,7 @@ export const JournalPage: React.FC = () => {
                                         onClick={() => handlePost(selectedEntry.id, selectedEntry.date)}
                                         className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-colors cursor-pointer"
                                     >
-                                        Baş Kitaba Keçir (Post)
+                                        {t('accounting.postToLedger', {}, 'Baş Kitaba Keçir (Post)')}
                                     </button>
                                 )}
                                 {selectedEntry.status === 'Posted' && (
@@ -1233,14 +1235,14 @@ export const JournalPage: React.FC = () => {
                                         onClick={() => openReverseModal(selectedEntry.id)}
                                         className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-colors cursor-pointer"
                                     >
-                                        Ləğv Et (Reverse)
+                                        {t('accounting.reverse', {}, 'Ləğv Et (Reverse)')}
                                     </button>
                                 )}
                                 <button
                                     onClick={() => setSelectedEntry(null)}
                                     className="px-3.5 py-1.5 rounded-xl bg-[#18181B] border border-[#27272A] hover:bg-[#27272A] text-xs font-semibold text-white cursor-pointer"
                                 >
-                                    Bağla
+                                    {t('common.close', {}, 'Bağla')}
                                 </button>
                             </div>
                         </div>

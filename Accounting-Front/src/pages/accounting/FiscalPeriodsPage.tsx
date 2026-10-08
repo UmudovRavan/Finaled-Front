@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { fiscalService } from '../../api';
 import type { FiscalPeriodDto, CreateFiscalPeriodRequest } from '../../dto';
+import { useLanguage } from '../../context/LanguageContext';
 import {
     PlusIcon,
     ArrowPathIcon,
@@ -21,22 +22,8 @@ import {
     ClockIcon,
 } from '@heroicons/react/24/outline';
 
-const AZ_MONTHS = [
-    { num: 1, name: 'Yanvar' },
-    { num: 2, name: 'Fevral' },
-    { num: 3, name: 'Mart' },
-    { num: 4, name: 'Aprel' },
-    { num: 5, name: 'May' },
-    { num: 6, name: 'İyun' },
-    { num: 7, name: 'İyul' },
-    { num: 8, name: 'Avqust' },
-    { num: 9, name: 'Sentyabr' },
-    { num: 10, name: 'Oktyabr' },
-    { num: 11, name: 'Noyabr' },
-    { num: 12, name: 'Dekabr' },
-];
-
 export const FiscalPeriodsPage: React.FC = () => {
+    const { t } = useLanguage();
     const currentCalendarYear = new Date().getFullYear();
     const [periods, setPeriods] = useState<FiscalPeriodDto[]>([]);
     const [loading, setLoading] = useState(true);
@@ -62,12 +49,12 @@ export const FiscalPeriodsPage: React.FC = () => {
 
     // Column Visibility
     const [columns, setColumns] = useState([
-        { key: 'periodNumber', label: 'Dövr №', visible: true },
-        { key: 'name', label: 'Dövrün Adı', visible: true },
-        { key: 'startDate', label: 'Başlama Tarixi', visible: true },
-        { key: 'endDate', label: 'Bitmə Tarixi', visible: true },
-        { key: 'status', label: 'Status', visible: true },
-        { key: 'notes', label: 'Qeyd', visible: true },
+        { key: 'periodNumber', label: t('accounting.periodNumber', {}, 'Dövr №'), visible: true },
+        { key: 'name', label: t('accounting.periodName', {}, 'Dövrün Adı'), visible: true },
+        { key: 'startDate', label: t('common.startDate', {}, 'Başlama Tarixi'), visible: true },
+        { key: 'endDate', label: t('common.endDate', {}, 'Bitmə Tarixi'), visible: true },
+        { key: 'status', label: t('common.status', {}, 'Status'), visible: true },
+        { key: 'notes', label: t('common.notes', {}, 'Qeyd'), visible: true },
     ]);
 
     // Detail Drawer State
@@ -290,17 +277,23 @@ export const FiscalPeriodsPage: React.FC = () => {
         );
     };
 
+    const getMonthName = (monthNum: number) => {
+        const key = `months.${monthNum}`;
+        const defaultNames = ['', 'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'İyun', 'İyul', 'Avqust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'];
+        return t(key, {}, defaultNames[monthNum] || `Ay ${monthNum}`);
+    };
+
     return (
         <div className="space-y-3.5 font-sans text-[#F4F4F5] antialiased select-none pb-12">
             {/* ─── Top Header (Breadcrumb & + Yarat button) ─── */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                     <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                        <span>Maliyyə Hesabatları</span>
+                        <span>{t('nav.reports', {}, 'Maliyyə Hesabatları')}</span>
                         <span className="text-[#52525B]">/</span>
                         <div className="inline-flex items-center gap-1.5 text-white font-bold">
                             <Bars3Icon className="w-4 h-4 text-[#A1A1AA]" />
-                            <span>Maliyyə Dövrləri</span>
+                            <span>{t('nav.fiscalPeriods', {}, 'Maliyyə Dövrləri')}</span>
                         </div>
                     </h1>
                 </div>
@@ -314,7 +307,7 @@ export const FiscalPeriodsPage: React.FC = () => {
                             className="flex items-center gap-2 bg-[#18181B] border border-[#27272A] hover:border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-white transition-colors cursor-pointer"
                         >
                             <CalendarDaysIcon className="w-4 h-4 text-emerald-400 shrink-0" />
-                            <span className="font-semibold">{fiscalYear}-ci İl</span>
+                            <span className="font-semibold">{fiscalYear}</span>
                             <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0 ml-1" />
                         </button>
 
@@ -334,7 +327,7 @@ export const FiscalPeriodsPage: React.FC = () => {
                                                 : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
                                         }`}
                                     >
-                                        {y}-ci İl
+                                        {y}
                                     </button>
                                 ))}
                             </div>
@@ -345,7 +338,7 @@ export const FiscalPeriodsPage: React.FC = () => {
                     <button
                         onClick={() => loadPeriods(true)}
                         className="p-2 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-                        title="Yenilə"
+                        title={t('common.refresh', {}, 'Yenilə')}
                     >
                         <ArrowPathIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                     </button>
@@ -356,14 +349,14 @@ export const FiscalPeriodsPage: React.FC = () => {
                             setFormYear(fiscalYear);
                             setFormStartDate(`${fiscalYear}-01-01`);
                             setFormEndDate(`${fiscalYear}-12-31`);
-                            setFormNotes(`${fiscalYear}-ci il maliyyə ili və 12 aylıq əməliyyat dövrü`);
+                            setFormNotes(`${fiscalYear}`);
                             setCreateError('');
                             setShowCreateModal(true);
                         }}
                         className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white hover:bg-zinc-200 text-black text-xs font-semibold shadow-md transition-colors cursor-pointer"
                     >
                         <PlusIcon className="w-4 h-4 stroke-[2.5]" />
-                        <span>Yarat</span>
+                        <span>{t('common.create', {}, 'Yarat')}</span>
                     </button>
                 </div>
             </div>
@@ -380,68 +373,68 @@ export const FiscalPeriodsPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                 <div className="p-4 rounded-2xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between shadow-lg">
                     <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">Cari Maliyyə İli</span>
+                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">{t('accounting.currentFiscalYear', {}, 'Cari Maliyyə İli')}</span>
                         <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#2C2C2E] text-[#A1A1AA] border border-[#3F3F46]">
-                            12 Ay
+                            12 {t('accounting.months', {}, 'Ay')}
                         </span>
                     </div>
                     <div className="text-xl font-black font-mono text-white mt-2">
-                        {fiscalYear} <span className="text-xs text-[#71717A] font-normal">İli</span>
+                        {fiscalYear}
                     </div>
-                    <span className="text-[10px] text-[#71717A] mt-1">Cəmi {stats.total} əməliyyat dövrü</span>
+                    <span className="text-[10px] text-[#71717A] mt-1">{t('common.total', {}, 'Cəmi')} {stats.total} {t('accounting.periodCount', {}, 'əməliyyat dövrü')}</span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between shadow-lg">
                     <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">Açıq Dövrlər</span>
+                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">{t('accounting.openPeriods', {}, 'Açıq Dövrlər')}</span>
                         <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#14291F] text-[#4ADE80] border border-[#22C55E]/30">
-                            Aktiv
+                            {t('common.active', {}, 'Aktiv')}
                         </span>
                     </div>
                     <div className="text-xl font-black font-mono text-emerald-400 mt-2">
-                        {stats.openCount} <span className="text-xs text-[#71717A] font-normal">dövr</span>
+                        {stats.openCount}
                     </div>
-                    <span className="text-[10px] text-[#71717A] mt-1">Əməliyyat aparılmasına icazə verilir</span>
+                    <span className="text-[10px] text-[#71717A] mt-1">{t('accounting.operationsAllowed', {}, 'Əməliyyat aparılmasına icazə verilir')}</span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between shadow-lg">
                     <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">Bağlanmış Dövrlər</span>
+                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">{t('accounting.closedPeriods', {}, 'Bağlanmış Dövrlər')}</span>
                         <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#2C2C2E] text-[#A1A1AA] border border-[#3F3F46]">
-                            Bağlı
+                            {t('accounting.closed', {}, 'Bağlı')}
                         </span>
                     </div>
                     <div className="text-xl font-black font-mono text-[#A1A1AA] mt-2">
-                        {stats.closedCount} <span className="text-xs text-[#71717A] font-normal">dövr</span>
+                        {stats.closedCount}
                     </div>
-                    <span className="text-[10px] text-[#71717A] mt-1">Dəyişikliklərə qapalı dövrlər</span>
+                    <span className="text-[10px] text-[#71717A] mt-1">{t('accounting.closedForEdits', {}, 'Dəyişikliklərə qapalı dövrlər')}</span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[#18181B] border border-[#27272A] flex flex-col justify-between shadow-lg">
                     <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">İl Sonu Statusu</span>
+                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">{t('accounting.yearEndStatus', {}, 'İl Sonu Statusu')}</span>
                         <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
                             stats.allClosed
                                 ? 'bg-[#2C2C2E] text-[#A1A1AA] border border-[#3F3F46]'
                                 : 'bg-[#14291F] text-[#4ADE80] border border-[#22C55E]/30'
                         }`}>
-                            {stats.allClosed ? 'Bağlanıb' : 'Cari İldir'}
+                            {stats.allClosed ? t('accounting.closed', {}, 'Bağlanıb') : t('accounting.currentYear', {}, 'Cari İldir')}
                         </span>
                     </div>
                     <div className="flex items-center gap-2 mt-2">
                         {stats.allClosed ? (
                             <>
                                 <LockClosedIcon className="w-5 h-5 text-[#A1A1AA] shrink-0" />
-                                <span className="text-sm font-bold text-[#A1A1AA]">İl Tamamlanıb</span>
+                                <span className="text-sm font-bold text-[#A1A1AA]">{t('accounting.yearCompleted', {}, 'İl Tamamlanıb')}</span>
                             </>
                         ) : (
                             <>
                                 <CheckCircleIcon className="w-5 h-5 text-emerald-400 shrink-0" />
-                                <span className="text-sm font-bold text-emerald-400">İl Açıqdır</span>
+                                <span className="text-sm font-bold text-emerald-400">{t('accounting.yearOpen', {}, 'İl Açıqdır')}</span>
                             </>
                         )}
                     </div>
-                    <span className="text-[10px] text-[#71717A] mt-1">Maliyyə ilinin bağlanış vəziyyəti</span>
+                    <span className="text-[10px] text-[#71717A] mt-1">{t('accounting.fiscalYearClosingState', {}, 'Maliyyə ilinin bağlanış vəziyyəti')}</span>
                 </div>
             </div>
 
@@ -451,7 +444,7 @@ export const FiscalPeriodsPage: React.FC = () => {
                     {/* Search Input */}
                     <input
                         type="text"
-                        placeholder="Dövr adı və ya nömrəsi ilə axtar..."
+                        placeholder={t('accounting.searchPeriods', {}, 'Dövr adı və ya nömrəsi ilə axtar...')}
                         value={searchQuery}
                         onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                         className="w-56 sm:w-72 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
@@ -464,7 +457,7 @@ export const FiscalPeriodsPage: React.FC = () => {
                             onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
                             className="flex items-center justify-between min-w-[120px] bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
                         >
-                            <span className="truncate">{statusFilter === 'Status' ? 'Bütün Statuslar' : statusFilter}</span>
+                            <span className="truncate">{statusFilter === 'Status' ? t('common.all', {}, 'Bütün Statuslar') : statusFilter}</span>
                             <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0 ml-1.5" />
                         </button>
 
@@ -483,7 +476,7 @@ export const FiscalPeriodsPage: React.FC = () => {
                                             statusFilter === st ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
                                         }`}
                                     >
-                                        {st === 'Status' ? 'Bütün Statuslar' : st}
+                                        {st === 'Status' ? t('common.all', {}, 'Bütün Statuslar') : st === 'Açıq' ? t('accounting.open', {}, 'Açıq') : t('accounting.closed', {}, 'Bağlı')}
                                     </button>
                                 ))}
                             </div>
@@ -502,7 +495,7 @@ export const FiscalPeriodsPage: React.FC = () => {
                             }`}
                         >
                             <FunnelIcon className="w-3.5 h-3.5" />
-                            <span>Filtr</span>
+                            <span>{t('common.filter', {}, 'Filtr')}</span>
                             {activeFilterCount > 0 && (
                                 <span className="ml-1 w-4 h-4 rounded-full bg-white text-black font-bold text-[10px] flex items-center justify-center">
                                     {activeFilterCount}
@@ -514,7 +507,7 @@ export const FiscalPeriodsPage: React.FC = () => {
                         {isFilterPopoverOpen && (
                             <div className="absolute top-9 left-0 w-72 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-4 z-50 text-xs text-[#E4E4E7] space-y-3 animate-in fade-in duration-150">
                                 <div className="flex items-center justify-between pb-2 border-b border-[#2C2C2E]">
-                                    <span className="font-bold text-white">Dövr Filtrləri</span>
+                                    <span className="font-bold text-white">{t('common.allFilters', {}, 'Dövr Filtrləri')}</span>
                                     {activeFilterCount > 0 && (
                                         <button
                                             type="button"
@@ -524,15 +517,15 @@ export const FiscalPeriodsPage: React.FC = () => {
                                             }}
                                             className="text-[11px] text-[#A1A1AA] hover:text-white underline cursor-pointer"
                                         >
-                                            Sıfırla
+                                            {t('common.reset', {}, 'Sıfırla')}
                                         </button>
                                     )}
                                 </div>
 
                                 <div className="space-y-2">
-                                    <span className="text-[11px] text-[#A1A1AA] font-semibold block">Maliyyə İli: {fiscalYear}</span>
+                                    <span className="text-[11px] text-[#A1A1AA] font-semibold block">{t('accounting.fiscalYear', {}, 'Maliyyə İli')}: {fiscalYear}</span>
                                     <p className="text-[11px] text-[#71717A]">
-                                        İllər üzrə filtrləmək üçün yuxarı başlıqdakı il seçicisindən istifadə edin.
+                                        {t('accounting.useYearDropdownHint', {}, 'İllər üzrə filtrləmək üçün yuxarı başlıqdakı il seçicisindən istifadə edin.')}
                                     </p>
                                 </div>
 
@@ -542,7 +535,7 @@ export const FiscalPeriodsPage: React.FC = () => {
                                         onClick={() => setIsFilterPopoverOpen(false)}
                                         className="px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold text-xs transition-colors cursor-pointer"
                                     >
-                                        Tətbiq et
+                                        {t('common.apply', {}, 'Tətbiq et')}
                                     </button>
                                 </div>
                             </div>
@@ -558,13 +551,13 @@ export const FiscalPeriodsPage: React.FC = () => {
                             type="button"
                             onClick={() => setIsColumnsOpen(!isColumnsOpen)}
                             className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                            title="Sütunlar"
+                            title={t('accounting.columns', {}, 'Sütunlar')}
                         >
                             <ViewColumnsIcon className="w-4 h-4" />
                         </button>
                         {isColumnsOpen && (
                             <div className="absolute top-9 right-0 w-48 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-2.5 z-50 text-xs text-[#E4E4E7] space-y-1.5 animate-in fade-in duration-150">
-                                <div className="font-bold text-white px-1.5 pb-1 border-b border-[#2C2C2E]">Sütunlar</div>
+                                <div className="font-bold text-white px-1.5 pb-1 border-b border-[#2C2C2E]">{t('accounting.columns', {}, 'Sütunlar')}</div>
                                 {columns.map((col) => (
                                     <label key={col.key} className="flex items-center gap-2 px-1.5 py-1 hover:bg-[#2C2C2E]/60 rounded-lg cursor-pointer">
                                         <input
@@ -586,17 +579,17 @@ export const FiscalPeriodsPage: React.FC = () => {
                             type="button"
                             onClick={() => setIsSortOpen(!isSortOpen)}
                             className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                            title="Sıralama"
+                            title={t('common.sort', {}, 'Sıralama')}
                         >
                             <ArrowsUpDownIcon className="w-4 h-4" />
                         </button>
                         {isSortOpen && (
                             <div className="absolute top-9 right-0 w-44 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-50 text-xs text-[#E4E4E7] flex flex-col animate-in fade-in duration-150">
                                 {[
-                                    { key: 'periodNumber', label: 'Dövr №' },
-                                    { key: 'name', label: 'Dövrün Adı' },
-                                    { key: 'startDate', label: 'Başlama Tarixi' },
-                                    { key: 'status', label: 'Status' },
+                                    { key: 'periodNumber', label: t('accounting.periodNumber', {}, 'Dövr №') },
+                                    { key: 'name', label: t('accounting.periodName', {}, 'Dövrün Adı') },
+                                    { key: 'startDate', label: t('common.startDate', {}, 'Başlama Tarixi') },
+                                    { key: 'status', label: t('common.status', {}, 'Status') },
                                 ].map((s) => (
                                     <button
                                         key={s.key}
@@ -637,36 +630,36 @@ export const FiscalPeriodsPage: React.FC = () => {
                                         onChange={handleSelectAll}
                                         checked={
                                             paginatedPeriods.length > 0 &&
-                                            selectedRows.length === paginatedPeriods.length
+                                             selectedRows.length === paginatedPeriods.length
                                         }
                                         className="rounded bg-[#121214] border-[#27272A] text-white focus:ring-0 cursor-pointer"
                                     />
                                 </th>
                                 {isColumnVisible('periodNumber') && (
                                     <th className="py-3 px-3 cursor-pointer hover:text-white" onClick={() => { setSortField('periodNumber'); setSortDirection((p) => (p === 'asc' ? 'desc' : 'asc')); }}>
-                                        Dövr № {sortField === 'periodNumber' && (sortDirection === 'asc' ? '↑' : '↓')}
+                                        {t('accounting.periodNumber', {}, 'Dövr №')} {sortField === 'periodNumber' && (sortDirection === 'asc' ? '↑' : '↓')}
                                     </th>
                                 )}
                                 {isColumnVisible('name') && (
                                     <th className="py-3 px-3 cursor-pointer hover:text-white" onClick={() => { setSortField('name'); setSortDirection((p) => (p === 'asc' ? 'desc' : 'asc')); }}>
-                                        Dövrün Adı {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}
+                                        {t('accounting.periodName', {}, 'Dövrün Adı')} {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}
                                     </th>
                                 )}
                                 {isColumnVisible('startDate') && (
                                     <th className="py-3 px-3 cursor-pointer hover:text-white" onClick={() => { setSortField('startDate'); setSortDirection((p) => (p === 'asc' ? 'desc' : 'asc')); }}>
-                                        Başlama Tarixi {sortField === 'startDate' && (sortDirection === 'asc' ? '↑' : '↓')}
+                                        {t('common.startDate', {}, 'Başlama Tarixi')} {sortField === 'startDate' && (sortDirection === 'asc' ? '↑' : '↓')}
                                     </th>
                                 )}
                                 {isColumnVisible('endDate') && (
-                                    <th className="py-3 px-3">Bitmə Tarixi</th>
+                                    <th className="py-3 px-3">{t('common.endDate', {}, 'Bitmə Tarixi')}</th>
                                 )}
                                 {isColumnVisible('status') && (
-                                    <th className="py-3 px-3 text-center">Status</th>
+                                    <th className="py-3 px-3 text-center">{t('common.status', {}, 'Status')}</th>
                                 )}
                                 {isColumnVisible('notes') && (
-                                    <th className="py-3 px-3">Qeydlər</th>
+                                    <th className="py-3 px-3">{t('common.notes', {}, 'Qeydlər')}</th>
                                 )}
-                                <th className="py-3 px-3 text-right">Fəaliyyət</th>
+                                <th className="py-3 px-3 text-right">{t('common.actions', {}, 'Fəaliyyət')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#27272A]">
@@ -675,7 +668,7 @@ export const FiscalPeriodsPage: React.FC = () => {
                                     <td colSpan={8} className="py-14 text-center text-[#71717A]">
                                         <div className="flex items-center justify-center gap-2">
                                             <ArrowPathIcon className="w-4 h-4 animate-spin text-emerald-400" />
-                                            <span>Maliyyə dövrləri yüklənir...</span>
+                                            <span>{t('common.loading', {}, 'Maliyyə dövrləri yüklənir...')}</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -689,11 +682,11 @@ export const FiscalPeriodsPage: React.FC = () => {
                                             <div>
                                                 <p className="text-sm font-bold text-white">
                                                     {searchQuery || statusFilter !== 'Status'
-                                                        ? 'Axtarış üzrə heç bir dövr tapılmadı'
-                                                        : `${fiscalYear}-ci il üçün maliyyə dövrləri mövcud deyil`}
+                                                        ? t('accounting.noPeriodsFound', {}, 'Axtarış üzrə heç bir dövr tapılmadı')
+                                                        : t('accounting.noPeriodsForYear', { year: fiscalYear }, `${fiscalYear}-ci il üçün maliyyə dövrləri mövcud deyil`)}
                                                 </p>
                                                 <p className="text-xs text-[#71717A] mt-1 max-w-sm">
-                                                    Yeni maliyyə ili və 12 aylıq əməliyyat dövrü formalaşdırmaq üçün Yarat düyməsinə klikləyin
+                                                    {t('accounting.createFiscalYearHint', {}, 'Yeni maliyyə ili və 12 aylıq əməliyyat dövrü formalaşdırmaq üçün Yarat düyməsinə klikləyin')}
                                                 </p>
                                             </div>
                                             <button
@@ -701,14 +694,14 @@ export const FiscalPeriodsPage: React.FC = () => {
                                                     setFormYear(fiscalYear);
                                                     setFormStartDate(`${fiscalYear}-01-01`);
                                                     setFormEndDate(`${fiscalYear}-12-31`);
-                                                    setFormNotes(`${fiscalYear}-ci il maliyyə ili və 12 aylıq əməliyyat dövrü`);
+                                                    setFormNotes(`${fiscalYear}`);
                                                     setCreateError('');
                                                     setShowCreateModal(true);
                                                 }}
                                                 className="mt-2 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white hover:bg-zinc-200 text-black text-xs font-semibold shadow-md transition-colors cursor-pointer"
                                             >
                                                 <PlusIcon className="w-4 h-4 stroke-[2.5]" />
-                                                <span>İli Yarat</span>
+                                                <span>{t('accounting.createFiscalYear', {}, 'İli Yarat')}</span>
                                             </button>
                                         </div>
                                     </td>
@@ -736,12 +729,12 @@ export const FiscalPeriodsPage: React.FC = () => {
                                             </td>
                                             {isColumnVisible('periodNumber') && (
                                                 <td className="py-3 px-3 font-mono font-bold text-emerald-400">
-                                                    Dövr {p.periodNumber < 10 ? `0${p.periodNumber}` : p.periodNumber}
+                                                    {t('accounting.periodNumber', {}, 'Dövr')} {p.periodNumber < 10 ? `0${p.periodNumber}` : p.periodNumber}
                                                 </td>
                                             )}
                                             {isColumnVisible('name') && (
                                                 <td className="py-3 px-3 font-semibold text-white">
-                                                    {p.name || `${AZ_MONTHS[p.periodNumber - 1]?.name || 'Ay'} (${p.fiscalYear})`}
+                                                    {p.name || `${getMonthName(p.periodNumber)} (${p.fiscalYear})`}
                                                 </td>
                                             )}
                                             {isColumnVisible('startDate') && (
@@ -759,12 +752,12 @@ export const FiscalPeriodsPage: React.FC = () => {
                                                     {!isClosed ? (
                                                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-[#14291F] text-[#4ADE80] border border-[#22C55E]/30">
                                                             <LockOpenIcon className="w-3 h-3" />
-                                                            <span>Açıq</span>
+                                                            <span>{t('accounting.open', {}, 'Açıq')}</span>
                                                         </span>
                                                     ) : (
                                                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-[#2C2C2E] text-[#A1A1AA] border border-[#3F3F46]">
                                                             <LockClosedIcon className="w-3 h-3" />
-                                                            <span>Bağlı</span>
+                                                            <span>{t('accounting.closed', {}, 'Bağlı')}</span>
                                                         </span>
                                                     )}
                                                 </td>
@@ -785,10 +778,10 @@ export const FiscalPeriodsPage: React.FC = () => {
                                                                 loading: false,
                                                             })}
                                                             className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#18181B] border border-[#27272A] hover:border-rose-500/30 text-[#A1A1AA] hover:text-rose-400 hover:bg-rose-500/10 text-[11px] font-semibold transition-colors cursor-pointer"
-                                                            title="Dövrü Bağla"
+                                                            title={t('accounting.closePeriod', {}, 'Dövrü Bağla')}
                                                         >
                                                             <LockClosedIcon className="w-3 h-3 text-rose-400" />
-                                                            <span>Bağla</span>
+                                                            <span>{t('accounting.close', {}, 'Bağla')}</span>
                                                         </button>
                                                     ) : (
                                                         <button
@@ -799,16 +792,16 @@ export const FiscalPeriodsPage: React.FC = () => {
                                                                 loading: false,
                                                             })}
                                                             className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#18181B] border border-[#27272A] hover:border-emerald-500/30 text-[#A1A1AA] hover:text-emerald-400 hover:bg-emerald-500/10 text-[11px] font-semibold transition-colors cursor-pointer"
-                                                            title="Dövrü Yenidən Aç"
+                                                            title={t('accounting.reopenPeriod', {}, 'Dövrü Yenidən Aç')}
                                                         >
                                                             <LockOpenIcon className="w-3 h-3 text-emerald-400" />
-                                                            <span>Aç</span>
+                                                            <span>{t('accounting.open', {}, 'Aç')}</span>
                                                         </button>
                                                     )}
                                                     <button
                                                         onClick={() => setSelectedPeriod(p)}
                                                         className="p-1 rounded-lg bg-[#18181B] hover:bg-white/10 text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                                                        title="Ətraflı Bax"
+                                                        title={t('common.details', {}, 'Ətraflı Bax')}
                                                     >
                                                         <EyeIcon className="w-3.5 h-3.5" />
                                                     </button>
@@ -847,7 +840,7 @@ export const FiscalPeriodsPage: React.FC = () => {
                             : `${(currentPage - 1) * pageSize + 1}-${Math.min(
                                   currentPage * pageSize,
                                   filteredPeriods.length
-                              )} of ${filteredPeriods.length}`}
+                              )} ${t('common.of', {}, '/')} ${filteredPeriods.length}`}
                     </span>
                 </div>
             </div>
@@ -866,22 +859,22 @@ export const FiscalPeriodsPage: React.FC = () => {
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <span className="font-mono text-emerald-400 font-bold text-lg">
-                                            Dövr {selectedPeriod.periodNumber < 10 ? `0${selectedPeriod.periodNumber}` : selectedPeriod.periodNumber}
+                                            {t('accounting.periodNumber', {}, 'Dövr')} {selectedPeriod.periodNumber < 10 ? `0${selectedPeriod.periodNumber}` : selectedPeriod.periodNumber}
                                         </span>
                                         {!selectedPeriod.isClosed ? (
                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-[#14291F] text-[#4ADE80] border border-[#22C55E]/30">
                                                 <LockOpenIcon className="w-3 h-3" />
-                                                <span>Açıq</span>
+                                                <span>{t('accounting.open', {}, 'Açıq')}</span>
                                             </span>
                                         ) : (
                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-[#2C2C2E] text-[#A1A1AA] border border-[#3F3F46]">
                                                 <LockClosedIcon className="w-3 h-3" />
-                                                <span>Bağlı</span>
+                                                <span>{t('accounting.closed', {}, 'Bağlı')}</span>
                                             </span>
                                         )}
                                     </div>
                                     <h2 className="text-xl font-extrabold text-white mt-1">
-                                        {selectedPeriod.name || `${AZ_MONTHS[selectedPeriod.periodNumber - 1]?.name || 'Ay'} (${selectedPeriod.fiscalYear})`}
+                                        {selectedPeriod.name || `${getMonthName(selectedPeriod.periodNumber)} (${selectedPeriod.fiscalYear})`}
                                     </h2>
                                 </div>
                                 <button
@@ -895,22 +888,22 @@ export const FiscalPeriodsPage: React.FC = () => {
                             {/* Details Grid */}
                             <div className="space-y-3">
                                 <div className="p-3.5 rounded-xl bg-[#121214] border border-[#27272A] space-y-2">
-                                    <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider block">Dövr Məlumatları</span>
+                                    <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider block">{t('accounting.periodDetails', {}, 'Dövr Məlumatları')}</span>
                                     <div className="grid grid-cols-2 gap-3 text-xs">
                                         <div>
-                                            <span className="text-[#71717A] block">Maliyyə İli:</span>
+                                            <span className="text-[#71717A] block">{t('accounting.fiscalYear', {}, 'Maliyyə İli')}:</span>
                                             <span className="font-bold text-white">{selectedPeriod.fiscalYear}</span>
                                         </div>
                                         <div>
-                                            <span className="text-[#71717A] block">Dövr Sırası:</span>
+                                            <span className="text-[#71717A] block">{t('accounting.periodOrder', {}, 'Dövr Sırası')}:</span>
                                             <span className="font-bold text-white">{selectedPeriod.periodNumber} / 12</span>
                                         </div>
                                         <div>
-                                            <span className="text-[#71717A] block">Başlama Tarixi:</span>
+                                            <span className="text-[#71717A] block">{t('common.startDate', {}, 'Başlama Tarixi')}:</span>
                                             <span className="font-mono text-white">{formatDate(selectedPeriod.startDate)}</span>
                                         </div>
                                         <div>
-                                            <span className="text-[#71717A] block">Bitmə Tarixi:</span>
+                                            <span className="text-[#71717A] block">{t('common.endDate', {}, 'Bitmə Tarixi')}:</span>
                                             <span className="font-mono text-white">{formatDate(selectedPeriod.endDate)}</span>
                                         </div>
                                     </div>
@@ -918,7 +911,7 @@ export const FiscalPeriodsPage: React.FC = () => {
 
                                 {selectedPeriod.notes && (
                                     <div className="p-3.5 rounded-xl bg-[#121214] border border-[#27272A]">
-                                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider block mb-1">Qeydlər</span>
+                                        <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider block mb-1">{t('common.notes', {}, 'Qeydlər')}</span>
                                         <p className="text-xs text-white">{selectedPeriod.notes}</p>
                                     </div>
                                 )}
@@ -926,10 +919,10 @@ export const FiscalPeriodsPage: React.FC = () => {
                                 <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-950/30 via-[#121214] to-[#121214] border border-emerald-500/20 text-xs space-y-1.5">
                                     <div className="flex items-center gap-2 font-bold text-emerald-400">
                                         <CheckCircleIcon className="w-4 h-4 shrink-0" />
-                                        <span>Əməliyyat Qaydaları</span>
+                                        <span>{t('accounting.rulesTitle', {}, 'Əməliyyat Qaydaları')}</span>
                                     </div>
                                     <p className="text-[#A1A1AA] text-[11px] leading-relaxed">
-                                        Maliyyə dövrü açıq olduqda jurnal qeydləri, hesab-fakturalar və ödənişlər daxil edilə bilər. Dövr bağlandıqdan sonra qeydlərə düzəliş edilməsi məhdudlaşdırılır.
+                                        {t('accounting.rulesDesc', {}, 'Maliyyə dövrü açıq olduqda jurnal qeydləri, hesab-fakturalar və ödənişlər daxil edilə bilər. Dövr bağlandıqdan sonra qeydlərə düzəliş edilməsi məhdudlaşdırılır.')}
                                     </p>
                                 </div>
                             </div>
@@ -949,7 +942,7 @@ export const FiscalPeriodsPage: React.FC = () => {
                                     }}
                                     className="flex-1 py-2 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 text-center text-xs font-semibold transition-colors cursor-pointer"
                                 >
-                                    Dövrü Bağla
+                                    {t('accounting.closePeriod', {}, 'Dövrü Bağla')}
                                 </button>
                             ) : (
                                 <button
@@ -963,14 +956,14 @@ export const FiscalPeriodsPage: React.FC = () => {
                                     }}
                                     className="flex-1 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-center text-xs font-semibold transition-colors cursor-pointer"
                                 >
-                                    Dövrü Yenidən Aç
+                                    {t('accounting.reopenPeriod', {}, 'Dövrü Yenidən Aç')}
                                 </button>
                             )}
                             <button
                                 onClick={() => setSelectedPeriod(null)}
                                 className="px-4 py-2 rounded-xl bg-[#121214] border border-[#27272A] text-xs font-semibold text-white hover:bg-white/5 transition-colors cursor-pointer"
                             >
-                                Bağla
+                                {t('common.close', {}, 'Bağla')}
                             </button>
                         </div>
                     </div>
@@ -984,8 +977,8 @@ export const FiscalPeriodsPage: React.FC = () => {
                         {/* Header */}
                         <div className="flex items-center justify-between pb-3 border-b border-[#27272A]">
                             <div>
-                                <h3 className="text-base font-bold text-white">Yeni Maliyyə İli Yarat</h3>
-                                <p className="text-xs text-[#A1A1AA] mt-0.5">İl və avtomatik 12 aylıq əməliyyat dövrlərinin formalaşdırılması</p>
+                                <h3 className="text-base font-bold text-white">{t('accounting.createFiscalYearTitle', {}, 'Yeni Maliyyə İli Yarat')}</h3>
+                                <p className="text-xs text-[#A1A1AA] mt-0.5">{t('accounting.createFiscalYearSubtitle', {}, 'İl və avtomatik 12 aylıq əməliyyat dövrlərinin formalaşdırılması')}</p>
                             </div>
                             <button
                                 onClick={() => setShowCreateModal(false)}
@@ -1005,7 +998,7 @@ export const FiscalPeriodsPage: React.FC = () => {
 
                         <form onSubmit={handleCreateSubmit} className="space-y-4">
                             <div>
-                                <label className="text-xs font-semibold text-[#A1A1AA]">Maliyyə İli (İl Nömrəsi) *</label>
+                                <label className="text-xs font-semibold text-[#A1A1AA]">{t('accounting.fiscalYear', {}, 'Maliyyə İli (İl Nömrəsi)')} *</label>
                                 <input
                                     type="number"
                                     required
@@ -1017,7 +1010,7 @@ export const FiscalPeriodsPage: React.FC = () => {
                                         setFormYear(y);
                                         setFormStartDate(`${y}-01-01`);
                                         setFormEndDate(`${y}-12-31`);
-                                        setFormNotes(`${y}-ci il maliyyə ili və 12 aylıq əməliyyat dövrü`);
+                                        setFormNotes(`${y}`);
                                     }}
                                     className="w-full mt-1 px-3 py-2 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white focus:border-white focus:outline-none transition-colors"
                                 />
@@ -1025,7 +1018,7 @@ export const FiscalPeriodsPage: React.FC = () => {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                 <div>
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">Başlama Tarixi *</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.startDate', {}, 'Başlama Tarixi')} *</label>
                                     <div className="w-full mt-1 px-3 py-2 rounded-xl bg-[#121214] border border-[#27272A] focus-within:border-white transition-colors">
                                         <input
                                             type="date"
@@ -1037,7 +1030,7 @@ export const FiscalPeriodsPage: React.FC = () => {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">Bitmə Tarixi *</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.endDate', {}, 'Bitmə Tarixi')} *</label>
                                     <div className="w-full mt-1 px-3 py-2 rounded-xl bg-[#121214] border border-[#27272A] focus-within:border-white transition-colors">
                                         <input
                                             type="date"
@@ -1051,12 +1044,12 @@ export const FiscalPeriodsPage: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="text-xs font-semibold text-[#A1A1AA]">Qeydlər</label>
+                                <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.notes', {}, 'Qeydlər')}</label>
                                 <input
                                     type="text"
                                     value={formNotes}
                                     onChange={(e) => setFormNotes(e.target.value)}
-                                    placeholder="Məs: 2026-cı il üçün əməliyyat dövrləri"
+                                    placeholder={t('accounting.fiscalYearNotesPlaceholder', {}, 'Məs: 2026-cı il üçün əməliyyat dövrləri')}
                                     className="w-full mt-1 px-3 py-2 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white focus:border-white focus:outline-none transition-colors"
                                 />
                             </div>
@@ -1065,10 +1058,10 @@ export const FiscalPeriodsPage: React.FC = () => {
                             <div className="p-3.5 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-[#A1A1AA] space-y-1">
                                 <span className="text-white font-semibold flex items-center gap-1.5">
                                     <CalendarDaysIcon className="w-4 h-4 text-emerald-400" />
-                                    <span>Avtomatik Dövrlər</span>
+                                    <span>{t('accounting.autoPeriods', {}, 'Avtomatik Dövrlər')}</span>
                                 </span>
                                 <p className="text-[11px]">
-                                    İl yaradıldıqda sistem avtomatik olaraq 1-ci aydan 12-ci aya qədər hər ay üçün açıq statuslu maliyyə dövrlərini formalaşdırır.
+                                    {t('accounting.autoPeriodsDesc', {}, 'İl yaradıldıqda sistem avtomatik olaraq 1-ci aydan 12-ci aya qədər hər ay üçün açıq statuslu maliyyə dövrlərini formalaşdırır.')}
                                 </p>
                             </div>
 
@@ -1079,14 +1072,14 @@ export const FiscalPeriodsPage: React.FC = () => {
                                     onClick={() => setShowCreateModal(false)}
                                     className="px-4 py-2 rounded-xl bg-[#18181B] border border-[#27272A] hover:bg-[#27272A] text-xs font-semibold text-white transition-colors cursor-pointer"
                                 >
-                                    İmtina
+                                    {t('common.cancel', {}, 'İmtina')}
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={createLoading}
                                     className="px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-semibold shadow-md transition-colors cursor-pointer disabled:opacity-50"
                                 >
-                                    {createLoading ? 'Yaradılır...' : 'İli Yarat'}
+                                    {createLoading ? t('common.saving', {}, 'Yaradılır...') : t('accounting.createFiscalYear', {}, 'İli Yarat')}
                                 </button>
                             </div>
                         </form>
@@ -1112,18 +1105,18 @@ export const FiscalPeriodsPage: React.FC = () => {
                             </div>
                             <div>
                                 <h3 className="text-base font-bold text-white">
-                                    {confirmModal.action === 'close' ? 'Dövrü Bağlamaq İstəyirsiniz?' : 'Dövrü Yenidən Açmaq İstəyirsiniz?'}
+                                    {confirmModal.action === 'close' ? t('accounting.confirmCloseTitle', {}, 'Dövrü Bağlamaq İstəyirsiniz?') : t('accounting.confirmReopenTitle', {}, 'Dövrü Yenidən Açmaq İstəyirsiniz?')}
                                 </h3>
                                 <p className="text-xs text-[#A1A1AA] mt-0.5">
-                                    {confirmModal.period.name || `Dövr ${confirmModal.period.periodNumber}`} ({confirmModal.period.fiscalYear})
+                                    {confirmModal.period.name || `${t('accounting.periodNumber', {}, 'Dövr')} ${confirmModal.period.periodNumber}`} ({confirmModal.period.fiscalYear})
                                 </p>
                             </div>
                         </div>
 
                         <p className="text-xs text-[#A1A1AA] leading-relaxed">
                             {confirmModal.action === 'close'
-                                ? 'Dövr bağlandıqdan sonra bu dövrün tarixlərinə aid yeni əməliyyatların (jurnal, faktura, ödəniş) daxil edilməsi məhdudlaşdırılacaq.'
-                                : 'Dövr yenidən açıldıqda bu dövrün tarixlərinə yeni əməliyyatların daxil edilməsinə icazə veriləcək.'}
+                                ? t('accounting.closePeriodWarning', {}, 'Dövr bağlandıqdan sonra bu dövrün tarixlərinə aid yeni əməliyyatların (jurnal, faktura, ödəniş) daxil edilməsi məhdudlaşdırılacaq.')
+                                : t('accounting.reopenPeriodNotice', {}, 'Dövr yenidən açıldıqda bu dövrün tarixlərinə yeni əməliyyatların daxil edilməsinə icazə veriləcək.')}
                         </p>
 
                         <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#27272A]">
@@ -1133,7 +1126,7 @@ export const FiscalPeriodsPage: React.FC = () => {
                                 onClick={() => setConfirmModal({ open: false, action: 'close', period: null, loading: false })}
                                 className="px-4 py-2 rounded-xl bg-[#18181B] border border-[#27272A] hover:bg-[#27272A] text-xs font-semibold text-white transition-colors cursor-pointer"
                             >
-                                İmtina
+                                {t('common.cancel', {}, 'İmtina')}
                             </button>
                             <button
                                 type="button"
@@ -1145,7 +1138,7 @@ export const FiscalPeriodsPage: React.FC = () => {
                                         : 'bg-white hover:bg-zinc-200 text-black'
                                 }`}
                             >
-                                {confirmModal.loading ? 'İcra olunur...' : confirmModal.action === 'close' ? 'Dövrü Bağla' : 'Dövrü Aç'}
+                                {confirmModal.loading ? t('common.processing', {}, 'İcra olunur...') : confirmModal.action === 'close' ? t('accounting.closePeriod', {}, 'Dövrü Bağla') : t('accounting.open', {}, 'Dövrü Aç')}
                             </button>
                         </div>
                     </div>

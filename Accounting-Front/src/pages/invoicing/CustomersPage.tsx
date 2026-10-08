@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { customersService } from '../../api';
 import type { CustomerDto, CreateCustomerRequest } from '../../dto';
+import { useLanguage } from '../../context/LanguageContext';
 import {
     PlusIcon,
     ArrowPathIcon,
@@ -26,6 +27,7 @@ import {
 
 export const CustomersPage: React.FC = () => {
     const navigate = useNavigate();
+    const { t } = useLanguage();
     const [customers, setCustomers] = useState<CustomerDto[]>([]);
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -34,7 +36,7 @@ export const CustomersPage: React.FC = () => {
     const [filterCode, setFilterCode] = useState('');
     const [filterName, setFilterName] = useState('');
     const [filterTax, setFilterTax] = useState('');
-    const [selectedStatus, setSelectedStatus] = useState('Status');
+    const [selectedStatus, setSelectedStatus] = useState('ALL');
     const [minCreditLimit, setMinCreditLimit] = useState('');
     const [maxCreditLimit, setMaxCreditLimit] = useState('');
 
@@ -53,14 +55,14 @@ export const CustomersPage: React.FC = () => {
 
     // Column Visibility
     const [columns, setColumns] = useState([
-        { key: 'code', label: 'Kod', visible: true },
-        { key: 'name', label: 'Müştəri Adı', visible: true },
-        { key: 'taxNumber', label: 'VÖEN', visible: true },
-        { key: 'contact', label: 'Əlaqə', visible: true },
-        { key: 'balance', label: 'Borc / Qalıq', visible: true },
-        { key: 'creditLimit', label: 'Kredit Limiti', visible: true },
-        { key: 'terms', label: 'Ödəniş Müddəti', visible: true },
-        { key: 'status', label: 'Status', visible: true },
+        { key: 'code', label: 'Kod', i18nKey: 'common.code', visible: true },
+        { key: 'name', label: 'Müştəri Adı', i18nKey: 'customers.customerName', visible: true },
+        { key: 'taxNumber', label: 'VÖEN', i18nKey: 'common.taxNumber', visible: true },
+        { key: 'contact', label: 'Əlaqə', i18nKey: 'common.phone', visible: true },
+        { key: 'balance', label: 'Borc / Qalıq', i18nKey: 'customers.balanceDue', visible: true },
+        { key: 'creditLimit', label: 'Kredit Limiti', i18nKey: 'customers.creditLimit', visible: true },
+        { key: 'terms', label: 'Ödəniş Müddəti', i18nKey: 'customers.paymentTermsDays', visible: true },
+        { key: 'status', label: 'Status', i18nKey: 'common.status', visible: true },
     ]);
 
     // Toast
@@ -131,7 +133,7 @@ export const CustomersPage: React.FC = () => {
         if (filterCode.trim()) count++;
         if (filterName.trim()) count++;
         if (filterTax.trim()) count++;
-        if (selectedStatus !== 'Status') count++;
+        if (selectedStatus !== 'ALL') count++;
         if (minCreditLimit) count++;
         if (maxCreditLimit) count++;
         return count;
@@ -153,8 +155,8 @@ export const CustomersPage: React.FC = () => {
                 const tax = String(c.taxNumber || '').toLowerCase();
                 if (!tax.includes(filterTax.trim().toLowerCase())) return false;
             }
-            if (selectedStatus !== 'Status') {
-                const isActive = selectedStatus === 'Aktiv';
+            if (selectedStatus !== 'ALL') {
+                const isActive = selectedStatus === 'ACTIVE';
                 if (c.isActive !== isActive) return false;
             }
             if (minCreditLimit) {
@@ -196,7 +198,7 @@ export const CustomersPage: React.FC = () => {
     const handleCreateSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!createForm.name.trim()) {
-            setCreateError('Zəhmət olmasa müştəri adını daxil edin.');
+            setCreateError(t('validation.customerNameRequired', {}, 'Zəhmət olmasa müştəri adını daxil edin.'));
             return;
         }
 
@@ -205,7 +207,7 @@ export const CustomersPage: React.FC = () => {
         try {
             await customersService.createCustomer(createForm);
             setShowCreateModal(false);
-            showToast('Müştəri uğurla əlavə edildi!');
+            showToast(t('customers.customerCreatedSuccess', {}, 'Müştəri uğurla əlavə edildi!'));
             setCreateForm({
                 code: `CUST-${Math.floor(1000 + Math.random() * 9000)}`,
                 name: '',
@@ -220,7 +222,7 @@ export const CustomersPage: React.FC = () => {
             });
             loadCustomers();
         } catch (err: any) {
-            setCreateError(err.response?.data?.detail || err.response?.data?.message || err.message || 'Müştəri yaradılarkən xəta baş verdi.');
+            setCreateError(err.response?.data?.detail || err.response?.data?.message || err.message || t('common.error', {}, 'Xəta baş verdi.'));
         } finally {
             setCreateLoading(false);
         }
@@ -256,11 +258,11 @@ export const CustomersPage: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                     <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                        <span>Müştərilər</span>
+                        <span>{t('nav.customers', {}, 'Müştərilər')}</span>
                         <span className="text-[#52525B]">/</span>
                         <div className="inline-flex items-center gap-1.5 text-white font-bold">
                             <Bars3Icon className="w-4 h-4 text-[#A1A1AA]" />
-                            <span>Siyahı</span>
+                            <span>{t('accounting.listView', {}, 'Siyahı')}</span>
                         </div>
                     </h1>
                 </div>
@@ -269,7 +271,7 @@ export const CustomersPage: React.FC = () => {
                     <button
                         onClick={loadCustomers}
                         className="p-2 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-                        title="Yenilə"
+                        title={t('common.refresh', {}, 'Yenilə')}
                     >
                         <ArrowPathIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                     </button>
@@ -292,7 +294,7 @@ export const CustomersPage: React.FC = () => {
                         className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white hover:bg-zinc-200 text-black text-xs font-semibold shadow-md transition-colors cursor-pointer"
                     >
                         <PlusIcon className="w-4 h-4 stroke-[2.5]" />
-                        <span>Yarat</span>
+                        <span>{t('common.create', {}, 'Yarat')}</span>
                     </button>
                 </div>
             </div>
@@ -311,7 +313,7 @@ export const CustomersPage: React.FC = () => {
                     {/* Kod Input */}
                     <input
                         type="text"
-                        placeholder="Kod"
+                        placeholder={t('common.code', {}, 'Kod')}
                         value={filterCode}
                         onChange={(e) => setFilterCode(e.target.value)}
                         className="w-28 sm:w-32 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
@@ -320,7 +322,7 @@ export const CustomersPage: React.FC = () => {
                     {/* Ad Input */}
                     <input
                         type="text"
-                        placeholder="Müştəri və ya Şirkət adı"
+                        placeholder={t('customers.customerName', {}, 'Müştəri və ya Şirkət adı')}
                         value={filterName}
                         onChange={(e) => setFilterName(e.target.value)}
                         className="w-40 sm:w-52 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
@@ -329,7 +331,7 @@ export const CustomersPage: React.FC = () => {
                     {/* VÖEN Input */}
                     <input
                         type="text"
-                        placeholder="VÖEN"
+                        placeholder={t('common.taxNumber', {}, 'VÖEN')}
                         value={filterTax}
                         onChange={(e) => setFilterTax(e.target.value)}
                         className="w-28 sm:w-32 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
@@ -340,27 +342,37 @@ export const CustomersPage: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                            className="flex items-center justify-between w-28 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                            className="flex items-center justify-between w-32 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
                         >
-                            <span className="truncate">{selectedStatus}</span>
+                            <span className="truncate">
+                                {selectedStatus === 'ALL'
+                                    ? t('common.status', {}, 'Status')
+                                    : selectedStatus === 'ACTIVE'
+                                    ? t('common.active', {}, 'Aktiv')
+                                    : t('common.inactive', {}, 'Deaktiv')}
+                            </span>
                             <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
                         </button>
 
                         {isStatusDropdownOpen && (
                             <div className="absolute top-9 left-0 w-36 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-50 flex flex-col text-xs text-[#E4E4E7] animate-in fade-in duration-150">
-                                {['Status', 'Aktiv', 'Deaktiv'].map((st) => (
+                                {[
+                                    { key: 'ALL', label: t('common.all', {}, 'Hamısı') },
+                                    { key: 'ACTIVE', label: t('common.active', {}, 'Aktiv') },
+                                    { key: 'INACTIVE', label: t('common.inactive', {}, 'Deaktiv') },
+                                ].map((st) => (
                                     <button
-                                        key={st}
+                                        key={st.key}
                                         type="button"
                                         onClick={() => {
-                                            setSelectedStatus(st);
+                                            setSelectedStatus(st.key);
                                             setIsStatusDropdownOpen(false);
                                         }}
                                         className={`px-3 py-1.5 rounded-xl text-left cursor-pointer transition-colors ${
-                                            selectedStatus === st ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
+                                            selectedStatus === st.key ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
                                         }`}
                                     >
-                                        {st === 'Status' ? 'Bütün Statuslar' : st}
+                                        {st.label}
                                     </button>
                                 ))}
                             </div>
@@ -379,7 +391,7 @@ export const CustomersPage: React.FC = () => {
                             }`}
                         >
                             <FunnelIcon className="w-3.5 h-3.5" />
-                            <span>Filtr</span>
+                            <span>{t('common.filter', {}, 'Filtr')}</span>
                             {activeFilterCount > 0 && (
                                 <span className="ml-1 w-4 h-4 rounded-full bg-white text-black font-bold text-[10px] flex items-center justify-center">
                                     {activeFilterCount}
@@ -391,7 +403,7 @@ export const CustomersPage: React.FC = () => {
                         {isFilterPopoverOpen && (
                             <div className="absolute top-9 left-0 w-80 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-4 z-50 text-xs text-[#E4E4E7] space-y-3 animate-in fade-in duration-150">
                                 <div className="flex items-center justify-between pb-2 border-b border-[#2C2C2E]">
-                                    <span className="font-bold text-white">Müştəri Filtrləri</span>
+                                    <span className="font-bold text-white">{t('common.allFilters', {}, 'Müştəri Filtrləri')}</span>
                                     {activeFilterCount > 0 && (
                                         <button
                                             type="button"
@@ -399,20 +411,22 @@ export const CustomersPage: React.FC = () => {
                                                 setFilterCode('');
                                                 setFilterName('');
                                                 setFilterTax('');
-                                                setSelectedStatus('Status');
+                                                setSelectedStatus('ALL');
                                                 setMinCreditLimit('');
                                                 setMaxCreditLimit('');
                                             }}
                                             className="text-[11px] text-[#A1A1AA] hover:text-white underline cursor-pointer"
                                         >
-                                            Sıfırla
+                                            {t('common.reset', {}, 'Sıfırla')}
                                         </button>
                                     )}
                                 </div>
 
                                 <div className="space-y-2.5">
                                     <div>
-                                        <label className="text-[11px] text-[#A1A1AA] font-semibold block mb-1">Kredit Limiti (AZN)</label>
+                                        <label className="text-[11px] text-[#A1A1AA] font-semibold block mb-1">
+                                            {t('customers.creditLimit', {}, 'Kredit Limiti')} (AZN)
+                                        </label>
                                         <div className="grid grid-cols-2 gap-2">
                                             <input
                                                 type="number"
@@ -438,7 +452,7 @@ export const CustomersPage: React.FC = () => {
                                         onClick={() => setIsFilterPopoverOpen(false)}
                                         className="px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold text-xs transition-colors cursor-pointer"
                                     >
-                                        Tətbiq et
+                                        {t('common.apply', {}, 'Tətbiq et')}
                                     </button>
                                 </div>
                             </div>
@@ -454,13 +468,13 @@ export const CustomersPage: React.FC = () => {
                             type="button"
                             onClick={() => setIsColumnsOpen(!isColumnsOpen)}
                             className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                            title="Sütunlar"
+                            title={t('common.columns', {}, 'Sütunlar')}
                         >
                             <ViewColumnsIcon className="w-4 h-4" />
                         </button>
                         {isColumnsOpen && (
                             <div className="absolute top-9 right-0 w-48 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-2.5 z-50 text-xs text-[#E4E4E7] space-y-1.5 animate-in fade-in duration-150">
-                                <div className="font-bold text-white px-1.5 pb-1 border-b border-[#2C2C2E]">Sütunlar</div>
+                                <div className="font-bold text-white px-1.5 pb-1 border-b border-[#2C2C2E]">{t('common.columns', {}, 'Sütunlar')}</div>
                                 {columns.map((col, idx) => (
                                     <label key={col.key} className="flex items-center gap-2 px-1.5 py-1 hover:bg-[#2C2C2E]/60 rounded-lg cursor-pointer">
                                         <input
@@ -473,7 +487,7 @@ export const CustomersPage: React.FC = () => {
                                             }}
                                             className="rounded bg-[#121214] border-[#2C2C2E] text-white focus:ring-0"
                                         />
-                                        <span>{col.label}</span>
+                                        <span>{t(col.i18nKey || col.key, {}, col.label)}</span>
                                     </label>
                                 ))}
                             </div>
@@ -486,7 +500,7 @@ export const CustomersPage: React.FC = () => {
                             type="button"
                             onClick={() => setIsSortOpen(!isSortOpen)}
                             className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                            title="Sıralama"
+                            title={t('common.sort', {}, 'Sıralama')}
                         >
                             <ArrowsUpDownIcon className="w-4 h-4" />
                         </button>
@@ -496,25 +510,25 @@ export const CustomersPage: React.FC = () => {
                                     onClick={() => { setSortField('code'); setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc'); setIsSortOpen(false); }}
                                     className="px-3 py-1.5 rounded-xl text-left hover:bg-[#2C2C2E]/60 cursor-pointer"
                                 >
-                                    Kod üzrə ({sortDirection === 'asc' ? 'Artan' : 'Azalan'})
+                                    {t('common.code', {}, 'Kod')} ({sortDirection === 'asc' ? '↑' : '↓'})
                                 </button>
                                 <button
                                     onClick={() => { setSortField('name'); setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc'); setIsSortOpen(false); }}
                                     className="px-3 py-1.5 rounded-xl text-left hover:bg-[#2C2C2E]/60 cursor-pointer"
                                 >
-                                    Ad üzrə
+                                    {t('common.name', {}, 'Ad')}
                                 </button>
                                 <button
                                     onClick={() => { setSortField('balance'); setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc'); setIsSortOpen(false); }}
                                     className="px-3 py-1.5 rounded-xl text-left hover:bg-[#2C2C2E]/60 cursor-pointer"
                                 >
-                                    Borc / Qalıq üzrə
+                                    {t('customers.balanceDue', {}, 'Borc / Qalıq')}
                                 </button>
                                 <button
                                     onClick={() => { setSortField('creditLimit'); setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc'); setIsSortOpen(false); }}
                                     className="px-3 py-1.5 rounded-xl text-left hover:bg-[#2C2C2E]/60 cursor-pointer"
                                 >
-                                    Kredit Limiti üzrə
+                                    {t('customers.creditLimit', {}, 'Kredit Limiti')}
                                 </button>
                             </div>
                         )}
@@ -536,15 +550,15 @@ export const CustomersPage: React.FC = () => {
                                         className="rounded bg-[#121214] border-[#2C2C2E] text-white focus:ring-0 cursor-pointer"
                                     />
                                 </th>
-                                {columns.find((c) => c.key === 'code')?.visible && <th className="py-3 px-3">Kod</th>}
-                                {columns.find((c) => c.key === 'name')?.visible && <th className="py-3 px-3">Müştəri Adı</th>}
-                                {columns.find((c) => c.key === 'taxNumber')?.visible && <th className="py-3 px-3">VÖEN</th>}
-                                {columns.find((c) => c.key === 'contact')?.visible && <th className="py-3 px-3">Əlaqə</th>}
-                                {columns.find((c) => c.key === 'balance')?.visible && <th className="py-3 px-3 text-right">Borc / Qalıq</th>}
-                                {columns.find((c) => c.key === 'creditLimit')?.visible && <th className="py-3 px-3 text-right">Kredit Limiti</th>}
-                                {columns.find((c) => c.key === 'terms')?.visible && <th className="py-3 px-3 text-center">Ödəniş Müddəti</th>}
-                                {columns.find((c) => c.key === 'status')?.visible && <th className="py-3 px-3 text-center">Status</th>}
-                                <th className="py-3 px-3 text-right">Əməliyyatlar</th>
+                                {columns.find((c) => c.key === 'code')?.visible && <th className="py-3 px-3">{t('common.code', {}, 'Kod')}</th>}
+                                {columns.find((c) => c.key === 'name')?.visible && <th className="py-3 px-3">{t('customers.customerName', {}, 'Müştəri Adı')}</th>}
+                                {columns.find((c) => c.key === 'taxNumber')?.visible && <th className="py-3 px-3">{t('common.taxNumber', {}, 'VÖEN')}</th>}
+                                {columns.find((c) => c.key === 'contact')?.visible && <th className="py-3 px-3">{t('common.phone', {}, 'Əlaqə')}</th>}
+                                {columns.find((c) => c.key === 'balance')?.visible && <th className="py-3 px-3 text-right">{t('customers.balanceDue', {}, 'Borc / Qalıq')}</th>}
+                                {columns.find((c) => c.key === 'creditLimit')?.visible && <th className="py-3 px-3 text-right">{t('customers.creditLimit', {}, 'Kredit Limiti')}</th>}
+                                {columns.find((c) => c.key === 'terms')?.visible && <th className="py-3 px-3 text-center">{t('customers.paymentTermsDays', {}, 'Ödəniş Müddəti')}</th>}
+                                {columns.find((c) => c.key === 'status')?.visible && <th className="py-3 px-3 text-center">{t('common.status', {}, 'Status')}</th>}
+                                <th className="py-3 px-3 text-right">{t('common.actions', {}, 'Əməliyyatlar')}</th>
                             </tr>
                         </thead>
 
@@ -554,7 +568,7 @@ export const CustomersPage: React.FC = () => {
                                     <td colSpan={10} className="py-12 text-center text-[#71717A]">
                                         <div className="flex items-center justify-center gap-2">
                                             <ArrowPathIcon className="w-4 h-4 animate-spin text-white" />
-                                            <span>Müştərilər yüklənir...</span>
+                                            <span>{t('common.loading', {}, 'Müştərilər yüklənir...')}</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -566,15 +580,15 @@ export const CustomersPage: React.FC = () => {
                                                 <UserGroupIcon className="w-6 h-6" />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-bold text-white">Heç bir müştəri tapılmadı</p>
-                                                <p className="text-xs text-[#71717A] mt-1 max-w-sm">Satış və debitor qeydiyyatı üçün müştəri əlavə edin</p>
+                                                <p className="text-sm font-bold text-white">{t('common.noData', {}, 'Heç bir müştəri tapılmadı')}</p>
+                                                <p className="text-xs text-[#71717A] mt-1 max-w-sm">{t('customers.subtitle', {}, 'Satış və debitor qeydiyyatı üçün müştəri əlavə edin')}</p>
                                             </div>
                                             <button
                                                 onClick={() => setShowCreateModal(true)}
                                                 className="mt-2 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-semibold transition-colors cursor-pointer"
                                             >
                                                 <PlusIcon className="w-3.5 h-3.5" />
-                                                <span>İlk Müştərini Yarat</span>
+                                                <span>{t('customers.newCustomer', {}, 'İlk Müştərini Yarat')}</span>
                                             </button>
                                         </div>
                                     </td>
@@ -642,7 +656,7 @@ export const CustomersPage: React.FC = () => {
 
                                         {columns.find((c) => c.key === 'terms')?.visible && (
                                             <td className="py-3 px-3 text-center text-[#A1A1AA]">
-                                                {cust.paymentTermsDays ? `${cust.paymentTermsDays} gün` : '30 gün'}
+                                                {cust.paymentTermsDays ? `${cust.paymentTermsDays} ${t('common.days', {}, 'gün')}` : `30 ${t('common.days', {}, 'gün')}`}
                                             </td>
                                         )}
 
@@ -650,11 +664,11 @@ export const CustomersPage: React.FC = () => {
                                             <td className="py-3 px-3 text-center">
                                                 {cust.isActive !== false ? (
                                                     <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[#14291F] text-[#4ADE80] border border-[#22C55E]/30">
-                                                        Aktiv
+                                                        {t('common.active', {}, 'Aktiv')}
                                                     </span>
                                                 ) : (
                                                     <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[#2C2C2E] text-[#A1A1AA] border border-[#3F3F46]">
-                                                        Deaktiv
+                                                        {t('common.inactive', {}, 'Deaktiv')}
                                                     </span>
                                                 )}
                                             </td>
@@ -665,7 +679,7 @@ export const CustomersPage: React.FC = () => {
                                                 <button
                                                     onClick={() => navigate(`/customers/${cust.id}`)}
                                                     className="p-1 rounded-lg bg-[#18181B] hover:bg-white/10 text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                                                    title="Ətraflı Bax"
+                                                    title={t('common.details', {}, 'Ətraflı Bax')}
                                                 >
                                                     <EyeIcon className="w-3.5 h-3.5" />
                                                 </button>
@@ -699,24 +713,24 @@ export const CustomersPage: React.FC = () => {
 
                     <span>
                         {filteredCustomers.length === 0
-                            ? '0 of 0'
+                            ? '0 / 0'
                             : `${(currentPage - 1) * pageSize + 1}-${Math.min(
                                   currentPage * pageSize,
                                   filteredCustomers.length
-                              )} of ${filteredCustomers.length}`}
+                              )} / ${filteredCustomers.length}`}
                     </span>
                 </div>
             </div>
 
-            {/* ─── CREATE CUSTOMER MODAL (Strict Backend CreateCustomerDto Matching) ─── */}
+            {/* ─── CREATE CUSTOMER MODAL ─── */}
             {showCreateModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in">
                     <div className="bg-[#18181B] border border-[#27272A] rounded-2xl w-full max-w-2xl p-6 space-y-4 text-white max-h-[90vh] overflow-y-auto shadow-2xl">
                         {/* Header */}
                         <div className="flex items-center justify-between pb-3 border-b border-[#27272A]">
                             <div>
-                                <h3 className="text-base font-bold text-white">Yeni Müştəri Əlavə Et</h3>
-                                <p className="text-xs text-[#A1A1AA] mt-0.5">Satış və hesablaşmalar üçün yeni müştəri kartı</p>
+                                <h3 className="text-base font-bold text-white">{t('customers.newCustomer', {}, 'Yeni Müştəri Əlavə Et')}</h3>
+                                <p className="text-xs text-[#A1A1AA] mt-0.5">{t('customers.subtitle', {}, 'Satış və hesablaşmalar üçün yeni müştəri kartı')}</p>
                             </div>
                             <button
                                 onClick={() => setShowCreateModal(false)}
@@ -738,45 +752,45 @@ export const CustomersPage: React.FC = () => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                 {/* Kod */}
                                 <div>
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">Müştəri Kodu *</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.code', {}, 'Müştəri Kodu')} *</label>
                                     <input
                                         type="text"
                                         required
                                         value={createForm.code}
                                         onChange={(e) => setCreateForm({ ...createForm, code: e.target.value })}
-                                        placeholder="məs. CUST-1001"
+                                        placeholder="CUST-1001"
                                         className="w-full mt-1 px-3 py-2 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white focus:border-white focus:outline-none transition-colors"
                                     />
                                 </div>
 
                                 {/* Ad */}
                                 <div>
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">Müştəri / Şirkət Adı *</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('customers.customerName', {}, 'Müştəri / Şirkət Adı')} *</label>
                                     <input
                                         type="text"
                                         required
                                         value={createForm.name}
                                         onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                                        placeholder="məs. Azərtexnika QSC"
+                                        placeholder={t('customers.customerName', {}, 'Müştəri Adı')}
                                         className="w-full mt-1 px-3 py-2 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white focus:border-white focus:outline-none transition-colors"
                                     />
                                 </div>
 
                                 {/* VÖEN */}
                                 <div>
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">VÖEN (Vergi Nömrəsi)</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.taxNumber', {}, 'VÖEN')}</label>
                                     <input
                                         type="text"
                                         value={createForm.taxNumber || ''}
                                         onChange={(e) => setCreateForm({ ...createForm, taxNumber: e.target.value })}
-                                        placeholder="məs. 1234567891"
+                                        placeholder="1234567891"
                                         className="w-full mt-1 px-3 py-2 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white focus:border-white focus:outline-none transition-colors"
                                     />
                                 </div>
 
                                 {/* Telefon */}
                                 <div>
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">Əlaqə Telefonu</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.phone', {}, 'Əlaqə Telefonu')}</label>
                                     <input
                                         type="text"
                                         value={createForm.phone || ''}
@@ -788,31 +802,31 @@ export const CustomersPage: React.FC = () => {
 
                                 {/* Email */}
                                 <div>
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">Email Ünvanı</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.email', {}, 'Email Ünvanı')}</label>
                                     <input
                                         type="email"
                                         value={createForm.email || ''}
                                         onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-                                        placeholder="info@azertechnica.az"
+                                        placeholder="info@company.com"
                                         className="w-full mt-1 px-3 py-2 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white focus:border-white focus:outline-none transition-colors"
                                     />
                                 </div>
 
                                 {/* Ünvan */}
                                 <div>
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">Faktiki Ünvan</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.address', {}, 'Faktiki Ünvan')}</label>
                                     <input
                                         type="text"
                                         value={createForm.address || ''}
                                         onChange={(e) => setCreateForm({ ...createForm, address: e.target.value })}
-                                        placeholder="Bakı ş., Nizami r-nu, Heydər Əliyev pr. 102"
+                                        placeholder="Baku, Azerbaijan"
                                         className="w-full mt-1 px-3 py-2 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white focus:border-white focus:outline-none transition-colors"
                                     />
                                 </div>
 
                                 {/* Kredit Limiti */}
                                 <div>
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">Kredit Limiti (AZN)</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('customers.creditLimit', {}, 'Kredit Limiti')} (AZN)</label>
                                     <input
                                         type="number"
                                         min="0"
@@ -826,7 +840,7 @@ export const CustomersPage: React.FC = () => {
 
                                 {/* Ödəniş Müddəti */}
                                 <div>
-                                    <label className="text-xs font-semibold text-[#A1A1AA]">Ödəniş Müddəti (Gün)</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA]">{t('customers.paymentTermsDays', {}, 'Ödəniş Müddəti (Gün)')}</label>
                                     <input
                                         type="number"
                                         min="0"
@@ -845,14 +859,14 @@ export const CustomersPage: React.FC = () => {
                                     onClick={() => setShowCreateModal(false)}
                                     className="px-4 py-2 rounded-xl bg-[#18181B] border border-[#27272A] hover:bg-[#27272A] text-xs font-semibold text-white transition-colors cursor-pointer"
                                 >
-                                    İmtina
+                                    {t('common.cancel', {}, 'İmtina')}
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={createLoading}
                                     className="px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-xs font-bold text-black shadow-lg transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
-                                    {createLoading ? 'Saxlanılır...' : 'Yadda Saxla'}
+                                    {createLoading ? t('common.saving', {}, 'Saxlanılır...') : t('common.save', {}, 'Yadda Saxla')}
                                 </button>
                             </div>
                         </form>

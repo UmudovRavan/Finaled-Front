@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { procurementService } from '../../api';
 import type { SupplierDto, CreateSupplierRequest } from '../../dto';
 import CustomSelect from '../../components/CustomSelect';
+import { useLanguage } from '../../context/LanguageContext';
 import {
     PlusIcon,
     MagnifyingGlassIcon,
@@ -31,6 +32,7 @@ interface ColumnConfig {
 }
 
 export const SuppliersPage: React.FC = () => {
+    const { t } = useLanguage();
     const navigate = useNavigate();
 
     // Data states
@@ -68,14 +70,14 @@ export const SuppliersPage: React.FC = () => {
 
     // Columns config
     const [columns, setColumns] = useState<ColumnConfig[]>([
-        { key: 'code', label: 'Kod', visible: true },
-        { key: 'name', label: 'Təchizatçı Adı', visible: true },
-        { key: 'taxNumber', label: 'VÖEN', visible: true },
-        { key: 'contact', label: 'Əlaqə', visible: true },
-        { key: 'address', label: 'Ünvan', visible: true },
-        { key: 'debt', label: 'Kreditor Borc', visible: true },
-        { key: 'terms', label: 'Ödəniş Müddəti', visible: true },
-        { key: 'status', label: 'Status', visible: true },
+        { key: 'code', label: t('common.code', {}, 'Kod'), visible: true },
+        { key: 'name', label: t('procurement.supplierName', {}, 'Təchizatçı Adı'), visible: true },
+        { key: 'taxNumber', label: t('common.taxNumber', {}, 'VÖEN'), visible: true },
+        { key: 'contact', label: t('customers.contactPerson', {}, 'Əlaqə'), visible: true },
+        { key: 'address', label: t('customers.address', {}, 'Ünvan'), visible: true },
+        { key: 'debt', label: t('procurement.supplierBalanceDue', {}, 'Kreditor Borc'), visible: true },
+        { key: 'terms', label: t('customers.paymentTerms', {}, 'Ödəniş Müddəti'), visible: true },
+        { key: 'status', label: t('common.status', {}, 'Status'), visible: true },
     ]);
 
     // Create Modal state
@@ -301,12 +303,12 @@ export const SuppliersPage: React.FC = () => {
                         onClick={() => navigate('/suppliers')}
                         className="px-2.5 py-1 rounded-full bg-white/[0.06] text-white hover:bg-white/10 transition-colors font-medium flex items-center gap-1.5 cursor-pointer"
                     >
-                        <span>Təchizatçılar</span>
+                        <span>{t('procurement.suppliersTitle', {}, 'Təchizatçılar')}</span>
                     </button>
                     <span className="text-[#52525B]">/</span>
                     <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/[0.04] text-[#A1A1AA] border border-[#27272A]">
                         <Bars3Icon className="w-3.5 h-3.5 text-zinc-400" />
-                        <span className="font-medium text-white">Siyahı</span>
+                        <span className="font-medium text-white">{t('common.list', {}, 'Siyahı')}</span>
                     </div>
                 </div>
 
@@ -317,7 +319,7 @@ export const SuppliersPage: React.FC = () => {
                         onClick={() => loadSuppliers(true)}
                         disabled={loading || isRefreshing}
                         className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer disabled:opacity-50"
-                        title="Məlumatları Yenilə"
+                        title={t('common.refresh', {}, 'Yenilə')}
                     >
                         <ArrowPathIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-white' : ''}`} />
                     </button>
@@ -328,7 +330,7 @@ export const SuppliersPage: React.FC = () => {
                         className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
                     >
                         <PlusIcon className="w-4 h-4 stroke-[2.5]" />
-                        <span>Yarat</span>
+                        <span>{t('common.create', {}, 'Yarat')}</span>
                     </button>
                 </div>
             </div>
@@ -355,7 +357,7 @@ export const SuppliersPage: React.FC = () => {
                         <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-2.5 text-[#71717A]" />
                         <input
                             type="text"
-                            placeholder="Təchizatçı adı, kod və ya VÖEN..."
+                            placeholder={t('common.search', {}, 'Axtarış...')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-[#18181B] border border-[#27272A] rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
@@ -370,29 +372,29 @@ export const SuppliersPage: React.FC = () => {
                             className="flex items-center justify-between w-40 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
                         >
                             <span className="truncate">
-                                {statusFilter === 'ALL' ? 'Bütün Təchizatçılar' : statusFilter === 'WITH_DEBT' ? 'Borclu Təchizatçılar' : 'Borcsuz'}
+                                {statusFilter === 'ALL' ? t('common.all', {}, 'Bütün Təchizatçılar') : statusFilter === 'WITH_DEBT' ? t('customers.withDebt', {}, 'Borclu') : t('customers.noDebt', {}, 'Borcsuz')}
                             </span>
                         </button>
 
                         {isStatusDropdownOpen && (
                             <div className="absolute top-9 left-0 w-44 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-50 flex flex-col text-xs text-[#E4E4E7] animate-in fade-in duration-150">
                                 {[
-                                    { id: 'ALL', label: 'Bütün Təchizatçılar' },
-                                    { id: 'WITH_DEBT', label: 'Borclu Təchizatçılar' },
-                                    { id: 'NO_DEBT', label: 'Borcsuz' },
-                                ].map((t) => (
+                                    { id: 'ALL', label: t('common.all', {}, 'Hamısı') },
+                                    { id: 'WITH_DEBT', label: t('customers.withDebt', {}, 'Borclu') },
+                                    { id: 'NO_DEBT', label: t('customers.noDebt', {}, 'Borcsuz') },
+                                ].map((tab) => (
                                     <button
-                                        key={t.id}
+                                        key={tab.id}
                                         type="button"
                                         onClick={() => {
-                                            setStatusFilter(t.id as any);
+                                            setStatusFilter(tab.id as any);
                                             setIsStatusDropdownOpen(false);
                                         }}
                                         className={`px-3 py-1.5 rounded-xl text-left cursor-pointer transition-colors ${
-                                            statusFilter === t.id ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
+                                            statusFilter === tab.id ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
                                         }`}
                                     >
-                                        {t.label}
+                                        {tab.label}
                                     </button>
                                 ))}
                             </div>
@@ -411,7 +413,7 @@ export const SuppliersPage: React.FC = () => {
                             }`}
                         >
                             <FunnelIcon className="w-3.5 h-3.5" />
-                            <span>Filtr</span>
+                            <span>{t('common.filter', {}, 'Filtr')}</span>
                             {activeFilterCount > 0 && (
                                 <span className="w-4 h-4 rounded-full bg-white text-black text-[10px] flex items-center justify-center font-bold ml-0.5">
                                     {activeFilterCount}
@@ -422,37 +424,37 @@ export const SuppliersPage: React.FC = () => {
                         {isFilterPopoverOpen && (
                             <div className="absolute top-9 left-0 w-80 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-4 z-50 text-xs text-[#E4E4E7] space-y-4 animate-in fade-in duration-150">
                                 <div className="flex items-center justify-between pb-2 border-b border-[#2C2C2E]">
-                                    <span className="font-bold text-white text-xs">Təchizatçı Filtrləri</span>
+                                    <span className="font-bold text-white text-xs">{t('common.filter', {}, 'Filtrlər')}</span>
                                     {activeFilterCount > 0 && (
                                         <button
                                             onClick={clearAllFilters}
                                             className="text-[11px] text-zinc-400 hover:text-white cursor-pointer"
                                         >
-                                            Sıfırla
+                                            {t('common.clearFilters', {}, 'Sıfırla')}
                                         </button>
                                     )}
                                 </div>
 
                                 {/* Payment Terms Filter */}
                                 <div className="space-y-1">
-                                    <label className="text-[11px] text-[#A1A1AA] font-semibold">Ödəniş Müddəti</label>
+                                    <label className="text-[11px] text-[#A1A1AA] font-semibold">{t('customers.paymentTerms', {}, 'Ödəniş Müddəti')}</label>
                                     <CustomSelect
                                         value={filterTerms}
                                         onChange={(val) => setFilterTerms(String(val))}
                                         options={[
-                                            { value: 'ALL', label: 'Bütün müddətlər' },
-                                            { value: '15', label: '15 Gün' },
-                                            { value: '30', label: '30 Gün' },
-                                            { value: '45', label: '45 Gün' },
-                                            { value: '60', label: '60 Gün' },
-                                            { value: '90', label: '90 Gün' },
+                                            { value: 'ALL', label: t('common.all', {}, 'Bütün müddətlər') },
+                                            { value: '15', label: `15 ${t('common.days', {}, 'Gün')}` },
+                                            { value: '30', label: `30 ${t('common.days', {}, 'Gün')}` },
+                                            { value: '45', label: `45 ${t('common.days', {}, 'Gün')}` },
+                                            { value: '60', label: `60 ${t('common.days', {}, 'Gün')}` },
+                                            { value: '90', label: `90 ${t('common.days', {}, 'Gün')}` },
                                         ]}
                                     />
                                 </div>
 
                                 {/* Debt Range */}
                                 <div className="space-y-1">
-                                    <label className="text-[11px] text-[#A1A1AA] font-semibold">Kreditor Borc Aralığı (AZN)</label>
+                                    <label className="text-[11px] text-[#A1A1AA] font-semibold">{t('procurement.supplierBalanceDue', {}, 'Kreditor Borc Aralığı')} (AZN)</label>
                                     <div className="grid grid-cols-2 gap-2">
                                         <input
                                             type="number"
@@ -463,7 +465,7 @@ export const SuppliersPage: React.FC = () => {
                                         />
                                         <input
                                             type="number"
-                                            placeholder="Maks"
+                                            placeholder={t('common.max', {}, 'Maks')}
                                             value={filterMaxDebt}
                                             onChange={(e) => setFilterMaxDebt(e.target.value)}
                                             className="px-2.5 py-1.5 rounded-xl bg-[#121214] border border-[#2C2C2E] text-xs text-white focus:outline-none placeholder:text-[#52525B]"
@@ -477,7 +479,7 @@ export const SuppliersPage: React.FC = () => {
                                         onClick={() => setIsFilterPopoverOpen(false)}
                                         className="px-3 py-1.5 bg-white text-black text-xs font-semibold rounded-xl hover:bg-zinc-200 cursor-pointer"
                                     >
-                                        Tətbiq et
+                                        {t('common.apply', {}, 'Tətbiq et')}
                                     </button>
                                 </div>
                             </div>
@@ -493,13 +495,13 @@ export const SuppliersPage: React.FC = () => {
                             type="button"
                             onClick={() => setIsColumnsOpen(!isColumnsOpen)}
                             className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                            title="Sütunlar"
+                            title={t('common.columns', {}, 'Sütunlar')}
                         >
                             <AdjustmentsHorizontalIcon className="w-4 h-4" />
                         </button>
                         {isColumnsOpen && (
                             <div className="absolute top-9 right-0 w-52 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-2 z-50 text-xs text-[#E4E4E7] space-y-1.5 animate-in fade-in duration-150">
-                                <span className="font-bold text-white px-2 py-1 block text-[11px]">Görünən Sütunlar</span>
+                                <span className="font-bold text-white px-2 py-1 block text-[11px]">{t('common.columns', {}, 'Görünən Sütunlar')}</span>
                                 {columns.map((col) => (
                                     <label
                                         key={col.key}
@@ -530,7 +532,7 @@ export const SuppliersPage: React.FC = () => {
                             type="button"
                             onClick={() => setIsSortOpen(!isSortOpen)}
                             className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                            title="Sıralama"
+                            title={t('common.sort', {}, 'Sıralama')}
                         >
                             <ArrowsUpDownIcon className="w-4 h-4" />
                         </button>
@@ -540,25 +542,25 @@ export const SuppliersPage: React.FC = () => {
                                     onClick={() => { setSortField('code'); setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc'); setIsSortOpen(false); }}
                                     className="px-3 py-1.5 rounded-xl text-left hover:bg-[#2C2C2E]/60 cursor-pointer"
                                 >
-                                    Kod üzrə ({sortDirection === 'asc' ? 'Artan' : 'Azalan'})
+                                    {t('common.code', {}, 'Kod')} ({sortDirection === 'asc' ? 'Artan' : 'Azalan'})
                                 </button>
                                 <button
                                     onClick={() => { setSortField('name'); setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc'); setIsSortOpen(false); }}
                                     className="px-3 py-1.5 rounded-xl text-left hover:bg-[#2C2C2E]/60 cursor-pointer"
                                 >
-                                    Ad üzrə
+                                    {t('procurement.supplierName', {}, 'Ad üzrə')}
                                 </button>
                                 <button
                                     onClick={() => { setSortField('debt'); setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc'); setIsSortOpen(false); }}
                                     className="px-3 py-1.5 rounded-xl text-left hover:bg-[#2C2C2E]/60 cursor-pointer"
                                 >
-                                    Borc üzrə
+                                    {t('procurement.supplierBalanceDue', {}, 'Borc üzrə')}
                                 </button>
                                 <button
                                     onClick={() => { setSortField('terms'); setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc'); setIsSortOpen(false); }}
                                     className="px-3 py-1.5 rounded-xl text-left hover:bg-[#2C2C2E]/60 cursor-pointer"
                                 >
-                                    Ödəniş Müddəti üzrə
+                                    {t('customers.paymentTerms', {}, 'Ödəniş Müddəti üzrə')}
                                 </button>
                             </div>
                         )}
@@ -580,15 +582,15 @@ export const SuppliersPage: React.FC = () => {
                                         className="rounded bg-[#121214] border-[#2C2C2E] text-white focus:ring-0 cursor-pointer"
                                     />
                                 </th>
-                                {columns.find((c) => c.key === 'code')?.visible && <th className="py-3 px-3">Kod</th>}
-                                {columns.find((c) => c.key === 'name')?.visible && <th className="py-3 px-3">Təchizatçı / Şirkət Adı</th>}
-                                {columns.find((c) => c.key === 'taxNumber')?.visible && <th className="py-3 px-3">VÖEN</th>}
-                                {columns.find((c) => c.key === 'contact')?.visible && <th className="py-3 px-3">Əlaqə</th>}
-                                {columns.find((c) => c.key === 'address')?.visible && <th className="py-3 px-3">Ünvan</th>}
-                                {columns.find((c) => c.key === 'debt')?.visible && <th className="py-3 px-3 text-right">Kreditor Borc</th>}
-                                {columns.find((c) => c.key === 'terms')?.visible && <th className="py-3 px-3 text-center">Ödəniş Müddəti</th>}
-                                {columns.find((c) => c.key === 'status')?.visible && <th className="py-3 px-3 text-center">Status</th>}
-                                <th className="py-3 px-3 text-right">Əməliyyatlar</th>
+                                {columns.find((c) => c.key === 'code')?.visible && <th className="py-3 px-3">{t('common.code', {}, 'Kod')}</th>}
+                                {columns.find((c) => c.key === 'name')?.visible && <th className="py-3 px-3">{t('procurement.supplierName', {}, 'Təchizatçı / Şirkət Adı')}</th>}
+                                {columns.find((c) => c.key === 'taxNumber')?.visible && <th className="py-3 px-3">{t('common.taxNumber', {}, 'VÖEN')}</th>}
+                                {columns.find((c) => c.key === 'contact')?.visible && <th className="py-3 px-3">{t('customers.contactPerson', {}, 'Əlaqə')}</th>}
+                                {columns.find((c) => c.key === 'address')?.visible && <th className="py-3 px-3">{t('customers.address', {}, 'Ünvan')}</th>}
+                                {columns.find((c) => c.key === 'debt')?.visible && <th className="py-3 px-3 text-right">{t('procurement.supplierBalanceDue', {}, 'Kreditor Borc')}</th>}
+                                {columns.find((c) => c.key === 'terms')?.visible && <th className="py-3 px-3 text-center">{t('customers.paymentTerms', {}, 'Ödəniş Müddəti')}</th>}
+                                {columns.find((c) => c.key === 'status')?.visible && <th className="py-3 px-3 text-center">{t('common.status', {}, 'Status')}</th>}
+                                <th className="py-3 px-3 text-right">{t('common.actions', {}, 'Əməliyyatlar')}</th>
                             </tr>
                         </thead>
 
@@ -598,7 +600,7 @@ export const SuppliersPage: React.FC = () => {
                                     <td colSpan={10} className="py-12 text-center text-[#71717A]">
                                         <div className="flex items-center justify-center gap-2">
                                             <ArrowPathIcon className="w-4 h-4 animate-spin text-white" />
-                                            <span>Təchizatçılar yüklənir...</span>
+                                            <span>{t('common.loading', {}, 'Təchizatçılar yüklənir...')}</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -610,15 +612,15 @@ export const SuppliersPage: React.FC = () => {
                                                 <TruckIcon className="w-6 h-6" />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-bold text-white">Heç bir təchizatçı tapılmadı</p>
-                                                <p className="text-xs text-[#71717A] mt-1 max-w-sm">Satınalma və kreditor əməliyyatları üçün yeni təchizatçı əlavə edin</p>
+                                                <p className="text-sm font-bold text-white">{t('common.noData', {}, 'Heç bir təchizatçı tapılmadı')}</p>
+                                                <p className="text-xs text-[#71717A] mt-1 max-w-sm">{t('procurement.suppliersSubtitle', {}, 'Satınalma və kreditor əməliyyatları üçün yeni təchizatçı əlavə edin')}</p>
                                             </div>
                                             <button
                                                 onClick={openCreateModal}
                                                 className="mt-2 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-semibold transition-colors cursor-pointer"
                                             >
                                                 <PlusIcon className="w-3.5 h-3.5" />
-                                                <span>İlk Təchizatçını Yarat</span>
+                                                <span>{t('procurement.newSupplier', {}, 'İlk Təchizatçını Yarat')}</span>
                                             </button>
                                         </div>
                                     </td>
@@ -704,7 +706,7 @@ export const SuppliersPage: React.FC = () => {
 
                                             {columns.find((c) => c.key === 'terms')?.visible && (
                                                 <td className="py-3 px-3 text-center text-zinc-300 font-medium">
-                                                    {s.paymentTermsDays ? `${s.paymentTermsDays} Gün` : '30 Gün'}
+                                                    {s.paymentTermsDays ? `${s.paymentTermsDays} ${t('common.days', {}, 'Gün')}` : `30 ${t('common.days', {}, 'Gün')}`}
                                                 </td>
                                             )}
 
@@ -712,7 +714,7 @@ export const SuppliersPage: React.FC = () => {
                                                 <td className="py-3 px-3 text-center">
                                                     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                                                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                                                        Aktiv
+                                                        {t('statuses.ACTIVE', {}, 'Aktiv')}
                                                     </span>
                                                 </td>
                                             )}
@@ -722,7 +724,7 @@ export const SuppliersPage: React.FC = () => {
                                                     <Link
                                                         to={`/suppliers/${s.id}`}
                                                         className="p-1 rounded-lg bg-[#18181B] hover:bg-[#27272A] text-[#A1A1AA] hover:text-white transition-colors"
-                                                        title="Detallara Bax"
+                                                        title={t('common.viewDetails', {}, 'Detallara Bax')}
                                                     >
                                                         <EyeIcon className="w-4 h-4" />
                                                     </Link>
@@ -781,14 +783,14 @@ export const SuppliersPage: React.FC = () => {
                         {/* Modal Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-[#27272A] shrink-0">
                             <div>
-                                <h3 className="text-base font-bold text-white">Yeni Təchizatçı Yarat</h3>
-                                <p className="text-xs text-[#A1A1AA] mt-0.5">Satınalma və kreditor əlaqələri üçün yeni təchizatçı kartı</p>
+                                <h3 className="text-base font-bold text-white">{t('procurement.newSupplier', {}, 'Yeni Təchizatçı Yarat')}</h3>
+                                <p className="text-xs text-[#A1A1AA] mt-0.5">{t('procurement.suppliersSubtitle', {}, 'Satınalma və kreditor əlaqələri üçün yeni təchizatçı kartı')}</p>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setShowCreateModal(false)}
                                 className="p-1.5 rounded-xl text-[#71717A] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-                                aria-label="Bağla"
+                                aria-label={t('common.close', {}, 'Bağla')}
                             >
                                 <XMarkIcon className="w-5 h-5" />
                             </button>
@@ -808,7 +810,7 @@ export const SuppliersPage: React.FC = () => {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-semibold text-[#A1A1AA] block">
-                                            Təchizatçı Kodu <span className="text-rose-400">*</span>
+                                            {t('common.code', {}, 'Təchizatçı Kodu')} <span className="text-rose-400">*</span>
                                         </label>
                                         <input
                                             type="text"
@@ -822,7 +824,7 @@ export const SuppliersPage: React.FC = () => {
 
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-semibold text-[#A1A1AA] block">
-                                            Təchizatçı / Şirkət Adı <span className="text-rose-400">*</span>
+                                            {t('procurement.supplierName', {}, 'Təchizatçı / Şirkət Adı')} <span className="text-rose-400">*</span>
                                         </label>
                                         <input
                                             type="text"
@@ -838,7 +840,7 @@ export const SuppliersPage: React.FC = () => {
                                 {/* Row 2: Tax Number & Phone */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-[#A1A1AA] block">VÖEN (Vergi Nömrəsi)</label>
+                                        <label className="text-xs font-semibold text-[#A1A1AA] block">{t('common.taxNumber', {}, 'VÖEN (Vergi Nömrəsi)')}</label>
                                         <input
                                             type="text"
                                             value={createTaxNumber}
@@ -849,7 +851,7 @@ export const SuppliersPage: React.FC = () => {
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-[#A1A1AA] block">Əlaqə Telefonu</label>
+                                        <label className="text-xs font-semibold text-[#A1A1AA] block">{t('customers.phone', {}, 'Əlaqə Telefonu')}</label>
                                         <input
                                             type="text"
                                             value={createPhone}
@@ -863,7 +865,7 @@ export const SuppliersPage: React.FC = () => {
                                 {/* Row 3: Email & Address */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-[#A1A1AA] block">Email Ünvanı</label>
+                                        <label className="text-xs font-semibold text-[#A1A1AA] block">{t('customers.email', {}, 'Email Ünvanı')}</label>
                                         <input
                                             type="email"
                                             value={createEmail}
@@ -874,7 +876,7 @@ export const SuppliersPage: React.FC = () => {
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-[#A1A1AA] block">Faktiki Ünvan</label>
+                                        <label className="text-xs font-semibold text-[#A1A1AA] block">{t('customers.address', {}, 'Faktiki Ünvan')}</label>
                                         <input
                                             type="text"
                                             value={createAddress}
@@ -888,22 +890,22 @@ export const SuppliersPage: React.FC = () => {
                                 {/* Row 4: Payment Terms & Bank Account */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-[#A1A1AA] block">Ödəniş Müddəti</label>
+                                        <label className="text-xs font-semibold text-[#A1A1AA] block">{t('customers.paymentTerms', {}, 'Ödəniş Müddəti')}</label>
                                         <CustomSelect
                                             value={createPaymentTermsDays}
                                             onChange={(val) => setCreatePaymentTermsDays(String(val))}
                                             options={[
-                                                { value: '15', label: '15 Gün' },
-                                                { value: '30', label: '30 Gün (Standart)' },
-                                                { value: '45', label: '45 Gün' },
-                                                { value: '60', label: '60 Gün' },
-                                                { value: '90', label: '90 Gün' },
+                                                { value: '15', label: `15 ${t('common.days', {}, 'Gün')}` },
+                                                { value: '30', label: `30 ${t('common.days', {}, 'Gün')}` },
+                                                { value: '45', label: `45 ${t('common.days', {}, 'Gün')}` },
+                                                { value: '60', label: `60 ${t('common.days', {}, 'Gün')}` },
+                                                { value: '90', label: `90 ${t('common.days', {}, 'Gün')}` },
                                             ]}
                                         />
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-[#A1A1AA] block">Hüquqi Şirkət Adı (Optional)</label>
+                                        <label className="text-xs font-semibold text-[#A1A1AA] block">{t('procurement.supplierName', {}, 'Hüquqi Şirkət Adı')} (Optional)</label>
                                         <input
                                             type="text"
                                             value={createCompanyName}
@@ -916,7 +918,7 @@ export const SuppliersPage: React.FC = () => {
 
                                 {/* Row 5: Bank Account Details */}
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-[#A1A1AA] block">Bank Hesab Məlumatları (IBAN / Bank)</label>
+                                    <label className="text-xs font-semibold text-[#A1A1AA] block">{t('treasury.bankAccount', {}, 'Bank Hesab Məlumatları (IBAN / Bank)')}</label>
                                     <input
                                         type="text"
                                         value={createBankAccount}
@@ -934,7 +936,7 @@ export const SuppliersPage: React.FC = () => {
                                     onClick={() => setShowCreateModal(false)}
                                     className="px-4 py-2 rounded-xl bg-[#18181B] border border-[#27272A] hover:bg-[#27272A] text-xs font-semibold text-white transition-colors cursor-pointer"
                                 >
-                                    Ləğv et
+                                    {t('common.cancel', {}, 'Ləğv et')}
                                 </button>
                                 <button
                                     type="submit"
@@ -944,12 +946,12 @@ export const SuppliersPage: React.FC = () => {
                                     {createLoading ? (
                                         <>
                                             <ArrowPathIcon className="w-4 h-4 animate-spin text-black" />
-                                            <span>Yaradılır...</span>
+                                            <span>{t('common.loading', {}, 'Yaradılır...')}</span>
                                         </>
                                     ) : (
                                         <>
                                             <CheckIcon className="w-4 h-4 stroke-[2.5]" />
-                                            <span>Təchizatçını Yarat</span>
+                                            <span>{t('procurement.newSupplier', {}, 'Təchizatçını Yarat')}</span>
                                         </>
                                     )}
                                 </button>

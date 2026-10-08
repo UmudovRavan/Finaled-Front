@@ -97,8 +97,8 @@ export const SettingsPage: React.FC = () => {
         <div className="space-y-6 font-sans max-w-4xl mx-auto">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-extrabold text-white tracking-tight">Tənzimləmələr (Settings)</h1>
-                <p className="text-xs text-[#94A3B8]">Görünüş, dil, istifadəçi profili və şirkət parametrləri</p>
+                <h1 className="text-2xl font-extrabold text-white tracking-tight">{t('settings.title', {}, 'Tənzimləmələr (Settings)')}</h1>
+                <p className="text-xs text-[#94A3B8]">{t('settings.subtitle', {}, 'Görünüş, dil, istifadəçi profili və şirkət parametrləri')}</p>
             </div>
 
             {/* Profile Card */}
@@ -108,7 +108,7 @@ export const SettingsPage: React.FC = () => {
                         {userInfo?.userName?.slice(0, 2).toUpperCase() || 'US'}
                     </div>
                     <div>
-                        <h2 className="text-base font-bold text-white">{userInfo?.userName || 'İstifadəçi'}</h2>
+                        <h2 className="text-base font-bold text-white">{userInfo?.userName || 'User'}</h2>
                         <p className="text-xs text-[#71717A]">{userInfo?.email}</p>
                         <div className="mt-1 flex items-center gap-2">
                             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
@@ -123,14 +123,14 @@ export const SettingsPage: React.FC = () => {
 
                 <div className="pt-4 border-t border-[#27272A] flex items-center justify-between">
                     <div>
-                        <p className="text-xs font-bold text-white">Giriş Şifrəsi</p>
-                        <p className="text-[11px] text-[#71717A]">OTP ilə təhlükəsiz şifrə sıfırlanması</p>
+                        <p className="text-xs font-bold text-white">{t('settings.loginPassword', {}, 'Giriş Şifrəsi')}</p>
+                        <p className="text-[11px] text-[#71717A]">{t('settings.passwordDesc', {}, 'OTP ilə təhlükəsiz şifrə sıfırlanması')}</p>
                     </div>
                     <button
                         onClick={() => setShowPasswordBox(!showPasswordBox)}
                         className="px-3 py-1.5 rounded-xl bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 text-xs font-semibold transition-colors cursor-pointer"
                     >
-                        {showPasswordBox ? 'Bağla' : 'Şifrəni Dəyiş'}
+                        {showPasswordBox ? t('common.close', {}, 'Bağla') : t('settings.changePassword', {}, 'Şifrəni Dəyiş')}
                     </button>
                 </div>
 
@@ -156,7 +156,7 @@ export const SettingsPage: React.FC = () => {
                                     disabled={passwordLoading}
                                     className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer disabled:opacity-50"
                                 >
-                                    {passwordLoading ? 'Göndərilir...' : 'Kodu Göndər'}
+                                    {passwordLoading ? t('common.processing', {}, 'Göndərilir...') : t('auth.sendOtp', {}, 'Kodu Göndər')}
                                 </button>
                             </div>
                         ) : (
@@ -166,7 +166,7 @@ export const SettingsPage: React.FC = () => {
                                     required
                                     value={otpCode}
                                     onChange={(e) => setOtpCode(e.target.value)}
-                                    placeholder="OTP Təsdiq Kodu"
+                                    placeholder={t('auth.otpPlaceholder', {}, 'OTP Təsdiq Kodu')}
                                     className="w-full px-3 py-2 rounded-xl bg-[#12141A] border border-[#27272A] text-xs text-white"
                                 />
                                 <input
@@ -174,7 +174,7 @@ export const SettingsPage: React.FC = () => {
                                     required
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
-                                    placeholder="Yeni Şifrə"
+                                    placeholder={t('auth.newPasswordLabel', {}, 'Yeni Şifrə')}
                                     className="w-full px-3 py-2 rounded-xl bg-[#12141A] border border-[#27272A] text-xs text-white"
                                 />
                                 <input
@@ -182,7 +182,7 @@ export const SettingsPage: React.FC = () => {
                                     required
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
-                                    placeholder="Yeni Şifrə Təkrarı"
+                                    placeholder={t('auth.confirmPasswordLabel', {}, 'Yeni Şifrə Təkrarı')}
                                     className="w-full px-3 py-2 rounded-xl bg-[#12141A] border border-[#27272A] text-xs text-white"
                                 />
                                 <button
@@ -190,7 +190,7 @@ export const SettingsPage: React.FC = () => {
                                     disabled={passwordLoading}
                                     className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold"
                                 >
-                                    {passwordLoading ? 'Yenilənir...' : 'Təsdiqlə və Yenilə'}
+                                    {passwordLoading ? t('common.saving', {}, 'Yenilənir...') : t('common.confirm', {}, 'Təsdiqlə və Yenilə')}
                                 </button>
                             </form>
                         )}
@@ -201,9 +201,9 @@ export const SettingsPage: React.FC = () => {
             {/* Appearance & 3 Themes */}
             <div className="p-6 rounded-2xl bg-[#12141A] border border-[#27272A] shadow-xl space-y-4">
                 <div>
-                    <h2 className="text-sm font-bold text-white tracking-tight">Görünüş & Tema Tərcihləri</h2>
+                    <h2 className="text-sm font-bold text-white tracking-tight">{t('settings.appearanceTitle', {}, 'Görünüş & Tema Tərcihləri')}</h2>
                     <p className="text-xs text-[#71717A]">
-                        Açıq (Light), Qaranlıq (Dark) və Gecə Mavisi (Midnight) temaları arasında seçim edin.
+                        {t('settings.appearanceDesc', {}, 'Açıq (Light), Qaranlıq (Dark) və Gecə Mavisi (Midnight) temaları arasında seçim edin.')}
                     </p>
                 </div>
 
@@ -230,7 +230,7 @@ export const SettingsPage: React.FC = () => {
                         </div>
 
                         <div className="flex items-center justify-between pt-2">
-                            <span className="text-xs text-[#D4D4D8] font-semibold">Açıq (Light)</span>
+                            <span className="text-xs text-[#D4D4D8] font-semibold">{t('settings.themeLight', {}, 'Açıq (Light)')}</span>
                             <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${theme === 'light' ? 'border-emerald-500 bg-emerald-500' : 'border-[#52525B]'}`}>
                                 {theme === 'light' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
                             </div>
@@ -259,7 +259,7 @@ export const SettingsPage: React.FC = () => {
                         </div>
 
                         <div className="flex items-center justify-between pt-2">
-                            <span className="text-xs text-[#D4D4D8] font-semibold">Qaranlıq (Dark)</span>
+                            <span className="text-xs text-[#D4D4D8] font-semibold">{t('settings.themeDark', {}, 'Qaranlıq (Dark)')}</span>
                             <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${theme === 'dark' ? 'border-emerald-500 bg-emerald-500' : 'border-[#52525B]'}`}>
                                 {theme === 'dark' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
                             </div>
@@ -288,7 +288,7 @@ export const SettingsPage: React.FC = () => {
                         </div>
 
                         <div className="flex items-center justify-between pt-2">
-                            <span className="text-xs text-[#D4D4D8] font-semibold">Gecə Mavisi (Midnight)</span>
+                            <span className="text-xs text-[#D4D4D8] font-semibold">{t('settings.themeMidnight', {}, 'Gecə Mavisi (Midnight)')}</span>
                             <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${theme === 'midnight' ? 'border-emerald-500 bg-emerald-500' : 'border-[#52525B]'}`}>
                                 {theme === 'midnight' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
                             </div>
@@ -298,7 +298,7 @@ export const SettingsPage: React.FC = () => {
 
                 {/* Language */}
                 <div className="pt-4 border-t border-[#27272A] space-y-2">
-                    <label className="text-xs font-bold text-white">İnterfeys Dili</label>
+                    <label className="text-xs font-bold text-white">{t('settings.languageTitle', {}, 'İnterfeys Dili')}</label>
                     <div className="w-64">
                         <CustomSelect
                             value={language}
@@ -316,15 +316,15 @@ export const SettingsPage: React.FC = () => {
             {/* Logout */}
             <div className="p-6 rounded-2xl bg-[#12141A] border border-[#27272A] shadow-xl flex items-center justify-between">
                 <div>
-                    <h3 className="text-sm font-bold text-white">Sessiyadan Çıxış</h3>
-                    <p className="text-xs text-[#71717A]">Cari cihazdan etibarlı çıxış edin</p>
+                    <h3 className="text-sm font-bold text-white">{t('nav.logout', {}, 'Sessiyadan Çıxış')}</h3>
+                    <p className="text-xs text-[#71717A]">{t('auth.logoutConfirm', {}, 'Cari cihazdan etibarlı çıxış edin')}</p>
                 </div>
                 <button
                     onClick={handleLogout}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-600/10 hover:bg-rose-600/20 border border-rose-500/30 text-rose-400 text-xs font-bold transition-colors cursor-pointer"
                 >
                     <ArrowRightOnRectangleIcon className="w-4 h-4" />
-                    <span>Çıxış Et</span>
+                    <span>{t('nav.logout', {}, 'Çıxış Et')}</span>
                 </button>
             </div>
         </div>

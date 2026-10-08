@@ -10,6 +10,7 @@ import type {
     StockTransactionType,
 } from '../../dto';
 import CustomSelect from '../../components/CustomSelect';
+import { useLanguage } from '../../i18n';
 import {
     PlusIcon,
     MagnifyingGlassIcon,
@@ -48,6 +49,7 @@ interface TxLineState {
 
 export const StockLedgerPage: React.FC = () => {
     const navigate = useNavigate();
+    const { t } = useLanguage();
 
     // Tabs
     const [activeTab, setActiveTab] = useState<'transactions' | 'ledger'>('transactions');
@@ -92,28 +94,28 @@ export const StockLedgerPage: React.FC = () => {
 
     // Columns config for Transactions tab
     const [txColumns, setTxColumns] = useState<ColumnConfig[]>([
-        { key: 'date', label: 'Tarix', visible: true },
-        { key: 'number', label: 'Əməliyyat №', visible: true },
-        { key: 'type', label: 'Növ', visible: true },
-        { key: 'sourceWarehouse', label: 'Mənbə Anbar', visible: true },
-        { key: 'targetWarehouse', label: 'Hədəf Anbar', visible: true },
-        { key: 'linesCount', label: 'Sətir Sayı', visible: true },
-        { key: 'totalValue', label: 'Toplam Dəyər', visible: true },
-        { key: 'status', label: 'Status', visible: true },
+        { key: 'date', label: t('common.date', {}, 'Tarix'), visible: true },
+        { key: 'number', label: t('inventory.transactionNumber', {}, 'Əməliyyat №'), visible: true },
+        { key: 'type', label: t('inventory.transactionType', {}, 'Növ'), visible: true },
+        { key: 'sourceWarehouse', label: t('inventory.sourceWarehouse', {}, 'Mənbə Anbar'), visible: true },
+        { key: 'targetWarehouse', label: t('inventory.targetWarehouse', {}, 'Hədəf Anbar'), visible: true },
+        { key: 'linesCount', label: t('common.itemsCount', {}, 'Sətir Sayı'), visible: true },
+        { key: 'totalValue', label: t('inventory.stockValue', {}, 'Toplam Dəyər'), visible: true },
+        { key: 'status', label: t('common.status', {}, 'Status'), visible: true },
     ]);
 
     // Columns config for Ledger tab
     const [ledgerColumns, setLedgerColumns] = useState<ColumnConfig[]>([
-        { key: 'date', label: 'Tarix', visible: true },
-        { key: 'reference', label: 'Sənəd / Qaimə №', visible: true },
-        { key: 'type', label: 'Növ', visible: true },
-        { key: 'item', label: 'Məhsul', visible: true },
-        { key: 'warehouse', label: 'Anbar', visible: true },
-        { key: 'qtyIn', label: 'Giriş (+)', visible: true },
-        { key: 'qtyOut', label: 'Çıxış (-)', visible: true },
-        { key: 'unitCost', label: 'Maya Dəyəri', visible: true },
-        { key: 'balanceQty', label: 'Son Qalıq', visible: true },
-        { key: 'balanceValue', label: 'Balans Dəyəri', visible: true },
+        { key: 'date', label: t('common.date', {}, 'Tarix'), visible: true },
+        { key: 'reference', label: t('accounting.referenceNumber', {}, 'Sənəd / Qaimə №'), visible: true },
+        { key: 'type', label: t('inventory.transactionType', {}, 'Növ'), visible: true },
+        { key: 'item', label: t('inventory.stockLedgerTitle', {}, 'Məhsul'), visible: true },
+        { key: 'warehouse', label: t('procurement.warehouse', {}, 'Anbar'), visible: true },
+        { key: 'qtyIn', label: t('inventory.typeReceipt', {}, 'Giriş (+)'), visible: true },
+        { key: 'qtyOut', label: t('inventory.typeIssue', {}, 'Çıxış (-)'), visible: true },
+        { key: 'unitCost', label: t('customers.averageCost', {}, 'Maya Dəyəri'), visible: true },
+        { key: 'balanceQty', label: t('customers.currentStockQty', {}, 'Son Qalıq'), visible: true },
+        { key: 'balanceValue', label: t('inventory.stockValue', {}, 'Balans Dəyəri'), visible: true },
     ]);
 
     // Create Modal state
@@ -387,66 +389,66 @@ export const StockLedgerPage: React.FC = () => {
     };
 
     const getTypeBadge = (type: any) => {
-        const t = String(type || '').toLowerCase();
-        if (t.includes('receipt') || t.includes('mədaxil') || t.includes('giriş') || t.includes('goodsreceipt') || t === '1') {
+        const tStr = String(type || '').toLowerCase();
+        if (tStr.includes('receipt') || tStr.includes('mədaxil') || tStr.includes('giriş') || tStr.includes('goodsreceipt') || tStr === '1') {
             return (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                     <ArrowTrendingUpIcon className="w-3 h-3" />
-                    <span>Mədaxil</span>
+                    <span>{t('inventory.typeReceipt', {}, 'Mədaxil')}</span>
                 </span>
             );
         }
-        if (t.includes('issue') || t.includes('məxaric') || t.includes('çıxış') || t === '2') {
+        if (tStr.includes('issue') || tStr.includes('məxaric') || tStr.includes('çıxış') || tStr === '2') {
             return (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
                     <ArrowTrendingDownIcon className="w-3 h-3" />
-                    <span>Məxaric</span>
+                    <span>{t('inventory.typeIssue', {}, 'Məxaric')}</span>
                 </span>
             );
         }
-        if (t.includes('transfer') || t === '3') {
+        if (tStr.includes('transfer') || tStr === '3') {
             return (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
                     <ArrowsRightLeftIcon className="w-3 h-3" />
-                    <span>Transfer</span>
+                    <span>{t('inventory.typeTransfer', {}, 'Transfer')}</span>
                 </span>
             );
         }
         return (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
                 <CubeIcon className="w-3 h-3" />
-                <span>Düzəliş</span>
+                <span>{t('inventory.transactionType', {}, 'Düzəliş')}</span>
             </span>
         );
     };
 
     // Filter Transactions
     const filteredTransactions = useMemo(() => {
-        return transactions.filter((t) => {
+        return transactions.filter((tItem) => {
             if (searchTerm.trim()) {
                 const term = searchTerm.toLowerCase();
-                const matchNum = t.transactionNumber?.toLowerCase().includes(term);
-                const matchSrc = t.sourceWarehouseName?.toLowerCase().includes(term);
-                const matchTgt = t.targetWarehouseName?.toLowerCase().includes(term);
-                const matchRef = t.referenceNumber?.toLowerCase().includes(term);
-                const matchLines = (t.lines || []).some(
+                const matchNum = tItem.transactionNumber?.toLowerCase().includes(term);
+                const matchSrc = tItem.sourceWarehouseName?.toLowerCase().includes(term);
+                const matchTgt = tItem.targetWarehouseName?.toLowerCase().includes(term);
+                const matchRef = tItem.referenceNumber?.toLowerCase().includes(term);
+                const matchLines = (tItem.lines || []).some(
                     (l) => l.description?.toLowerCase().includes(term) || l.itemCode?.toLowerCase().includes(term)
                 );
                 if (!matchNum && !matchSrc && !matchTgt && !matchRef && !matchLines) return false;
             }
 
             if (typeFilter !== 'ALL') {
-                const typeStr = String(t.type).toLowerCase();
-                if (typeFilter === 'Receipt' && !typeStr.includes('receipt') && t.type !== 1) return false;
-                if (typeFilter === 'Issue' && !typeStr.includes('issue') && t.type !== 2) return false;
-                if (typeFilter === 'Transfer' && !typeStr.includes('transfer') && t.type !== 3) return false;
+                const typeStr = String(tItem.type).toLowerCase();
+                if (typeFilter === 'Receipt' && !typeStr.includes('receipt') && tItem.type !== 1) return false;
+                if (typeFilter === 'Issue' && !typeStr.includes('issue') && tItem.type !== 2) return false;
+                if (typeFilter === 'Transfer' && !typeStr.includes('transfer') && tItem.type !== 3) return false;
             }
 
-            if (filterWarehouseId !== 'ALL' && t.sourceWarehouseId !== filterWarehouseId && t.targetWarehouseId !== filterWarehouseId) {
+            if (filterWarehouseId !== 'ALL' && tItem.sourceWarehouseId !== filterWarehouseId && tItem.targetWarehouseId !== filterWarehouseId) {
                 return false;
             }
 
-            const rowDate = t.transactionDate || t.postingDate;
+            const rowDate = tItem.transactionDate || tItem.postingDate;
             if (filterStartDate && rowDate && new Date(rowDate) < new Date(filterStartDate)) return false;
             if (filterEndDate && rowDate && new Date(rowDate) > new Date(filterEndDate + 'T23:59:59')) return false;
 
@@ -507,7 +509,7 @@ export const StockLedgerPage: React.FC = () => {
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {
             if (activeTab === 'transactions') {
-                setSelectedRows(paginatedTransactions.map((t) => t.id));
+                setSelectedRows(paginatedTransactions.map((tItem) => tItem.id));
             } else {
                 setSelectedRows(paginatedLedgerEntries.map((r) => r.id));
             }
@@ -565,15 +567,15 @@ export const StockLedgerPage: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">İnventar</span>
+                        <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">{t('nav.inventory', {}, 'İnventar')}</span>
                         <span className="text-xs text-zinc-600">/</span>
-                        <h1 className="text-2xl font-bold tracking-tight text-white">Ehtiyat Hərəkəti</h1>
+                        <h1 className="text-2xl font-bold tracking-tight text-white">{t('inventory.stockLedgerTitle', {}, 'Ehtiyat Hərəkəti')}</h1>
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[#18181B] text-zinc-400 border border-[#27272A]">
-                            {transactions.length + entries.length} qeyd
+                            {transactions.length + entries.length} {t('common.details', {}, 'qeyd')}
                         </span>
                     </div>
                     <p className="text-xs text-zinc-400 mt-1">
-                        Bütün anbarlar üzrə mədaxil, məxaric, transfer və maya dəyəri üzrə qalıq hərəkətləri jurnalı
+                        {t('inventory.stockLedgerSubtitle', {}, 'Bütün anbarlar üzrə mədaxil, məxaric, transfer və maya dəyəri üzrə qalıq hərəkətləri jurnalı')}
                     </p>
                 </div>
 
@@ -582,7 +584,7 @@ export const StockLedgerPage: React.FC = () => {
                         onClick={() => loadData(false)}
                         disabled={loading || isRefreshing}
                         className="p-2 rounded-xl bg-[#18181B] border border-[#27272A] text-zinc-400 hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer disabled:opacity-50"
-                        title="Yenilə"
+                        title={t('common.refresh', {}, 'Yenilə')}
                     >
                         <ArrowPathIcon className={`w-4 h-4 ${isRefreshing || loading ? 'animate-spin' : ''}`} />
                     </button>
@@ -592,7 +594,7 @@ export const StockLedgerPage: React.FC = () => {
                         className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-semibold transition-all shadow-xs cursor-pointer"
                     >
                         <PlusIcon className="w-4 h-4 text-black" />
-                        <span>Yeni Stok Əməliyyatı</span>
+                        <span>{t('inventory.newStockTransaction', {}, 'Yeni Stok Əməliyyatı')}</span>
                     </button>
                 </div>
             </div>
@@ -601,11 +603,11 @@ export const StockLedgerPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between">
                     <div>
-                        <div className="text-[11px] font-medium text-zinc-400">Toplam Mədaxil (+)</div>
+                        <div className="text-[11px] font-medium text-zinc-400">{t('inventory.typeReceipt', {}, 'Toplam Mədaxil (+)')}</div>
                         <div className="text-xl font-bold text-emerald-400 mt-0.5">
-                            +{stats.totalIn.toLocaleString('az-AZ')}
+                            +{stats.totalIn.toLocaleString()}
                         </div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">Bütün anbarlara giriş</div>
+                        <div className="text-[10px] text-zinc-500 mt-0.5">{t('inventory.sourceWarehouse', {}, 'Bütün anbarlara giriş')}</div>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                         <ArrowTrendingUpIcon className="w-5 h-5" />
@@ -614,11 +616,11 @@ export const StockLedgerPage: React.FC = () => {
 
                 <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between">
                     <div>
-                        <div className="text-[11px] font-medium text-zinc-400">Toplam Məxaric (-)</div>
+                        <div className="text-[11px] font-medium text-zinc-400">{t('inventory.typeIssue', {}, 'Toplam Məxaric (-)')}</div>
                         <div className="text-xl font-bold text-rose-400 mt-0.5">
-                            -{stats.totalOut.toLocaleString('az-AZ')}
+                            -{stats.totalOut.toLocaleString()}
                         </div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">Anbarlardan çıxış</div>
+                        <div className="text-[10px] text-zinc-500 mt-0.5">{t('inventory.sourceWarehouse', {}, 'Anbarlardan çıxış')}</div>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
                         <ArrowTrendingDownIcon className="w-5 h-5" />
@@ -627,11 +629,11 @@ export const StockLedgerPage: React.FC = () => {
 
                 <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between">
                     <div>
-                        <div className="text-[11px] font-medium text-zinc-400">Xalis Qalıq Miqdarı</div>
+                        <div className="text-[11px] font-medium text-zinc-400">{t('customers.currentStockQty', {}, 'Xalis Qalıq Miqdarı')}</div>
                         <div className="text-xl font-bold text-white mt-0.5">
-                            {stats.netBalance.toLocaleString('az-AZ')}
+                            {stats.netBalance.toLocaleString()}
                         </div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">Cari ehtiyat vahidləri</div>
+                        <div className="text-[10px] text-zinc-500 mt-0.5">{t('inventory.stockItemsList', {}, 'Cari ehtiyat vahidləri')}</div>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-300">
                         <CubeIcon className="w-5 h-5" />
@@ -640,9 +642,9 @@ export const StockLedgerPage: React.FC = () => {
 
                 <div className="p-4 rounded-xl bg-[#121214] border border-[#27272A] flex items-center justify-between">
                     <div>
-                        <div className="text-[11px] font-medium text-zinc-400">Ümumi Qeyd Sayı</div>
+                        <div className="text-[11px] font-medium text-zinc-400">{t('common.total', {}, 'Ümumi Qeyd Sayı')}</div>
                         <div className="text-xl font-bold text-white mt-0.5">{stats.totalTxCount}</div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">Əməliyyat və hərəkətlər</div>
+                        <div className="text-[10px] text-zinc-500 mt-0.5">{t('inventory.stockLedgerSubtitle', {}, 'Əməliyyat və hərəkətlər')}</div>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-300">
                         <ArchiveBoxIcon className="w-5 h-5" />
@@ -683,7 +685,7 @@ export const StockLedgerPage: React.FC = () => {
                     }`}
                 >
                     <ArchiveBoxIcon className="w-4 h-4" />
-                    <span>Stok Əməliyyatları</span>
+                    <span>{t('inventory.stockLedgerTitle', {}, 'Stok Əməliyyatları')}</span>
                     <span
                         className={`px-1.5 py-0.5 rounded-full text-[10px] ${
                             activeTab === 'transactions' ? 'bg-black text-white' : 'bg-zinc-800 text-zinc-300'
@@ -706,7 +708,7 @@ export const StockLedgerPage: React.FC = () => {
                     }`}
                 >
                     <DocumentTextIcon className="w-4 h-4" />
-                    <span>Hərəkət Jurnalı (Ledger)</span>
+                    <span>{t('inventory.stockLedgerTitle', {}, 'Hərəkət Jurnalı (Ledger)')}</span>
                     <span
                         className={`px-1.5 py-0.5 rounded-full text-[10px] ${
                             activeTab === 'ledger' ? 'bg-black text-white' : 'bg-zinc-800 text-zinc-300'
@@ -730,7 +732,7 @@ export const StockLedgerPage: React.FC = () => {
                                 setSearchTerm(e.target.value);
                                 setCurrentPage(1);
                             }}
-                            placeholder="Axtar (kod, məhsul, anbar, nömrə)..."
+                            placeholder={t('common.searchPlaceholder', {}, 'Axtar (kod, məhsul, anbar, nömrə)...')}
                             className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-xs text-white placeholder-zinc-500 focus:border-zinc-500 focus:outline-hidden transition-colors"
                         />
                         {searchTerm && (
@@ -750,15 +752,15 @@ export const StockLedgerPage: React.FC = () => {
                             className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-xs text-zinc-300 hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer"
                         >
                             <span>
-                                Növ:{' '}
+                                {t('inventory.transactionType', {}, 'Növ')}:{' '}
                                 <strong className="text-white font-medium">
                                     {typeFilter === 'ALL'
-                                        ? 'Hamısı'
+                                        ? t('common.all', {}, 'Hamısı')
                                         : typeFilter === 'Receipt'
-                                        ? 'Mədaxil'
+                                        ? t('inventory.typeReceipt', {}, 'Mədaxil')
                                         : typeFilter === 'Issue'
-                                        ? 'Məxaric'
-                                        : 'Transfer'}
+                                        ? t('inventory.typeIssue', {}, 'Məxaric')
+                                        : t('inventory.typeTransfer', {}, 'Transfer')}
                                 </strong>
                             </span>
                             <ArrowsUpDownIcon className="w-3 h-3 text-zinc-500" />
@@ -767,10 +769,10 @@ export const StockLedgerPage: React.FC = () => {
                         {isTypeDropdownOpen && (
                             <div className="absolute left-0 mt-1 w-44 rounded-xl bg-[#18181B] border border-[#27272A] py-1 shadow-xl z-30">
                                 {[
-                                    { key: 'ALL', label: 'Hamısı' },
-                                    { key: 'Receipt', label: 'Mədaxil (Receipt)' },
-                                    { key: 'Issue', label: 'Məxaric (Issue)' },
-                                    { key: 'Transfer', label: 'Transfer' },
+                                    { key: 'ALL', label: t('common.all', {}, 'Hamısı') },
+                                    { key: 'Receipt', label: t('inventory.typeReceipt', {}, 'Mədaxil (Receipt)') },
+                                    { key: 'Issue', label: t('inventory.typeIssue', {}, 'Məxaric (Issue)') },
+                                    { key: 'Transfer', label: t('inventory.typeTransfer', {}, 'Transfer') },
                                 ].map((item) => (
                                     <button
                                         key={item.key}
@@ -805,7 +807,7 @@ export const StockLedgerPage: React.FC = () => {
                             }`}
                         >
                             <FunnelIcon className="w-3.5 h-3.5" />
-                            <span>Filtr</span>
+                            <span>{t('common.filter', {}, 'Filtr')}</span>
                             {activeFilterCount > 0 && (
                                 <span className="w-4 h-4 rounded-full bg-black text-white text-[10px] flex items-center justify-center font-bold">
                                     {activeFilterCount}
@@ -816,19 +818,19 @@ export const StockLedgerPage: React.FC = () => {
                         {isFilterPopoverOpen && (
                             <div className="absolute right-0 mt-2 w-80 rounded-2xl bg-[#18181B] border border-[#27272A] p-4 shadow-2xl z-40 space-y-3.5">
                                 <div className="flex items-center justify-between pb-2 border-b border-[#27272A]">
-                                    <span className="text-xs font-bold text-white">Filter Parametrləri</span>
+                                    <span className="text-xs font-bold text-white">{t('common.filter', {}, 'Filter Parametrləri')}</span>
                                     {activeFilterCount > 0 && (
                                         <button
                                             onClick={resetFilters}
                                             className="text-[11px] text-zinc-400 hover:text-white underline cursor-pointer"
                                         >
-                                            Sıfırla
+                                            {t('common.reset', {}, 'Sıfırla')}
                                         </button>
                                     )}
                                 </div>
 
                                 <div>
-                                    <label className="text-[11px] text-zinc-400 block mb-1">Anbar</label>
+                                    <label className="text-[11px] text-zinc-400 block mb-1">{t('procurement.warehouse', {}, 'Anbar')}</label>
                                     <select
                                         value={filterWarehouseId}
                                         onChange={(e) => {
@@ -837,7 +839,7 @@ export const StockLedgerPage: React.FC = () => {
                                         }}
                                         className="w-full px-2.5 py-1.5 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white focus:outline-hidden"
                                     >
-                                        <option value="ALL">Bütün anbarlar</option>
+                                        <option value="ALL">{t('common.all', {}, 'Bütün anbarlar')}</option>
                                         {warehouses.map((w) => (
                                             <option key={w.id} value={w.id}>
                                                 {w.name} ({w.code})
@@ -847,7 +849,7 @@ export const StockLedgerPage: React.FC = () => {
                                 </div>
 
                                 <div>
-                                    <label className="text-[11px] text-zinc-400 block mb-1">Məhsul</label>
+                                    <label className="text-[11px] text-zinc-400 block mb-1">{t('inventory.stockLedgerTitle', {}, 'Məhsul')}</label>
                                     <select
                                         value={filterItemId}
                                         onChange={(e) => {
@@ -856,7 +858,7 @@ export const StockLedgerPage: React.FC = () => {
                                         }}
                                         className="w-full px-2.5 py-1.5 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white focus:outline-hidden"
                                     >
-                                        <option value="ALL">Bütün məhsullar</option>
+                                        <option value="ALL">{t('common.all', {}, 'Bütün məhsullar')}</option>
                                         {items.map((i) => (
                                             <option key={i.id} value={i.id}>
                                                 {i.name} ({i.code})
@@ -867,7 +869,7 @@ export const StockLedgerPage: React.FC = () => {
 
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label className="text-[11px] text-zinc-400 block mb-1">Başlanğıc Tarix</label>
+                                        <label className="text-[11px] text-zinc-400 block mb-1">{t('accounting.startDate', {}, 'Başlanğıc Tarix')}</label>
                                         <input
                                             type="date"
                                             value={filterStartDate}
@@ -879,7 +881,7 @@ export const StockLedgerPage: React.FC = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-[11px] text-zinc-400 block mb-1">Son Tarix</label>
+                                        <label className="text-[11px] text-zinc-400 block mb-1">{t('accounting.endDate', {}, 'Son Tarix')}</label>
                                         <input
                                             type="date"
                                             value={filterEndDate}
@@ -897,7 +899,7 @@ export const StockLedgerPage: React.FC = () => {
                                         onClick={() => setIsFilterPopoverOpen(false)}
                                         className="w-full py-1.5 rounded-xl bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors"
                                     >
-                                        Tətbiq et
+                                        {t('common.apply', {}, 'Tətbiq et')}
                                     </button>
                                 </div>
                             </div>
@@ -911,13 +913,13 @@ export const StockLedgerPage: React.FC = () => {
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-xs text-zinc-300 hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer"
                         >
                             <AdjustmentsHorizontalIcon className="w-3.5 h-3.5" />
-                            <span>Sütunlar</span>
+                            <span>{t('common.columns', {}, 'Sütunlar')}</span>
                         </button>
 
                         {isColumnsOpen && (
                             <div className="absolute right-0 mt-2 w-52 rounded-2xl bg-[#18181B] border border-[#27272A] p-3 shadow-2xl z-40 space-y-2">
                                 <div className="text-[11px] font-bold text-white pb-1.5 border-b border-[#27272A]">
-                                    Görünən Sütunlar
+                                    {t('common.visibleColumns', {}, 'Görünən Sütunlar')}
                                 </div>
                                 <div className="space-y-1 max-h-56 overflow-y-auto">
                                     {(activeTab === 'transactions' ? txColumns : ledgerColumns).map((col) => (
@@ -948,12 +950,12 @@ export const StockLedgerPage: React.FC = () => {
             {/* Selected Rows Bulk Actions Bar */}
             {selectedRows.length > 0 && (
                 <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-[#18181B] border border-zinc-700 text-xs">
-                    <span className="font-semibold text-white">{selectedRows.length} qeyd seçilib</span>
+                    <span className="font-semibold text-white">{selectedRows.length} {t('common.selected', {}, 'seçilib')}</span>
                     <button
                         onClick={() => setSelectedRows([])}
                         className="px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs"
                     >
-                        Seçimi ləğv et
+                        {t('common.cancel', {}, 'Seçimi ləğv et')}
                     </button>
                 </div>
             )}
@@ -970,20 +972,20 @@ export const StockLedgerPage: React.FC = () => {
                                             type="checkbox"
                                             checked={
                                                 paginatedTransactions.length > 0 &&
-                                                paginatedTransactions.every((t) => selectedRows.includes(t.id))
+                                                paginatedTransactions.every((tItem) => selectedRows.includes(tItem.id))
                                             }
                                             onChange={handleSelectAll}
                                             className="rounded bg-[#121214] border-zinc-700 text-white focus:ring-0"
                                         />
                                     </th>
-                                    {isTxColVisible('date') && <th className="py-3.5 px-4">Tarix</th>}
-                                    {isTxColVisible('number') && <th className="py-3.5 px-4">Əməliyyat №</th>}
-                                    {isTxColVisible('type') && <th className="py-3.5 px-4">Növ</th>}
-                                    {isTxColVisible('sourceWarehouse') && <th className="py-3.5 px-4">Mənbə Anbar</th>}
-                                    {isTxColVisible('targetWarehouse') && <th className="py-3.5 px-4">Hədəf Anbar</th>}
-                                    {isTxColVisible('linesCount') && <th className="py-3.5 px-4 text-center">Sətir Sayı</th>}
-                                    {isTxColVisible('totalValue') && <th className="py-3.5 px-4 text-right">Toplam Dəyər</th>}
-                                    {isTxColVisible('status') && <th className="py-3.5 px-4 text-center">Status</th>}
+                                    {isTxColVisible('date') && <th className="py-3.5 px-4">{t('common.date', {}, 'Tarix')}</th>}
+                                    {isTxColVisible('number') && <th className="py-3.5 px-4">{t('inventory.transactionNumber', {}, 'Əməliyyat №')}</th>}
+                                    {isTxColVisible('type') && <th className="py-3.5 px-4">{t('inventory.transactionType', {}, 'Növ')}</th>}
+                                    {isTxColVisible('sourceWarehouse') && <th className="py-3.5 px-4">{t('inventory.sourceWarehouse', {}, 'Mənbə Anbar')}</th>}
+                                    {isTxColVisible('targetWarehouse') && <th className="py-3.5 px-4">{t('inventory.targetWarehouse', {}, 'Hədəf Anbar')}</th>}
+                                    {isTxColVisible('linesCount') && <th className="py-3.5 px-4 text-center">{t('common.itemsCount', {}, 'Sətir Sayı')}</th>}
+                                    {isTxColVisible('totalValue') && <th className="py-3.5 px-4 text-right">{t('inventory.stockValue', {}, 'Toplam Dəyər')}</th>}
+                                    {isTxColVisible('status') && <th className="py-3.5 px-4 text-center">{t('common.status', {}, 'Status')}</th>}
                                     <th className="w-32 py-3.5 px-4 text-right"></th>
                                 </tr>
                             </thead>
@@ -994,7 +996,7 @@ export const StockLedgerPage: React.FC = () => {
                                         <td colSpan={10} className="py-16 text-center text-zinc-500">
                                             <div className="flex flex-col items-center justify-center gap-2">
                                                 <ArrowPathIcon className="w-6 h-6 animate-spin text-zinc-400" />
-                                                <span>Stok əməliyyatları yüklənir...</span>
+                                                <span>{t('common.loading', {}, 'Stok əməliyyatları yüklənir...')}</span>
                                             </div>
                                         </td>
                                     </tr>
@@ -1003,9 +1005,9 @@ export const StockLedgerPage: React.FC = () => {
                                         <td colSpan={10} className="py-16 text-center text-zinc-500">
                                             <div className="flex flex-col items-center justify-center gap-2">
                                                 <ArchiveBoxIcon className="w-8 h-8 text-zinc-600" />
-                                                <span className="font-semibold text-zinc-400">Heç bir stok əməliyyatı tapılmadı</span>
+                                                <span className="font-semibold text-zinc-400">{t('common.noRecordsFound', {}, 'Heç bir stok əməliyyatı tapılmadı')}</span>
                                                 <p className="text-[11px] text-zinc-500 max-w-sm">
-                                                    Yuxarıdakı &quot;+ Yeni Stok Əməliyyatı&quot; düyməsinə klikləyərək yeni mədaxil, məxaric və ya transfer qeydiyyatdan keçirin.
+                                                    {t('common.tryAdjustingSearch', {}, 'Yeni mədaxil, məxaric və ya transfer qeydiyyatdan keçirin.')}
                                                 </p>
                                             </div>
                                         </td>
@@ -1084,7 +1086,7 @@ export const StockLedgerPage: React.FC = () => {
                                                 {isTxColVisible('linesCount') && (
                                                     <td className="py-3 px-4 text-center font-mono text-zinc-300">
                                                         <span className="px-2 py-0.5 rounded-md bg-[#18181B] border border-[#27272A] text-[11px]">
-                                                            {(tx.lines || []).length} məhsul
+                                                            {(tx.lines || []).length}
                                                         </span>
                                                     </td>
                                                 )}
@@ -1104,7 +1106,7 @@ export const StockLedgerPage: React.FC = () => {
                                                                     : 'bg-zinc-800 text-zinc-400 border-zinc-700'
                                                             }`}
                                                         >
-                                                            {!isDraft ? 'İcra Edilib' : 'Qaralama'}
+                                                            {!isDraft ? t('statuses.posted', {}, 'İcra Edilib') : t('statuses.draft', {}, 'Qaralama')}
                                                         </span>
                                                     </td>
                                                 )}
@@ -1122,13 +1124,13 @@ export const StockLedgerPage: React.FC = () => {
                                                                 ) : (
                                                                     <CheckCircleIcon className="w-3 h-3" />
                                                                 )}
-                                                                <span>İcra Et</span>
+                                                                <span>{t('inventory.postStockTransaction', {}, 'İcra Et')}</span>
                                                             </button>
                                                         )}
                                                         <Link
                                                             to={`/stock-ledger/${tx.id}`}
                                                             className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors inline-block"
-                                                            title="Ətraflı Bax"
+                                                            title={t('common.view', {}, 'Ətraflı Bax')}
                                                         >
                                                             <EyeIcon className="w-4 h-4" />
                                                         </Link>
@@ -1191,16 +1193,16 @@ export const StockLedgerPage: React.FC = () => {
                                             className="rounded bg-[#121214] border-zinc-700 text-white focus:ring-0"
                                         />
                                     </th>
-                                    {isLedgerColVisible('date') && <th className="py-3.5 px-4">Tarix</th>}
-                                    {isLedgerColVisible('reference') && <th className="py-3.5 px-4">Sənəd / Qaimə №</th>}
-                                    {isLedgerColVisible('type') && <th className="py-3.5 px-4">Növ</th>}
-                                    {isLedgerColVisible('item') && <th className="py-3.5 px-4">Məhsul (SKU)</th>}
-                                    {isLedgerColVisible('warehouse') && <th className="py-3.5 px-4">Anbar</th>}
-                                    {isLedgerColVisible('qtyIn') && <th className="py-3.5 px-4 text-right">Giriş (+)</th>}
-                                    {isLedgerColVisible('qtyOut') && <th className="py-3.5 px-4 text-right">Çıxış (-)</th>}
-                                    {isLedgerColVisible('unitCost') && <th className="py-3.5 px-4 text-right">Maya Dəyəri</th>}
-                                    {isLedgerColVisible('balanceQty') && <th className="py-3.5 px-4 text-right">Son Qalıq</th>}
-                                    {isLedgerColVisible('balanceValue') && <th className="py-3.5 px-4 text-right">Balans Dəyəri</th>}
+                                    {isLedgerColVisible('date') && <th className="py-3.5 px-4">{t('common.date', {}, 'Tarix')}</th>}
+                                    {isLedgerColVisible('reference') && <th className="py-3.5 px-4">{t('accounting.referenceNumber', {}, 'Sənəd / Qaimə №')}</th>}
+                                    {isLedgerColVisible('type') && <th className="py-3.5 px-4">{t('inventory.transactionType', {}, 'Növ')}</th>}
+                                    {isLedgerColVisible('item') && <th className="py-3.5 px-4">{t('inventory.stockLedgerTitle', {}, 'Məhsul (SKU)')}</th>}
+                                    {isLedgerColVisible('warehouse') && <th className="py-3.5 px-4">{t('procurement.warehouse', {}, 'Anbar')}</th>}
+                                    {isLedgerColVisible('qtyIn') && <th className="py-3.5 px-4 text-right">{t('inventory.typeReceipt', {}, 'Giriş (+)')}</th>}
+                                    {isLedgerColVisible('qtyOut') && <th className="py-3.5 px-4 text-right">{t('inventory.typeIssue', {}, 'Çıxış (-)')}</th>}
+                                    {isLedgerColVisible('unitCost') && <th className="py-3.5 px-4 text-right">{t('customers.averageCost', {}, 'Maya Dəyəri')}</th>}
+                                    {isLedgerColVisible('balanceQty') && <th className="py-3.5 px-4 text-right">{t('customers.currentStockQty', {}, 'Son Qalıq')}</th>}
+                                    {isLedgerColVisible('balanceValue') && <th className="py-3.5 px-4 text-right">{t('inventory.stockValue', {}, 'Balans Dəyəri')}</th>}
                                 </tr>
                             </thead>
 
@@ -1210,7 +1212,7 @@ export const StockLedgerPage: React.FC = () => {
                                         <td colSpan={11} className="py-16 text-center text-zinc-500">
                                             <div className="flex flex-col items-center justify-center gap-2">
                                                 <ArrowPathIcon className="w-6 h-6 animate-spin text-zinc-400" />
-                                                <span>Ehtiyat hərəkətləri yüklənir...</span>
+                                                <span>{t('common.loading', {}, 'Ehtiyat hərəkətləri yüklənir...')}</span>
                                             </div>
                                         </td>
                                     </tr>
@@ -1219,9 +1221,9 @@ export const StockLedgerPage: React.FC = () => {
                                         <td colSpan={11} className="py-16 text-center text-zinc-500">
                                             <div className="flex flex-col items-center justify-center gap-2">
                                                 <ArchiveBoxIcon className="w-8 h-8 text-zinc-600" />
-                                                <span className="font-semibold text-zinc-400">Heç bir stok hərəkəti qeydi tapılmadı</span>
+                                                <span className="font-semibold text-zinc-400">{t('common.noRecordsFound', {}, 'Heç bir stok hərəkəti qeydi tapılmadı')}</span>
                                                 <p className="text-[11px] text-zinc-500 max-w-sm">
-                                                    İcra edilmiş stok əməliyyatları və ya qəbul edilmiş malların hərəkətləri burada əks olunur.
+                                                    {t('common.tryAdjustingSearch', {}, 'İcra edilmiş stok əməliyyatları və ya qəbul edilmiş malların hərəkətləri burada əks olunur.')}
                                                 </p>
                                             </div>
                                         </td>
@@ -1292,7 +1294,7 @@ export const StockLedgerPage: React.FC = () => {
                                                     <td className="py-3 px-4 text-right font-mono">
                                                         {qtyIn > 0 ? (
                                                             <span className="text-emerald-400 font-bold">
-                                                                +{qtyIn.toLocaleString('az-AZ')}
+                                                                +{qtyIn.toLocaleString()}
                                                             </span>
                                                         ) : (
                                                             <span className="text-zinc-600">—</span>
@@ -1304,7 +1306,7 @@ export const StockLedgerPage: React.FC = () => {
                                                     <td className="py-3 px-4 text-right font-mono">
                                                         {qtyOut > 0 ? (
                                                             <span className="text-rose-400 font-bold">
-                                                                -{qtyOut.toLocaleString('az-AZ')}
+                                                                -{qtyOut.toLocaleString()}
                                                             </span>
                                                         ) : (
                                                             <span className="text-zinc-600">—</span>
@@ -1320,7 +1322,7 @@ export const StockLedgerPage: React.FC = () => {
 
                                                 {isLedgerColVisible('balanceQty') && (
                                                     <td className="py-3 px-4 text-right font-mono font-semibold text-white">
-                                                        {Number(row.balanceQty ?? row.runningBalance ?? 0).toLocaleString('az-AZ')}
+                                                        {Number(row.balanceQty ?? row.runningBalance ?? 0).toLocaleString()}
                                                     </td>
                                                 )}
 
@@ -1379,9 +1381,9 @@ export const StockLedgerPage: React.FC = () => {
                                     <ArchiveBoxIcon className="w-4 h-4" />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-bold text-white">Yeni Stok Əməliyyatı</h3>
+                                    <h3 className="text-sm font-bold text-white">{t('inventory.newStockTransaction', {}, 'Yeni Stok Əməliyyatı')}</h3>
                                     <p className="text-[11px] text-zinc-400">
-                                        Anbara birbaşa mədaxil, məxaric, anbarlararası transfer və ya düzəliş qeydiyyatı
+                                        {t('inventory.stockLedgerSubtitle', {}, 'Anbara birbaşa mədaxil, məxaric, anbarlararası transfer və ya düzəliş qeydiyyatı')}
                                     </p>
                                 </div>
                             </div>
@@ -1405,62 +1407,62 @@ export const StockLedgerPage: React.FC = () => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-xs font-medium text-zinc-300 block mb-1">
-                                        Əməliyyat Növü <span className="text-rose-400">*</span>
+                                        {t('inventory.transactionType', {}, 'Əməliyyat Növü')} <span className="text-rose-400">*</span>
                                     </label>
                                     <CustomSelect
                                         value={String(modalTxType)}
                                         onChange={(val) => setModalTxType(val as any)}
                                         options={[
-                                            { value: 'Receipt', label: 'Mədaxil (Stok Girişi)' },
-                                            { value: 'Issue', label: 'Məxaric (Stok Çıxışı)' },
-                                            { value: 'Transfer', label: 'Transfer (Anbarlararası Köçürmə)' },
-                                            { value: 'Adjustment', label: 'Düzəliş (Sayım Fərqi)' },
+                                            { value: 'Receipt', label: t('inventory.typeReceipt', {}, 'Mədaxil (Stok Girişi)') },
+                                            { value: 'Issue', label: t('inventory.typeIssue', {}, 'Məxaric (Stok Çıxışı)') },
+                                            { value: 'Transfer', label: t('inventory.typeTransfer', {}, 'Transfer (Anbarlararası Köçürmə)') },
+                                            { value: 'Adjustment', label: t('inventory.transactionType', {}, 'Düzəliş (Sayım Fərqi)') },
                                         ]}
                                     />
                                 </div>
 
                                 <div>
                                     <label className="text-xs font-medium text-zinc-300 block mb-1">
-                                        Mənbə Anbar <span className="text-rose-400">*</span>
+                                        {t('inventory.sourceWarehouse', {}, 'Mənbə Anbar')} <span className="text-rose-400">*</span>
                                     </label>
                                     <CustomSelect
                                         value={modalSourceWarehouseId}
                                         onChange={(val) => setModalSourceWarehouseId(val)}
                                         options={warehouseOptions}
-                                        placeholder="Mənbə anbarı seçin"
+                                        placeholder={t('common.select', {}, 'Mənbə anbarı seçin')}
                                     />
                                 </div>
 
                                 {modalTxType === 'Transfer' && (
                                     <div>
                                         <label className="text-xs font-medium text-zinc-300 block mb-1">
-                                            Hədəf Anbar <span className="text-rose-400">*</span>
+                                            {t('inventory.targetWarehouse', {}, 'Hədəf Anbar')} <span className="text-rose-400">*</span>
                                         </label>
                                         <CustomSelect
                                             value={modalTargetWarehouseId}
                                             onChange={(val) => setModalTargetWarehouseId(val)}
                                             options={warehouseOptions.filter((w) => w.value !== modalSourceWarehouseId)}
-                                            placeholder="Hədəf anbarı seçin"
+                                            placeholder={t('common.select', {}, 'Hədəf anbarı seçin')}
                                         />
                                     </div>
                                 )}
 
                                 <div>
                                     <label className="text-xs font-medium text-zinc-300 block mb-1">
-                                        Sənəd / Referans №
+                                        {t('accounting.referenceNumber', {}, 'Sənəd / Referans №')}
                                     </label>
                                     <input
                                         type="text"
                                         value={modalReferenceNumber}
                                         onChange={(e) => setModalReferenceNumber(e.target.value)}
-                                        placeholder="məs. STK-2026-001"
+                                        placeholder="STK-2026-001"
                                         className="w-full px-3 py-2 rounded-xl bg-[#18181B] border border-[#27272A] text-xs text-white placeholder-zinc-500 focus:border-zinc-500 focus:outline-hidden font-mono"
                                     />
                                 </div>
 
                                 <div>
                                     <label className="text-xs font-medium text-zinc-300 block mb-1">
-                                        Əməliyyat Tarixi
+                                        {t('inventory.transactionDate', {}, 'Əməliyyat Tarixi')}
                                     </label>
                                     <input
                                         type="date"
@@ -1473,7 +1475,7 @@ export const StockLedgerPage: React.FC = () => {
 
                                 <div>
                                     <label className="text-xs font-medium text-zinc-300 block mb-1">
-                                        Uçot (Posting) Tarixi
+                                        {t('accounting.postingDate', {}, 'Uçot (Posting) Tarixi')}
                                     </label>
                                     <input
                                         type="date"
@@ -1489,7 +1491,7 @@ export const StockLedgerPage: React.FC = () => {
                             <div className="space-y-2 pt-2 border-t border-[#27272A]">
                                 <div className="flex items-center justify-between">
                                     <label className="text-xs font-bold text-white uppercase tracking-wider">
-                                        Əməliyyat Sətirləri
+                                        {t('accounting.lines', {}, 'Əməliyyat Sətirləri')}
                                     </label>
                                     <button
                                         type="button"
@@ -1497,7 +1499,7 @@ export const StockLedgerPage: React.FC = () => {
                                         className="flex items-center gap-1 text-xs text-zinc-300 hover:text-white font-semibold cursor-pointer"
                                     >
                                         <PlusIcon className="w-3.5 h-3.5" />
-                                        <span>+ Sətir Əlavə Et</span>
+                                        <span>+ {t('accounting.addLine', {}, 'Sətir Əlavə Et')}</span>
                                     </button>
                                 </div>
 
@@ -1512,7 +1514,7 @@ export const StockLedgerPage: React.FC = () => {
                                                     value={line.itemId}
                                                     onChange={(val) => handleLineItemSelect(idx, val)}
                                                     options={itemOptions}
-                                                    placeholder="Məhsul seçin"
+                                                    placeholder={t('common.select', {}, 'Məhsul seçin')}
                                                 />
                                             </div>
 
@@ -1523,7 +1525,7 @@ export const StockLedgerPage: React.FC = () => {
                                                     required
                                                     value={line.quantity}
                                                     onChange={(e) => handleLineChange(idx, 'quantity', Number(e.target.value))}
-                                                    placeholder="Say"
+                                                    placeholder={t('customers.quantity', {}, 'Say')}
                                                     className="w-full px-2.5 py-2 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white font-mono text-right focus:outline-hidden"
                                                 />
                                             </div>
@@ -1537,7 +1539,7 @@ export const StockLedgerPage: React.FC = () => {
                                                         required
                                                         value={line.unitCost}
                                                         onChange={(e) => handleLineChange(idx, 'unitCost', Number(e.target.value))}
-                                                        placeholder="Vahid maya"
+                                                        placeholder={t('customers.averageCost', {}, 'Vahid maya')}
                                                         className="w-full px-2.5 py-2 rounded-xl bg-[#121214] border border-[#27272A] text-xs text-white font-mono text-right focus:outline-hidden pr-8"
                                                     />
                                                     <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-zinc-500">
@@ -1552,7 +1554,7 @@ export const StockLedgerPage: React.FC = () => {
                                                     onClick={() => handleRemoveLine(idx)}
                                                     disabled={modalLines.length <= 1}
                                                     className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 disabled:opacity-20 transition-colors"
-                                                    title="Sətiri sil"
+                                                    title={t('common.delete', {}, 'Sətiri sil')}
                                                 >
                                                     <TrashIcon className="w-4 h-4" />
                                                 </button>
@@ -1562,7 +1564,7 @@ export const StockLedgerPage: React.FC = () => {
                                 </div>
 
                                 <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-[#27272A] text-xs font-semibold">
-                                    <span className="text-zinc-400">Yekun Maya Dəyəri:</span>
+                                    <span className="text-zinc-400">{t('inventory.stockValue', {}, 'Yekun Maya Dəyəri')}:</span>
                                     <span className="text-white font-mono font-bold text-sm">
                                         {formatCurrency(modalTotalValue)}
                                     </span>
@@ -1578,17 +1580,17 @@ export const StockLedgerPage: React.FC = () => {
                                     className="rounded bg-[#18181B] border-zinc-700 text-white focus:ring-0 cursor-pointer"
                                 />
                                 <label htmlFor="autoPost" className="text-xs text-zinc-300 select-none cursor-pointer">
-                                    Əməliyyatı yaradılan kimi birbaşa icra et (Post & Stok hərəkəti yarat)
+                                    {t('inventory.postStockTransaction', {}, 'Əməliyyatı yaradılan kimi birbaşa icra et (Post & Stok hərəkəti yarat)')}
                                 </label>
                             </div>
 
                             <div>
-                                <label className="text-xs font-medium text-zinc-300 block mb-1">Qeydlər</label>
+                                <label className="text-xs font-medium text-zinc-300 block mb-1">{t('common.notes', {}, 'Qeydlər')}</label>
                                 <textarea
                                     rows={2}
                                     value={modalNotes}
                                     onChange={(e) => setModalNotes(e.target.value)}
-                                    placeholder="Stok əməliyyatı haqqında əlavə qeydlər..."
+                                    placeholder={t('common.notes', {}, 'Stok əməliyyatı haqqında əlavə qeydlər...')}
                                     className="w-full px-3 py-2 rounded-xl bg-[#18181B] border border-[#27272A] text-xs text-white placeholder-zinc-500 focus:border-zinc-500 focus:outline-hidden resize-none"
                                 />
                             </div>
@@ -1600,7 +1602,7 @@ export const StockLedgerPage: React.FC = () => {
                                     onClick={() => setShowCreateModal(false)}
                                     className="px-4 py-2 rounded-xl bg-[#18181B] border border-[#27272A] text-zinc-300 hover:text-white hover:bg-[#27272A] text-xs font-semibold transition-colors"
                                 >
-                                    Ləğv et
+                                    {t('common.cancel', {}, 'Ləğv et')}
                                 </button>
                                 <button
                                     type="submit"
@@ -1610,10 +1612,10 @@ export const StockLedgerPage: React.FC = () => {
                                     {createLoading ? (
                                         <>
                                             <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />
-                                            <span>Saxlanılır...</span>
+                                            <span>{t('common.saving', {}, 'Saxlanılır...')}</span>
                                         </>
                                     ) : (
-                                        <span>Saxla və Yarat</span>
+                                        <span>{t('common.save', {}, 'Saxla və Yarat')}</span>
                                     )}
                                 </button>
                             </div>

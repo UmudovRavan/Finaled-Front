@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../api';
 import accountingLogo from '../assets/Accounting-Logo.png';
+import { useLanguage } from '../context/LanguageContext';
 import { ExclamationTriangleIcon, CheckCircleIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 export const ResetPassword: React.FC = () => {
+    const { t } = useLanguage();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -24,11 +26,11 @@ export const ResetPassword: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (newPassword !== confirmPassword) {
-            setError('Şifrələr uyğun gəlmir!');
+            setError(t('validation.passwordsDoNotMatch', {}, 'Şifrələr uyğun gəlmir!'));
             return;
         }
         if (newPassword.length < 6) {
-            setError('Şifrə minimum 6 simvol olmalıdır!');
+            setError(t('validation.minCharacters', { count: 6 }, 'Şifrə minimum 6 simvol olmalıdır!'));
             return;
         }
 
@@ -44,12 +46,12 @@ export const ResetPassword: React.FC = () => {
                 newPassword,
                 confirmPassword,
             });
-            setSuccess('Şifrəniz uğurla yeniləndi! Giriş səhifəsinə yönləndirilirsiniz...');
+            setSuccess(t('auth.resetSuccess', {}, 'Şifrəniz uğurla yeniləndi! Giriş səhifəsinə yönləndirilirsiniz...'));
             setTimeout(() => {
                 navigate('/login');
             }, 2000);
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Şifrə sıfırlanarkən xəta baş verdi.');
+            setError(err.response?.data?.message || t('auth.resetError', {}, 'Şifrə sıfırlanarkən xəta baş verdi.'));
         } finally {
             setLoading(false);
         }
@@ -62,8 +64,8 @@ export const ResetPassword: React.FC = () => {
                     <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mb-1">
                         <img src={accountingLogo} alt="Accounting" className="w-10 h-10 object-contain" />
                     </div>
-                    <h1 className="text-xl font-extrabold text-white">Yeni Şifrə Təyin Edin</h1>
-                    <p className="text-xs text-[#94A3B8]">OTP kodu və yeni şifrənizi daxil edin.</p>
+                    <h1 className="text-xl font-extrabold text-white">{t('auth.resetPasswordTitle', {}, 'Yeni Şifrə Təyin Edin')}</h1>
+                    <p className="text-xs text-[#94A3B8]">{t('auth.resetPasswordSubtitle', {}, 'OTP kodu və yeni şifrənizi daxil edin.')}</p>
                 </div>
 
                 {error && (
@@ -82,7 +84,7 @@ export const ResetPassword: React.FC = () => {
 
                 <form onSubmit={handleSubmit} className="space-y-3.5">
                     <div>
-                        <label className="text-xs font-semibold text-[#CBD5E1]">E-poçt</label>
+                        <label className="text-xs font-semibold text-[#CBD5E1]">{t('auth.emailLabel', {}, 'E-poçt')}</label>
                         <input
                             type="email"
                             required
@@ -93,7 +95,7 @@ export const ResetPassword: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="text-xs font-semibold text-[#CBD5E1]">Təsdiq Kodu (OTP)</label>
+                        <label className="text-xs font-semibold text-[#CBD5E1]">{t('auth.otpPlaceholder', {}, 'Təsdiq Kodu (OTP)')}</label>
                         <input
                             type="text"
                             required
@@ -105,7 +107,7 @@ export const ResetPassword: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="text-xs font-semibold text-[#CBD5E1]">Yeni Şifrə</label>
+                        <label className="text-xs font-semibold text-[#CBD5E1]">{t('auth.newPasswordLabel', {}, 'Yeni Şifrə')}</label>
                         <input
                             type="password"
                             required
@@ -117,7 +119,7 @@ export const ResetPassword: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="text-xs font-semibold text-[#CBD5E1]">Yeni Şifrə Təkrarı</label>
+                        <label className="text-xs font-semibold text-[#CBD5E1]">{t('auth.confirmPasswordLabel', {}, 'Yeni Şifrə Təkrarı')}</label>
                         <input
                             type="password"
                             required
@@ -133,14 +135,14 @@ export const ResetPassword: React.FC = () => {
                         disabled={loading}
                         className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-50 mt-2"
                     >
-                        {loading ? 'Yenilənir...' : 'Şifrəni Yenilə'}
+                        {loading ? t('common.saving', {}, 'Yenilənir...') : t('auth.resetPasswordTitle', {}, 'Şifrəni Yenilə')}
                     </button>
                 </form>
 
                 <div className="text-center pt-2 border-t border-[#27272A]">
                     <Link to="/login" className="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:underline">
                         <ArrowLeftIcon className="w-3.5 h-3.5" />
-                        <span>Girişə Qayıt</span>
+                        <span>{t('auth.backToLogin', {}, 'Girişə Qayıt')}</span>
                     </Link>
                 </div>
             </div>

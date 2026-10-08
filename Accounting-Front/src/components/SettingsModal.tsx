@@ -202,16 +202,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                     <div className="flex items-center justify-between px-6 py-4 border-b border-[#27272A] sticky top-0 bg-[#121214]/90 backdrop-blur-md z-20">
                         <div>
                             <h2 className="text-base font-extrabold text-white tracking-tight">
-                                {activeTab === 'profile' && t('settings.profileTab', {}, 'Profil Tənzimləmələri')}
-                                {activeTab === 'preferences' && t('settings.preferences', {}, 'Görünüş & Tema Tərcihləri')}
-                                {activeTab === 'general' && t('settings.general', {}, 'Ümumi Parametrlər')}
-                                {activeTab === 'brand' && t('settings.brandLogo', {}, 'Şirkət & Workspace')}
+                                {activeTab === 'profile' && t('settings.profileTitle', {}, 'Profil Tənzimləmələri')}
+                                {activeTab === 'preferences' && t('settings.appearanceTitle', {}, 'Görünüş & Tema Tərcihləri')}
+                                {activeTab === 'general' && t('settings.title', {}, 'Ümumi Parametrlər')}
+                                {activeTab === 'brand' && t('settings.companyTitle', {}, 'Şirkət & Workspace')}
                             </h2>
                             <p className="text-xs text-[#71717A]">
-                                {activeTab === 'profile' && 'Profil və təhlükəsizlik məlumatlarınızı idarə edin.'}
-                                {activeTab === 'preferences' && 'Açıq, qaranlıq və gecə mavisi temaları arasında seçim edin.'}
-                                {activeTab === 'general' && 'Sistem dili və regional parametrlər.'}
-                                {activeTab === 'brand' && 'Təşkilat və cari abunəlik detalları.'}
+                                {activeTab === 'profile' && t('settings.subtitle', {}, 'Profil və təhlükəsizlik məlumatlarınızı idarə edin.')}
+                                {activeTab === 'preferences' && t('settings.appearanceDesc', {}, 'Açıq, qaranlıq və gecə mavisi temaları arasında seçim edin.')}
+                                {activeTab === 'general' && t('settings.languageDesc', {}, 'Sistem dili və regional parametrlər.')}
+                                {activeTab === 'brand' && t('settings.companyDesc', {}, 'Təşkilat və cari abunəlik detalları.')}
                             </p>
                         </div>
 
@@ -233,7 +233,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                                         {userInfo?.userName?.slice(0, 2).toUpperCase() || 'US'}
                                     </div>
                                     <div>
-                                        <h3 className="text-base font-bold text-white">{userInfo?.userName || 'İstifadəçi'}</h3>
+                                        <h3 className="text-base font-bold text-white">{userInfo?.userName || 'User'}</h3>
                                         <p className="text-xs text-[#71717A]">{userInfo?.email}</p>
                                         <div className="mt-1 flex items-center gap-2">
                                             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
@@ -248,15 +248,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
                                 {/* Security / Password */}
                                 <div className="space-y-3">
-                                    <h4 className="text-xs font-bold text-[#A1A1AA] uppercase tracking-wider">Təhlükəsizlik</h4>
+                                    <h4 className="text-xs font-bold text-[#A1A1AA] uppercase tracking-wider">{t('settings.loginPassword', {}, 'Təhlükəsizlik')}</h4>
                                     <div className="p-4 rounded-xl bg-[#18181B] border border-[#27272A] flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <div className="p-2 rounded-lg bg-zinc-800 text-zinc-300">
                                                 <KeyIcon className="w-4 h-4" />
                                             </div>
                                             <div>
-                                                <p className="text-xs font-bold text-white">Giriş Şifrəsi</p>
-                                                <p className="text-[11px] text-[#71717A]">Şifrənizi təhlükəsiz OTP ilə yeniləyin</p>
+                                                <p className="text-xs font-bold text-white">{t('settings.loginPassword', {}, 'Giriş Şifrəsi')}</p>
+                                                <p className="text-[11px] text-[#71717A]">{t('settings.passwordDesc', {}, 'Şifrənizi təhlükəsiz OTP ilə yeniləyin')}</p>
                                             </div>
                                         </div>
                                         <button
@@ -268,7 +268,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                                             }}
                                             className="px-3.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition-colors cursor-pointer"
                                         >
-                                            Şifrəni Yenilə
+                                            {t('settings.changePassword', {}, 'Şifrəni Yenilə')}
                                         </button>
                                     </div>
                                 </div>
@@ -279,9 +279,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                         {activeTab === 'preferences' && (
                             <div className="space-y-6 max-w-2xl">
                                 <div>
-                                    <h3 className="text-sm font-bold text-white tracking-tight">{t('settings.appearanceTheme', {}, 'Görünüş & Tema')}</h3>
+                                    <h3 className="text-sm font-bold text-white tracking-tight">{t('settings.appearanceTitle', {}, 'Görünüş & Tema')}</h3>
                                     <p className="text-xs text-[#71717A]">
-                                        {t('settings.appearanceSubtitle', {}, 'Açıq, qaranlıq və gecə mavisi temaları arasında seçim edin.')}
+                                        {t('settings.appearanceDesc', {}, 'Açıq, qaranlıq və gecə mavisi temaları arasında seçim edin.')}
                                     </p>
                                 </div>
 
@@ -308,7 +308,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                                         </div>
 
                                         <div className="flex items-center justify-between pt-2">
-                                            <span className="text-xs text-[#D4D4D8] font-semibold">{t('settings.lightTheme', {}, 'Açıq (Light)')}</span>
+                                            <span className="text-xs text-[#D4D4D8] font-semibold">{t('settings.themeLight', {}, 'Açıq (Light)')}</span>
                                             <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${theme === 'light' ? 'border-emerald-500 bg-emerald-500' : 'border-[#52525B]'}`}>
                                                 {theme === 'light' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
                                             </div>
@@ -337,7 +337,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                                         </div>
 
                                         <div className="flex items-center justify-between pt-2">
-                                            <span className="text-xs text-[#D4D4D8] font-semibold">{t('settings.darkTheme', {}, 'Qaranlıq (Dark)')}</span>
+                                            <span className="text-xs text-[#D4D4D8] font-semibold">{t('settings.themeDark', {}, 'Qaranlıq (Dark)')}</span>
                                             <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${theme === 'dark' ? 'border-emerald-500 bg-emerald-500' : 'border-[#52525B]'}`}>
                                                 {theme === 'dark' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
                                             </div>
@@ -366,7 +366,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                                         </div>
 
                                         <div className="flex items-center justify-between pt-2">
-                                            <span className="text-xs text-[#D4D4D8] font-semibold">{t('settings.midnightTheme', {}, 'Gecə Mavisi (Midnight)')}</span>
+                                            <span className="text-xs text-[#D4D4D8] font-semibold">{t('settings.themeMidnight', {}, 'Gecə Mavisi (Midnight)')}</span>
                                             <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${theme === 'midnight' ? 'border-emerald-500 bg-emerald-500' : 'border-[#52525B]'}`}>
                                                 {theme === 'midnight' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
                                             </div>
@@ -376,7 +376,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
                                 {/* Language Selector */}
                                 <div className="pt-4 border-t border-[#27272A] space-y-2">
-                                    <label className="text-xs font-bold text-white">İnterfeys Dili</label>
+                                    <label className="text-xs font-bold text-white">{t('settings.languageTitle', {}, 'İnterfeys Dili')}</label>
                                     <div className="w-64">
                                         <CustomSelect
                                             value={language}

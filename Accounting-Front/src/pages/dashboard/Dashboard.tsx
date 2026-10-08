@@ -13,6 +13,7 @@ import type {
     IncomeStatementResponse,
 } from '../../dto';
 import { formatDate, formatDayMonthShort, getShortMonthName } from '../../utils';
+import { useLanguage } from '../../context/LanguageContext';
 import {
     ArrowPathIcon,
     CalendarIcon,
@@ -35,24 +36,32 @@ import {
     CartesianGrid,
 } from 'recharts';
 
-const periods = ['Son 7 Gün', 'Son 30 Gün', 'Son 60 Gün', 'Son 90 Gün', 'Bütün Vaxtlar'];
-const accountFilters = [
-    'Bütün Hesablar',
-    'Bank və Kassa',
-    'Debitorlar (AR)',
-    'Kreditorlar (AP)',
-    'Gəlir və Xərclər',
-];
-
 export const Dashboard: React.FC = () => {
+    const { t } = useLanguage();
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    // Filter states - default Son 30 Gün
-    const [selectedPeriod, setSelectedPeriod] = useState('Son 30 Gün');
+    // Filter states - default '30d' and 'all'
+    const [selectedPeriodKey, setSelectedPeriodKey] = useState<'7d' | '30d' | '60d' | '90d' | 'all'>('30d');
     const [isPeriodOpen, setIsPeriodOpen] = useState(false);
-    const [selectedAccountFilter, setSelectedAccountFilter] = useState('Bütün Hesablar');
+    const [selectedAccountFilterKey, setSelectedAccountFilterKey] = useState<'all' | 'bank_cash' | 'ar' | 'ap' | 'income_expense'>('all');
     const [isAccountFilterOpen, setIsAccountFilterOpen] = useState(false);
+
+    const periods = useMemo(() => [
+        { key: '7d' as const, label: t('common.days7', {}, 'Son 7 Gün'), days: 7 },
+        { key: '30d' as const, label: t('common.days30', {}, 'Son 30 Gün'), days: 30 },
+        { key: '60d' as const, label: t('common.days60', {}, 'Son 60 Gün'), days: 60 },
+        { key: '90d' as const, label: t('common.days90', {}, 'Son 90 Gün'), days: 90 },
+        { key: 'all' as const, label: t('common.allTime', {}, 'Bütün Vaxtlar'), days: 0 },
+    ], [t]);
+
+    const accountFilters = useMemo(() => [
+        { key: 'all' as const, label: t('common.allAccounts', {}, 'Bütün Hesablar') },
+        { key: 'bank_cash' as const, label: t('common.bankAndCash', {}, 'Bank və Kassa') },
+        { key: 'ar' as const, label: t('common.debtorsAr', {}, 'Debitorlar (AR)') },
+        { key: 'ap' as const, label: t('common.creditorsAp', {}, 'Kreditorlar (AP)') },
+        { key: 'income_expense' as const, label: t('common.incomeAndExpenses', {}, 'Gəlir və Xərclər') },
+    ], [t]);
 
     // Dropdown refs
     const periodRef = useRef<HTMLDivElement>(null);
@@ -71,17 +80,17 @@ export const Dashboard: React.FC = () => {
         const today = new Date();
         const end = today.toISOString().split('T')[0];
         let days = 30;
-        if (selectedPeriod === 'Son 7 Gün') days = 7;
-        else if (selectedPeriod === 'Son 30 Gün') days = 30;
-        else if (selectedPeriod === 'Son 60 Gün') days = 60;
-        else if (selectedPeriod === 'Son 90 Gün') days = 90;
-        else if (selectedPeriod === 'Bütün Vaxtlar') {
+        if (selectedPeriodKey === '7d') days = 7;
+        else if (selectedPeriodKey === '30d') days = 30;
+        else if (selectedPeriodKey === '60d') days = 60;
+        else if (selectedPeriodKey === '90d') days = 90;
+        else if (selectedPeriodKey === 'all') {
             const startOfYear = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
             return { fromDate: startOfYear, toDate: end };
         }
         const from = new Date(today.getTime() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         return { fromDate: from, toDate: end };
-    }, [selectedPeriod]);
+    }, [selectedPeriodKey]);
 
     const loadDashboardData = async () => {
         setIsRefreshing(true);
@@ -237,15 +246,15 @@ export const Dashboard: React.FC = () => {
     const trendData = useMemo(() => {
         if (!journalEntries || journalEntries.length === 0) {
             return [
-                { name: 'Başlanğıc', income: 0, expense: 0, profit: 0 },
-                { name: 'Dövr Sonu', income: totalRevenue, expense: totalExpense, profit: netIncome },
+                { name: t('common.start', {}, 'Başlanğıc'), income: 0, expense: 0, profit: 0 },
+                { name: t('common.periodEnd', {}, 'Dövr Sonu'), income: totalRevenue, expense: totalExpense, profit: netIncome },
             ];
         }
 
         // Group entries into date buckets
         const map = new Map<string, { income: number; expense: number; profit: number }>();
         journalEntries.forEach((entry) => {
-            const dateStr = entry.date ? formatDayMonthShort(entry.date) : 'Dövr';
+            const dateStr = entry.date ? formatDayMonthShort(entry.date) : t('common.period', {}, 'Dövr');
             const existing = map.get(dateStr) || { income: 0, expense: 0, profit: 0 };
             const amount = Number(entry.totalDebit || entry.totalCredit || 0);
 
@@ -264,15 +273,15 @@ export const Dashboard: React.FC = () => {
         }));
 
         return list.length > 0 ? list : [
-            { name: 'Dövr', income: totalRevenue, expense: totalExpense, profit: netIncome }
+            { name: t('common.period', {}, 'Dövr'), income: totalRevenue, expense: totalExpense, profit: netIncome }
         ];
-    }, [journalEntries, totalRevenue, totalExpense, netIncome]);
+    }, [journalEntries, totalRevenue, totalExpense, netIncome, t]);
 
     // Real Expense Categories Donut
     const expenseDonutData = useMemo(() => {
         if (expenseAccounts.length === 0) {
             return [
-                { name: 'Əməliyyat xərcləri', value: totalExpense > 0 ? totalExpense : 0, color: '#38BDF8' }
+                { name: t('accounting.operatingExpenses', {}, 'Əməliyyat xərcləri'), value: totalExpense > 0 ? totalExpense : 0, color: '#38BDF8' }
             ];
         }
         const colors = ['#38BDF8', '#34D399', '#FBBF24', '#A78BFA', '#F43F5E', '#818CF8'];
@@ -281,7 +290,7 @@ export const Dashboard: React.FC = () => {
             value: Math.max(0, Number(acc.balance ?? (acc as any).currentBalance) || 0),
             color: colors[idx % colors.length],
         })).filter(x => x.value > 0);
-    }, [expenseAccounts, totalExpense]);
+    }, [expenseAccounts, totalExpense, t]);
 
     // Monthly Comparison Data (Real)
     const monthlyComparisonData = useMemo(() => {
@@ -296,64 +305,64 @@ export const Dashboard: React.FC = () => {
 
     // ─── Metric Cards definition for each view ───
     const currentMetrics = useMemo(() => {
-        if (selectedAccountFilter === 'Bank və Kassa') {
+        if (selectedAccountFilterKey === 'bank_cash') {
             return [
-                { title: 'Ümumi Likvid Qalıq', value: formatCurrency(cashBalance) },
-                { title: 'Bank Hesabları Qalığı', value: formatCurrency(bankOnlyBalance) },
-                { title: 'Kassa Qalığı', value: formatCurrency(cashDeskBalance) },
-                { title: 'Aktiv Bank Hesabları', value: `${bankAccounts.length} hesab` },
-                { title: 'Kassa Hesabları', value: `${cashDeskAccounts.length} kassa` },
-                { title: 'Valyuta', value: 'AZN' },
+                { title: t('dashboard.cashBalance', {}, 'Bank & Kassa Qalığı'), value: formatCurrency(cashBalance) },
+                { title: t('treasury.bankAccountsBalance', {}, 'Bank Hesabları Qalığı'), value: formatCurrency(bankOnlyBalance) },
+                { title: t('treasury.cashBalance', {}, 'Kassa Qalığı'), value: formatCurrency(cashDeskBalance) },
+                { title: t('treasury.activeBankAccounts', {}, 'Aktiv Bank Hesabları'), value: `${bankAccounts.length}` },
+                { title: t('treasury.cashDesks', {}, 'Kassa Hesabları'), value: `${cashDeskAccounts.length}` },
+                { title: t('common.currency', {}, 'Valyuta'), value: 'AZN' },
             ];
         }
 
-        if (selectedAccountFilter === 'Debitorlar (AR)') {
+        if (selectedAccountFilterKey === 'ar') {
             const overdue = Number(arAging?.days1To30 || 0) + Number(arAging?.days31To60 || 0) + Number(arAging?.days61To90 || 0) + Number(arAging?.days90Plus || 0);
             return [
-                { title: 'Ümumi Debitor Borclar (AR)', value: formatCurrency(totalReceivables) },
-                { title: 'Cari Borclar', value: formatCurrency(Number(arAging?.currentNotDue || 0)) },
-                { title: 'Gecikdirilmiş Borclar', value: formatCurrency(overdue) },
-                { title: '90+ Gün Gecikmə', value: formatCurrency(Number(arAging?.days90Plus || 0)) },
-                { title: 'Debitor Hesabları', value: `${arAccounts.length} hesab` },
-                { title: 'Borclu Tərəflər', value: `${arAging?.parties?.length || 0} müştəri` },
+                { title: t('dashboard.totalReceivables', {}, 'Debitor Borclar (AR)'), value: formatCurrency(totalReceivables) },
+                { title: t('reports.currentNotDue', {}, 'Cari (Vaxtı Çatmamış)'), value: formatCurrency(Number(arAging?.currentNotDue || 0)) },
+                { title: t('reports.overdue', {}, 'Gecikdirilmiş Borclar'), value: formatCurrency(overdue) },
+                { title: t('reports.days90Plus', {}, '90+ Gün Gecikmə'), value: formatCurrency(Number(arAging?.days90Plus || 0)) },
+                { title: t('dashboard.arAccountsCount', {}, 'Debitor Hesabları'), value: `${arAccounts.length}` },
+                { title: t('dashboard.debtorParties', {}, 'Borclu Tərəflər'), value: `${arAging?.parties?.length || 0}` },
             ];
         }
 
-        if (selectedAccountFilter === 'Kreditorlar (AP)') {
+        if (selectedAccountFilterKey === 'ap') {
             const overdue = Number(apAging?.days1To30 || 0) + Number(apAging?.days31To60 || 0) + Number(apAging?.days61To90 || 0) + Number(apAging?.days90Plus || 0);
             return [
-                { title: 'Ümumi Kreditor Borclar (AP)', value: formatCurrency(totalPayables) },
-                { title: 'Cari Öhdəliklər', value: formatCurrency(Number(apAging?.currentNotDue || 0)) },
-                { title: 'Gecikdirilmiş Öhdəliklər', value: formatCurrency(overdue) },
-                { title: '90+ Gün Gecikmə', value: formatCurrency(Number(apAging?.days90Plus || 0)) },
-                { title: 'Kreditor Hesabları', value: `${apAccounts.length} hesab` },
-                { title: 'Kreditor Tərəflər', value: `${apAging?.parties?.length || 0} təchizatçı` },
+                { title: t('dashboard.totalPayables', {}, 'Kreditor Borclar (AP)'), value: formatCurrency(totalPayables) },
+                { title: t('reports.currentNotDue', {}, 'Cari (Vaxtı Çatmamış)'), value: formatCurrency(Number(apAging?.currentNotDue || 0)) },
+                { title: t('reports.overdue', {}, 'Gecikdirilmiş Öhdəliklər'), value: formatCurrency(overdue) },
+                { title: t('reports.days90Plus', {}, '90+ Gün Gecikmə'), value: formatCurrency(Number(apAging?.days90Plus || 0)) },
+                { title: t('dashboard.apAccountsCount', {}, 'Kreditor Hesabları'), value: `${apAccounts.length}` },
+                { title: t('dashboard.creditorParties', {}, 'Kreditor Tərəflər'), value: `${apAging?.parties?.length || 0}` },
             ];
         }
 
-        if (selectedAccountFilter === 'Gəlir və Xərclər') {
+        if (selectedAccountFilterKey === 'income_expense') {
             const margin = totalRevenue > 0 ? ((netIncome / totalRevenue) * 100).toFixed(1) + '%' : '0.0%';
             return [
-                { title: 'Ümumi Gəlir', value: formatCurrency(totalRevenue) },
-                { title: 'Ümumi Xərc', value: formatCurrency(totalExpense) },
-                { title: 'Dövrün Xalis Mənfəəti', value: formatCurrency(netIncome) },
-                { title: 'Xalis Mənfəət Marjası', value: margin },
-                { title: 'Gəlir Maddələri', value: `${revenueAccounts.length} hesab` },
-                { title: 'Xərc Maddələri', value: `${expenseAccounts.length} hesab` },
+                { title: t('dashboard.totalRevenue', {}, 'Ümumi Gəlir'), value: formatCurrency(totalRevenue) },
+                { title: t('dashboard.totalExpenses', {}, 'Ümumi Xərc'), value: formatCurrency(totalExpense) },
+                { title: t('dashboard.netProfit', {}, 'Xalis Mənfəət / (Zərər)'), value: formatCurrency(netIncome) },
+                { title: t('reports.profitMargin', {}, 'Xalis Mənfəət Marjası'), value: margin },
+                { title: t('dashboard.revenueAccounts', {}, 'Gəlir Maddələri'), value: `${revenueAccounts.length}` },
+                { title: t('dashboard.expenseAccounts', {}, 'Xərc Maddələri'), value: `${expenseAccounts.length}` },
             ];
         }
 
-        // Default 'Bütün Hesablar' (Matches Image 1)
+        // Default 'all'
         return [
-            { title: 'Bank & Kassa Qalığı', value: formatCurrency(cashBalance) },
-            { title: 'Debitor Borclar (AR)', value: formatCurrency(totalReceivables) },
-            { title: 'Kreditor Borclar (AP)', value: formatCurrency(totalPayables) },
-            { title: 'Dövrün Xalis Mənfəəti', value: formatCurrency(netIncome) },
-            { title: 'Ümumi Gəlir', value: formatCurrency(totalRevenue) },
-            { title: 'Ümumi Xərc', value: formatCurrency(totalExpense) },
+            { title: t('dashboard.cashBalance', {}, 'Bank & Kassa Qalığı'), value: formatCurrency(cashBalance) },
+            { title: t('dashboard.totalReceivables', {}, 'Debitor Borclar (AR)'), value: formatCurrency(totalReceivables) },
+            { title: t('dashboard.totalPayables', {}, 'Kreditor Borclar (AP)'), value: formatCurrency(totalPayables) },
+            { title: t('dashboard.netProfit', {}, 'Xalis Mənfəət / (Zərər)'), value: formatCurrency(netIncome) },
+            { title: t('dashboard.totalRevenue', {}, 'Ümumi Gəlir'), value: formatCurrency(totalRevenue) },
+            { title: t('dashboard.totalExpenses', {}, 'Ümumi Xərc'), value: formatCurrency(totalExpense) },
         ];
     }, [
-        selectedAccountFilter,
+        selectedAccountFilterKey,
         cashBalance,
         bankOnlyBalance,
         cashDeskBalance,
@@ -370,18 +379,22 @@ export const Dashboard: React.FC = () => {
         apAccounts.length,
         revenueAccounts.length,
         expenseAccounts.length,
+        t,
     ]);
+
+    const activePeriodLabel = periods.find(p => p.key === selectedPeriodKey)?.label || periods[1].label;
+    const activeAccountFilterLabel = accountFilters.find(af => af.key === selectedAccountFilterKey)?.label || accountFilters[0].label;
 
     return (
         <div className="space-y-4 font-sans text-[#F4F4F5] antialiased select-none pb-10">
-            {/* ─── Header Row (Title & Yenilə button ONLY, Fərdiləşdir removed) ─── */}
+            {/* ─── Header Row ─── */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
-                        <span>Mühasibatlıq İcmalı</span>
+                        <span>{t('dashboard.title', {}, 'Maliyyə İcmalı (Dashboard)')}</span>
                     </h1>
                     <p className="text-xs text-[#71717A] mt-0.5">
-                        Maliyyə göstəriciləri, gəlir və xərclərin canlı analitikası
+                        {t('dashboard.subtitle', {}, 'Maliyyə göstəriciləri, gəlir və xərclərin canlı analitikası')}
                     </p>
                 </div>
 
@@ -392,12 +405,12 @@ export const Dashboard: React.FC = () => {
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#27272A] bg-[#18181B] hover:bg-[#27272A] text-xs font-medium text-white transition-colors cursor-pointer"
                     >
                         <ArrowPathIcon className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-white' : ''}`} />
-                        <span>Yenilə</span>
+                        <span>{t('common.refresh', {}, 'Yenilə')}</span>
                     </button>
                 </div>
             </div>
 
-            {/* ─── Filter Bar (Period: Default Son 30 Gün & Accounts dropdown) ─── */}
+            {/* ─── Filter Bar ─── */}
             <div className="flex items-center gap-3">
                 {/* Period Selector */}
                 <div className="relative inline-block text-left" ref={periodRef}>
@@ -407,7 +420,7 @@ export const Dashboard: React.FC = () => {
                         className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-[#27272A] bg-[#18181B] hover:bg-[#27272A] text-xs font-medium text-white transition-colors cursor-pointer"
                     >
                         <CalendarIcon className="w-4 h-4 text-[#A1A1AA]" />
-                        <span>{selectedPeriod}</span>
+                        <span>{activePeriodLabel}</span>
                         <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A]" />
                     </button>
 
@@ -415,17 +428,17 @@ export const Dashboard: React.FC = () => {
                         <div className="absolute top-10 left-0 w-44 bg-[#18181B] border border-[#27272A] rounded-2xl shadow-2xl p-1.5 z-50 flex flex-col text-xs text-[#E4E4E7] animate-in fade-in duration-150">
                             {periods.map((p) => (
                                 <button
-                                    key={p}
+                                    key={p.key}
                                     type="button"
                                     onClick={() => {
-                                        setSelectedPeriod(p);
+                                        setSelectedPeriodKey(p.key);
                                         setIsPeriodOpen(false);
                                     }}
                                     className={`flex items-center px-3 py-2 rounded-xl transition-colors text-left cursor-pointer ${
-                                        selectedPeriod === p ? 'bg-[#27272A] text-white font-semibold' : 'hover:bg-[#27272A]/60'
+                                        selectedPeriodKey === p.key ? 'bg-[#27272A] text-white font-semibold' : 'hover:bg-[#27272A]/60'
                                     }`}
                                 >
-                                    {p}
+                                    {p.label}
                                 </button>
                             ))}
                         </div>
@@ -440,7 +453,7 @@ export const Dashboard: React.FC = () => {
                         className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-[#27272A] bg-[#18181B] hover:bg-[#27272A] text-xs font-medium text-white transition-colors cursor-pointer"
                     >
                         <CreditCardIcon className="w-4 h-4 text-[#A1A1AA]" />
-                        <span>{selectedAccountFilter}</span>
+                        <span>{activeAccountFilterLabel}</span>
                         <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A]" />
                     </button>
 
@@ -448,17 +461,17 @@ export const Dashboard: React.FC = () => {
                         <div className="absolute top-10 left-0 w-52 bg-[#18181B] border border-[#27272A] rounded-2xl shadow-2xl p-1.5 z-50 flex flex-col text-xs text-[#E4E4E7] animate-in fade-in duration-150">
                             {accountFilters.map((af) => (
                                 <button
-                                    key={af}
+                                    key={af.key}
                                     type="button"
                                     onClick={() => {
-                                        setSelectedAccountFilter(af);
+                                        setSelectedAccountFilterKey(af.key);
                                         setIsAccountFilterOpen(false);
                                     }}
                                     className={`flex items-center px-3 py-2 rounded-xl transition-colors text-left cursor-pointer ${
-                                        selectedAccountFilter === af ? 'bg-[#27272A] text-white font-semibold' : 'hover:bg-[#27272A]/60'
+                                        selectedAccountFilterKey === af.key ? 'bg-[#27272A] text-white font-semibold' : 'hover:bg-[#27272A]/60'
                                     }`}
                                 >
-                                    {af}
+                                    {af.label}
                                 </button>
                             ))}
                         </div>
@@ -466,7 +479,7 @@ export const Dashboard: React.FC = () => {
                 </div>
             </div>
 
-            {/* ─── 6 Metric Cards Row (Clean dark mode, 0 mock data) ─── */}
+            {/* ─── 6 Metric Cards Row ─── */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 {currentMetrics.map((m, idx) => (
                     <div
@@ -488,15 +501,23 @@ export const Dashboard: React.FC = () => {
                 {/* Left AreaChart (col-span-4) */}
                 <div className="lg:col-span-4 bg-[#18181B] p-5 rounded-2xl border border-[#27272A] hover:border-[#3F3F46] transition-colors flex flex-col justify-between">
                     <div>
-                        <h3 className="text-sm font-semibold text-white tracking-tight">Maliyyə dinamikası</h3>
+                        <h3 className="text-sm font-semibold text-white tracking-tight">
+                            {selectedAccountFilterKey === 'bank_cash'
+                                ? t('treasury.bankCashTrendTitle', {}, 'Bank və Kassa Dinamikası')
+                                : selectedAccountFilterKey === 'ar'
+                                ? t('reports.arTrendTitle', {}, 'Debitor Borclar Trendi')
+                                : selectedAccountFilterKey === 'ap'
+                                ? t('reports.apTrendTitle', {}, 'Kreditor Öhdəlikləri Trendi')
+                                : t('dashboard.cashFlowTrend', {}, 'Maliyyə Dinamikası')}
+                        </h3>
                         <p className="text-xs text-[#71717A] mt-0.5">
-                            {selectedAccountFilter === 'Bank və Kassa'
-                                ? 'Bank və kassa hərəkətlərinin dinamikası'
-                                : selectedAccountFilter === 'Debitorlar (AR)'
-                                ? 'Müştəri borclarının formalaşma dinamikası'
-                                : selectedAccountFilter === 'Kreditorlar (AP)'
-                                ? 'Təchizatçı öhdəliklərinin dinamikası'
-                                : 'Gəlir, xərc və xalis mənfəətin dövrlər üzrə dinamikası'}
+                            {selectedAccountFilterKey === 'bank_cash'
+                                ? t('dashboard.bankCashTrendDesc', {}, 'Bank və kassa hərəkətlərinin dinamikası')
+                                : selectedAccountFilterKey === 'ar'
+                                ? t('dashboard.arTrendDesc', {}, 'Müştəri borclarının formalaşma dinamikası')
+                                : selectedAccountFilterKey === 'ap'
+                                ? t('dashboard.apTrendDesc', {}, 'Təchizatçı öhdəliklərinin dinamikası')
+                                : t('dashboard.trendDesc', {}, 'Gəlir, xərc və xalis mənfəətin dövrlər üzrə dinamikası')}
                         </p>
                     </div>
 
@@ -528,7 +549,7 @@ export const Dashboard: React.FC = () => {
                                 <Area
                                     type="monotone"
                                     dataKey="income"
-                                    name="Gəlirlər / Dövriyyə"
+                                    name={t('dashboard.revenueBar', {}, 'Gəlirlər / Dövriyyə')}
                                     stroke="#38BDF8"
                                     strokeWidth={2.2}
                                     fillOpacity={1}
@@ -537,7 +558,7 @@ export const Dashboard: React.FC = () => {
                                 <Area
                                     type="monotone"
                                     dataKey="expense"
-                                    name="Xərclər / Çıxışlar"
+                                    name={t('dashboard.expenseBar', {}, 'Xərclər / Çıxışlar')}
                                     stroke="#34D399"
                                     strokeWidth={2.2}
                                     fillOpacity={1}
@@ -546,7 +567,7 @@ export const Dashboard: React.FC = () => {
                                 <Area
                                     type="monotone"
                                     dataKey="profit"
-                                    name="Xalis Fərq"
+                                    name={t('dashboard.netProfit', {}, 'Xalis Fərq')}
                                     stroke="#FBBF24"
                                     strokeWidth={2.2}
                                     fill="none"
@@ -559,15 +580,15 @@ export const Dashboard: React.FC = () => {
                     <div className="flex items-center justify-center gap-6 mt-4 pt-2">
                         <div className="flex items-center gap-2">
                             <span className="w-2.5 h-2.5 rounded-full bg-[#38BDF8]" />
-                            <span className="text-xs text-[#A1A1AA]">Gəlirlər</span>
+                            <span className="text-xs text-[#A1A1AA]">{t('dashboard.revenueBar', {}, 'Gəlir')}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="w-2.5 h-2.5 rounded-full bg-[#34D399]" />
-                            <span className="text-xs text-[#A1A1AA]">Xərclər</span>
+                            <span className="text-xs text-[#A1A1AA]">{t('dashboard.expenseBar', {}, 'Xərc')}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="w-2.5 h-2.5 rounded-full bg-[#FBBF24]" />
-                            <span className="text-xs text-[#A1A1AA]">Xalis Fərq</span>
+                            <span className="text-xs text-[#A1A1AA]">{t('dashboard.netProfit', {}, 'Xalis Fərq')}</span>
                         </div>
                     </div>
                 </div>
@@ -576,22 +597,22 @@ export const Dashboard: React.FC = () => {
                 <div className="lg:col-span-2 bg-[#18181B] p-5 rounded-2xl border border-[#27272A] hover:border-[#3F3F46] transition-colors flex flex-col justify-between">
                     <div>
                         <h3 className="text-sm font-semibold text-white tracking-tight">
-                            {selectedAccountFilter === 'Bank və Kassa'
-                                ? 'Likvid Aktivlərin Bölgüsü'
-                                : selectedAccountFilter === 'Debitorlar (AR)'
-                                ? 'Debitor Yaşlanma Bölgüsü'
-                                : selectedAccountFilter === 'Kreditorlar (AP)'
-                                ? 'Öhdəlik Yaşlanma Bölgüsü'
-                                : 'Balans və Borc Strukturu'}
+                            {selectedAccountFilterKey === 'bank_cash'
+                                ? t('treasury.liquidAssets', {}, 'Likvid Aktivlərin Bölgüsü')
+                                : selectedAccountFilterKey === 'ar'
+                                ? t('reports.arAging', {}, 'Debitor Yaşlanma Bölgüsü')
+                                : selectedAccountFilterKey === 'ap'
+                                ? t('reports.apAging', {}, 'Öhdəlik Yaşlanma Bölgüsü')
+                                : t('reports.balanceStructure', {}, 'Balans və Borc Strukturu')}
                         </h3>
-                        <p className="text-xs text-[#71717A] mt-0.5">Maliyyə göstəricilərinin nisbi payı</p>
+                        <p className="text-xs text-[#71717A] mt-0.5">{t('reports.relativeShare', {}, 'Maliyyə göstəricilərinin nisbi payı')}</p>
                     </div>
 
                     <div className="space-y-5 my-auto py-2">
                         {/* Item 1 */}
                         <div>
                             <div className="flex items-center justify-between text-xs mb-1.5">
-                                <span className="text-[#A1A1AA] font-medium">Bank & Kassa</span>
+                                <span className="text-[#A1A1AA] font-medium">{t('common.bankAndCash', {}, 'Bank və Kassa')}</span>
                                 <div className="flex items-center gap-2 font-mono">
                                     <span className="font-bold text-white">{formatCurrency(cashBalance)}</span>
                                     <span className="text-[11px] text-[#71717A]">
@@ -610,7 +631,7 @@ export const Dashboard: React.FC = () => {
                         {/* Item 2 */}
                         <div>
                             <div className="flex items-center justify-between text-xs mb-1.5">
-                                <span className="text-[#A1A1AA] font-medium">Debitorlar (AR)</span>
+                                <span className="text-[#A1A1AA] font-medium">{t('common.debtorsAr', {}, 'Debitorlar (AR)')}</span>
                                 <div className="flex items-center gap-2 font-mono">
                                     <span className="font-bold text-white">{formatCurrency(totalReceivables)}</span>
                                     <span className="text-[11px] text-[#71717A]">
@@ -629,7 +650,7 @@ export const Dashboard: React.FC = () => {
                         {/* Item 3 */}
                         <div>
                             <div className="flex items-center justify-between text-xs mb-1.5">
-                                <span className="text-[#A1A1AA] font-medium">Kreditorlar (AP)</span>
+                                <span className="text-[#A1A1AA] font-medium">{t('common.creditorsAp', {}, 'Kreditorlar (AP)')}</span>
                                 <div className="flex items-center gap-2 font-mono">
                                     <span className="font-bold text-white">{formatCurrency(totalPayables)}</span>
                                     <span className="text-[11px] text-[#71717A]">
@@ -648,7 +669,7 @@ export const Dashboard: React.FC = () => {
                         {/* Item 4 */}
                         <div>
                             <div className="flex items-center justify-between text-xs mb-1.5">
-                                <span className="text-[#A1A1AA] font-medium">Xalis Mənfəət</span>
+                                <span className="text-[#A1A1AA] font-medium">{t('dashboard.netProfit', {}, 'Xalis Mənfəət / (Zərər)')}</span>
                                 <div className="flex items-center gap-2 font-mono">
                                     <span className="font-bold text-white">{formatCurrency(netIncome)}</span>
                                     <span className="text-[11px] text-[#71717A]">
@@ -667,7 +688,7 @@ export const Dashboard: React.FC = () => {
 
                     <div className="pt-2 border-t border-[#27272A] text-right">
                         <Link to="/reports/balance-sheet" className="text-xs text-[#A1A1AA] hover:text-white transition-colors">
-                            Tam balans hesabatına bax →
+                            {t('reports.viewFullBalanceSheet', {}, 'Tam balans hesabatına bax →')}
                         </Link>
                     </div>
                 </div>
@@ -679,21 +700,21 @@ export const Dashboard: React.FC = () => {
                 <div className="lg:col-span-2 bg-[#18181B] p-5 rounded-2xl border border-[#27272A] hover:border-[#3F3F46] transition-colors flex flex-col justify-between">
                     <div>
                         <h3 className="text-sm font-semibold text-white tracking-tight">
-                            {selectedAccountFilter === 'Bank və Kassa'
-                                ? 'Bank Hesablarının Balansı'
-                                : selectedAccountFilter === 'Debitorlar (AR)'
-                                ? 'Debitor Borclarının Bölgüsü'
-                                : selectedAccountFilter === 'Kreditorlar (AP)'
-                                ? 'Kreditor Borclarının Bölgüsü'
-                                : 'Xərc Maddələri'}
+                            {selectedAccountFilterKey === 'bank_cash'
+                                ? t('treasury.bankAccountsBalance', {}, 'Bank Hesablarının Balansı')
+                                : selectedAccountFilterKey === 'ar'
+                                ? t('reports.arAgingDistribution', {}, 'Debitor Borclarının Bölgüsü')
+                                : selectedAccountFilterKey === 'ap'
+                                ? t('reports.apAgingDistribution', {}, 'Kreditor Borclarının Bölgüsü')
+                                : t('dashboard.expenseStructure', {}, 'Xərc Maddələri')}
                         </h3>
-                        <p className="text-xs text-[#71717A] mt-0.5">Kateqoriyalar üzrə faktiki paylanma</p>
+                        <p className="text-xs text-[#71717A] mt-0.5">{t('dashboard.distributionByCategory', {}, 'Kateqoriyalar üzrə faktiki paylanma')}</p>
                     </div>
 
                     <div className="h-44 w-full my-2">
                         {expenseDonutData.length === 0 || expenseDonutData.every(x => x.value === 0) ? (
                             <div className="h-full flex items-center justify-center text-xs text-[#71717A]">
-                                Qeydə alınmış əməliyyat yoxdur
+                                {t('dashboard.noRecentTx', {}, 'Hələ heç bir əməliyyat qeydə alınmayıb.')}
                             </div>
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
@@ -706,7 +727,7 @@ export const Dashboard: React.FC = () => {
                                         dataKey="value"
                                     >
                                         {expenseDonutData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                             <Cell key={`cell-${index}`} fill={entry.color} />
                                         ))}
                                     </Pie>
                                     <Tooltip
@@ -737,8 +758,8 @@ export const Dashboard: React.FC = () => {
                 {/* 2. Monthly Revenue Trend Bar Chart (col-span-2) */}
                 <div className="lg:col-span-2 bg-[#18181B] p-5 rounded-2xl border border-[#27272A] hover:border-[#3F3F46] transition-colors flex flex-col justify-between">
                     <div>
-                        <h3 className="text-sm font-semibold text-white tracking-tight">Dövriyyə Müqayisəsi</h3>
-                        <p className="text-xs text-[#71717A] mt-0.5">Faktiki gəlir və xərc nisbəti</p>
+                        <h3 className="text-sm font-semibold text-white tracking-tight">{t('dashboard.turnoverComparison', {}, 'Dövriyyə Müqayisəsi')}</h3>
+                        <p className="text-xs text-[#71717A] mt-0.5">{t('dashboard.revenueExpenseRatio', {}, 'Faktiki gəlir və xərc nisbəti')}</p>
                     </div>
 
                     <div className="h-44 w-full my-2">
@@ -757,14 +778,14 @@ export const Dashboard: React.FC = () => {
                                     }}
                                     formatter={(val: any) => formatCurrency(Number(val))}
                                 />
-                                <Bar dataKey="gelir" name="Gəlir" fill="#38BDF8" radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="xerc" name="Xərc" fill="#34D399" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="gelir" name={t('dashboard.revenueBar', {}, 'Gəlir')} fill="#38BDF8" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="xerc" name={t('dashboard.expenseBar', {}, 'Xərc')} fill="#34D399" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
 
                     <div className="flex items-center justify-between text-xs pt-2 border-t border-[#27272A]">
-                        <span className="text-[#71717A]">Faktiki xalis mənfəət:</span>
+                        <span className="text-[#71717A]">{t('reports.netProfitActual', {}, 'Faktiki xalis mənfəət:')}</span>
                         <span className="font-bold text-white font-mono">{formatCurrency(netIncome)}</span>
                     </div>
                 </div>
@@ -773,18 +794,18 @@ export const Dashboard: React.FC = () => {
                 <div className="lg:col-span-2 bg-[#18181B] p-5 rounded-2xl border border-[#27272A] hover:border-[#3F3F46] transition-colors flex flex-col justify-between">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h3 className="text-sm font-semibold text-white tracking-tight">Son Əməliyyatlar</h3>
-                            <p className="text-xs text-[#71717A] mt-0.5">Baş kitab qeydləri</p>
+                            <h3 className="text-sm font-semibold text-white tracking-tight">{t('dashboard.recentTransactions', {}, 'Son Əməliyyatlar')}</h3>
+                            <p className="text-xs text-[#71717A] mt-0.5">{t('accounting.journalEntries', {}, 'Baş kitab qeydləri')}</p>
                         </div>
                         <Link to="/journal" className="text-xs text-[#A1A1AA] hover:text-white transition-colors">
-                            Hamısı →
+                            {t('common.viewAll', {}, 'Hamısı →')}
                         </Link>
                     </div>
 
                     <div className="space-y-2.5 my-3 overflow-y-auto max-h-48 custom-scrollbar pr-1">
                         {journalEntries.length === 0 ? (
                             <div className="text-center py-6 text-xs text-[#71717A]">
-                                Bu dövr üzrə heç bir əməliyyat tapılmadı.
+                                {t('dashboard.noRecentTx', {}, 'Hələ heç bir əməliyyat qeydə alınmayıb.')}
                             </div>
                         ) : (
                             journalEntries.slice(0, 4).map((entry) => (
@@ -802,7 +823,7 @@ export const Dashboard: React.FC = () => {
                                             </span>
                                         </div>
                                         <p className="text-[11px] text-[#A1A1AA] truncate mt-0.5">
-                                            {entry.description || 'Jurnal əməliyyatı'}
+                                            {entry.description || t('accounting.journalEntry', {}, 'Jurnal əməliyyatı')}
                                         </p>
                                     </div>
 
@@ -811,7 +832,7 @@ export const Dashboard: React.FC = () => {
                                             {formatCurrency(entry.totalDebit || 0)}
                                         </span>
                                         <span className="text-[10px] text-[#A1A1AA]">
-                                            {entry.status === 'POSTED' ? 'Təsdiqlənib' : 'Qaralama'}
+                                            {entry.status === 'POSTED' ? t('statuses.posted', {}, 'İcra edilib') : t('statuses.draft', {}, 'Qaralama')}
                                         </span>
                                     </div>
                                 </div>
@@ -825,7 +846,7 @@ export const Dashboard: React.FC = () => {
                             className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl border border-[#27272A] bg-[#141416] hover:bg-[#27272A] text-xs font-medium text-white transition-colors"
                         >
                             <PlusIcon className="w-3.5 h-3.5" />
-                            <span>Yeni Jurnal Qeydi</span>
+                            <span>{t('dashboard.newJournalEntry', {}, 'Yeni Jurnal Qeydi')}</span>
                         </Link>
                     </div>
                 </div>

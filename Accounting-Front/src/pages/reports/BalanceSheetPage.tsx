@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { reportsService } from '../../api';
 import type { BalanceSheetResponse } from '../../dto';
+import { useLanguage } from '../../context/LanguageContext';
 import {
     ArrowPathIcon,
     ScaleIcon,
@@ -9,6 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 export const BalanceSheetPage: React.FC = () => {
+    const { t } = useLanguage();
     const [asOfDate, setAsOfDate] = useState(new Date().toISOString().split('T')[0]);
     const [sheet, setSheet] = useState<BalanceSheetResponse | null>(null);
     const [loading, setLoading] = useState(true);
@@ -25,7 +27,7 @@ export const BalanceSheetPage: React.FC = () => {
             setError(
                 err.response?.data?.detail ||
                 err.response?.data?.message ||
-                'Balans hesabatını yükləyərkən xəta baş verdi.'
+                t('reports.balanceSheetLoadError', {}, 'Balans hesabatını yükləyərkən xəta baş verdi.')
             );
         } finally {
             setLoading(false);
@@ -64,14 +66,14 @@ export const BalanceSheetPage: React.FC = () => {
                 <div>
                     <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
                         <ScaleIcon className="w-7 h-7 text-emerald-400" />
-                        <span>Balans Hesabatı (Balance Sheet)</span>
+                        <span>{t('reports.balanceSheetTitle', {}, 'Balans Hesabatı (Balance Sheet)')}</span>
                     </h1>
-                    <p className="text-xs text-[#94A3B8]">Müəssisənin aktivləri, öhdəlikləri və kapitalının maliyyə balansı</p>
+                    <p className="text-xs text-[#94A3B8]">{t('reports.balanceSheetSubtitle', {}, 'Müəssisənin aktivləri, öhdəlikləri və kapitalının maliyyə balansı')}</p>
                 </div>
 
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 bg-[#18181B] border border-[#27272A] hover:border-zinc-700 rounded-xl px-3 py-1.5 transition-colors">
-                        <span className="text-[11px] text-[#A1A1AA] font-semibold select-none">Tarix:</span>
+                        <span className="text-[11px] text-[#A1A1AA] font-semibold select-none">{t('common.date', {}, 'Tarix')}:</span>
                         <input
                             type="date"
                             value={asOfDate}
@@ -82,8 +84,7 @@ export const BalanceSheetPage: React.FC = () => {
                     <button
                         onClick={loadData}
                         className="p-2 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-                        title="Yenilə"
-
+                        title={t('common.refresh', {}, 'Yenilə')}
                     >
                         <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                     </button>
@@ -101,7 +102,7 @@ export const BalanceSheetPage: React.FC = () => {
                         onClick={loadData}
                         className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-[11px] font-semibold text-rose-300 cursor-pointer"
                     >
-                        Yenidən yoxla
+                        {t('common.retry', {}, 'Yenidən yoxla')}
                     </button>
                 </div>
             )}
@@ -117,7 +118,7 @@ export const BalanceSheetPage: React.FC = () => {
                 >
                     <div className="flex items-center gap-2">
                         {isBalanced ? <CheckCircleIcon className="w-5 h-5" /> : <ExclamationTriangleIcon className="w-5 h-5" />}
-                        <span>{isBalanced ? 'Aktivlər = Öhdəliklər + Kapital bərabərliyi təmin olunub' : 'Balans bərabərliyi pozulub!'}</span>
+                        <span>{isBalanced ? t('reports.assetsEqualLiabilitiesEquity', {}, 'Aktivlər = Öhdəliklər + Kapital bərabərliyi təmin olunub') : t('reports.balanceEquationBroken', {}, 'Balans bərabərliyi pozulub!')}</span>
                     </div>
                     <div className="font-mono font-bold">
                         {formatCurrency(totalAssets)} = {formatCurrency(totalLiabsAndEquity)}
@@ -130,7 +131,7 @@ export const BalanceSheetPage: React.FC = () => {
                 {/* 1. ASSETS */}
                 <div className="space-y-3">
                     <div className="flex items-center justify-between pb-2 border-b border-emerald-500/30">
-                        <h2 className="text-sm font-extrabold uppercase tracking-wider text-emerald-400">AKTİVLƏR (ASSETS)</h2>
+                        <h2 className="text-sm font-extrabold uppercase tracking-wider text-emerald-400">{t('reports.assets', {}, 'AKTİVLƏR (ASSETS)')}</h2>
                         <span className="text-sm font-black font-mono text-emerald-400">
                             {formatCurrency(totalAssets)}
                         </span>
@@ -138,7 +139,7 @@ export const BalanceSheetPage: React.FC = () => {
 
                     <div className="space-y-3 pl-2">
                         {assetsSections.length === 0 ? (
-                            <p className="text-xs text-[#71717A] italic">Aktivlər üzrə qeyd tapılmadı</p>
+                            <p className="text-xs text-[#71717A] italic">{t('reports.noAssetsFound', {}, 'Aktivlər üzrə qeyd tapılmadı')}</p>
                         ) : (
                             assetsSections.map((section, sIdx) => {
                                 const lines = section.lines || section.accounts || [];
@@ -156,7 +157,7 @@ export const BalanceSheetPage: React.FC = () => {
                                             </div>
                                         ))}
                                         <div className="flex justify-between text-xs font-bold py-1 px-2 border-t border-[#27272A] text-emerald-300">
-                                            <span>{title} Cəmi</span>
+                                            <span>{title} {t('common.total', {}, 'Cəmi')}</span>
                                             <span className="font-mono">{formatCurrency(subtotal)}</span>
                                         </div>
                                     </div>
@@ -169,7 +170,7 @@ export const BalanceSheetPage: React.FC = () => {
                 {/* 2. LIABILITIES */}
                 <div className="space-y-3 pt-4 border-t border-[#27272A]">
                     <div className="flex items-center justify-between pb-2 border-b border-amber-500/30">
-                        <h2 className="text-sm font-extrabold uppercase tracking-wider text-amber-400">ÖHDƏLİKLƏR (LIABILITIES)</h2>
+                        <h2 className="text-sm font-extrabold uppercase tracking-wider text-amber-400">{t('reports.liabilities', {}, 'ÖHDƏLİKLƏR (LIABILITIES)')}</h2>
                         <span className="text-sm font-black font-mono text-amber-400">
                             {formatCurrency(totalLiabilities)}
                         </span>
@@ -177,7 +178,7 @@ export const BalanceSheetPage: React.FC = () => {
 
                     <div className="space-y-3 pl-2">
                         {liabilitiesSections.length === 0 ? (
-                            <p className="text-xs text-[#71717A] italic">Öhdəliklər üzrə qeyd tapılmadı</p>
+                            <p className="text-xs text-[#71717A] italic">{t('reports.noLiabilitiesFound', {}, 'Öhdəliklər üzrə qeyd tapılmadı')}</p>
                         ) : (
                             liabilitiesSections.map((section, sIdx) => {
                                 const lines = section.lines || section.accounts || [];
@@ -195,7 +196,7 @@ export const BalanceSheetPage: React.FC = () => {
                                             </div>
                                         ))}
                                         <div className="flex justify-between text-xs font-bold py-1 px-2 border-t border-[#27272A] text-amber-300">
-                                            <span>{title} Cəmi</span>
+                                            <span>{title} {t('common.total', {}, 'Cəmi')}</span>
                                             <span className="font-mono">{formatCurrency(subtotal)}</span>
                                         </div>
                                     </div>
@@ -208,7 +209,7 @@ export const BalanceSheetPage: React.FC = () => {
                 {/* 3. EQUITY */}
                 <div className="space-y-3 pt-4 border-t border-[#27272A]">
                     <div className="flex items-center justify-between pb-2 border-b border-purple-500/30">
-                        <h2 className="text-sm font-extrabold uppercase tracking-wider text-purple-400">KAPİTAL (EQUITY)</h2>
+                        <h2 className="text-sm font-extrabold uppercase tracking-wider text-purple-400">{t('reports.equity', {}, 'KAPİTAL (EQUITY)')}</h2>
                         <span className="text-sm font-black font-mono text-purple-400">
                             {formatCurrency(totalEquity)}
                         </span>
@@ -216,7 +217,7 @@ export const BalanceSheetPage: React.FC = () => {
 
                     <div className="space-y-3 pl-2">
                         {equitySections.length === 0 ? (
-                            <p className="text-xs text-[#71717A] italic">Kapital üzrə qeyd tapılmadı</p>
+                            <p className="text-xs text-[#71717A] italic">{t('reports.noEquityFound', {}, 'Kapital üzrə qeyd tapılmadı')}</p>
                         ) : (
                             equitySections.map((section, sIdx) => {
                                 const lines = section.lines || section.accounts || [];
@@ -234,7 +235,7 @@ export const BalanceSheetPage: React.FC = () => {
                                             </div>
                                         ))}
                                         <div className="flex justify-between text-xs font-bold py-1 px-2 border-t border-[#27272A] text-purple-300">
-                                            <span>{title} Cəmi</span>
+                                            <span>{title} {t('common.total', {}, 'Cəmi')}</span>
                                             <span className="font-mono">{formatCurrency(subtotal)}</span>
                                         </div>
                                     </div>
@@ -246,7 +247,7 @@ export const BalanceSheetPage: React.FC = () => {
 
                 {/* Grand Total Footer */}
                 <div className="p-4 rounded-xl bg-[#18181B] border border-[#27272A] flex justify-between items-center text-sm font-black">
-                    <span className="text-white">TOPLAM ÖHDƏLİKLƏR VƏ KAPİTAL:</span>
+                    <span className="text-white">{t('reports.totalLiabilitiesAndEquity', {}, 'TOPLAM ÖHDƏLİKLƏR VƏ KAPİTAL:')}</span>
                     <span className="font-mono text-white text-base">
                         {formatCurrency(sheet?.totalLiabilitiesAndEquity ?? totalLiabsAndEquity)}
                     </span>

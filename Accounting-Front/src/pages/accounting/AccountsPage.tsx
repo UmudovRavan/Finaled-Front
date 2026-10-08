@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { accountsService } from '../../api';
 import type { AccountDto, CreateAccountRequest, InitialBalanceRequest } from '../../dto';
+import { useLanguage } from '../../context/LanguageContext';
 import {
     PlusIcon,
     ArrowPathIcon,
@@ -17,48 +18,60 @@ import {
     SparklesIcon,
 } from '@heroicons/react/24/outline';
 
-const ACCOUNT_CATEGORIES = [
-    { id: 1, label: 'Aktiv (Asset)' },
-    { id: 2, label: 'Öhdəlik (Liability)' },
-    { id: 3, label: 'Kapital (Equity)' },
-    { id: 4, label: 'Gəlir (Income)' },
-    { id: 5, label: 'Xərc (Expense)' },
-];
-
-const ACCOUNT_TYPE_OPTIONS = [
-    { id: 0, label: 'Standart (Standard)' },
-    { id: 1, label: 'Debitor (Receivable)' },
-    { id: 2, label: 'Kreditor (Payable)' },
-    { id: 3, label: 'Bank' },
-    { id: 4, label: 'Kassa (Cash)' },
-    { id: 5, label: 'Anbar (Stock)' },
-    { id: 6, label: 'GRNI' },
-    { id: 7, label: 'Satışın Mayası (COGS)' },
-    { id: 8, label: 'Vergi (Tax)' },
-    { id: 9, label: 'Bölüşdürülməmiş Mənfəət' },
-    { id: 10, label: 'Gəlir (Revenue)' },
-    { id: 11, label: 'Xərc (Expense)' },
-    { id: 12, label: 'Əsas Vəsait (Fixed Asset)' },
-    { id: 13, label: 'Cari Aktiv (Current Asset)' },
-    { id: 14, label: 'Qısamüddətli Öhdəlik' },
-    { id: 15, label: 'Uzunmüddətli Öhdəlik' },
-];
-
 const ACCOUNT_TYPES = ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'];
 const CURRENCIES = ['AZN', 'USD', 'EUR', 'GBP', 'TRY'];
 
 export const AccountsPage: React.FC = () => {
+    const { t } = useLanguage();
     const navigate = useNavigate();
     const [accounts, setAccounts] = useState<AccountDto[]>([]);
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
+    const ACCOUNT_CATEGORIES = useMemo(() => [
+        { id: 1, label: t('accounting.asset', {}, 'Aktiv (Asset)') },
+        { id: 2, label: t('accounting.liability', {}, 'Öhdəlik (Liability)') },
+        { id: 3, label: t('accounting.equity', {}, 'Kapital (Equity)') },
+        { id: 4, label: t('accounting.income', {}, 'Gəlir (Income)') },
+        { id: 5, label: t('accounting.expense', {}, 'Xərc (Expense)') },
+    ], [t]);
+
+    const ACCOUNT_TYPE_OPTIONS = useMemo(() => [
+        { id: 0, label: t('accounting.typeStandard', {}, 'Standart (Standard)') },
+        { id: 1, label: t('accounting.typeReceivable', {}, 'Debitor (Receivable)') },
+        { id: 2, label: t('accounting.typePayable', {}, 'Kreditor (Payable)') },
+        { id: 3, label: t('accounting.typeBank', {}, 'Bank') },
+        { id: 4, label: t('accounting.typeCash', {}, 'Kassa (Cash)') },
+        { id: 5, label: t('accounting.typeStock', {}, 'Anbar (Stock)') },
+        { id: 6, label: 'GRNI' },
+        { id: 7, label: t('accounting.typeCogs', {}, 'Satışın Mayası (COGS)') },
+        { id: 8, label: t('accounting.typeTax', {}, 'Vergi (Tax)') },
+        { id: 9, label: t('accounting.typeRetainedEarnings', {}, 'Bölüşdürülməmiş Mənfəət') },
+        { id: 10, label: t('accounting.typeRevenue', {}, 'Gəlir (Revenue)') },
+        { id: 11, label: t('accounting.typeExpense', {}, 'Xərc (Expense)') },
+        { id: 12, label: t('accounting.typeFixedAsset', {}, 'Əsas Vəsait (Fixed Asset)') },
+        { id: 13, label: t('accounting.typeCurrentAsset', {}, 'Cari Aktiv (Current Asset)') },
+        { id: 14, label: t('accounting.typeCurrentLiability', {}, 'Qısamüddətli Öhdəlik') },
+        { id: 15, label: t('accounting.typeLongTermLiability', {}, 'Uzunmüddətli Öhdəlik') },
+    ], [t]);
+
+    const getAccountTypeLabel = (typeKey: string) => {
+        switch (typeKey) {
+            case 'Asset': return t('accounting.asset', {}, 'Aktiv (Asset)');
+            case 'Liability': return t('accounting.liability', {}, 'Öhdəlik (Liability)');
+            case 'Equity': return t('accounting.equity', {}, 'Kapital (Equity)');
+            case 'Revenue': return t('accounting.typeRevenue', {}, 'Gəlir (Revenue)');
+            case 'Expense': return t('accounting.typeExpense', {}, 'Xərc (Expense)');
+            default: return typeKey;
+        }
+    };
+
     // Filters
     const [filterCode, setFilterCode] = useState('');
     const [filterName, setFilterName] = useState('');
-    const [selectedType, setSelectedType] = useState('Tip');
-    const [selectedCurrency, setSelectedCurrency] = useState('Valyuta');
-    const [selectedStatus, setSelectedStatus] = useState('Status');
+    const [selectedType, setSelectedType] = useState('ALL');
+    const [selectedCurrency, setSelectedCurrency] = useState('ALL');
+    const [selectedStatus, setSelectedStatus] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
 
     // Filter Dropdown Open States
     const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
@@ -76,15 +89,24 @@ export const AccountsPage: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedRows, setSelectedRows] = useState<string[]>([]);
 
-    // Column Visibility
-    const [columns, setColumns] = useState([
-        { key: 'code', label: 'Kod', visible: true },
-        { key: 'name', label: 'Hesabın Adı', visible: true },
-        { key: 'type', label: 'Tipi', visible: true },
-        { key: 'currency', label: 'Valyuta', visible: true },
-        { key: 'balance', label: 'Qalıq', visible: true },
-        { key: 'status', label: 'Status', visible: true },
-    ]);
+    // Column Visibility State
+    const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({
+        code: true,
+        name: true,
+        type: true,
+        currency: true,
+        balance: true,
+        status: true,
+    });
+
+    const columns = useMemo(() => [
+        { key: 'code', label: t('accounting.accountCode', {}, 'Kod'), visible: columnVisibility.code ?? true },
+        { key: 'name', label: t('accounting.accountName', {}, 'Hesabın Adı'), visible: columnVisibility.name ?? true },
+        { key: 'type', label: t('accounting.accountType', {}, 'Tipi'), visible: columnVisibility.type ?? true },
+        { key: 'currency', label: t('common.currency', {}, 'Valyuta'), visible: columnVisibility.currency ?? true },
+        { key: 'balance', label: t('accounting.balance', {}, 'Qalıq'), visible: columnVisibility.balance ?? true },
+        { key: 'status', label: t('common.status', {}, 'Status'), visible: columnVisibility.status ?? true },
+    ], [t, columnVisibility]);
 
     // Create Modal State - strictly backend CreateAccountDto fields
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -165,9 +187,9 @@ export const AccountsPage: React.FC = () => {
         let count = 0;
         if (filterCode.trim()) count++;
         if (filterName.trim()) count++;
-        if (selectedType !== 'Tip') count++;
-        if (selectedCurrency !== 'Valyuta') count++;
-        if (selectedStatus !== 'Status') count++;
+        if (selectedType !== 'ALL') count++;
+        if (selectedCurrency !== 'ALL') count++;
+        if (selectedStatus !== 'ALL') count++;
         return count;
     }, [filterCode, filterName, selectedType, selectedCurrency, selectedStatus]);
 
@@ -182,7 +204,7 @@ export const AccountsPage: React.FC = () => {
                 const nameStr = String(acc.name || '').toLowerCase();
                 if (!nameStr.includes(filterName.trim().toLowerCase())) return false;
             }
-            if (selectedType !== 'Tip') {
+            if (selectedType !== 'ALL') {
                 const typeStr = String(acc.type || '').toLowerCase();
                 const catStr = String(acc.category || '').toLowerCase();
                 const sel = selectedType.toLowerCase();
@@ -198,12 +220,12 @@ export const AccountsPage: React.FC = () => {
 
                 if (!matchesCat && !matchesType) return false;
             }
-            if (selectedCurrency !== 'Valyuta') {
+            if (selectedCurrency !== 'ALL') {
                 const cur = String(acc.currency || 'AZN').toUpperCase();
                 if (cur !== selectedCurrency.toUpperCase()) return false;
             }
-            if (selectedStatus === 'Aktiv' && !acc.isActive) return false;
-            if (selectedStatus === 'Deaktiv' && acc.isActive) return false;
+            if (selectedStatus === 'ACTIVE' && !acc.isActive) return false;
+            if (selectedStatus === 'INACTIVE' && acc.isActive) return false;
             return true;
         }).sort((a, b) => {
             let valA: any = a[sortField] || '';
@@ -238,13 +260,14 @@ export const AccountsPage: React.FC = () => {
     };
 
     const toggleColumnVisibility = (key: string) => {
-        setColumns((prev) =>
-            prev.map((c) => (c.key === key ? { ...c, visible: !c.visible } : c))
-        );
+        setColumnVisibility((prev) => ({
+            ...prev,
+            [key]: prev[key] === undefined ? false : !prev[key],
+        }));
     };
 
     const isColVisible = (key: string) => {
-        return columns.find((c) => c.key === key)?.visible ?? true;
+        return columnVisibility[key] ?? true;
     };
 
     // Handle Create Submit
@@ -273,10 +296,10 @@ export const AccountsPage: React.FC = () => {
                 parentAccountId: '',
                 isControlAccount: false,
             });
-            showToast('Hesab uğurla yaradıldı!');
+            showToast(t('common.success', {}, 'Hesab uğurla yaradıldı!'));
             loadAccounts();
         } catch (err: any) {
-            setCreateError(err.response?.data?.message || 'Hesab yaradılarkən xəta baş verdi.');
+            setCreateError(err.response?.data?.message || t('common.error', {}, 'Hesab yaradılarkən xəta baş verdi.'));
         } finally {
             setCreateLoading(false);
         }
@@ -290,10 +313,10 @@ export const AccountsPage: React.FC = () => {
         try {
             await accountsService.setInitialBalance(balanceForm);
             setShowBalanceModal(false);
-            showToast('İlkin qalıq uğurla təyin edildi!');
+            showToast(t('common.success', {}, 'İlkin qalıq uğurla təyin edildi!'));
             loadAccounts();
         } catch (err: any) {
-            setBalanceError(err.response?.data?.message || err.message || 'İlkin qalıq qeyd olunarkən xəta baş verdi.');
+            setBalanceError(err.response?.data?.message || err.message || t('common.error', {}, 'İlkin qalıq qeyd olunarkən xəta baş verdi.'));
         } finally {
             setBalanceLoading(false);
         }
@@ -303,10 +326,10 @@ export const AccountsPage: React.FC = () => {
         setSeedLoading(true);
         try {
             await accountsService.seedTemplate();
-            showToast('Standart hesablar planı şablonu uğurla tətbiq edildi!');
+            showToast(t('settings.seedSuccess', {}, 'Standart hesablar planı şablonu uğurla tətbiq edildi!'));
             loadAccounts();
         } catch (err: any) {
-            showToast(err.response?.data?.message || 'Şablon yüklənərkən xəta baş verdi.');
+            showToast(err.response?.data?.message || t('common.error', {}, 'Şablon yüklənərkən xəta baş verdi.'));
         } finally {
             setSeedLoading(false);
         }
@@ -325,15 +348,15 @@ export const AccountsPage: React.FC = () => {
 
     return (
         <div className="space-y-3.5 font-sans text-[#F4F4F5] antialiased select-none pb-12">
-            {/* ─── Top Header (Breadcrumb / Title & + Yarat button - Image 1) ─── */}
+            {/* ─── Top Header ─── */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                     <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                        <span>Hesablar Planı</span>
+                        <span>{t('accounting.accountsTitle', {}, 'Hesablar Planı')}</span>
                         <span className="text-[#52525B]">/</span>
                         <div className="inline-flex items-center gap-1.5 text-white font-bold">
                             <Bars3Icon className="w-4 h-4 text-[#A1A1AA]" />
-                            <span>Siyahı</span>
+                            <span>{t('common.list', {}, 'Siyahı')}</span>
                         </div>
                     </h1>
                 </div>
@@ -344,7 +367,7 @@ export const AccountsPage: React.FC = () => {
                         className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white hover:bg-zinc-200 text-black text-xs font-semibold shadow-md transition-colors cursor-pointer"
                     >
                         <PlusIcon className="w-4 h-4 stroke-[2.5]" />
-                        <span>Yarat</span>
+                        <span>{t('accounting.newAccount', {}, 'Yarat')}</span>
                     </button>
                 </div>
             </div>
@@ -357,13 +380,13 @@ export const AccountsPage: React.FC = () => {
                 </div>
             )}
 
-            {/* ─── Filter Bar (Inputs & Action Buttons - Image 1) ─── */}
+            {/* ─── Filter Bar ─── */}
             <div className="flex flex-wrap items-center justify-between gap-2.5 relative z-20">
                 <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
                     {/* Kod Input */}
                     <input
                         type="text"
-                        placeholder="Kod"
+                        placeholder={t('accounting.accountCode', {}, 'Kod')}
                         value={filterCode}
                         onChange={(e) => setFilterCode(e.target.value)}
                         className="w-28 sm:w-32 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
@@ -372,7 +395,7 @@ export const AccountsPage: React.FC = () => {
                     {/* Ad Input */}
                     <input
                         type="text"
-                        placeholder="Hesabın adı"
+                        placeholder={t('accounting.accountName', {}, 'Hesabın adı')}
                         value={filterName}
                         onChange={(e) => setFilterName(e.target.value)}
                         className="w-36 sm:w-44 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
@@ -385,25 +408,35 @@ export const AccountsPage: React.FC = () => {
                             onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
                             className="flex items-center justify-between w-28 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
                         >
-                            <span className="truncate">{selectedStatus}</span>
+                            <span className="truncate">
+                                {selectedStatus === 'ALL'
+                                    ? t('common.status', {}, 'Status')
+                                    : selectedStatus === 'ACTIVE'
+                                    ? t('common.active', {}, 'Aktiv')
+                                    : t('common.inactive', {}, 'Deaktiv')}
+                            </span>
                             <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
                         </button>
 
                         {isStatusDropdownOpen && (
                             <div className="absolute top-9 left-0 w-36 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-50 flex flex-col text-xs text-[#E4E4E7] animate-in fade-in duration-150">
-                                {['Status', 'Aktiv', 'Deaktiv'].map((st) => (
+                                {[
+                                    { key: 'ALL' as const, label: t('common.allStatuses', {}, 'Bütün Statuslar') },
+                                    { key: 'ACTIVE' as const, label: t('common.active', {}, 'Aktiv') },
+                                    { key: 'INACTIVE' as const, label: t('common.inactive', {}, 'Deaktiv') },
+                                ].map((st) => (
                                     <button
-                                        key={st}
+                                        key={st.key}
                                         type="button"
                                         onClick={() => {
-                                            setSelectedStatus(st);
+                                            setSelectedStatus(st.key);
                                             setIsStatusDropdownOpen(false);
                                         }}
                                         className={`px-3 py-1.5 rounded-xl text-left cursor-pointer transition-colors ${
-                                            selectedStatus === st ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
+                                            selectedStatus === st.key ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
                                         }`}
                                     >
-                                        {st === 'Status' ? 'Bütün Statuslar' : st}
+                                        {st.label}
                                     </button>
                                 ))}
                             </div>
@@ -417,37 +450,39 @@ export const AccountsPage: React.FC = () => {
                             onClick={() => setIsTypeDropdownOpen(!isTypeDropdownOpen)}
                             className="flex items-center justify-between w-28 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
                         >
-                            <span className="truncate">{selectedType}</span>
+                            <span className="truncate">
+                                {selectedType === 'ALL' ? t('accounting.accountType', {}, 'Tip') : getAccountTypeLabel(selectedType)}
+                            </span>
                             <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
                         </button>
 
                         {isTypeDropdownOpen && (
-                            <div className="absolute top-9 left-0 w-40 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-50 flex flex-col text-xs text-[#E4E4E7] animate-in fade-in duration-150">
+                            <div className="absolute top-9 left-0 w-48 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-50 flex flex-col text-xs text-[#E4E4E7] animate-in fade-in duration-150">
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        setSelectedType('Tip');
+                                        setSelectedType('ALL');
                                         setIsTypeDropdownOpen(false);
                                     }}
                                     className="px-3 py-1.5 rounded-xl text-left cursor-pointer text-[#A1A1AA] hover:bg-[#2C2C2E]/60"
                                 >
-                                    Bütün Tiplər
+                                    {t('common.allTypes', {}, 'Bütün Tiplər')}
                                 </button>
                                 <div className="h-px bg-[#2C2C2E] my-1" />
-                                {ACCOUNT_TYPES.map((t) => (
+                                {ACCOUNT_TYPES.map((tItem) => (
                                     <button
-                                        key={t}
+                                        key={tItem}
                                         type="button"
                                         onClick={() => {
-                                            setSelectedType(t);
+                                            setSelectedType(tItem);
                                             setIsTypeDropdownOpen(false);
                                         }}
                                         className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-left cursor-pointer transition-colors ${
-                                            selectedType === t ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
+                                            selectedType === tItem ? 'bg-[#2C2C2E] text-white font-semibold' : 'hover:bg-[#2C2C2E]/60 text-[#D4D4D8]'
                                         }`}
                                     >
-                                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getTypeColor(t) }} />
-                                        <span>{t}</span>
+                                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getTypeColor(tItem) }} />
+                                        <span>{getAccountTypeLabel(tItem)}</span>
                                     </button>
                                 ))}
                             </div>
@@ -461,7 +496,9 @@ export const AccountsPage: React.FC = () => {
                             onClick={() => setIsCurrencyDropdownOpen(!isCurrencyDropdownOpen)}
                             className="flex items-center justify-between w-28 bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-1.5 text-xs text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
                         >
-                            <span className="truncate">{selectedCurrency}</span>
+                            <span className="truncate">
+                                {selectedCurrency === 'ALL' ? t('common.currency', {}, 'Valyuta') : selectedCurrency}
+                            </span>
                             <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
                         </button>
 
@@ -470,12 +507,12 @@ export const AccountsPage: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        setSelectedCurrency('Valyuta');
+                                        setSelectedCurrency('ALL');
                                         setIsCurrencyDropdownOpen(false);
                                     }}
                                     className="px-3 py-1.5 rounded-xl text-left cursor-pointer text-[#A1A1AA] hover:bg-[#2C2C2E]/60"
                                 >
-                                    Bütün Valyutalar
+                                    {t('common.allCurrencies', {}, 'Bütün Valyutalar')}
                                 </button>
                                 <div className="h-px bg-[#2C2C2E] my-1" />
                                 {CURRENCIES.map((c) => (
@@ -498,13 +535,13 @@ export const AccountsPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Right Action Icons (Refresh, Filter, Sort, Columns, More - Image 1) */}
+                {/* Right Action Icons */}
                 <div className="flex items-center gap-1.5 shrink-0 ml-auto">
                     {/* Refresh */}
                     <button
                         type="button"
                         onClick={loadAccounts}
-                        title="Yenilə"
+                        title={t('common.refresh', {}, 'Yenilə')}
                         className="p-1.5 rounded-xl border border-[#27272A] bg-[#18181B] hover:bg-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
                     >
                         <ArrowPathIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-white' : ''}`} />
@@ -522,7 +559,7 @@ export const AccountsPage: React.FC = () => {
                             }`}
                         >
                             <FunnelIcon className="w-3.5 h-3.5" />
-                            <span>Filtr</span>
+                            <span>{t('common.filter', {}, 'Filtr')}</span>
                             {activeFilterCount > 0 && (
                                 <span className="w-4 h-4 rounded-full bg-black text-white text-[10px] font-bold flex items-center justify-center">
                                     {activeFilterCount}
@@ -535,7 +572,7 @@ export const AccountsPage: React.FC = () => {
                                 <div className="flex items-center justify-between pb-2 border-b border-[#2C2C2E]">
                                     <div className="flex items-center gap-1.5 font-bold text-white">
                                         <FunnelIcon className="w-4 h-4 text-[#A1A1AA]" />
-                                        <span>Filtrlər</span>
+                                        <span>{t('common.filters', {}, 'Filtrlər')}</span>
                                     </div>
                                     {activeFilterCount > 0 && (
                                         <button
@@ -543,23 +580,23 @@ export const AccountsPage: React.FC = () => {
                                             onClick={() => {
                                                 setFilterCode('');
                                                 setFilterName('');
-                                                setSelectedType('Tip');
-                                                setSelectedCurrency('Valyuta');
-                                                setSelectedStatus('Status');
+                                                setSelectedType('ALL');
+                                                setSelectedCurrency('ALL');
+                                                setSelectedStatus('ALL');
                                             }}
                                             className="text-[11px] text-rose-400 hover:underline cursor-pointer font-medium"
                                         >
-                                            Təmizlə ({activeFilterCount})
+                                            {t('common.clear', {}, 'Təmizlə')} ({activeFilterCount})
                                         </button>
                                     )}
                                 </div>
 
                                 <div className="space-y-3">
                                     <div className="space-y-1">
-                                        <label className="text-[11px] text-[#A1A1AA]">Hesab Kodu</label>
+                                        <label className="text-[11px] text-[#A1A1AA]">{t('accounting.accountCode', {}, 'Hesab Kodu')}</label>
                                         <input
                                             type="text"
-                                            placeholder="Kod üzrə axtar..."
+                                            placeholder={t('common.searchPlaceholder', {}, 'Kod üzrə axtar...')}
                                             value={filterCode}
                                             onChange={(e) => setFilterCode(e.target.value)}
                                             className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white font-mono"
@@ -567,10 +604,10 @@ export const AccountsPage: React.FC = () => {
                                     </div>
 
                                     <div className="space-y-1">
-                                        <label className="text-[11px] text-[#A1A1AA]">Hesabın Adı</label>
+                                        <label className="text-[11px] text-[#A1A1AA]">{t('accounting.accountName', {}, 'Hesabın Adı')}</label>
                                         <input
                                             type="text"
-                                            placeholder="Ad üzrə axtar..."
+                                            placeholder={t('common.searchPlaceholder', {}, 'Ad üzrə axtar...')}
                                             value={filterName}
                                             onChange={(e) => setFilterName(e.target.value)}
                                             className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white"
@@ -579,29 +616,29 @@ export const AccountsPage: React.FC = () => {
 
                                     <div className="grid grid-cols-2 gap-2">
                                         <div className="space-y-1">
-                                            <label className="text-[11px] text-[#A1A1AA]">Kateqoriya / Tip</label>
+                                            <label className="text-[11px] text-[#A1A1AA]">{t('accounting.accountType', {}, 'Kateqoriya / Tip')}</label>
                                             <select
                                                 value={selectedType}
                                                 onChange={(e) => setSelectedType(e.target.value)}
                                                 className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-white"
                                             >
-                                                <option value="Tip">Bütün Tiplər</option>
-                                                {ACCOUNT_TYPES.map((t) => (
-                                                    <option key={t} value={t} className="bg-[#1C1C1E]">
-                                                        {t}
+                                                <option value="ALL">{t('common.allTypes', {}, 'Bütün Tiplər')}</option>
+                                                {ACCOUNT_TYPES.map((tItem) => (
+                                                    <option key={tItem} value={tItem} className="bg-[#1C1C1E]">
+                                                        {getAccountTypeLabel(tItem)}
                                                     </option>
                                                 ))}
                                             </select>
                                         </div>
 
                                         <div className="space-y-1">
-                                            <label className="text-[11px] text-[#A1A1AA]">Valyuta</label>
+                                            <label className="text-[11px] text-[#A1A1AA]">{t('common.currency', {}, 'Valyuta')}</label>
                                             <select
                                                 value={selectedCurrency}
                                                 onChange={(e) => setSelectedCurrency(e.target.value)}
                                                 className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-white font-mono"
                                             >
-                                                <option value="Valyuta" className="bg-[#1C1C1E]">Hamısı</option>
+                                                <option value="ALL" className="bg-[#1C1C1E]">{t('common.allCurrencies', {}, 'Hamısı')}</option>
                                                 {CURRENCIES.map((c) => (
                                                     <option key={c} value={c} className="bg-[#1C1C1E]">
                                                         {c}
@@ -612,29 +649,29 @@ export const AccountsPage: React.FC = () => {
                                     </div>
 
                                     <div className="space-y-1">
-                                        <label className="text-[11px] text-[#A1A1AA]">Status</label>
+                                        <label className="text-[11px] text-[#A1A1AA]">{t('common.status', {}, 'Status')}</label>
                                         <select
                                             value={selectedStatus}
-                                            onChange={(e) => setSelectedStatus(e.target.value)}
+                                            onChange={(e) => setSelectedStatus(e.target.value as any)}
                                             className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-white"
                                         >
-                                            <option value="Status" className="bg-[#1C1C1E]">Bütün Statuslar</option>
-                                            <option value="Aktiv" className="bg-[#1C1C1E]">● Aktiv</option>
-                                            <option value="Deaktiv" className="bg-[#1C1C1E]">● Deaktiv</option>
+                                            <option value="ALL" className="bg-[#1C1C1E]">{t('common.allStatuses', {}, 'Bütün Statuslar')}</option>
+                                            <option value="ACTIVE" className="bg-[#1C1C1E]">● {t('common.active', {}, 'Aktiv')}</option>
+                                            <option value="INACTIVE" className="bg-[#1C1C1E]">● {t('common.inactive', {}, 'Deaktiv')}</option>
                                         </select>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center justify-between pt-2 border-t border-[#2C2C2E]">
                                     <span className="text-[11px] text-[#71717A]">
-                                        {filteredAccounts.length} nəticə tapıldı
+                                        {filteredAccounts.length} {t('common.resultsFound', {}, 'nəticə tapıldı')}
                                     </span>
                                     <button
                                         type="button"
                                         onClick={() => setIsFilterPopoverOpen(false)}
                                         className="px-3.5 py-1.5 bg-white text-black font-semibold rounded-xl text-xs hover:bg-zinc-200 transition-colors cursor-pointer"
                                     >
-                                        Tətbiq et
+                                        {t('common.apply', {}, 'Tətbiq et')}
                                     </button>
                                 </div>
                             </div>
@@ -647,7 +684,7 @@ export const AccountsPage: React.FC = () => {
                             type="button"
                             onClick={() => setIsSortOpen(!isSortOpen)}
                             className="p-1.5 rounded-xl border border-[#27272A] bg-[#18181B] hover:bg-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                            title="Sırala"
+                            title={t('common.sort', {}, 'Sırala')}
                         >
                             <ArrowsUpDownIcon className="w-4 h-4" />
                         </button>
@@ -655,10 +692,10 @@ export const AccountsPage: React.FC = () => {
                         {isSortOpen && (
                             <div className="absolute top-9 right-0 w-44 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-1.5 z-50 text-xs text-[#E4E4E7] space-y-0.5 animate-in fade-in duration-150">
                                 {[
-                                    { key: 'code', label: 'Kod üzrə' },
-                                    { key: 'name', label: 'Ad üzrə' },
-                                    { key: 'type', label: 'Tip üzrə' },
-                                    { key: 'balance', label: 'Qalıq üzrə' },
+                                    { key: 'code', label: t('accounting.byCode', {}, 'Kod üzrə') },
+                                    { key: 'name', label: t('accounting.byName', {}, 'Ad üzrə') },
+                                    { key: 'type', label: t('accounting.byType', {}, 'Tip üzrə') },
+                                    { key: 'balance', label: t('accounting.byBalance', {}, 'Qalıq üzrə') },
                                 ].map((item) => (
                                     <button
                                         key={item.key}
@@ -694,7 +731,7 @@ export const AccountsPage: React.FC = () => {
                             type="button"
                             onClick={() => setIsColumnsOpen(!isColumnsOpen)}
                             className="p-1.5 rounded-xl border border-[#27272A] bg-[#18181B] hover:bg-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                            title="Sütunlar"
+                            title={t('common.columns', {}, 'Sütunlar')}
                         >
                             <ViewColumnsIcon className="w-4 h-4" />
                         </button>
@@ -725,7 +762,7 @@ export const AccountsPage: React.FC = () => {
                             type="button"
                             onClick={() => setIsMoreOptionsOpen(!isMoreOptionsOpen)}
                             className="p-1.5 rounded-xl border border-[#27272A] bg-[#18181B] hover:bg-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                            title="Digər"
+                            title={t('common.more', {}, 'Digər')}
                         >
                             <EllipsisHorizontalIcon className="w-4 h-4" />
                         </button>
@@ -742,7 +779,7 @@ export const AccountsPage: React.FC = () => {
                                     className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#2C2C2E] text-left w-full transition-colors cursor-pointer font-medium"
                                 >
                                     <SparklesIcon className="w-4 h-4 text-amber-400" />
-                                    <span>Standart Şablonu Yüklə</span>
+                                    <span>{t('settings.seedDefaults', {}, 'Standart Şablonu Yüklə')}</span>
                                 </button>
                             </div>
                         )}
@@ -768,24 +805,24 @@ export const AccountsPage: React.FC = () => {
                                     />
                                 </th>
                                 {isColVisible('code') && (
-                                    <th className="py-3 px-4 text-[#A1A1AA] font-normal">KOD</th>
+                                    <th className="py-3 px-4 text-[#A1A1AA] font-normal">{t('accounting.accountCode', {}, 'KOD')}</th>
                                 )}
                                 {isColVisible('name') && (
-                                    <th className="py-3 px-4 text-[#A1A1AA] font-normal">HESABIN ADI</th>
+                                    <th className="py-3 px-4 text-[#A1A1AA] font-normal">{t('accounting.accountName', {}, 'HESABIN ADI')}</th>
                                 )}
                                 {isColVisible('type') && (
-                                    <th className="py-3 px-4 text-[#A1A1AA] font-normal">TİPİ</th>
+                                    <th className="py-3 px-4 text-[#A1A1AA] font-normal">{t('accounting.accountType', {}, 'TİPİ')}</th>
                                 )}
                                 {isColVisible('currency') && (
-                                    <th className="py-3 px-4 text-[#A1A1AA] font-normal">VALYUTA</th>
+                                    <th className="py-3 px-4 text-[#A1A1AA] font-normal">{t('common.currency', {}, 'VALYUTA')}</th>
                                 )}
                                 {isColVisible('balance') && (
-                                    <th className="py-3 px-4 text-[#A1A1AA] font-normal text-right">QALIQ</th>
+                                    <th className="py-3 px-4 text-[#A1A1AA] font-normal text-right">{t('accounting.balance', {}, 'QALIQ')}</th>
                                 )}
                                 {isColVisible('status') && (
-                                    <th className="py-3 px-4 text-[#A1A1AA] font-normal text-center">STATUS</th>
+                                    <th className="py-3 px-4 text-[#A1A1AA] font-normal text-center">{t('common.status', {}, 'STATUS')}</th>
                                 )}
-                                <th className="py-3 px-4 text-[#A1A1AA] font-normal text-right">ƏMƏLİYYAT</th>
+                                <th className="py-3 px-4 text-[#A1A1AA] font-normal text-right">{t('common.actions', {}, 'ƏMƏLİYYAT')}</th>
                             </tr>
                         </thead>
 
@@ -795,14 +832,14 @@ export const AccountsPage: React.FC = () => {
                                     <td colSpan={8} className="py-12 text-center text-[#71717A]">
                                         <div className="flex flex-col items-center gap-2">
                                             <ArrowPathIcon className="w-5 h-5 animate-spin text-white" />
-                                            <span>Yüklənir...</span>
+                                            <span>{t('common.loading', {}, 'Yüklənir...')}</span>
                                         </div>
                                     </td>
                                 </tr>
                             ) : paginatedAccounts.length === 0 ? (
                                 <tr>
                                     <td colSpan={8} className="py-12 text-center text-[#71717A]">
-                                        Heç bir hesab tapılmadı. "Yarat" düyməsi ilə yeni hesab əlavə edə bilərsiniz.
+                                        {t('accounting.noAccountsFound', {}, 'Heç bir hesab tapılmadı. "Yarat" düyməsi ilə yeni hesab əlavə edə bilərsiniz.')}
                                     </td>
                                 </tr>
                             ) : (
@@ -855,7 +892,7 @@ export const AccountsPage: React.FC = () => {
                                                             className="w-2 h-2 rounded-full inline-block shrink-0"
                                                             style={{ backgroundColor: getTypeColor(acc.type) }}
                                                         />
-                                                        <span className="text-white font-medium">{acc.type}</span>
+                                                        <span className="text-white font-medium">{getAccountTypeLabel(acc.type)}</span>
                                                     </div>
                                                 </td>
                                             )}
@@ -887,7 +924,7 @@ export const AccountsPage: React.FC = () => {
                                                             }`}
                                                         />
                                                         <span className="text-white">
-                                                            {acc.isActive ? 'Aktiv' : 'Deaktiv'}
+                                                            {acc.isActive ? t('common.active', {}, 'Aktiv') : t('common.inactive', {}, 'Deaktiv')}
                                                         </span>
                                                     </div>
                                                 </td>
@@ -910,7 +947,7 @@ export const AccountsPage: React.FC = () => {
                                                     }}
                                                     className="px-2.5 py-1 rounded-xl bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-[11px] font-medium text-[#D4D4D8] hover:text-white transition-colors cursor-pointer"
                                                 >
-                                                    İlkin Qalıq
+                                                    {t('accounting.initialBalance', {}, 'İlkin Qalıq')}
                                                 </button>
                                             </td>
                                         </tr>
@@ -921,7 +958,7 @@ export const AccountsPage: React.FC = () => {
                     </table>
                 </div>
 
-                {/* Bottom Pagination Bar (Exact Match with Image 1) */}
+                {/* Bottom Pagination Bar */}
                 <div className="p-3 bg-[#141416] border-t border-[#27272A] flex items-center justify-between text-xs text-[#71717A]">
                     <div className="flex items-center gap-1 bg-[#18181B] p-1 rounded-xl border border-[#27272A]">
                         {[20, 50, 100].map((size) => (
@@ -951,7 +988,7 @@ export const AccountsPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* ─── CREATE ACCOUNT MODAL (Matches Image 2 Exactly) ─── */}
+            {/* ─── CREATE ACCOUNT MODAL ─── */}
             {showCreateModal && (
                 <div
                     className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
@@ -965,12 +1002,12 @@ export const AccountsPage: React.FC = () => {
                     >
                         {/* Modal Header */}
                         <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 p-4 sm:p-6 shrink-0 bg-[#1C1C1E]">
-                            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">Yeni Hesab</h2>
+                            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">{t('accounting.newAccount', {}, 'Yeni Hesab')}</h2>
                             <button
                                 type="button"
                                 onClick={() => setShowCreateModal(false)}
                                 className="p-1.5 rounded-lg text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-                                aria-label="Bağla"
+                                aria-label={t('common.close', {}, 'Bağla')}
                             >
                                 <XMarkIcon className="w-5 h-5" />
                             </button>
@@ -982,14 +1019,14 @@ export const AccountsPage: React.FC = () => {
                             </div>
                         )}
 
-                        {/* Modal Form Body - Strictly the 7 fields accepted by backend CreateAccountDto */}
+                        {/* Modal Form Body */}
                         <form onSubmit={handleCreateAccount} className="flex flex-col flex-1 min-h-0">
                             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs custom-scrollbar">
                                 {/* Row 1: Hesab Kodu * & Hesabın Adı * */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                     <div className="space-y-1.5">
                                         <label className="text-[#A1A1AA] font-medium">
-                                            Hesab Kodu <span className="text-rose-400">*</span>
+                                            {t('accounting.accountCode', {}, 'Hesab Kodu')} <span className="text-rose-400">*</span>
                                         </label>
                                         <input
                                             type="text"
@@ -1003,12 +1040,12 @@ export const AccountsPage: React.FC = () => {
 
                                     <div className="space-y-1.5">
                                         <label className="text-[#A1A1AA] font-medium">
-                                            Hesabın Adı <span className="text-rose-400">*</span>
+                                            {t('accounting.accountName', {}, 'Hesabın Adı')} <span className="text-rose-400">*</span>
                                         </label>
                                         <input
                                             type="text"
                                             required
-                                            placeholder="Hesabın adı"
+                                            placeholder={t('accounting.accountName', {}, 'Hesabın adı')}
                                             value={createForm.name}
                                             onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
                                             className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
@@ -1019,7 +1056,7 @@ export const AccountsPage: React.FC = () => {
                                 {/* Row 2: Kateqoriya, Hesab Növü (Type), Valyuta */}
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                                     <div className="space-y-1.5">
-                                        <label className="text-[#A1A1AA] font-medium">Kateqoriya</label>
+                                        <label className="text-[#A1A1AA] font-medium">{t('accounting.accountCategory', {}, 'Kateqoriya')}</label>
                                         <select
                                             value={createForm.category}
                                             onChange={(e) => setCreateForm({ ...createForm, category: Number(e.target.value) })}
@@ -1034,22 +1071,22 @@ export const AccountsPage: React.FC = () => {
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <label className="text-[#A1A1AA] font-medium">Hesab Növü (Type)</label>
+                                        <label className="text-[#A1A1AA] font-medium">{t('accounting.accountType', {}, 'Hesab Növü (Type)')}</label>
                                         <select
                                             value={createForm.type}
                                             onChange={(e) => setCreateForm({ ...createForm, type: Number(e.target.value) })}
                                             className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-white transition-colors"
                                         >
-                                            {ACCOUNT_TYPE_OPTIONS.map((t) => (
-                                                <option key={t.id} value={t.id} className="bg-[#1C1C1E]">
-                                                    {t.label}
+                                            {ACCOUNT_TYPE_OPTIONS.map((tItem) => (
+                                                <option key={tItem.id} value={tItem.id} className="bg-[#1C1C1E]">
+                                                    {tItem.label}
                                                 </option>
                                             ))}
                                         </select>
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <label className="text-[#A1A1AA] font-medium">Valyuta</label>
+                                        <label className="text-[#A1A1AA] font-medium">{t('common.currency', {}, 'Valyuta')}</label>
                                         <select
                                             value={createForm.currency}
                                             onChange={(e) => setCreateForm({ ...createForm, currency: e.target.value })}
@@ -1067,13 +1104,13 @@ export const AccountsPage: React.FC = () => {
                                 {/* Row 3: Əsas Hesab (Parent) & Nəzarət Hesabı (Control) */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                     <div className="space-y-1.5">
-                                        <label className="text-[#A1A1AA] font-medium">Əsas Hesab (Parent)</label>
+                                        <label className="text-[#A1A1AA] font-medium">{t('accounting.parentAccount', {}, 'Əsas Hesab (Parent)')}</label>
                                         <select
                                             value={createForm.parentAccountId}
                                             onChange={(e) => setCreateForm({ ...createForm, parentAccountId: e.target.value })}
                                             className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-white transition-colors"
                                         >
-                                            <option value="" className="bg-[#1C1C1E]">Yoxdur (Baş Hesab)</option>
+                                            <option value="" className="bg-[#1C1C1E]">{t('accounting.noneParent', {}, 'Yoxdur (Baş Hesab)')}</option>
                                             {accounts.map((a) => (
                                                 <option key={a.id} value={a.id} className="bg-[#1C1C1E]">
                                                     {a.code} - {a.name}
@@ -1083,7 +1120,7 @@ export const AccountsPage: React.FC = () => {
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <label className="text-[#A1A1AA] font-medium">Nəzarət Hesabı</label>
+                                        <label className="text-[#A1A1AA] font-medium">{t('accounting.controlAccount', {}, 'Nəzarət Hesabı')}</label>
                                         <select
                                             value={createForm.isControlAccount ? 'true' : 'false'}
                                             onChange={(e) =>
@@ -1094,28 +1131,28 @@ export const AccountsPage: React.FC = () => {
                                             }
                                             className="w-full bg-[#141416] border border-[#2C2C2E] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-white transition-colors"
                                         >
-                                            <option value="false" className="bg-[#1C1C1E]">Xeyr</option>
-                                            <option value="true" className="bg-[#1C1C1E]">Bəli</option>
+                                            <option value="false" className="bg-[#1C1C1E]">{t('common.no', {}, 'Xeyr')}</option>
+                                            <option value="true" className="bg-[#1C1C1E]">{t('common.yes', {}, 'Bəli')}</option>
                                         </select>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Modal Footer (Matches Image 2 Exactly) */}
+                            {/* Modal Footer */}
                             <div className="flex items-center justify-end gap-3 border-t border-[#2C2C2E]/60 p-4 sm:p-6 shrink-0 bg-[#1C1C1E]">
                                 <button
                                     type="button"
                                     onClick={() => setShowCreateModal(false)}
                                     className="px-4 py-2 rounded-xl border border-[#2C2C2E] text-xs font-semibold text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
                                 >
-                                    İmtina
+                                    {t('common.cancel', {}, 'İmtina')}
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={createLoading}
                                     className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-colors shadow-md cursor-pointer disabled:opacity-50"
                                 >
-                                    {createLoading ? 'Yaradılır...' : 'Yarat'}
+                                    {createLoading ? t('common.saving', {}, 'Yaradılır...') : t('common.create', {}, 'Yarat')}
                                 </button>
                             </div>
                         </form>
@@ -1129,7 +1166,7 @@ export const AccountsPage: React.FC = () => {
                     <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg text-[#E4E4E7] overflow-hidden animate-in fade-in duration-200">
                         <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 p-5">
                             <div>
-                                <h3 className="text-base font-bold text-white">İlkin Qalıq Təyin Et</h3>
+                                <h3 className="text-base font-bold text-white">{t('accounting.setInitialBalance', {}, 'İlkin Qalıq Təyin Et')}</h3>
                                 <p className="text-xs text-[#71717A]">
                                     {selectedAccount.code} - {selectedAccount.name}
                                 </p>
@@ -1154,7 +1191,7 @@ export const AccountsPage: React.FC = () => {
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="text-[#A1A1AA] font-medium">Debet Məbləği</label>
+                                    <label className="text-[#A1A1AA] font-medium">{t('accounting.debitAmount', {}, 'Debet Məbləği')}</label>
                                     <input
                                         type="number"
                                         step="0.01"
@@ -1170,7 +1207,7 @@ export const AccountsPage: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-[#A1A1AA] font-medium">Kredit Məbləği</label>
+                                    <label className="text-[#A1A1AA] font-medium">{t('accounting.creditAmount', {}, 'Kredit Məbləği')}</label>
                                     <input
                                         type="number"
                                         step="0.01"
@@ -1188,7 +1225,7 @@ export const AccountsPage: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="text-[#A1A1AA] font-medium">Qalıq Tarixi</label>
+                                <label className="text-[#A1A1AA] font-medium">{t('common.asOfDate', {}, 'Qalıq Tarixi')}</label>
                                 <input
                                     type="date"
                                     required
@@ -1199,10 +1236,10 @@ export const AccountsPage: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="text-[#A1A1AA] font-medium">Qeydlər</label>
+                                <label className="text-[#A1A1AA] font-medium">{t('common.notes', {}, 'Qeydlər')}</label>
                                 <input
                                     type="text"
-                                    placeholder="İlkin saldo qeydi..."
+                                    placeholder={t('common.notesPlaceholder', {}, 'İlkin saldo qeydi...')}
                                     value={balanceForm.notes}
                                     onChange={(e) => setBalanceForm({ ...balanceForm, notes: e.target.value })}
                                     className="w-full mt-1 px-3 py-2 rounded-xl bg-[#141416] border border-[#2C2C2E] text-white placeholder:text-[#71717A] focus:outline-none focus:border-white"
@@ -1215,14 +1252,14 @@ export const AccountsPage: React.FC = () => {
                                     onClick={() => setShowBalanceModal(false)}
                                     className="px-4 py-2 rounded-xl border border-[#2C2C2E] text-xs font-semibold text-[#A1A1AA] hover:text-white"
                                 >
-                                    İmtina
+                                    {t('common.cancel', {}, 'İmtina')}
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={balanceLoading}
                                     className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
                                 >
-                                    {balanceLoading ? 'Yadda saxlanılır...' : 'Təsdiqlə'}
+                                    {balanceLoading ? t('common.saving', {}, 'Yadda saxlanılır...') : t('common.confirm', {}, 'Təsdiqlə')}
                                 </button>
                             </div>
                         </form>

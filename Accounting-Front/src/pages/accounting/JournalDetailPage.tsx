@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { accountsService } from '../../api';
 import type { JournalEntryDto, AccountDto } from '../../dto';
 import { formatDate, formatDateTime, extractErrorMessage } from '../../utils';
+import { useLanguage } from '../../context/LanguageContext';
 import {
     ArrowLeftIcon,
     ArrowPathIcon,
@@ -16,6 +17,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 export const JournalDetailPage: React.FC = () => {
+    const { t } = useLanguage();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
 
@@ -98,20 +100,20 @@ export const JournalDetailPage: React.FC = () => {
         if (s === 'posted' || s === 'approved') {
             return (
                 <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-[#14291F] text-[#4ADE80] border border-[#22C55E]/30">
-                    Posted
+                    {t('statuses.POSTED', {}, 'Posted')}
                 </span>
             );
         }
         if (s === 'reversed' || s === 'cancelled') {
             return (
                 <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-[#2E1619] text-[#F87171] border border-[#EF4444]/30">
-                    Reversed
+                    {t('statuses.CANCELLED', {}, 'Reversed')}
                 </span>
             );
         }
         return (
             <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-[#292214] text-[#FBBF24] border border-[#F59E0B]/30">
-                Draft
+                {t('statuses.DRAFT', {}, 'Draft')}
             </span>
         );
     };
@@ -126,7 +128,7 @@ export const JournalDetailPage: React.FC = () => {
             <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="flex items-center gap-3 text-white text-sm">
                     <ArrowPathIcon className="w-5 h-5 animate-spin" />
-                    <span>Jurnal məlumatları yüklənir...</span>
+                    <span>{t('common.loading', {}, 'Jurnal məlumatları yüklənir...')}</span>
                 </div>
             </div>
         );
@@ -135,13 +137,13 @@ export const JournalDetailPage: React.FC = () => {
     if (!entry) {
         return (
             <div className="p-8 text-center space-y-4">
-                <p className="text-white text-base font-semibold">Jurnal qeydi tapılmadı.</p>
+                <p className="text-white text-base font-semibold">{t('accounting.entryNotFound', {}, 'Jurnal qeydi tapılmadı.')}</p>
                 <Link
                     to="/journal"
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-colors"
                 >
                     <ArrowLeftIcon className="w-4 h-4" />
-                    <span>Jurnal Siyahısına Qayıt</span>
+                    <span>{t('accounting.backToJournal', {}, 'Jurnal Siyahısına Qayıt')}</span>
                 </Link>
             </div>
         );
@@ -155,12 +157,12 @@ export const JournalDetailPage: React.FC = () => {
                     <button
                         onClick={() => navigate('/journal')}
                         className="p-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-                        title="Geri"
+                        title={t('common.back', {}, 'Geri')}
                     >
                         <ArrowLeftIcon className="w-4 h-4" />
                     </button>
                     <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                        <Link to="/journal" className="hover:text-zinc-300 transition-colors">Jurnal Qeydləri</Link>
+                        <Link to="/journal" className="hover:text-zinc-300 transition-colors">{t('accounting.journalTitle', {}, 'Jurnal Qeydləri')}</Link>
                         <span className="text-[#52525B]">/</span>
                         <span className="font-mono text-white">{entry.entryNumber}</span>
                     </h1>
@@ -175,7 +177,7 @@ export const JournalDetailPage: React.FC = () => {
                             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white hover:bg-zinc-200 text-black text-xs font-bold shadow-md transition-colors cursor-pointer"
                         >
                             <CheckCircleIcon className="w-4 h-4" />
-                            <span>Baş Kitaba Keçir (Post)</span>
+                            <span>{t('accounting.postToLedger', {}, 'Baş Kitaba Keçir (Post)')}</span>
                         </button>
                     )}
 
@@ -185,7 +187,7 @@ export const JournalDetailPage: React.FC = () => {
                             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md transition-colors cursor-pointer"
                         >
                             <ArrowPathRoundedSquareIcon className="w-4 h-4" />
-                            <span>Ləğv Et (Reverse)</span>
+                            <span>{t('accounting.reverse', {}, 'Ləğv Et (Reverse)')}</span>
                         </button>
                     )}
                 </div>
@@ -202,28 +204,28 @@ export const JournalDetailPage: React.FC = () => {
             {/* Summary Metrics */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="p-4 rounded-2xl bg-[#121214] border border-[#27272A]">
-                    <span className="text-xs text-[#A1A1AA] font-semibold block">Tarix</span>
+                    <span className="text-xs text-[#A1A1AA] font-semibold block">{t('common.date', {}, 'Tarix')}</span>
                     <span className="text-sm font-bold text-white mt-1 block">
                         {formatDate(entry.date)}
                     </span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[#121214] border border-[#27272A]">
-                    <span className="text-xs text-[#A1A1AA] font-semibold block">İstinad №</span>
+                    <span className="text-xs text-[#A1A1AA] font-semibold block">{t('common.reference', {}, 'İstinad №')}</span>
                     <span className="text-sm font-mono font-bold text-white mt-1 block truncate">
                         {entry.reference || '—'}
                     </span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[#121214] border border-[#27272A]">
-                    <span className="text-xs text-[#A1A1AA] font-semibold block">Debet Cəmi</span>
+                    <span className="text-xs text-[#A1A1AA] font-semibold block">{t('accounting.totalDebit', {}, 'Debet Cəmi')}</span>
                     <span className="text-sm font-mono font-bold text-emerald-400 mt-1 block">
                         {formatCurrency(entry.totalDebit || 0)}
                     </span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[#121214] border border-[#27272A]">
-                    <span className="text-xs text-[#A1A1AA] font-semibold block">Kredit Cəmi</span>
+                    <span className="text-xs text-[#A1A1AA] font-semibold block">{t('accounting.totalCredit', {}, 'Kredit Cəmi')}</span>
                     <span className="text-sm font-mono font-bold text-white mt-1 block">
                         {formatCurrency(entry.totalCredit || 0)}
                     </span>
@@ -232,16 +234,16 @@ export const JournalDetailPage: React.FC = () => {
 
             {/* General Info Card */}
             <div className="p-5 rounded-2xl bg-[#121214] border border-[#27272A] space-y-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1A1AA]">Ümumi Məlumat</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1A1AA]">{t('common.details', {}, 'Ümumi Məlumat')}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                     <div>
-                        <span className="text-[#71717A] block">Təsvir / Açıqlama</span>
+                        <span className="text-[#71717A] block">{t('common.description', {}, 'Təsvir / Açıqlama')}</span>
                         <span className="text-white font-medium mt-0.5 block">{entry.description || '—'}</span>
                     </div>
                     <div>
-                        <span className="text-[#71717A] block">Status Tarixi</span>
+                        <span className="text-[#71717A] block">{t('accounting.postedAt', {}, 'Status Tarixi')}</span>
                         <span className="text-white font-medium mt-0.5 block">
-                            {entry.postedAt ? `Baş kitaba keçirilib: ${formatDateTime(entry.postedAt)}` : 'Qaralama'}
+                            {entry.postedAt ? `${t('accounting.postedAt', {}, 'Baş kitaba keçirilib')}: ${formatDateTime(entry.postedAt)}` : t('accounting.isDraft', {}, 'Qaralama')}
                         </span>
                     </div>
                 </div>
@@ -250,18 +252,18 @@ export const JournalDetailPage: React.FC = () => {
             {/* Journal Lines Table */}
             <div className="rounded-2xl border border-[#27272A] bg-[#121214] overflow-hidden shadow-2xl">
                 <div className="p-4 border-b border-[#27272A] flex items-center justify-between">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-white">İkiqat Müxabirləşmə Sətirləri</h3>
-                    <span className="text-xs font-mono text-[#A1A1AA]">{(entry.lines || []).length} sətir</span>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-white">{t('accounting.entryLines', {}, 'İkiqat Müxabirləşmə Sətirləri')}</h3>
+                    <span className="text-xs font-mono text-[#A1A1AA]">{(entry.lines || []).length} {t('common.linesCount', {}, 'sətir')}</span>
                 </div>
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs text-[#E4E4E7]">
                         <thead>
                             <tr className="border-b border-[#27272A] bg-[#18181B] text-[#A1A1AA] text-[11px] font-bold">
-                                <th className="py-3 px-4">Hesab (Kod və Ad)</th>
-                                <th className="py-3 px-4">Sətir Təsviri</th>
-                                <th className="py-3 px-4 text-right">Debet (AZN)</th>
-                                <th className="py-3 px-4 text-right">Kredit (AZN)</th>
+                                <th className="py-3 px-4">{t('accounting.account', {}, 'Hesab (Kod və Ad)')}</th>
+                                <th className="py-3 px-4">{t('common.description', {}, 'Sətir Təsviri')}</th>
+                                <th className="py-3 px-4 text-right">{t('accounting.debit', {}, 'Debet (AZN)')}</th>
+                                <th className="py-3 px-4 text-right">{t('accounting.credit', {}, 'Kredit (AZN)')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#27272A]/60">
@@ -284,7 +286,7 @@ export const JournalDetailPage: React.FC = () => {
                         </tbody>
                         <tfoot>
                             <tr className="border-t border-[#27272A] bg-[#18181B] font-bold font-mono text-white text-xs">
-                                <td colSpan={2} className="py-3 px-4 text-right uppercase tracking-wider text-[#A1A1AA]">Cəmi:</td>
+                                <td colSpan={2} className="py-3 px-4 text-right uppercase tracking-wider text-[#A1A1AA]">{t('common.total', {}, 'Cəmi')}:</td>
                                 <td className="py-3 px-4 text-right text-emerald-400">{formatCurrency(entry.totalDebit || 0)}</td>
                                 <td className="py-3 px-4 text-right">{formatCurrency(entry.totalCredit || 0)}</td>
                             </tr>
@@ -298,7 +300,7 @@ export const JournalDetailPage: React.FC = () => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in">
                     <div className="bg-[#18181B] border border-[#27272A] rounded-2xl w-full max-w-md p-6 space-y-4 text-white shadow-2xl">
                         <div className="flex items-center justify-between pb-3 border-b border-[#27272A]">
-                            <h3 className="text-sm font-bold text-white">Jurnal Qeydinin Ləğvi (Reverse)</h3>
+                            <h3 className="text-sm font-bold text-white">{t('accounting.reverseEntryTitle', {}, 'Jurnal Qeydinin Ləğvi (Reverse)')}</h3>
                             <button
                                 onClick={() => setShowReverseModal(false)}
                                 className="p-1 rounded-lg text-[#71717A] hover:text-white hover:bg-white/5 cursor-pointer"
@@ -315,7 +317,7 @@ export const JournalDetailPage: React.FC = () => {
 
                         <form onSubmit={handleReverseSubmit} className="space-y-3.5">
                             <div>
-                                <label className="text-xs font-semibold text-[#A1A1AA]">Ləğvetmə Səbəbi *</label>
+                                <label className="text-xs font-semibold text-[#A1A1AA]">{t('accounting.reversalReason', {}, 'Ləğvetmə Səbəbi')} *</label>
                                 <input
                                     type="text"
                                     required
@@ -326,7 +328,7 @@ export const JournalDetailPage: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="text-xs font-semibold text-[#A1A1AA]">Ləğvetmə Tarixi *</label>
+                                <label className="text-xs font-semibold text-[#A1A1AA]">{t('accounting.reversalDate', {}, 'Ləğvetmə Tarixi')} *</label>
                                 <input
                                     type="date"
                                     required
@@ -337,7 +339,7 @@ export const JournalDetailPage: React.FC = () => {
                             </div>
 
                             <p className="text-[11px] text-[#A1A1AA] bg-[#121214] p-3 rounded-xl border border-[#27272A]">
-                                ⚠️ Bu əməliyyat baş kitabda əks-müxabirləşmə yaradacaq və qeydin statusunu "Reversed" edəcək.
+                                ⚠️ {t('accounting.reversalWarning', {}, 'Bu əməliyyat baş kitabda əks-müxabirləşmə yaradacaq və qeydin statusunu "Reversed" edəcək.')}
                             </p>
 
                             <div className="flex items-center justify-end gap-2.5 pt-2">
@@ -346,14 +348,14 @@ export const JournalDetailPage: React.FC = () => {
                                     onClick={() => setShowReverseModal(false)}
                                     className="px-4 py-2 rounded-xl bg-[#18181B] border border-[#27272A] hover:bg-[#27272A] text-xs font-semibold text-white cursor-pointer"
                                 >
-                                    İmtina
+                                    {t('common.cancel', {}, 'İmtina')}
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={reverseLoading}
                                     className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white transition-colors cursor-pointer"
                                 >
-                                    {reverseLoading ? 'Ləğv edilir...' : 'Təsdiqlə və Ləğv Et'}
+                                    {reverseLoading ? t('common.processing', {}, 'Ləğv edilir...') : t('accounting.confirmReversal', {}, 'Təsdiqlə və Ləğv Et')}
                                 </button>
                             </div>
                         </form>

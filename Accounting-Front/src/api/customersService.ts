@@ -1,8 +1,6 @@
-import axios from 'axios';
 import httpClient from './httpClient';
 import { accountsService } from './accountsService';
 import { paymentService } from './paymentService';
-import { parseJwtToken } from '../utils/tokenUtils';
 import type {
     CustomerDto,
     CreateCustomerRequest,
@@ -120,39 +118,6 @@ function saveCustomerMeta(key: string, meta: Partial<CustomerDto>) {
         };
         localStorage.setItem(CUSTOMERS_META_KEY, JSON.stringify(current));
     } catch {}
-}
-
-async function ensureTenantAccountingSeeded(): Promise<void> {
-    try {
-        const token = localStorage.getItem('accessToken') || localStorage.getItem('token') || localStorage.getItem('authToken') || '';
-        const user = parseJwtToken(token);
-        if (!user?.tenantId || !user?.userId) return;
-
-        const base = import.meta.env.VITE_ACC_API_URL || 'https://api-accounting.altensor.com/api';
-        const rootUrl = base.replace(/\/api\/?$/, '');
-
-        await axios.post(
-            `${rootUrl}/internal/webhooks/user-created`,
-            {
-                userId: user.userId,
-                tenantId: user.tenantId,
-                email: user.email || 'admin@altensor.com',
-                userName: user.userName || 'Admin',
-                fullName: user.userName || 'Admin',
-                createdAt: new Date().toISOString(),
-            },
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Internal-Api-Key': 'Altensor_Internal_Secret_Key_2026_Secure!',
-                    'X-Webhook-Secret': 'Altensor_Internal_Secret_Key_2026_Secure!',
-                },
-                timeout: 10000,
-            }
-        );
-    } catch (e) {
-        console.warn('[customersService] ensureTenantAccountingSeeded failed:', e);
-    }
 }
 
 const ITEMS_META_KEY = 'altensor_items_metadata_cache';
@@ -513,27 +478,7 @@ export const customersService = {
             }
         };
 
-        try {
-            return await executePostWithFiscalRecovery();
-        } catch (err: any) {
-            const errDetail = String(err.response?.data?.detail || err.response?.data?.message || err.message || '');
-            if (
-                errDetail.includes('Şirkət parametrləri') ||
-                errDetail.includes('şirkət') ||
-                errDetail.includes('Company') ||
-                errDetail.includes('default hesab') ||
-                errDetail.includes('Debitor borclar') ||
-                errDetail.includes('Hesablanmış ƏDV')
-            ) {
-                try {
-                    await ensureTenantAccountingSeeded();
-                    return await executePostWithFiscalRecovery();
-                } catch {
-                    throw err;
-                }
-            }
-            throw err;
-        }
+        return await executePostWithFiscalRecovery();
     },
 
     async postInvoice(id: string, invoiceDate?: string): Promise<CustomerInvoiceDto> {
@@ -559,7 +504,8 @@ export const customersService = {
             postingDate: pDate,
             partyId: data.customerId && isValidGuid(data.customerId) ? data.customerId : undefined,
             partyType: 'Customer',
-            bankOrCashAccountId: data.bankAccountId,
+            bankAccountId: data.bankAccountId,
+            paymentMethod: data.paymentMethod || 'BankTransfer',
             currency: 'AZN',
             exchangeRate: 1.0,
             totalAmount: amount,

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
     Squares2X2Icon,
@@ -7,36 +7,41 @@ import {
     BanknotesIcon,
     Bars3Icon,
 } from '@heroicons/react/24/outline';
+import { useLanguage } from '../context/LanguageContext';
 
 export const MobileBottomNav: React.FC = () => {
     const location = useLocation();
+    const { t } = useLanguage();
 
     const handleOpenMenu = () => {
         window.dispatchEvent(new CustomEvent('toggle-mobile-sidebar'));
     };
 
-    const tabs = [
-        {
-            path: '/dashboard',
-            label: 'Panel',
-            icon: Squares2X2Icon,
-        },
-        {
-            path: '/accounts',
-            label: 'Hesablar',
-            icon: ClipboardDocumentListIcon,
-        },
-        {
-            path: '/customers',
-            label: 'Müştərilər',
-            icon: UserGroupIcon,
-        },
-        {
-            path: '/payments',
-            label: 'Ödənişlər',
-            icon: BanknotesIcon,
-        },
-    ];
+    const tabs = useMemo(
+        () => [
+            {
+                path: '/dashboard',
+                label: t('nav.dashboard', {}, 'Panel'),
+                icon: Squares2X2Icon,
+            },
+            {
+                path: '/accounts',
+                label: t('nav.accounts', {}, 'Hesablar'),
+                icon: ClipboardDocumentListIcon,
+            },
+            {
+                path: '/customers',
+                label: t('nav.customers', {}, 'Müştərilər'),
+                icon: UserGroupIcon,
+            },
+            {
+                path: '/payments',
+                label: t('nav.payments', {}, 'Ödənişlər'),
+                icon: BanknotesIcon,
+            },
+        ],
+        [t]
+    );
 
     return (
         <nav
@@ -78,7 +83,7 @@ export const MobileBottomNav: React.FC = () => {
                     <Bars3Icon className="w-5 h-5 stroke-[1.75]" />
                 </div>
                 <span className="text-[10px] mt-0.5 tracking-tight leading-none">
-                    Menyu
+                    {t('nav.menu', {}, 'Menyu')}
                 </span>
             </button>
         </nav>
