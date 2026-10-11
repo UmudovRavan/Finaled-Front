@@ -4,6 +4,10 @@ import type {
     BalanceSheetResponse,
     IncomeStatementResponse,
     AgingReportResponse,
+    FinancialPositionReportDto,
+    ProfitOrLossReportDto,
+    ChangesInEquityReportDto,
+    CashFlowReportDto,
 } from '../dto';
 
 function normalizeAgingReport(data: any, defaultPartyType: 'Customer' | 'Supplier'): AgingReportResponse {
@@ -226,6 +230,46 @@ export const reportsService = {
             },
         });
         return normalizeAgingReport(response.data, 'Supplier');
+    },
+
+    // -------------------------------------------------------------
+    // 4 Əsas Beynəlxalq Maliyyə Hesabatı (IFRS Statements)
+    // -------------------------------------------------------------
+    async getFinancialPosition(asOfDate?: string): Promise<FinancialPositionReportDto> {
+        const response = await httpClient.get<FinancialPositionReportDto>('/Reports/financial-position', {
+            params: { asOfDate: asOfDate || new Date().toISOString() },
+        });
+        return response.data;
+    },
+
+    async getProfitOrLoss(fromDate?: string, toDate?: string): Promise<ProfitOrLossReportDto> {
+        const response = await httpClient.get<ProfitOrLossReportDto>('/Reports/profit-or-loss', {
+            params: {
+                fromDate: fromDate || new Date(new Date().getFullYear(), 0, 1).toISOString(),
+                toDate: toDate || new Date().toISOString(),
+            },
+        });
+        return response.data;
+    },
+
+    async getChangesInEquity(fromDate?: string, toDate?: string): Promise<ChangesInEquityReportDto> {
+        const response = await httpClient.get<ChangesInEquityReportDto>('/Reports/changes-in-equity', {
+            params: {
+                fromDate: fromDate || new Date(new Date().getFullYear(), 0, 1).toISOString(),
+                toDate: toDate || new Date().toISOString(),
+            },
+        });
+        return response.data;
+    },
+
+    async getCashFlow(fromDate?: string, toDate?: string): Promise<CashFlowReportDto> {
+        const response = await httpClient.get<CashFlowReportDto>('/Reports/cash-flow', {
+            params: {
+                fromDate: fromDate || new Date(new Date().getFullYear(), 0, 1).toISOString(),
+                toDate: toDate || new Date().toISOString(),
+            },
+        });
+        return response.data;
     },
 };
 

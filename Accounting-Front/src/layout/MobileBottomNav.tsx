@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
     Squares2X2Icon,
     ClipboardDocumentListIcon,
-    UserGroupIcon,
+    CircleStackIcon,
     BanknotesIcon,
     Bars3Icon,
 } from '@heroicons/react/24/outline';
@@ -30,9 +30,9 @@ export const MobileBottomNav: React.FC = () => {
                 icon: ClipboardDocumentListIcon,
             },
             {
-                path: '/customers',
-                label: t('nav.customers', {}, 'Müştərilər'),
-                icon: UserGroupIcon,
+                path: '/master-data',
+                label: t('nav.masterData', {}, 'Master Data'),
+                icon: CircleStackIcon,
             },
             {
                 path: '/payments',

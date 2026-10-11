@@ -58,6 +58,8 @@ export interface CustomerInvoiceDto {
     dueDate: string;
     postingDate?: string;
     status: 'Draft' | 'Approved' | 'Posted' | 'Paid' | 'PartiallyPaid' | 'Overdue' | 'Cancelled' | string;
+    salesOrderId?: string | null;
+    deliveryNoteId?: string | null;
     documentStatus?: number | string;
     settlementStatus?: number | string;
     subTotal: number;
@@ -79,6 +81,8 @@ export interface CreateCustomerInvoiceRequest {
     dueDate: string;
     currency?: string;
     exchangeRate?: number;
+    salesOrderId?: string | null;
+    deliveryNoteId?: string | null;
     notes?: string;
     lines: {
         itemId?: string | null;

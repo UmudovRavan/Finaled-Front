@@ -6,12 +6,19 @@ export { default as ResetPassword } from './ResetPassword';
 // Dashboard
 export { default as Dashboard } from './dashboard/Dashboard';
 
+// Master Data Hub
+export { default as MasterDataPage } from './masterData/MasterDataPage';
+
 // Accounting & GL
 export { default as AccountsPage } from './accounting/AccountsPage';
 export { default as AccountDetailPage } from './accounting/AccountDetailPage';
 export { default as JournalPage } from './accounting/JournalPage';
 export { default as JournalDetailPage } from './accounting/JournalDetailPage';
 export { default as FiscalPeriodsPage } from './accounting/FiscalPeriodsPage';
+
+// Sales Cycle
+export { default as SalesOrdersPage } from './sales/SalesOrdersPage';
+export { default as DeliveryNotesPage } from './sales/DeliveryNotesPage';
 
 // Invoicing & Sales
 export { default as CustomersPage } from './invoicing/CustomersPage';
@@ -50,6 +57,13 @@ export { default as TrialBalancePage } from './reports/TrialBalancePage';
 export { default as BalanceSheetPage } from './reports/BalanceSheetPage';
 export { default as IncomeStatementPage } from './reports/IncomeStatementPage';
 export { default as AgingPage } from './reports/AgingPage';
+export { default as FinancialPositionPage } from './reports/FinancialPositionPage';
+export { default as ProfitOrLossPage } from './reports/ProfitOrLossPage';
+export { default as ChangesInEquityPage } from './reports/ChangesInEquityPage';
+export { default as CashFlowPage } from './reports/CashFlowPage';
+
+// Company Profile
+export { default as CompanyPage } from './company/CompanyPage';
 
 // Settings
 export { default as SettingsPage } from './SettingsPage';

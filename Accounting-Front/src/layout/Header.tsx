@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
-import { authService } from '../api';
+import { authService, companyService } from '../api';
+import type { CompanyHeaderDto } from '../dto';
 import { parseJwtToken } from '../utils';
 import type { UserInfo } from '../utils';
 import {
@@ -15,6 +16,7 @@ import {
     Bars3Icon,
     ChevronDownIcon,
     CheckIcon,
+    BuildingOffice2Icon,
 } from '@heroicons/react/24/outline';
 import accountingLogo from '../assets/Accounting-Logo.png';
 
@@ -44,11 +46,26 @@ export const Header: React.FC<HeaderProps> = ({
     const langRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
+    const [companyHeader, setCompanyHeader] = useState<CompanyHeaderDto | null>(null);
+
     useEffect(() => {
         const token = authService.getAccessToken();
         if (token) {
             setUserInfo(parseJwtToken(token));
         }
+
+        companyService.getCompanyHeader()
+            .then((data) => setCompanyHeader(data))
+            .catch(() => {
+                // Fallback default info if backend company endpoint not initialized yet
+                setCompanyHeader({
+                    companyName: 'Altensor MMC',
+                    taxNumber: '1401234567',
+                    baseCurrency: 'AZN',
+                    activeFiscalYear: '2026 Maliyyə İli',
+                    activeFiscalPeriod: '2026-Q4 / Oktyabr',
+                });
+            });
     }, []);
 
     // Ctrl+K shortcut
@@ -121,6 +138,37 @@ export const Header: React.FC<HeaderProps> = ({
                     </kbd>
                 </div>
             </div>
+
+            {/* Center: Dynamic Company & Period Context */}
+            {companyHeader && (
+                <div
+                    onClick={() => navigate('/settings')}
+                    className="hidden md:flex items-center gap-2.5 px-3 py-1 rounded-xl bg-[#18181B] border border-[#27272A] hover:border-emerald-500/40 hover:bg-white/[0.02] cursor-pointer transition-all duration-150 group shadow-xs"
+                    title={t('company.clickToSettings', {}, 'Şirkət tənzimləmələrinə keçid')}
+                >
+                    <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 flex items-center justify-center shrink-0">
+                        <BuildingOffice2Icon className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="flex flex-col text-left leading-tight">
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-[12px] font-bold text-white group-hover:text-emerald-400 transition-colors">
+                                {companyHeader.companyName}
+                            </span>
+                            {companyHeader.taxNumber && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-mono font-medium">
+                                    VÖEN: {companyHeader.taxNumber}
+                                </span>
+                            )}
+                        </div>
+                        {(companyHeader.activeFiscalPeriod || companyHeader.activeFiscalYear) && (
+                            <div className="flex items-center gap-1.5 text-[10.5px] text-[#A1A1AA]">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span>{companyHeader.activeFiscalPeriod || companyHeader.activeFiscalYear}</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Right: Actions */}
             <div className="flex items-center gap-2">

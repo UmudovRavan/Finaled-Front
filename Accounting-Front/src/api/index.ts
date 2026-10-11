@@ -8,3 +8,7 @@ export { default as inventoryService } from './inventoryService';
 export { default as paymentService } from './paymentService';
 export { default as fiscalService } from './fiscalService';
 export { default as reportsService } from './reportsService';
+export { default as salesService } from './salesService';
+export { default as companyService } from './companyService';
+export { default as masterDataService } from './masterDataService';
+

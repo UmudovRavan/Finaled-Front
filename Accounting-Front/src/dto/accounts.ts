@@ -5,13 +5,24 @@ export interface AccountDto {
     code: string;
     name: string;
     type: AccountType | string | any;
+    typeName?: string;
     category?: any;
+    categoryName?: string;
+    subcategory?: number | null;
+    subcategoryName?: string | null;
     isLeaf?: boolean;
     isControlAccount?: boolean;
     parentAccountId?: string | null;
     parentAccountName?: string | null;
     currency: string;
     balance: number;
+    currentBalance?: number;
+    openingDebit?: number;
+    openingCredit?: number;
+    turnoverDebit?: number;
+    turnoverCredit?: number;
+    closingDebit?: number;
+    closingCredit?: number;
     isActive: boolean;
     description?: string;
     subAccounts?: AccountDto[];
@@ -19,12 +30,79 @@ export interface AccountDto {
     updatedAt?: string;
 }
 
+export interface AccountTreeNodeDto {
+    id: string;
+    code: string;
+    name: string;
+    category: number | string;
+    categoryName: string;
+    subcategory?: number | null;
+    subcategoryName?: string | null;
+    type: number | string;
+    typeName: string;
+    parentAccountId?: string | null;
+    level: number;
+    isLeaf: boolean;
+    isControlAccount: boolean;
+    isActive: boolean;
+    currency: string;
+    openingDebit: number;
+    openingCredit: number;
+    turnoverDebit: number;
+    turnoverCredit: number;
+    closingDebit: number;
+    closingCredit: number;
+    currentBalance: number;
+    children: AccountTreeNodeDto[];
+}
+
+export interface AccountBalanceRowDto {
+    accountId: string;
+    code: string;
+    name: string;
+    category: number | string;
+    categoryName: string;
+    subcategory?: number | null;
+    subcategoryName?: string | null;
+    level: number;
+    isLeaf: boolean;
+    openingDebit: number;
+    openingCredit: number;
+    turnoverDebit: number;
+    turnoverCredit: number;
+    closingDebit: number;
+    closingCredit: number;
+}
+
+export interface AccountTypeOptionDto {
+    id: number;
+    code: string;
+    name: string;
+    description: string;
+}
+
+export interface SubcategoryOptionDto {
+    id: number;
+    code: string;
+    name: string;
+}
+
+export interface CategorySubcategoryMappingDto {
+    categoryId: number;
+    categoryCode: string;
+    categoryName: string;
+    subcategories: SubcategoryOptionDto[];
+}
+
 export interface CreateAccountRequest {
     code: string;
     name: string;
-    type: AccountType | string;
+    category?: number;
+    subcategory?: number | null;
+    type: AccountType | string | number;
     parentAccountId?: string | null;
     currency?: string;
+    isControlAccount?: boolean;
     description?: string;
     isActive?: boolean;
 }
@@ -32,9 +110,12 @@ export interface CreateAccountRequest {
 export interface UpdateAccountRequest {
     code?: string;
     name?: string;
-    type?: AccountType | string;
+    category?: number;
+    subcategory?: number | null;
+    type?: AccountType | string | number;
     parentAccountId?: string | null;
     currency?: string;
+    isControlAccount?: boolean;
     description?: string;
     isActive?: boolean;
 }

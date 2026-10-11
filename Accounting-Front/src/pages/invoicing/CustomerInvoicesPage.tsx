@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { customersService, paymentService, accountsService } from '../../api';
 import type {
     CustomerInvoiceDto,
@@ -82,7 +82,10 @@ export const CustomerInvoicesPage: React.FC = () => {
 
     // Create Modal State
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const location = useLocation();
     const [createCustomerId, setCreateCustomerId] = useState('');
+    const [createSalesOrderId, setCreateSalesOrderId] = useState<string>('');
+    const [createDeliveryNoteId, setCreateDeliveryNoteId] = useState<string>('');
     const [createIssueDate, setCreateIssueDate] = useState(new Date().toISOString().split('T')[0]);
     const [createDueDate, setCreateDueDate] = useState(() => {
         const d = new Date();
@@ -98,6 +101,17 @@ export const CustomerInvoicesPage: React.FC = () => {
     ]);
     const [createLoading, setCreateLoading] = useState(false);
     const [createError, setCreateError] = useState('');
+
+    useEffect(() => {
+        const st = location.state as any;
+        if (st?.openCreateModal) {
+            setShowCreateModal(true);
+            if (st.customerId) setCreateCustomerId(st.customerId);
+            if (st.deliveryNoteId) setCreateDeliveryNoteId(st.deliveryNoteId);
+            if (st.salesOrderId) setCreateSalesOrderId(st.salesOrderId);
+            if (st.notes) setCreateNotes(st.notes);
+        }
+    }, [location.state]);
 
     // Pay Modal State
     const [showPayModal, setShowPayModal] = useState(false);
@@ -313,6 +327,8 @@ export const CustomerInvoicesPage: React.FC = () => {
                 issueDate: createIssueDate,
                 dueDate: createDueDate,
                 currency: createCurrency,
+                salesOrderId: createSalesOrderId || null,
+                deliveryNoteId: createDeliveryNoteId || null,
                 notes: createNotes,
                 lines: createLines.map((l) => ({
                     itemId: l.itemId || null,
@@ -337,6 +353,8 @@ export const CustomerInvoicesPage: React.FC = () => {
 
             setShowCreateModal(false);
             setCreateCustomerId('');
+            setCreateSalesOrderId('');
+            setCreateDeliveryNoteId('');
             setCreateNotes('');
             setCreateLines([{ itemId: '', description: '', quantity: 1, unitPrice: '', discountPercent: 0, revenueAccountId: '' }]);
             loadData();

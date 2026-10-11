@@ -1,6 +1,10 @@
 import httpClient from './httpClient';
 import type {
     AccountDto,
+    AccountTreeNodeDto,
+    AccountBalanceRowDto,
+    AccountTypeOptionDto,
+    CategorySubcategoryMappingDto,
     CreateAccountRequest,
     UpdateAccountRequest,
     InitialBalanceRequest,
@@ -67,6 +71,7 @@ export const accountsService = {
             code: String(data.code || '').trim(),
             name: String(data.name || '').trim(),
             category: categoryVal,
+            subcategory: data.subcategory !== undefined ? data.subcategory : null,
             type: typeVal,
             parentAccountId: data.parentAccountId || null,
             isControlAccount: Boolean(data.isControlAccount),
@@ -406,6 +411,35 @@ export const accountsService = {
                 localStorage.setItem(localKey, JSON.stringify(updated));
             }
         } catch {}
+    },
+
+    // -------------------------------------------------------------
+    // Tree, Balances, Types, Subcategories & Seed
+    // -------------------------------------------------------------
+    async getAccountTree(): Promise<AccountTreeNodeDto[]> {
+        const response = await httpClient.get<AccountTreeNodeDto[]>('/Accounts/tree');
+        return response.data || [];
+    },
+
+    async getAccountBalances(params?: {
+        fromDate?: string;
+        toDate?: string;
+        search?: string;
+        includeZeroBalance?: boolean;
+        currency?: string;
+    }): Promise<AccountBalanceRowDto[]> {
+        const response = await httpClient.get<AccountBalanceRowDto[]>('/Accounts/balances', { params });
+        return response.data || [];
+    },
+
+    async getAccountTypes(): Promise<AccountTypeOptionDto[]> {
+        const response = await httpClient.get<AccountTypeOptionDto[]>('/Accounts/types');
+        return response.data || [];
+    },
+
+    async getSubcategories(): Promise<CategorySubcategoryMappingDto[]> {
+        const response = await httpClient.get<CategorySubcategoryMappingDto[]>('/Accounts/subcategories');
+        return response.data || [];
     },
 };
 

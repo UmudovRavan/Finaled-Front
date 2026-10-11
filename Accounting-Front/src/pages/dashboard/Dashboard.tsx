@@ -4,6 +4,7 @@ import {
     accountsService,
     reportsService,
     paymentService,
+    companyService,
 } from '../../api';
 import type {
     JournalEntryDto,
@@ -11,15 +12,18 @@ import type {
     BankAccountDto,
     AgingReportResponse,
     IncomeStatementResponse,
+    CompanyProfileDto,
 } from '../../dto';
 import { formatDate, formatDayMonthShort, getShortMonthName } from '../../utils';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
 import {
     ArrowPathIcon,
     CalendarIcon,
     ChevronDownIcon,
     CreditCardIcon,
     PlusIcon,
+    BuildingOffice2Icon,
 } from '@heroicons/react/24/outline';
 import {
     ResponsiveContainer,
@@ -38,8 +42,11 @@ import {
 
 export const Dashboard: React.FC = () => {
     const { t } = useLanguage();
+    const { user, tenantName } = useAuth();
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const currentYear = new Date().getFullYear();
 
     // Filter states - default '30d' and 'all'
     const [selectedPeriodKey, setSelectedPeriodKey] = useState<'7d' | '30d' | '60d' | '90d' | 'all'>('30d');
@@ -74,6 +81,8 @@ export const Dashboard: React.FC = () => {
     const [incomeStatement, setIncomeStatement] = useState<IncomeStatementResponse | null>(null);
     const [arAging, setArAging] = useState<AgingReportResponse | null>(null);
     const [apAging, setApAging] = useState<AgingReportResponse | null>(null);
+    const [company, setCompany] = useState<CompanyProfileDto | null>(null);
+    const companyDisplayName = company?.name || tenantName || user?.tenantName || 'Altensor MMC';
 
     // Calculate dates based on selected period
     const { fromDate, toDate } = useMemo(() => {
@@ -102,6 +111,7 @@ export const Dashboard: React.FC = () => {
                 incomeRes,
                 arAgingRes,
                 apAgingRes,
+                companyRes,
             ] = await Promise.allSettled([
                 accountsService.getAccounts(),
                 paymentService.getBankAccounts(),
@@ -109,6 +119,7 @@ export const Dashboard: React.FC = () => {
                 reportsService.getIncomeStatement(fromDate, toDate),
                 reportsService.getArAging(toDate),
                 reportsService.getApAging(toDate),
+                companyService.getCompanyProfile(),
             ]);
 
             if (accsRes.status === 'fulfilled' && Array.isArray(accsRes.value)) {
@@ -128,6 +139,9 @@ export const Dashboard: React.FC = () => {
             }
             if (apAgingRes.status === 'fulfilled' && apAgingRes.value) {
                 setApAging(apAgingRes.value);
+            }
+            if (companyRes.status === 'fulfilled' && companyRes.value) {
+                setCompany(companyRes.value);
             }
         } catch (error) {
             console.error('Failed to load dashboard data:', error);
@@ -387,6 +401,74 @@ export const Dashboard: React.FC = () => {
 
     return (
         <div className="space-y-4 font-sans text-[#F4F4F5] antialiased select-none pb-10">
+            {/* ─── Financial Workspace Hero Banner (Client Requested) ─── */}
+            <div className="relative overflow-hidden rounded-2xl border border-[#1E3557] bg-gradient-to-r from-[#0F1E36] via-[#13233E] to-[#0D1A2E] p-5 sm:p-6 shadow-2xl">
+                {/* Subtle ambient lighting */}
+                <div className="absolute top-0 right-1/4 w-96 h-full bg-blue-500/10 blur-3xl pointer-events-none" />
+
+                <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-5">
+                    {/* Left side: Company Name & Workspace subtitle */}
+                    <div className="space-y-1.5">
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white drop-shadow-sm">
+                                {companyDisplayName}
+                            </h1>
+                            {company?.legalForm && (
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                                    {company.legalForm}
+                                </span>
+                            )}
+                            {company?.isVatPayer && (
+                                <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                    ƏDV ({company.vatRate}%)
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2.5 text-xs sm:text-sm text-slate-300">
+                            <span className="font-normal text-slate-200">Finance workspace</span>
+                            {company?.taxNumber && (
+                                <>
+                                    <span className="text-slate-500">•</span>
+                                    <span className="font-mono text-slate-300 text-xs">VÖEN: {company.taxNumber}</span>
+                                </>
+                            )}
+                            {company?.baseCurrency && (
+                                <>
+                                    <span className="text-slate-500 hidden sm:inline">•</span>
+                                    <span className="text-slate-300 text-xs hidden sm:inline">
+                                        Valyuta: <strong className="text-white font-medium">{company.baseCurrency}</strong>
+                                    </span>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Right side: Financial year block & quick action */}
+                    <div className="flex items-center gap-4 self-stretch md:self-auto justify-between md:justify-end border-t md:border-t-0 border-[#1E3557]/60 pt-3 md:pt-0">
+                        <div className="flex flex-col md:items-end justify-center">
+                            <span className="text-xs text-slate-300 font-serif">
+                                Financial year
+                            </span>
+                            <span className="text-2xl sm:text-3xl font-bold text-white tracking-tight my-0.5 font-serif">
+                                {currentYear}
+                            </span>
+                            <span className="text-[11px] sm:text-xs text-slate-300 font-serif">
+                                01.01.{currentYear} - 31.12.{currentYear} · 0 of 12 months closed
+                            </span>
+                        </div>
+
+                        <Link
+                            to="/company"
+                            title="Şirkət parametrləri"
+                            className="hidden lg:flex items-center justify-center p-2 rounded-xl border border-[#1E3557] bg-[#102038]/80 hover:bg-[#1A3357] text-slate-300 hover:text-white transition-colors cursor-pointer shrink-0 ml-2"
+                        >
+                            <BuildingOffice2Icon className="w-5 h-5 text-blue-400" />
+                        </Link>
+                    </div>
+                </div>
+            </div>
+
             {/* ─── Header Row ─── */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>

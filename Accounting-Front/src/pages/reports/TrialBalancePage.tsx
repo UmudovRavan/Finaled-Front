@@ -9,6 +9,7 @@ import type {
 } from '../../dto';
 import { formatDate } from '../../utils';
 import { useLanguage } from '../../context/LanguageContext';
+import { ReportsNav } from '../../components/reports/ReportsNav';
 import {
     ScaleIcon,
     ArrowPathIcon,
@@ -447,6 +448,7 @@ export const TrialBalancePage: React.FC = () => {
 
     return (
         <div className="space-y-3.5 font-sans text-[#F4F4F5] antialiased select-none pb-12">
+            <ReportsNav />
             {/* ─── Top Header (Breadcrumb & + Yarat button) ─── */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2">

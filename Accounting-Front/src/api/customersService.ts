@@ -441,6 +441,13 @@ export const customersService = {
             lines: formattedLines,
         };
 
+        if (data.salesOrderId) {
+            payload.salesOrderId = data.salesOrderId;
+        }
+        if (data.deliveryNoteId) {
+            payload.deliveryNoteId = data.deliveryNoteId;
+        }
+
         if (data.notes && String(data.notes).trim()) {
             payload.notes = String(data.notes).trim();
         }

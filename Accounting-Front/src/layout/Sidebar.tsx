@@ -24,8 +24,14 @@ import {
     InformationCircleIcon,
     ArrowRightOnRectangleIcon,
     ComputerDesktopIcon,
-    XMarkIcon,
     ScaleIcon,
+    TruckIcon,
+    CircleStackIcon,
+    BuildingOffice2Icon,
+    TableCellsIcon,
+    ArrowTrendingUpIcon,
+    ChartPieIcon,
+    XMarkIcon,
 } from '@heroicons/react/24/outline';
 import accountingLogo from '../assets/Accounting-Logo.png';
 import { authService } from '../api';
@@ -96,8 +102,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const [isBrandMenuOpen, setIsBrandMenuOpen] = useState(false);
     const [isAppsSubmenuOpen, setIsAppsSubmenuOpen] = useState(false);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+    const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
+        sales: true,
+        procurement: true,
+        reports: true,
+    });
+    const [hoveredFlyout, setHoveredFlyout] = useState<string | null>(null);
     const brandMenuRef = useRef<HTMLDivElement>(null);
     const mobileBrandMenuRef = useRef<HTMLDivElement>(null);
+
+    // Auto expand groups when active route is inside them
+    useEffect(() => {
+        if (location.pathname.startsWith('/sales') || location.pathname.startsWith('/customer-invoices')) {
+            setOpenGroups((prev) => ({ ...prev, sales: true }));
+        }
+        if (
+            location.pathname.startsWith('/purchase-orders') ||
+            location.pathname.startsWith('/goods-receipts') ||
+            location.pathname.startsWith('/supplier-invoices')
+        ) {
+            setOpenGroups((prev) => ({ ...prev, procurement: true }));
+        }
+        if (location.pathname.startsWith('/reports')) {
+            setOpenGroups((prev) => ({ ...prev, reports: true }));
+        }
+    }, [location.pathname]);
 
     // Save collapse state
     useEffect(() => {
@@ -168,23 +197,69 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }
     };
 
-    const menuItems = useMemo(
+    type NavMenuItem =
+        | {
+              type?: 'link';
+              path: string;
+              label: string;
+              icon: React.ComponentType<{ className?: string }>;
+          }
+        | {
+              type: 'group';
+              key: 'sales' | 'procurement' | 'reports';
+              label: string;
+              icon: React.ComponentType<{ className?: string }>;
+              children: {
+                  path: string;
+                  label: string;
+                  icon: React.ComponentType<{ className?: string }>;
+              }[];
+          };
+
+    const menuItems = useMemo<NavMenuItem[]>(
         () => [
             { path: '/dashboard', label: t('nav.dashboard', {}, 'Dashboard'), icon: Squares2X2Icon },
-            { path: '/accounts', label: t('nav.accounts', {}, 'Hesablar Planı'), icon: ClipboardDocumentListIcon },
+            { path: '/company', label: t('nav.company', {}, 'Şirkət'), icon: BuildingOffice2Icon },
+            { path: '/master-data', label: t('nav.masterData', {}, 'Master Data'), icon: CircleStackIcon },
+            { path: '/accounts', label: t('nav.accounts', {}, 'Hesablar Planı (CoA)'), icon: ClipboardDocumentListIcon },
             { path: '/journal', label: t('nav.journal', {}, 'Jurnal Qeydləri'), icon: DocumentTextIcon },
-            { path: '/customers', label: t('nav.customers', {}, 'Müştərilər'), icon: UserGroupIcon },
-            { path: '/customer-invoices', label: t('nav.customerInvoices', {}, 'Satış Qaimələri'), icon: ReceiptPercentIcon },
-            { path: '/items', label: t('nav.items', {}, 'Məhsul & Xidmətlər'), icon: Squares2X2Icon },
-            { path: '/suppliers', label: t('nav.suppliers', {}, 'Təchizatçılar'), icon: BuildingOfficeIcon },
-            { path: '/purchase-orders', label: t('nav.purchaseOrders', {}, 'Satınalma Sifarişləri'), icon: ShoppingBagIcon },
-            { path: '/goods-receipts', label: t('nav.goodsReceipts', {}, 'Malların Qəbulu'), icon: InboxArrowDownIcon },
-            { path: '/supplier-invoices', label: t('nav.supplierInvoices', {}, 'Alış Qaimələri'), icon: DocumentCheckIcon },
-            { path: '/warehouses', label: t('nav.warehouses', {}, 'Anbarlar'), icon: BuildingStorefrontIcon },
+            {
+                type: 'group',
+                key: 'sales',
+                label: t('nav.sales', {}, 'Satış'),
+                icon: ReceiptPercentIcon,
+                children: [
+                    { path: '/sales/orders', label: 'Satış Sifarişləri', icon: ClipboardDocumentListIcon },
+                    { path: '/sales/deliveries', label: 'Mal Təhvili (İrsaliyyə)', icon: TruckIcon },
+                    { path: '/customer-invoices', label: 'Satış Qaimələri', icon: ReceiptPercentIcon },
+                ],
+            },
+            {
+                type: 'group',
+                key: 'procurement',
+                label: t('nav.procurement', {}, 'Satınalma'),
+                icon: ShoppingBagIcon,
+                children: [
+                    { path: '/purchase-orders', label: 'Satınalma Sifarişləri', icon: ShoppingBagIcon },
+                    { path: '/goods-receipts', label: 'Malların Qəbulu', icon: InboxArrowDownIcon },
+                    { path: '/supplier-invoices', label: 'Alış Qaimələri', icon: DocumentCheckIcon },
+                ],
+            },
             { path: '/stock-ledger', label: t('nav.stockLedger', {}, 'Ehtiyat Hərəkəti'), icon: ArchiveBoxIcon },
-            { path: '/bank-accounts', label: t('nav.bankAccounts', {}, 'Bank Hesabları'), icon: CreditCardIcon },
             { path: '/payments', label: t('nav.payments', {}, 'Ödənişlər'), icon: BanknotesIcon },
-            { path: '/reports/trial-balance', label: t('nav.reports', {}, 'Maliyyə Hesabatları'), icon: ChartBarIcon },
+            {
+                type: 'group',
+                key: 'reports',
+                label: t('nav.reports', {}, 'Maliyyə Hesabatları'),
+                icon: ChartBarIcon,
+                children: [
+                    { path: '/reports/financial-position', label: 'Financial Position', icon: TableCellsIcon },
+                    { path: '/reports/profit-or-loss', label: 'Profit or Loss', icon: ArrowTrendingUpIcon },
+                    { path: '/reports/changes-in-equity', label: 'Changes in Equity', icon: ChartPieIcon },
+                    { path: '/reports/cash-flow', label: 'Cash Flow', icon: BanknotesIcon },
+                    { path: '/reports/trial-balance', label: 'Trial Balance (Sınaq)', icon: ScaleIcon },
+                ],
+            },
             { path: '/fiscal-periods', label: t('nav.fiscalPeriods', {}, 'Maliyyə Dövrləri'), icon: CalendarDaysIcon },
         ],
         [t]
@@ -193,8 +268,148 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const renderNavList = (isMobile = false) => (
         <nav className="flex flex-col gap-1 overflow-y-auto max-h-[calc(100vh-140px)] pr-0.5 custom-scrollbar">
             {menuItems.map((item) => {
-                const Icon = item.icon;
+                if (item.type === 'group') {
+                    const Icon = item.icon;
+                    const isChildActive = item.children.some(
+                        (child) =>
+                            location.pathname === child.path ||
+                            location.pathname.startsWith(`${child.path}/`)
+                    );
+                    const isOpen = Boolean(openGroups[item.key]);
 
+                    // Collapsed Desktop Mode: Render button with hover flyout
+                    if (!isMobile && isCollapsed) {
+                        return (
+                            <div
+                                key={item.key}
+                                className="relative group/collapsed"
+                                onMouseEnter={() => setHoveredFlyout(item.key)}
+                                onMouseLeave={() => setHoveredFlyout(null)}
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => navigate(item.children[0].path)}
+                                    className={`w-full flex items-center justify-center p-2.5 rounded-xl text-[13.5px] font-medium transition-colors relative cursor-pointer ${
+                                        isChildActive
+                                            ? 'bg-[#27272A] text-white font-semibold shadow-xs'
+                                            : 'text-[#A1A1AA] hover:bg-white/[0.04] hover:text-white'
+                                    }`}
+                                    title={item.label}
+                                >
+                                    <Icon
+                                        className={`w-5 h-5 stroke-[1.75] shrink-0 ${
+                                            isChildActive ? 'text-white' : 'text-[#A1A1AA]'
+                                        }`}
+                                    />
+                                    {isChildActive && (
+                                        <span className="absolute right-1 top-1 w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                    )}
+                                </button>
+
+                                {/* Floating Popover in Collapsed Mode */}
+                                {hoveredFlyout === item.key && (
+                                    <div className="absolute left-full top-0 ml-2 w-56 bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl p-2 z-50 flex flex-col gap-1 animate-in fade-in duration-150">
+                                        <div className="px-2.5 py-1 text-[11px] font-bold text-zinc-400 uppercase tracking-wider border-b border-[#2C2C2E]/80 mb-0.5">
+                                            {item.label}
+                                        </div>
+                                        {item.children.map((child) => {
+                                            const ChildIcon = child.icon;
+                                            const isChildCurrent =
+                                                location.pathname === child.path ||
+                                                location.pathname.startsWith(`${child.path}/`);
+                                            return (
+                                                <NavLink
+                                                    key={child.path}
+                                                    to={child.path}
+                                                    onClick={() => setHoveredFlyout(null)}
+                                                    className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium transition-colors ${
+                                                        isChildCurrent
+                                                            ? 'bg-[#27272A] text-white font-semibold'
+                                                            : 'text-[#A1A1AA] hover:text-white hover:bg-white/[0.04]'
+                                                    }`}
+                                                >
+                                                    <ChildIcon className="w-4 h-4 shrink-0 text-[#71717A]" />
+                                                    <span>{child.label}</span>
+                                                </NavLink>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    }
+
+                    // Expanded Desktop or Mobile Drawer Mode
+                    return (
+                        <div key={item.key} className="flex flex-col gap-0.5">
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    setOpenGroups((prev) => ({
+                                        ...prev,
+                                        [item.key]: !prev[item.key],
+                                    }))
+                                }
+                                className={`flex items-center justify-between w-full px-3 py-2 rounded-xl text-[13.5px] font-medium transition-colors cursor-pointer select-none ${
+                                    isChildActive
+                                        ? 'bg-white/[0.04] text-white font-semibold'
+                                        : 'text-[#A1A1AA] hover:bg-white/[0.04] hover:text-white'
+                                }`}
+                            >
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <Icon
+                                        className={`w-5 h-5 stroke-[1.75] shrink-0 ${
+                                            isChildActive ? 'text-white' : 'text-[#A1A1AA]'
+                                        }`}
+                                    />
+                                    <span className="truncate font-semibold">{item.label}</span>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    {isChildActive && (
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                    )}
+                                    <ChevronDownIcon
+                                        className={`w-3.5 h-3.5 text-[#71717A] transition-transform duration-200 ${
+                                            isOpen ? 'rotate-0' : '-rotate-90'
+                                        }`}
+                                    />
+                                </div>
+                            </button>
+
+                            {/* Submodules Accordion Container */}
+                            {isOpen && (
+                                <div className="relative pl-4 ml-5 border-l border-[#27272A] flex flex-col gap-0.5 my-0.5 animate-in fade-in duration-150">
+                                    {item.children.map((child) => {
+                                        const ChildIcon = child.icon;
+                                        return (
+                                            <NavLink
+                                                key={child.path}
+                                                to={child.path}
+                                                onClick={() => {
+                                                    if (isMobile) setIsMobileOpen(false);
+                                                }}
+                                                className={({ isActive }) =>
+                                                    `flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors relative ${
+                                                        isActive
+                                                            ? 'bg-[#27272A] text-white font-semibold shadow-xs'
+                                                            : 'text-[#A1A1AA] hover:text-white hover:bg-white/[0.04]'
+                                                    }`
+                                                }
+                                            >
+                                                <ChildIcon className="w-3.5 h-3.5 shrink-0 text-[#71717A]" />
+                                                <span className="truncate">{child.label}</span>
+                                            </NavLink>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    );
+                }
+
+                // Standard Single Link
+                const Icon = item.icon;
                 return (
                     <NavLink
                         key={item.path}

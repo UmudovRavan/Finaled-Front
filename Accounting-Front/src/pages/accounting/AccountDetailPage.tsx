@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { accountsService } from '../../api';
-import type { AccountDto, JournalEntryDto, InitialBalanceRequest } from '../../dto';
+import type { AccountDto, JournalEntryDto } from '../../dto';
 import { formatDate } from '../../utils';
 import { useLanguage } from '../../context/LanguageContext';
 import {
@@ -30,17 +30,7 @@ export const AccountDetailPage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'transactions' | 'subaccounts' | 'summary'>('transactions');
     const [isDetailsOpen, setIsDetailsOpen] = useState(true);
 
-    // Initial Balance Modal
-    const [showBalanceModal, setShowBalanceModal] = useState(false);
-    const [balanceError, setBalanceError] = useState('');
-    const [balanceForm, setBalanceForm] = useState<InitialBalanceRequest>({
-        accountId: id || '',
-        debitAmount: 0,
-        creditAmount: 0,
-        asOfDate: new Date().toISOString().split('T')[0],
-        notes: '',
-    });
-    const [balanceLoading, setBalanceLoading] = useState(false);
+
     const [toastMessage, setToastMessage] = useState('');
 
     const fetchAccountData = async () => {
@@ -85,24 +75,7 @@ export const AccountDetailPage: React.FC = () => {
         setTimeout(() => setToastMessage(''), 3500);
     };
 
-    const handleSetInitialBalance = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setBalanceLoading(true);
-        setBalanceError('');
-        try {
-            await accountsService.setInitialBalance({
-                ...balanceForm,
-                accountId: account?.id || id || '',
-            });
-            setShowBalanceModal(false);
-            showToast(t('common.success', {}, 'İlkin qalıq uğurla təyin edildi!'));
-            fetchAccountData();
-        } catch (err: any) {
-            setBalanceError(err.response?.data?.message || err.message || t('common.error', {}, 'İlkin qalıq qeyd olunarkən xəta baş verdi.'));
-        } finally {
-            setBalanceLoading(false);
-        }
-    };
+
 
     // Sub-accounts whose parent is this account
     const subAccounts = useMemo(() => {
@@ -146,18 +119,45 @@ export const AccountDetailPage: React.FC = () => {
     };
 
     const getTypeName = (type: any) => {
-        if (type === 0 || type === 'Standard') return t('accounting.typeStandard', {}, 'Standart');
-        if (type === 1 || type === 'Receivable') return t('accounting.typeReceivable', {}, 'Debitor (Receivable)');
-        if (type === 2 || type === 'Payable') return t('accounting.typePayable', {}, 'Kreditor (Payable)');
-        if (type === 3 || type === 'Bank') return t('accounting.typeBank', {}, 'Bank');
-        if (type === 4 || type === 'Cash') return t('accounting.typeCash', {}, 'Kassa');
-        if (type === 5 || type === 'Stock') return t('accounting.typeStock', {}, 'Anbar (Stock)');
-        if (type === 10 || type === 'Revenue') return t('accounting.typeRevenue', {}, 'Gəlir (Revenue)');
-        if (type === 11 || type === 'Expense') return t('accounting.typeExpense', {}, 'Xərc (Expense)');
-        if (type === 12 || type === 'FixedAsset') return t('accounting.typeFixedAsset', {}, 'Əsas Vəsait (Fixed Asset)');
-        if (type === 13 || type === 'CurrentAsset') return t('accounting.typeCurrentAsset', {}, 'Cari Aktiv (Current Asset)');
-        if (type === 14 || type === 'CurrentLiability') return t('accounting.typeCurrentLiability', {}, 'Qısamüddətli Öhdəlik');
-        if (type === 15 || type === 'LongTermLiability') return t('accounting.typeLongTermLiability', {}, 'Uzunmüddətli Öhdəlik');
+        const num = Number(type);
+        if (!isNaN(num) && type !== null && type !== undefined && type !== '') {
+            switch (num) {
+                case 0: return t('accounting.typeStandard', {}, 'Standart');
+                case 1: return t('accounting.typeReceivable', {}, 'Debitor (Receivable)');
+                case 2: return t('accounting.typePayable', {}, 'Kreditor (Payable)');
+                case 3: return t('accounting.typeBank', {}, 'Bank');
+                case 4: return t('accounting.typeCash', {}, 'Kassa');
+                case 5: return t('accounting.typeStock', {}, 'Anbar (Stock)');
+                case 6: return 'GRNI';
+                case 7: return t('accounting.typeCogs', {}, 'Satışın Mayası (COGS)');
+                case 8: return t('accounting.typeTax', {}, 'Vergi (Tax)');
+                case 9: return t('accounting.typeRetainedEarnings', {}, 'Bölüşdürülməmiş Mənfəət');
+                case 10: return t('accounting.typeRevenue', {}, 'Gəlir (Revenue)');
+                case 11: return t('accounting.typeExpense', {}, 'Xərc (Expense)');
+                case 12: return t('accounting.typeFixedAsset', {}, 'Əsas Vəsait (Fixed Asset)');
+                case 13: return t('accounting.typeCurrentAsset', {}, 'Cari Aktiv (Current Asset)');
+                case 14: return t('accounting.typeCurrentLiability', {}, 'Qısamüddətli Öhdəlik');
+                case 15: return t('accounting.typeLongTermLiability', {}, 'Uzunmüddətli Öhdəlik');
+                case 16: return 'Yığılmış Amortizasiya';
+                case 17: return 'Təhtəlhesab Məbləğlər';
+                case 18: return 'Verilmiş Avanslar';
+                case 19: return 'Alınmış Avanslar';
+                case 20: return 'Bank Kreditləri';
+                default: break;
+            }
+        }
+        if (type === 'Standard') return t('accounting.typeStandard', {}, 'Standart');
+        if (type === 'Receivable') return t('accounting.typeReceivable', {}, 'Debitor (Receivable)');
+        if (type === 'Payable') return t('accounting.typePayable', {}, 'Kreditor (Payable)');
+        if (type === 'Bank') return t('accounting.typeBank', {}, 'Bank');
+        if (type === 'Cash') return t('accounting.typeCash', {}, 'Kassa');
+        if (type === 'Stock') return t('accounting.typeStock', {}, 'Anbar (Stock)');
+        if (type === 'Revenue') return t('accounting.typeRevenue', {}, 'Gəlir (Revenue)');
+        if (type === 'Expense') return t('accounting.typeExpense', {}, 'Xərc (Expense)');
+        if (type === 'FixedAsset') return t('accounting.typeFixedAsset', {}, 'Əsas Vəsait (Fixed Asset)');
+        if (type === 'CurrentAsset') return t('accounting.typeCurrentAsset', {}, 'Cari Aktiv (Current Asset)');
+        if (type === 'CurrentLiability') return t('accounting.typeCurrentLiability', {}, 'Qısamüddətli Öhdəlik');
+        if (type === 'LongTermLiability') return t('accounting.typeLongTermLiability', {}, 'Uzunmüddətli Öhdəlik');
         return String(type || t('accounting.typeStandard', {}, 'Standart'));
     };
 
@@ -255,21 +255,11 @@ export const AccountDetailPage: React.FC = () => {
                     <div>
                         <button
                             type="button"
-                            onClick={() => {
-                                setBalanceError('');
-                                setBalanceForm({
-                                    accountId: account.id,
-                                    debitAmount: 0,
-                                    creditAmount: 0,
-                                    asOfDate: new Date().toISOString().split('T')[0],
-                                    notes: '',
-                                });
-                                setShowBalanceModal(true);
-                            }}
-                            className="w-full flex items-center justify-center gap-2 bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-white font-semibold px-4 py-2 rounded-xl transition-colors cursor-pointer text-xs shadow-xs"
+                            onClick={() => navigate('/master-data')}
+                            className="w-full flex items-center justify-center gap-2 bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] text-[#D4D4D8] hover:text-white font-semibold px-4 py-2 rounded-xl transition-colors cursor-pointer text-xs shadow-xs"
                         >
-                            <ScaleIcon className="w-4 h-4 text-[#A1A1AA]" />
-                            <span>{t('accounting.setInitialBalance', {}, 'İlkin Qalıq Təyin Et')}</span>
+                            <ScaleIcon className="w-4 h-4 text-emerald-400" />
+                            <span>İlkin Qalıqlar Aktı (Setup Hub)</span>
                         </button>
                     </div>
 
@@ -531,112 +521,6 @@ export const AccountDetailPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* ─── INITIAL BALANCE MODAL ─── */}
-            {showBalanceModal && (
-                <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg text-[#E4E4E7] overflow-hidden animate-in fade-in duration-200">
-                        <div className="flex items-center justify-between border-b border-[#2C2C2E]/60 p-5">
-                            <div>
-                                <h3 className="text-base font-bold text-white">{t('accounting.setInitialBalance', {}, 'İlkin Qalıq Təyin Et')}</h3>
-                                <p className="text-xs text-[#71717A]">
-                                    {account.code} - {account.name}
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setShowBalanceModal(false)}
-                                className="p-1 rounded-lg text-[#A1A1AA] hover:text-white"
-                            >
-                                <XMarkIcon className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleSetInitialBalance} className="p-6 space-y-4 text-xs">
-                            {balanceError && (
-                                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center justify-between gap-2 animate-in fade-in">
-                                    <span>{balanceError}</span>
-                                    <button type="button" onClick={() => setBalanceError('')} className="text-rose-400 hover:text-white p-0.5 cursor-pointer">
-                                        <XMarkIcon className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            )}
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="text-[#A1A1AA] font-medium">{t('accounting.debitAmount', {}, 'Debet Məbləği')}</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        value={balanceForm.debitAmount}
-                                        onChange={(e) =>
-                                            setBalanceForm({
-                                                ...balanceForm,
-                                                debitAmount: parseFloat(e.target.value) || 0,
-                                            })
-                                        }
-                                        className="w-full mt-1 px-3 py-2 rounded-xl bg-[#141416] border border-[#2C2C2E] text-white focus:outline-none focus:border-white font-mono"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-[#A1A1AA] font-medium">{t('accounting.creditAmount', {}, 'Kredit Məbləği')}</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        value={balanceForm.creditAmount}
-                                        onChange={(e) =>
-                                            setBalanceForm({
-                                                ...balanceForm,
-                                                creditAmount: parseFloat(e.target.value) || 0,
-                                            })
-                                        }
-                                        className="w-full mt-1 px-3 py-2 rounded-xl bg-[#141416] border border-[#2C2C2E] text-white focus:outline-none focus:border-white font-mono"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="text-[#A1A1AA] font-medium">{t('common.asOfDate', {}, 'Qalıq Tarixi')}</label>
-                                <input
-                                    type="date"
-                                    required
-                                    value={balanceForm.asOfDate}
-                                    onChange={(e) => setBalanceForm({ ...balanceForm, asOfDate: e.target.value })}
-                                    className="w-full mt-1 px-3 py-2 rounded-xl bg-[#141416] border border-[#2C2C2E] text-white focus:outline-none focus:border-white"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="text-[#A1A1AA] font-medium">{t('common.notes', {}, 'Qeydlər')}</label>
-                                <input
-                                    type="text"
-                                    placeholder={t('common.notesPlaceholder', {}, 'İlkin saldo qeydi...')}
-                                    value={balanceForm.notes}
-                                    onChange={(e) => setBalanceForm({ ...balanceForm, notes: e.target.value })}
-                                    className="w-full mt-1 px-3 py-2 rounded-xl bg-[#141416] border border-[#2C2C2E] text-white placeholder:text-[#71717A] focus:outline-none focus:border-white"
-                                />
-                            </div>
-
-                            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#2C2C2E]/60">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowBalanceModal(false)}
-                                    className="px-4 py-2 rounded-xl border border-[#2C2C2E] text-xs font-semibold text-[#A1A1AA] hover:text-white"
-                                >
-                                    {t('common.cancel', {}, 'İmtina')}
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={balanceLoading}
-                                    className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
-                                >
-                                    {balanceLoading ? t('common.saving', {}, 'Yadda saxlanılır...') : t('common.confirm', {}, 'Təsdiqlə')}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
