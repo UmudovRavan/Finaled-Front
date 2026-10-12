@@ -75,13 +75,13 @@ export const FinancialPositionPage: React.FC = () => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#141416] p-4 sm:p-5 rounded-2xl border border-[#27272A] shadow-xl">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                        <DocumentChartBarIcon className="w-5 h-5" />
+                    <div className="w-10 h-10 rounded-xl bg-[#18181B] border border-[#27272A] flex items-center justify-center text-white shrink-0">
+                        <DocumentChartBarIcon className="w-5 h-5 text-white" />
                     </div>
                     <div>
                         <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight flex items-center gap-2">
                             Maliyyə Vəziyyəti Haqqında Hesabat
-                            <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <span className="text-[11px] px-2 py-0.5 rounded-md font-medium bg-[#18181B] text-[#D4D4D8] border border-[#27272A]">
                                 IFRS Balance Sheet
                             </span>
                         </h1>
@@ -109,7 +109,7 @@ export const FinancialPositionPage: React.FC = () => {
                         className="p-2 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer"
                         title="Yenilə"
                     >
-                        <ArrowPathIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-emerald-400' : ''}`} />
+                        <ArrowPathIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                     </button>
 
                     <button

@@ -26,28 +26,31 @@ const TABS: NavTab[] = [
 
 export const ReportsNav: React.FC = () => {
     return (
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar border-b border-[#27272A] mb-4">
-            {TABS.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                    <NavLink
-                        key={tab.to}
-                        to={tab.to}
-                        className={({ isActive }) =>
-                            `flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                                isActive
-                                    ? 'bg-[#27272A] text-white border border-white/10 shadow-sm'
-                                    : 'text-[#A1A1AA] hover:text-white hover:bg-white/[0.04]'
-                            }`
-                        }
-                    >
-                        <Icon className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span>{tab.label}</span>
-                    </NavLink>
-                );
-            })}
+        <div className="flex items-center justify-between gap-2 p-1.5 bg-[#121214] border border-[#27272A] rounded-2xl overflow-x-auto scrollbar-none shadow-sm mb-4">
+            <div className="flex items-center gap-1 shrink-0">
+                {TABS.map((tab) => {
+                    const Icon = tab.icon;
+                    return (
+                        <NavLink
+                            key={tab.to}
+                            to={tab.to}
+                            className={({ isActive }) =>
+                                `flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                                    isActive
+                                        ? 'bg-white text-black font-semibold shadow-xs'
+                                        : 'text-[#A1A1AA] hover:text-white hover:bg-white/[0.04]'
+                                }`
+                            }
+                        >
+                            <Icon className="w-3.5 h-3.5 shrink-0" />
+                            <span>{tab.label}</span>
+                        </NavLink>
+                    );
+                })}
+            </div>
         </div>
     );
 };
 
 export default ReportsNav;
+

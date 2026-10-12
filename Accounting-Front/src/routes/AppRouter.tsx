@@ -13,7 +13,9 @@ import {
     JournalPage,
     JournalDetailPage,
     SalesOrdersPage,
+    SalesOrderDetailPage,
     DeliveryNotesPage,
+    DeliveryNoteDetailPage,
     CustomersPage,
     CustomerDetailPage,
     CustomerInvoicesPage,
@@ -76,7 +78,9 @@ export const AppRouter: React.FC = () => {
 
                     {/* Sales Cycle */}
                     <Route path="/sales/orders" element={<SalesOrdersPage />} />
+                    <Route path="/sales/orders/:id" element={<SalesOrderDetailPage />} />
                     <Route path="/sales/deliveries" element={<DeliveryNotesPage />} />
+                    <Route path="/sales/deliveries/:id" element={<DeliveryNoteDetailPage />} />
                     <Route path="/customers" element={<Navigate to="/master-data?tab=customers" replace />} />
                     <Route path="/customers/:id" element={<CustomerDetailPage />} />
                     <Route path="/customer-invoices" element={<CustomerInvoicesPage />} />
@@ -109,6 +113,7 @@ export const AppRouter: React.FC = () => {
                     <Route path="/payment-runs" element={<PaymentRunsPage />} />
 
                     {/* Financial Reports */}
+                    <Route path="/reports" element={<Navigate to="/reports/trial-balance" replace />} />
                     <Route path="/reports/trial-balance" element={<TrialBalancePage />} />
                     <Route path="/reports/financial-position" element={<FinancialPositionPage />} />
                     <Route path="/reports/profit-or-loss" element={<ProfitOrLossPage />} />

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { reportsService } from '../../api';
 import type { BalanceSheetResponse } from '../../dto';
 import { useLanguage } from '../../context/LanguageContext';
+import { ReportsNav } from '../../components/reports/ReportsNav';
 import {
     ArrowPathIcon,
     ScaleIcon,
@@ -60,15 +61,21 @@ export const BalanceSheetPage: React.FC = () => {
     const equitySections = sheet?.equity || sheet?.equitySections || [];
 
     return (
-        <div className="space-y-6 font-sans max-w-4xl mx-auto">
+        <div className="space-y-4 font-sans text-[#F4F4F5] antialiased select-none pb-12 max-w-4xl mx-auto">
+            {/* Top Reports Nav */}
+            <ReportsNav />
+
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
-                        <ScaleIcon className="w-7 h-7 text-emerald-400" />
-                        <span>{t('reports.balanceSheetTitle', {}, 'Balans Hesabatı (Balance Sheet)')}</span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                    <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                        <span>{t('nav.reports', {}, 'Maliyyə Hesabatları')}</span>
+                        <span className="text-[#52525B]">/</span>
+                        <div className="inline-flex items-center gap-1.5 text-white font-bold">
+                            <ScaleIcon className="w-4 h-4 text-[#A1A1AA]" />
+                            <span>{t('reports.balanceSheetTitle', {}, 'Balans Hesabatı')}</span>
+                        </div>
                     </h1>
-                    <p className="text-xs text-[#94A3B8]">{t('reports.balanceSheetSubtitle', {}, 'Müəssisənin aktivləri, öhdəlikləri və kapitalının maliyyə balansı')}</p>
                 </div>
 
                 <div className="flex items-center gap-3">

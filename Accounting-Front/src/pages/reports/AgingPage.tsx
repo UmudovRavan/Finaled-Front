@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { reportsService } from '../../api';
 import type { AgingReportResponse, AgingBucketDto } from '../../dto';
 import { useLanguage } from '../../context/LanguageContext';
+import { ReportsNav } from '../../components/reports/ReportsNav';
 import {
     ClockIcon,
     ArrowPathIcon,
@@ -82,18 +83,24 @@ export const AgingPage: React.FC = () => {
     }, [report, partiesList]);
 
     return (
-        <div className="space-y-6 font-sans">
+        <div className="space-y-4 font-sans text-[#F4F4F5] antialiased select-none pb-12">
+            {/* Top Reports Nav */}
+            <ReportsNav />
+
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
-                        <ClockIcon className="w-7 h-7 text-emerald-400" />
-                        <span>{t('reports.agingTitle', {}, 'Yaşlanma Hesabatı (Aging Report)')}</span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                    <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                        <span>{t('nav.reports', {}, 'Maliyyə Hesabatları')}</span>
+                        <span className="text-[#52525B]">/</span>
+                        <div className="inline-flex items-center gap-1.5 text-white font-bold">
+                            <ClockIcon className="w-4 h-4 text-[#A1A1AA]" />
+                            <span>{t('reports.agingTitle', {}, 'Borcların Yaşlanması (Aging)')}</span>
+                        </div>
                     </h1>
-                    <p className="text-xs text-[#94A3B8]">{t('reports.agingSubtitle', {}, 'Borcların və öhdəliklərin gecikmə müddətinə görə təhlili')}</p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                     <div className="flex items-center gap-2 bg-[#18181B] border border-[#27272A] hover:border-zinc-700 rounded-xl px-3 py-1.5 transition-colors">
                         <span className="text-[11px] text-[#A1A1AA] font-semibold select-none">{t('common.date', {}, 'Tarix')}:</span>
                         <input
@@ -130,38 +137,38 @@ export const AgingPage: React.FC = () => {
             )}
 
             {/* Type Tabs and Search */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-[#12141A] border border-[#27272A] w-fit">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-1 p-1 bg-[#121214] border border-[#27272A] rounded-2xl overflow-x-auto scrollbar-none shadow-sm">
                     <button
                         onClick={() => setReportType('AR')}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
                             reportType === 'AR'
-                                ? 'bg-emerald-600 text-white shadow-md'
-                                : 'text-[#A1A1AA] hover:text-white'
+                                ? 'bg-white text-black font-semibold shadow-xs'
+                                : 'text-[#A1A1AA] hover:text-white hover:bg-white/[0.04]'
                         }`}
                     >
-                        {t('reports.arDebtors', {}, 'Debitor Borclar (Müştərilər - AR)')}
+                        {t('reports.arDebtors', {}, 'Debitor Borclar (AR)')}
                     </button>
                     <button
                         onClick={() => setReportType('AP')}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
                             reportType === 'AP'
-                                ? 'bg-emerald-600 text-white shadow-md'
-                                : 'text-[#A1A1AA] hover:text-white'
+                                ? 'bg-white text-black font-semibold shadow-xs'
+                                : 'text-[#A1A1AA] hover:text-white hover:bg-white/[0.04]'
                         }`}
                     >
-                        {t('reports.apCreditors', {}, 'Kreditor Borclar (Təchizatçılar - AP)')}
+                        {t('reports.apCreditors', {}, 'Kreditor Borclar (AP)')}
                     </button>
                 </div>
 
                 <div className="relative min-w-[240px]">
-                    <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#71717A]" />
+                    <MagnifyingGlassIcon className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#71717A]" />
                     <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder={reportType === 'AR' ? t('reports.searchCustomer', {}, 'Müştəri axtar...') : t('reports.searchSupplier', {}, 'Təchizatçı axtar...')}
-                        className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#12141A] border border-[#27272A] text-xs text-white placeholder-[#71717A] focus:border-emerald-500 focus:outline-none"
+                        className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-[#18181B] border border-[#27272A] text-xs text-white placeholder-[#71717A] focus:border-white focus:outline-none transition-colors"
                     />
                 </div>
             </div>

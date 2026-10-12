@@ -18,7 +18,9 @@ export { default as FiscalPeriodsPage } from './accounting/FiscalPeriodsPage';
 
 // Sales Cycle
 export { default as SalesOrdersPage } from './sales/SalesOrdersPage';
+export { default as SalesOrderDetailPage } from './sales/SalesOrderDetailPage';
 export { default as DeliveryNotesPage } from './sales/DeliveryNotesPage';
+export { default as DeliveryNoteDetailPage } from './sales/DeliveryNoteDetailPage';
 
 // Invoicing & Sales
 export { default as CustomersPage } from './invoicing/CustomersPage';

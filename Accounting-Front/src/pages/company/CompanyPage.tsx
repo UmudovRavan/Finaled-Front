@@ -23,7 +23,6 @@ import {
     UserIcon,
     IdentificationIcon,
     GlobeAltIcon,
-    SparklesIcon,
     CalendarDaysIcon,
     CheckIcon,
 } from '@heroicons/react/24/outline';
@@ -77,7 +76,6 @@ export const CompanyPage: React.FC = () => {
     const [toast, setToast] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
     const [activeTab, setActiveTab] = useState<'profile' | 'tax' | 'bank' | 'accounts'>('profile');
-
     const [accounts, setAccounts] = useState<AccountDto[]>([]);
 
     const [profile, setProfile] = useState<CompanyProfileDto>({
@@ -211,162 +209,176 @@ export const CompanyPage: React.FC = () => {
     }));
 
     return (
-        <div className="space-y-6 max-w-6xl mx-auto font-sans text-[#F4F4F5] antialiased select-none pb-14">
-            {/* ─── Toast ─── */}
+        <div className="space-y-4 font-sans text-[#F4F4F5] antialiased select-none pb-12">
+            {/* ─── Top Header (Breadcrumb & Action buttons) ─── */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                    <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                        <span>{t('company.title', {}, 'Şirkət')}</span>
+                        <span className="text-[#52525B]">/</span>
+                        <div className="inline-flex items-center gap-1.5 text-white font-bold">
+                            <BuildingOffice2Icon className="w-4 h-4 text-[#A1A1AA]" />
+                            <span>{profile.name || t('company.profile', {}, 'Profil və Tənzimləmələr')}</span>
+                        </div>
+                    </h1>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={loadData}
+                        disabled={loading}
+                        className="p-2 rounded-xl bg-[#18181B] border border-[#27272A] text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer disabled:opacity-50"
+                        title={t('common.refresh', {}, 'Yenilə')}
+                    >
+                        <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white hover:bg-zinc-200 text-black text-xs font-semibold shadow-md transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                        {saving ? (
+                            <>
+                                <ArrowPathIcon className="w-4 h-4 animate-spin text-black" />
+                                <span>{t('common.saving', {}, 'Saxlanılır...')}</span>
+                            </>
+                        ) : (
+                            <>
+                                <CheckIcon className="w-4 h-4 stroke-[2.5]" />
+                                <span>{t('common.save', {}, 'Yadda Saxla')}</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+            </div>
+
+            {/* ─── Toast Notification ─── */}
             {toast && (
-                <div
-                    className={`fixed top-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm animate-in fade-in slide-in-from-top-4 duration-200 ${
-                        toast.type === 'success'
-                            ? 'bg-[#18181B] border-emerald-500/40 text-emerald-400'
-                            : 'bg-[#18181B] border-red-500/40 text-red-400'
-                    }`}
-                >
+                <div className="p-3 rounded-xl bg-[#18181B] border border-[#27272A] text-white text-xs flex items-center gap-2 shadow-2xl animate-in fade-in">
                     {toast.type === 'success' ? (
-                        <CheckCircleIcon className="w-5 h-5 text-emerald-400 shrink-0" />
+                        <CheckCircleIcon className="w-4 h-4 text-white shrink-0" />
                     ) : (
-                        <ExclamationTriangleIcon className="w-5 h-5 text-red-400 shrink-0" />
+                        <ExclamationTriangleIcon className="w-4 h-4 text-red-400 shrink-0" />
                     )}
-                    <span className="font-medium text-white">{toast.text}</span>
+                    <span>{toast.text}</span>
                 </div>
             )}
 
-            {/* ─── Top Header & Summary ─── */}
-            <div className="relative overflow-hidden rounded-3xl border border-[#27272A] bg-gradient-to-br from-[#18181B] via-[#121214] to-[#18181B] p-6 shadow-2xl">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 blur-3xl pointer-events-none rounded-full" />
-                <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 shrink-0">
-                            <BuildingOffice2Icon className="w-8 h-8 stroke-[1.75]" />
+            {/* ─── Summary Overview Card ─── */}
+            <div className="rounded-2xl border border-[#27272A] bg-[#121214] p-5 shadow-2xl">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                        <div className="w-12 h-12 rounded-xl bg-[#18181B] border border-[#27272A] flex items-center justify-center text-white shrink-0">
+                            <BuildingOffice2Icon className="w-6 h-6 stroke-[1.75] text-white" />
                         </div>
                         <div>
-                            <div className="flex items-center gap-2.5">
-                                <h1 className="text-2xl font-bold tracking-tight text-white">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <h2 className="text-lg font-bold tracking-tight text-white">
                                     {profile.name || 'Şirkət Profili'}
-                                </h1>
-                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                </h2>
+                                <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-[#18181B] text-[#D4D4D8] border border-[#27272A]">
                                     {profile.legalForm || 'MMC'}
                                 </span>
-                                {profile.isVatPayer && (
-                                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                                        ƏDV Ödəyicisi ({profile.vatRate}%)
+                                {profile.isVatPayer ? (
+                                    <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-[#18181B] text-white border border-[#3F3F46]">
+                                        ƏDV: {profile.vatRate}%
+                                    </span>
+                                ) : (
+                                    <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-[#18181B] text-[#71717A] border border-[#27272A]">
+                                        ƏDV-siz
                                     </span>
                                 )}
                             </div>
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-[#A1A1AA]">
                                 <span className="flex items-center gap-1 font-mono">
                                     <IdentificationIcon className="w-3.5 h-3.5 text-[#71717A]" />
-                                    VÖEN: <strong className="text-white">{profile.taxNumber || '—'}</strong>
+                                    <span className="text-[#71717A]">VÖEN:</span>
+                                    <strong className="text-white font-mono">{profile.taxNumber || '—'}</strong>
                                 </span>
                                 <span className="flex items-center gap-1">
                                     <GlobeAltIcon className="w-3.5 h-3.5 text-[#71717A]" />
-                                    Ölkə: <strong className="text-white">Azərbaycan (AZE)</strong>
+                                    <span className="text-[#71717A]">Ölkə:</span>
+                                    <strong className="text-white">Azərbaycan</strong>
                                 </span>
                                 <span className="flex items-center gap-1">
                                     <BanknotesIcon className="w-3.5 h-3.5 text-[#71717A]" />
-                                    Uçot Valyutası: <strong className="text-emerald-400">{profile.baseCurrency}</strong>
+                                    <span className="text-[#71717A]">Valyuta:</span>
+                                    <strong className="text-white">{profile.baseCurrency}</strong>
                                 </span>
                             </div>
                         </div>
                     </div>
-
-                    <div className="flex items-center gap-2.5 shrink-0">
-                        <button
-                            type="button"
-                            onClick={loadData}
-                            disabled={loading}
-                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#27272A] bg-[#18181B] hover:bg-[#27272A] text-xs font-semibold text-white transition-all cursor-pointer"
-                        >
-                            <ArrowPathIcon className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-                            <span>Yenilə</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleSave}
-                            disabled={saving}
-                            className="flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-xs font-bold text-black transition-all shadow-lg shadow-emerald-500/20 cursor-pointer"
-                        >
-                            {saving ? (
-                                <>
-                                    <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />
-                                    <span>Saxlanılır...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <CheckIcon className="w-4 h-4 stroke-[2.5]" />
-                                    <span>Yadda Saxla</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
                 </div>
 
-                {/* Navigation Tabs */}
-                <div className="flex items-center gap-2 mt-6 pt-5 border-t border-[#27272A]/80 overflow-x-auto custom-scrollbar">
+                {/* ─── Navigation Tabs ─── */}
+                <div className="flex items-center gap-1 mt-5 pt-4 border-t border-[#27272A] overflow-x-auto">
                     <button
                         type="button"
                         onClick={() => setActiveTab('profile')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                        className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
                             activeTab === 'profile'
-                                ? 'bg-[#27272A] text-white shadow-sm border border-white/10'
+                                ? 'bg-white text-black font-semibold'
                                 : 'text-[#A1A1AA] hover:text-white hover:bg-white/[0.04]'
                         }`}
                     >
-                        <BuildingOffice2Icon className="w-4 h-4 text-emerald-400" />
-                        <span>1. Şirkət & Hüquqi Kimlik</span>
+                        <BuildingOffice2Icon className="w-3.5 h-3.5" />
+                        <span>Hüquqi Kimlik</span>
                     </button>
 
                     <button
                         type="button"
                         onClick={() => setActiveTab('tax')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                        className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
                             activeTab === 'tax'
-                                ? 'bg-[#27272A] text-white shadow-sm border border-white/10'
+                                ? 'bg-white text-black font-semibold'
                                 : 'text-[#A1A1AA] hover:text-white hover:bg-white/[0.04]'
                         }`}
                     >
-                        <ShieldCheckIcon className="w-4 h-4 text-blue-400" />
-                        <span>2. Vergi & Maliyyə İli</span>
+                        <ShieldCheckIcon className="w-3.5 h-3.5" />
+                        <span>Vergi & Maliyyə İli</span>
                     </button>
 
                     <button
                         type="button"
                         onClick={() => setActiveTab('bank')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                        className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
                             activeTab === 'bank'
-                                ? 'bg-[#27272A] text-white shadow-sm border border-white/10'
+                                ? 'bg-white text-black font-semibold'
                                 : 'text-[#A1A1AA] hover:text-white hover:bg-white/[0.04]'
                         }`}
                     >
-                        <BanknotesIcon className="w-4 h-4 text-amber-400" />
-                        <span>3. Bank Rekvizitləri</span>
+                        <BanknotesIcon className="w-3.5 h-3.5" />
+                        <span>Bank Rekvizitləri</span>
                     </button>
 
                     <button
                         type="button"
                         onClick={() => setActiveTab('accounts')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                        className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
                             activeTab === 'accounts'
-                                ? 'bg-[#27272A] text-white shadow-sm border border-white/10'
+                                ? 'bg-white text-black font-semibold'
                                 : 'text-[#A1A1AA] hover:text-white hover:bg-white/[0.04]'
                         }`}
                     >
-                        <ScaleIcon className="w-4 h-4 text-purple-400" />
-                        <span>4. Standart Uçot Hesabları</span>
+                        <ScaleIcon className="w-3.5 h-3.5" />
+                        <span>Standart Hesablar</span>
                     </button>
                 </div>
             </div>
 
             {/* ─── Form Tabs Content ─── */}
-            <form onSubmit={handleSave} className="space-y-6">
+            <form onSubmit={handleSave} className="space-y-4">
                 {/* TAB 1: Profile & Legal */}
                 {activeTab === 'profile' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Legal Identity Card */}
-                        <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-5 space-y-4">
-                            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                                <IdentificationIcon className="w-4 h-4 text-emerald-400" />
+                        <div className="rounded-2xl border border-[#27272A] bg-[#121214] p-5 space-y-4 shadow-sm">
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1A1AA] flex items-center gap-2 pb-2 border-b border-[#27272A]">
+                                <IdentificationIcon className="w-4 h-4 text-white" />
                                 <span>Hüquqi Kimlik və Dövlət Qeydiyyatı</span>
-                            </h2>
+                            </h3>
 
                             <div>
                                 <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">
@@ -378,7 +390,7 @@ export const CompanyPage: React.FC = () => {
                                     onChange={(e) => setProfile({ ...profile, name: e.target.value })}
                                     required
                                     placeholder='Məs: "Altensor" MMC'
-                                    className="w-full bg-[#121214] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                                    className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
                                 />
                             </div>
 
@@ -394,7 +406,7 @@ export const CompanyPage: React.FC = () => {
                                         required
                                         maxLength={10}
                                         placeholder="10 rəqəmli VÖEN"
-                                        className="w-full font-mono bg-[#121214] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                                        className="w-full font-mono bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
                                     />
                                 </div>
                                 <div>
@@ -419,7 +431,7 @@ export const CompanyPage: React.FC = () => {
                                         value={profile.statisticalCode || ''}
                                         onChange={(e) => setProfile({ ...profile, statisticalCode: e.target.value })}
                                         placeholder="Dövlət statistika kodu"
-                                        className="w-full bg-[#121214] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                                        className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
                                     />
                                 </div>
                                 <div>
@@ -431,85 +443,83 @@ export const CompanyPage: React.FC = () => {
                                         value={profile.asanLoginId || ''}
                                         onChange={(e) => setProfile({ ...profile, asanLoginId: e.target.value })}
                                         placeholder="Asan İmza ID"
-                                        className="w-full bg-[#121214] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                                        className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
                                     />
                                 </div>
                             </div>
                         </div>
 
                         {/* Management & Signatories */}
-                        <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-5 space-y-4">
-                            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                                <UserIcon className="w-4 h-4 text-emerald-400" />
-                                <span>Rəhbərlik və Səlahiyyətli Şəxslər</span>
-                            </h2>
+                        <div className="rounded-2xl border border-[#27272A] bg-[#121214] p-5 space-y-4 shadow-sm">
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1A1AA] flex items-center gap-2 pb-2 border-b border-[#27272A]">
+                                <UserIcon className="w-4 h-4 text-white" />
+                                <span>Rəhbərlik və Əlaqə Məlumatları</span>
+                            </h3>
 
-                            <div>
-                                <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">
-                                    Baş Direktor (Qanuni Təmsilçi)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={profile.directorName || ''}
-                                    onChange={(e) => setProfile({ ...profile, directorName: e.target.value })}
-                                    placeholder="Direktorun Adı Soyadı"
-                                    className="w-full bg-[#121214] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">
-                                    Baş Mühasib (İmza Səlahiyyətlisi)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={profile.chiefAccountantName || ''}
-                                    onChange={(e) => setProfile({ ...profile, chiefAccountantName: e.target.value })}
-                                    placeholder="Baş Mühasibin Adı Soyadı"
-                                    className="w-full bg-[#121214] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
-                                />
-                            </div>
-
-                            {/* Address & Contacts */}
-                            <div className="pt-2 border-t border-[#27272A] space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">
-                                        Hüquqi / Faktiki Ünvan
+                                        Baş Direktor
                                     </label>
                                     <input
                                         type="text"
-                                        value={profile.address || ''}
-                                        onChange={(e) => setProfile({ ...profile, address: e.target.value })}
-                                        placeholder="Şəhər, Rayon, Küçə, Ev"
-                                        className="w-full bg-[#121214] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                                        value={profile.directorName || ''}
+                                        onChange={(e) => setProfile({ ...profile, directorName: e.target.value })}
+                                        placeholder="Direktorun Adı Soyadı"
+                                        className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
                                     />
                                 </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">
+                                        Baş Mühasib
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={profile.chiefAccountantName || ''}
+                                        onChange={(e) => setProfile({ ...profile, chiefAccountantName: e.target.value })}
+                                        placeholder="Baş Mühasibin Adı Soyadı"
+                                        className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
+                                    />
+                                </div>
+                            </div>
 
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">
-                                            Rəsmi Telefon
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={profile.phone || ''}
-                                            onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                                            placeholder="+994 (12) 000-00-00"
-                                            className="w-full bg-[#121214] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">
-                                            Rəsmi E-poçt
-                                        </label>
-                                        <input
-                                            type="email"
-                                            value={profile.email || ''}
-                                            onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                                            placeholder="info@company.az"
-                                            className="w-full bg-[#121214] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
-                                        />
-                                    </div>
+                            <div>
+                                <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">
+                                    Hüquqi / Faktiki Ünvan
+                                </label>
+                                <input
+                                    type="text"
+                                    value={profile.address || ''}
+                                    onChange={(e) => setProfile({ ...profile, address: e.target.value })}
+                                    placeholder="Şəhər, Rayon, Küçə, Ev"
+                                    className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">
+                                        Rəsmi Telefon
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={profile.phone || ''}
+                                        onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                                        placeholder="+994 (12) 000-00-00"
+                                        className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">
+                                        Rəsmi E-poçt
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={profile.email || ''}
+                                        onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                                        placeholder="info@company.az"
+                                        className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -518,13 +528,13 @@ export const CompanyPage: React.FC = () => {
 
                 {/* TAB 2: Tax & Fiscal Year */}
                 {activeTab === 'tax' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Tax Regime */}
-                        <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-5 space-y-4">
-                            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                                <ShieldCheckIcon className="w-4 h-4 text-blue-400" />
+                        <div className="rounded-2xl border border-[#27272A] bg-[#121214] p-5 space-y-4 shadow-sm">
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1A1AA] flex items-center gap-2 pb-2 border-b border-[#27272A]">
+                                <ShieldCheckIcon className="w-4 h-4 text-white" />
                                 <span>Azərbaycan Vergi Məcəlləsi üzrə Rejim</span>
-                            </h2>
+                            </h3>
 
                             <div>
                                 <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">
@@ -537,7 +547,7 @@ export const CompanyPage: React.FC = () => {
                                 />
                             </div>
 
-                            <div className="p-3.5 rounded-xl border border-[#27272A] bg-[#121214] flex items-center justify-between">
+                            <div className="p-3.5 rounded-xl border border-[#27272A] bg-[#18181B] flex items-center justify-between">
                                 <div>
                                     <div className="text-xs font-semibold text-white">ƏDV Mükəlləfiyyəti</div>
                                     <div className="text-[11px] text-[#71717A]">
@@ -551,7 +561,7 @@ export const CompanyPage: React.FC = () => {
                                         onChange={(e) => setProfile({ ...profile, isVatPayer: e.target.checked })}
                                         className="sr-only peer"
                                     />
-                                    <div className="w-11 h-6 bg-[#27272A] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500" />
+                                    <div className="w-11 h-6 bg-[#27272A] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-black after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-400 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-white after:peer-checked:bg-black" />
                                 </label>
                             </div>
 
@@ -565,18 +575,18 @@ export const CompanyPage: React.FC = () => {
                                         step="0.1"
                                         value={profile.vatRate}
                                         onChange={(e) => setProfile({ ...profile, vatRate: parseFloat(e.target.value) || 0 })}
-                                        className="w-full bg-[#121214] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                                        className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
                                     />
                                 </div>
                             )}
                         </div>
 
                         {/* Fiscal Year & Currency */}
-                        <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-5 space-y-4">
-                            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                                <CalendarDaysIcon className="w-4 h-4 text-emerald-400" />
+                        <div className="rounded-2xl border border-[#27272A] bg-[#121214] p-5 space-y-4 shadow-sm">
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1A1AA] flex items-center gap-2 pb-2 border-b border-[#27272A]">
+                                <CalendarDaysIcon className="w-4 h-4 text-white" />
                                 <span>Maliyyə İli və Əsas Uçot Valyutası</span>
-                            </h2>
+                            </h3>
 
                             <div>
                                 <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">
@@ -587,12 +597,12 @@ export const CompanyPage: React.FC = () => {
                                     value={profile.baseCurrency || 'AZN'}
                                     onChange={(val) => setProfile({ ...profile, baseCurrency: val })}
                                 />
-                                <p className="text-[11px] text-[#71717A] mt-1">
+                                <p className="text-[11px] text-[#71717A] mt-1.5">
                                     Bütün Baş Kitab (General Ledger) və maliyyə hesabatları bu valyutada formalaşır.
                                 </p>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3 pt-2">
+                            <div className="grid grid-cols-2 gap-3 pt-1">
                                 <div>
                                     <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">
                                         Maliyyə İli Başlanğıcı
@@ -620,11 +630,11 @@ export const CompanyPage: React.FC = () => {
 
                 {/* TAB 3: Bank Details */}
                 {activeTab === 'bank' && (
-                    <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-5 space-y-4">
-                        <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                            <BanknotesIcon className="w-4 h-4 text-amber-400" />
+                    <div className="rounded-2xl border border-[#27272A] bg-[#121214] p-5 space-y-4 shadow-sm">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1A1AA] flex items-center gap-2 pb-2 border-b border-[#27272A]">
+                            <BanknotesIcon className="w-4 h-4 text-white" />
                             <span>Əsas Bank Hesabı və Rekvizitlər</span>
-                        </h2>
+                        </h3>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -636,7 +646,7 @@ export const CompanyPage: React.FC = () => {
                                     value={profile.bankName || ''}
                                     onChange={(e) => setProfile({ ...profile, bankName: e.target.value })}
                                     placeholder="Məs: PAŞA Bank ASC, Kapital Bank ASC"
-                                    className="w-full bg-[#121214] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                                    className="w-full bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
                                 />
                             </div>
 
@@ -649,7 +659,7 @@ export const CompanyPage: React.FC = () => {
                                     value={profile.bankCode || ''}
                                     onChange={(e) => setProfile({ ...profile, bankCode: e.target.value })}
                                     placeholder="Məs: 505520"
-                                    className="w-full font-mono bg-[#121214] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                                    className="w-full font-mono bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
                                 />
                             </div>
 
@@ -662,7 +672,7 @@ export const CompanyPage: React.FC = () => {
                                     value={profile.iban || ''}
                                     onChange={(e) => setProfile({ ...profile, iban: e.target.value })}
                                     placeholder="AZ00PASHA0000000000000000000"
-                                    className="w-full font-mono uppercase bg-[#121214] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 tracking-wider"
+                                    className="w-full font-mono uppercase bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white tracking-wider transition-colors"
                                 />
                             </div>
 
@@ -675,7 +685,7 @@ export const CompanyPage: React.FC = () => {
                                     value={profile.swiftBic || ''}
                                     onChange={(e) => setProfile({ ...profile, swiftBic: e.target.value })}
                                     placeholder="Məs: PASHAZ22"
-                                    className="w-full font-mono uppercase bg-[#121214] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                                    className="w-full font-mono uppercase bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
                                 />
                             </div>
 
@@ -688,7 +698,7 @@ export const CompanyPage: React.FC = () => {
                                     value={profile.correspondentAccount || ''}
                                     onChange={(e) => setProfile({ ...profile, correspondentAccount: e.target.value })}
                                     placeholder="Məs: 0137010001944"
-                                    className="w-full font-mono bg-[#121214] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                                    className="w-full font-mono bg-[#18181B] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-white transition-colors"
                                 />
                             </div>
                         </div>
@@ -697,12 +707,12 @@ export const CompanyPage: React.FC = () => {
 
                 {/* TAB 4: Default Accounts (CoA) */}
                 {activeTab === 'accounts' && (
-                    <div className="rounded-2xl border border-[#27272A] bg-[#18181B] p-5 space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                                <ScaleIcon className="w-4 h-4 text-purple-400" />
-                                <span>Avtomatik Əməliyyatlar üçün Standart Hesablar Planı (CoA Defaults)</span>
-                            </h2>
+                    <div className="rounded-2xl border border-[#27272A] bg-[#121214] p-5 space-y-4 shadow-sm">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-2 border-b border-[#27272A]">
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1A1AA] flex items-center gap-2">
+                                <ScaleIcon className="w-4 h-4 text-white" />
+                                <span>Avtomatik Əməliyyatlar üçün Standart Hesablar Planı</span>
+                            </h3>
                             <span className="text-[11px] text-[#71717A]">
                                 Sistem avtomatik qaimə və ödənişlərdə bu hesablardan istifadə edir.
                             </span>
