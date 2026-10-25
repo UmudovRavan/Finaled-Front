@@ -10,6 +10,7 @@ import {
   CreateRoleRequest,
   UpdateRoleRequest
 } from '../types/role.types';
+import { deduplicateRoles } from '../utils/roleUtils';
 
 export const tenantApi = {
   // User endpoints
@@ -51,7 +52,13 @@ export const tenantApi = {
     }),
 
   // Role endpoints
-  getRoles: () => apiClient<RoleResponse[]>('/api/Tenant/roles'),
+  getRawRoles: () => apiClient<RoleResponse[]>('/api/Tenant/roles'),
+
+  getRoles: async () => {
+    const raw = await apiClient<RoleResponse[]>('/api/Tenant/roles');
+    const list = Array.isArray(raw) ? raw : (raw as any)?.data || [];
+    return deduplicateRoles(list);
+  },
 
   getRoleById: (id: string) => apiClient<RoleResponse>(`/api/Tenant/roles/${id}`),
 

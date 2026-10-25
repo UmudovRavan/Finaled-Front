@@ -1055,6 +1055,11 @@ const TaskDetail: React.FC = () => {
                                     {getStatusBadge(task.status)}
                                     {getPriorityBadge(task.priority)}
 
+                                    {task.titleName && (
+                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                            Holdinq: {task.titleName}
+                                        </span>
+                                    )}
                                     {task.divisionName && (
                                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
                                             Şöbə: {task.divisionName}
@@ -1352,6 +1357,27 @@ const TaskDetail: React.FC = () => {
                                             <span>{formatDateTime(task.deadline)}</span>
                                         </div>
                                     </div>
+
+                                    {task.titleName && (
+                                        <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-[#27272A]">
+                                            <span className="text-zinc-500 dark:text-[#71717A]">Holdinq / MMC</span>
+                                            <span className="text-amber-600 dark:text-amber-400 font-semibold">{task.titleName}</span>
+                                        </div>
+                                    )}
+
+                                    {task.divisionName && (
+                                        <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-[#27272A]">
+                                            <span className="text-zinc-500 dark:text-[#71717A]">Şöbə</span>
+                                            <span className="text-sky-600 dark:text-sky-400 font-semibold">{task.divisionName}</span>
+                                        </div>
+                                    )}
+
+                                    {task.projectName && (
+                                        <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-[#27272A]">
+                                            <span className="text-zinc-500 dark:text-[#71717A]">Layihə</span>
+                                            <span className="text-purple-600 dark:text-purple-400 font-semibold">{task.projectName}</span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Finish Task Button - Show for assigned user when status is InProgress */}

@@ -25,6 +25,7 @@ import {
     Settings,
     KpiDashboard,
     KpiLeaderboard,
+    Titles,
 } from '../pages';
 
 const AppRouter: React.FC = () => {
@@ -69,6 +70,7 @@ const AppRouter: React.FC = () => {
                 <Route element={<ProtectedRoute requiredPermission="tms.projects.view" />}>
                     <Route path="/projects" element={<Projects />} />
                     <Route path="/projects/:id" element={<ProjectDetail />} />
+                    <Route path="/titles" element={<Titles />} />
                 </Route>
 
                 {/* Workload Analysis */}

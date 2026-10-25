@@ -48,6 +48,18 @@ export function clearStoredTaskComments(taskId: string | number): void {
     }
 }
 
+export interface TaskFilterParams {
+    titleId?: string | number | null;
+    divisionId?: string | number | null;
+    projectId?: string | number | null;
+    status?: number | string | null;
+    priority?: number | string | null;
+    assignedToUserId?: string | null;
+    fromDeadline?: string | null;
+    toDeadline?: string | null;
+    search?: string | null;
+}
+
 export interface CreateTaskRequest {
     title: string;
     description?: string;
@@ -55,8 +67,9 @@ export interface CreateTaskRequest {
     status?: number;
     priority?: number;
     levelId?: string | number | null;
-    projectId?: string | number | null;
+    projectId: string | number;
     divisionId?: string | number | null;
+    titleId?: string | number | null;
     workGroupId?: string | number | null;
     deadline: string;
     assignedToUserId?: string;
@@ -75,6 +88,7 @@ export interface UpdateTaskRequest {
     levelId?: string | number | null;
     projectId?: string | number | null;
     divisionId?: string | number | null;
+    titleId?: string | number | null;
     workGroupId?: string | number | null;
     deadline: string;
     assignedToUserId?: string;
@@ -166,9 +180,28 @@ export function normalizeTask(raw: any): TaskResponse {
         ?? raw.division?.name ?? raw.Division?.Name ?? raw.division?.title ?? raw.Division?.Title
         ?? undefined;
 
+    const titleId = raw.titleId ?? raw.TitleId
+        ?? raw.title?.id ?? raw.Title?.Id
+        ?? raw.companyTitle?.id ?? raw.CompanyTitle?.Id
+        ?? raw.titleCompany?.id ?? raw.TitleCompany?.Id
+        ?? null;
+
+    const titleName = raw.titleName ?? raw.TitleName
+        ?? raw.title?.name ?? raw.Title?.Name
+        ?? raw.companyTitle?.name ?? raw.CompanyTitle?.Name
+        ?? raw.titleCompany?.name ?? raw.TitleCompany?.Name
+        ?? undefined;
+
     const assignedToUserId = raw.assignedToUserId ?? raw.AssignedToUserId ?? raw.assignedToId ?? raw.AssignedToId ?? raw.assignedUserId ?? raw.AssignedUserId ?? undefined;
     const assignedToUserName = raw.assignedToUserName ?? raw.AssignedToUserName ?? raw.assignedUserName ?? raw.AssignedUserName ?? raw.assignedUser?.userName ?? raw.AssignedUser?.UserName ?? undefined;
     const createdByUserId = String(raw.createdByUserId ?? raw.CreatedByUserId ?? raw.createdById ?? raw.CreatedById ?? raw.userId ?? raw.UserId ?? raw.createdUser?.id ?? '');
+    const createdByUserName = raw.createdByUserName ?? raw.CreatedByUserName
+        ?? raw.createdByUser?.userName ?? raw.CreatedByUser?.UserName
+        ?? raw.createdByUser?.fullName ?? raw.CreatedByUser?.FullName
+        ?? raw.createdUser?.userName ?? raw.CreatedUser?.UserName
+        ?? raw.createdUser?.fullName ?? raw.CreatedUser?.FullName
+        ?? raw.createdByName ?? raw.CreatedByName
+        ?? undefined;
     const parentTaskId = raw.parentTaskId ?? raw.ParentTaskId ?? null;
 
     // Normalize files/attachments
@@ -272,10 +305,13 @@ export function normalizeTask(raw: any): TaskResponse {
         projectName,
         divisionId,
         divisionName,
+        titleId,
+        titleName,
         workGroupId,
         assignedToUserId: assignedToUserId ? String(assignedToUserId) : undefined,
         assignedToUserName: assignedToUserName ? String(assignedToUserName) : undefined,
         createdByUserId,
+        createdByUserName,
         parentTaskId,
         files,
         taskComments,
@@ -578,6 +614,9 @@ export const taskService = {
         if (data.divisionId !== undefined && data.divisionId !== null && String(data.divisionId).trim() !== '') {
             formData.append('DivisionId', String(data.divisionId).trim());
         }
+        if (data.titleId !== undefined && data.titleId !== null && String(data.titleId).trim() !== '') {
+            formData.append('TitleId', String(data.titleId).trim());
+        }
         if (data.workGroupId !== undefined && data.workGroupId !== null && String(data.workGroupId).trim() !== '') {
             formData.append('WorkGroupId', String(data.workGroupId).trim());
         }
@@ -622,6 +661,7 @@ export const taskService = {
             ProjectLevelId: data.levelId,
             ProjectId: data.projectId,
             DivisionId: data.divisionId,
+            TitleId: data.titleId,
             WorkGroupId: data.workGroupId,
             Deadline: data.deadline,
             AssignedToUserId: data.assignedToUserId,
@@ -839,6 +879,71 @@ export const taskService = {
         });
 
         await httpClient.post(`/Task/AddFilesToTask/${taskId}`, formData);
+    },
+
+    async filterTasks(filter: TaskFilterParams): Promise<TaskResponse[]> {
+        const params: Record<string, any> = {};
+        if (filter.titleId && String(filter.titleId) !== 'all') params.titleId = filter.titleId;
+        if (filter.divisionId && String(filter.divisionId) !== 'all') params.divisionId = filter.divisionId;
+        if (filter.projectId && String(filter.projectId) !== 'all') params.projectId = filter.projectId;
+        if (filter.status !== undefined && filter.status !== null && String(filter.status) !== 'all') params.status = filter.status;
+        if (filter.priority !== undefined && filter.priority !== null && String(filter.priority) !== 'all') params.priority = filter.priority;
+        if (filter.assignedToUserId && String(filter.assignedToUserId) !== 'all') params.assignedToUserId = filter.assignedToUserId;
+        if (filter.fromDeadline) params.fromDeadline = filter.fromDeadline;
+        if (filter.toDeadline) params.toDeadline = filter.toDeadline;
+        if (filter.search && filter.search.trim()) params.search = filter.search.trim();
+
+        const response = await httpClient.get<any>('/Task/filter', { params });
+        const data = response.data;
+        let list: any[] = [];
+        if (Array.isArray(data)) {
+            list = data;
+        } else if (data && Array.isArray(data.data)) {
+            list = data.data;
+        } else if (data && Array.isArray(data.items)) {
+            list = data.items;
+        }
+        return list.map(normalizeTask);
+    },
+
+    async exportTasksToExcel(filter: TaskFilterParams): Promise<void> {
+        const params: Record<string, any> = {};
+        if (filter.titleId && String(filter.titleId) !== 'all') params.titleId = filter.titleId;
+        if (filter.divisionId && String(filter.divisionId) !== 'all') params.divisionId = filter.divisionId;
+        if (filter.projectId && String(filter.projectId) !== 'all') params.projectId = filter.projectId;
+        if (filter.status !== undefined && filter.status !== null && String(filter.status) !== 'all') params.status = filter.status;
+        if (filter.priority !== undefined && filter.priority !== null && String(filter.priority) !== 'all') params.priority = filter.priority;
+        if (filter.assignedToUserId && String(filter.assignedToUserId) !== 'all') params.assignedToUserId = filter.assignedToUserId;
+        if (filter.fromDeadline) params.fromDeadline = filter.fromDeadline;
+        if (filter.toDeadline) params.toDeadline = filter.toDeadline;
+        if (filter.search && filter.search.trim()) params.search = filter.search.trim();
+
+        const response = await httpClient.get<Blob>('/Task/export-excel', {
+            params,
+            responseType: 'blob',
+        });
+
+        // Determine filename from content-disposition header if available
+        let fileName = `Emeliyyatlar_Tapsiriqlar_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        const disposition = response.headers?.['content-disposition'];
+        if (disposition && disposition.includes('filename=')) {
+            const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+            if (matches && matches[1]) {
+                fileName = matches[1].replace(/['"]/g, '');
+            }
+        }
+
+        const blob = new Blob([response.data], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
     },
 };
 

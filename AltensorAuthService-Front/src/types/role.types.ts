@@ -6,6 +6,7 @@ export interface RoleResponse {
   tenantId?: string;
   permissions: string[];
   permissionIds?: string[];
+  duplicateIds?: string[];
 }
 
 export interface CreateRoleRequest {

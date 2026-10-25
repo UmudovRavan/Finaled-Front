@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../layout';
-import { taskService, authService, notificationService, userService, divisionService, projectService, projectLevelService } from '../api';
-import type { TaskResponse, NotificationResponse, UserResponse, DivisionDTO, ProjectDTO, ProjectLevelDTO } from '../dto';
+import { taskService, authService, notificationService, userService, divisionService, projectService, projectLevelService, titleService } from '../api';
+import type { TaskResponse, NotificationResponse, UserResponse, DivisionDTO, ProjectDTO, ProjectLevelDTO, CompanyTitleDTO } from '../dto';
 import { TaskStatus, DifficultyLevel, Priority } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
 import type { UserInfo } from '../utils';
@@ -20,6 +20,7 @@ import {
     BuildingOfficeIcon,
     FolderIcon,
     QueueListIcon,
+    TagIcon,
 } from '@heroicons/react/24/outline';
 
 const TaskEdit: React.FC = () => {
@@ -46,6 +47,8 @@ const TaskEdit: React.FC = () => {
     const [assignedUser, setAssignedUser] = useState<UserResponse | null>(null);
 
     // Hierarchy states
+    const [titles, setTitles] = useState<CompanyTitleDTO[]>([]);
+    const [selectedTitleId, setSelectedTitleId] = useState<string>('');
     const [divisions, setDivisions] = useState<DivisionDTO[]>([]);
     const [selectedDivisionId, setSelectedDivisionId] = useState<string>('');
     const [projects, setProjects] = useState<ProjectDTO[]>([]);
@@ -123,11 +126,12 @@ const TaskEdit: React.FC = () => {
                 return;
             }
 
-            const [taskData, notificationsData, usersData, divsData] = await Promise.all([
+            const [taskData, notificationsData, usersData, divsData, titlesData] = await Promise.all([
                 taskService.getTaskById(taskId).catch(() => null),
                 notificationService.getMyNotifications().catch(() => []),
                 userService.getAllUsers().catch(() => []),
                 divisionService.getAllDivisions().catch(() => []),
+                titleService.getAllTitles().catch(() => []),
             ]);
 
             if (!taskData) {
@@ -142,6 +146,11 @@ const TaskEdit: React.FC = () => {
             setDifficulty(taskData.difficulty || DifficultyLevel.Medium);
             setPriority(typeof taskData.priority === 'number' ? taskData.priority : Priority.Normal);
             setDivisions(divsData);
+            setTitles(titlesData);
+
+            if (taskData.titleId) {
+                setSelectedTitleId(String(taskData.titleId));
+            }
 
             if (taskData.divisionId) {
                 setSelectedDivisionId(String(taskData.divisionId));
@@ -279,6 +288,12 @@ const TaskEdit: React.FC = () => {
             return;
         }
 
+        // TƏLƏB 2: Layihəsiz seçim mümkün deyil
+        if (!selectedProjectId) {
+            setError('Tapşırıq mütləq bir layihəyə bağlanmalıdır. Layihəsiz seçim mümkün deyil.');
+            return;
+        }
+
         if (!deadline) {
             setError('İcra tarixi mütləqdir');
             return;
@@ -292,8 +307,9 @@ const TaskEdit: React.FC = () => {
                 description: description.trim(),
                 difficulty,
                 priority,
+                titleId: selectedTitleId || undefined,
                 divisionId: selectedDivisionId || undefined,
-                projectId: selectedProjectId || undefined,
+                projectId: selectedProjectId,
                 levelId: selectedLevelId || undefined,
                 status,
                 deadline: new Date(deadline).toISOString(),
@@ -385,8 +401,27 @@ const TaskEdit: React.FC = () => {
                                 />
                             </div>
 
-                            {/* Hierarchy: Division > Project > Level */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-zinc-50 dark:bg-[#222226] p-3.5 rounded-xl border border-zinc-200/80 dark:border-[#2C2C2E]">
+                            {/* Hierarchy: Title > Division > Project * > Level */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-zinc-50 dark:bg-[#222226] p-3.5 rounded-xl border border-zinc-200/80 dark:border-[#2C2C2E]">
+                                <div className="space-y-1">
+                                    <label className="text-[11px] font-semibold text-zinc-600 dark:text-[#A1A1AA] flex items-center gap-1">
+                                        <TagIcon className="w-3 h-3 text-amber-500 dark:text-amber-400" />
+                                        Holdinq / MMC
+                                    </label>
+                                    <CustomSelect
+                                        value={String(selectedTitleId)}
+                                        onChange={setSelectedTitleId}
+                                        options={[
+                                            { value: '', label: 'Avtomatik / Hamısı' },
+                                            ...titles.map((t) => ({
+                                                value: String(t.id),
+                                                label: t.name,
+                                            })),
+                                        ]}
+                                        className="w-full"
+                                    />
+                                </div>
+
                                 <div className="space-y-1">
                                     <label className="text-[11px] font-semibold text-zinc-600 dark:text-[#A1A1AA] flex items-center gap-1">
                                         <BuildingOfficeIcon className="w-3 h-3 text-sky-500 dark:text-sky-400" />
@@ -396,7 +431,7 @@ const TaskEdit: React.FC = () => {
                                         value={String(selectedDivisionId)}
                                         onChange={handleDivisionChange}
                                         options={[
-                                            { value: '', label: 'Şöbəsiz' },
+                                            { value: '', label: 'Avtomatik / Hamısı' },
                                             ...divisions.map((d) => ({
                                                 value: String(d.id),
                                                 label: d.name,
@@ -407,15 +442,15 @@ const TaskEdit: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[11px] font-semibold text-zinc-600 dark:text-[#A1A1AA] flex items-center gap-1">
+                                    <label className="text-[11px] font-semibold text-zinc-700 dark:text-white flex items-center gap-1">
                                         <FolderIcon className="w-3 h-3 text-purple-500 dark:text-purple-400" />
-                                        Layihə
+                                        Layihə *
                                     </label>
                                     <CustomSelect
                                         value={String(selectedProjectId)}
                                         onChange={handleProjectChange}
                                         options={[
-                                            { value: '', label: 'Layihəsiz' },
+                                            { value: '', label: 'Layihə seçin *' },
                                             ...projects.map((p) => ({
                                                 value: String(p.id),
                                                 label: p.name,
@@ -440,6 +475,7 @@ const TaskEdit: React.FC = () => {
                                                 label: lvl.name,
                                             })),
                                         ]}
+                                        disabled={!selectedProjectId && levels.length === 0}
                                         className="w-full"
                                     />
                                 </div>

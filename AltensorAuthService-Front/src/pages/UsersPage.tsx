@@ -6,6 +6,8 @@ import { useToast } from '../context/ToastContext';
 import { useLanguage } from '../context/LanguageContext';
 import { formatDate } from '../utils/formatters';
 
+import { autoSyncDuplicateRoles } from '../utils/roleUtils';
+
 export const UsersPage: React.FC = () => {
   const { showToast } = useToast();
   const { t } = useLanguage();
@@ -36,6 +38,9 @@ export const UsersPage: React.FC = () => {
       const rawRoles = Array.isArray(rolesData) ? rolesData : (rolesData as any)?.data || [];
       setUsers(rawUsers);
       setRoles(rawRoles);
+
+      // Auto-sync any 0-permission duplicate roles in background
+      autoSyncDuplicateRoles().catch(() => {});
     } catch (err: any) {
       showToast('error', err.message || 'Error loading users', 'Error');
     } finally {
@@ -47,23 +52,9 @@ export const UsersPage: React.FC = () => {
     loadData();
   }, [loadData]);
 
-  // Filter out system admin roles so they cannot be assigned when adding regular tenant users
+  // Include all valid roles (including system roles) so they can be assigned when creating a user
   const assignableRoles = useMemo(() => {
-    return roles.filter((r) => {
-      if (!r || !r.name) return false;
-      if (r.isSystemRole) return false;
-      const normalized = r.name.toLowerCase().trim().replace(/[\s\-_]/g, '');
-      if (
-        normalized === 'tenantadmin' ||
-        normalized === 'tenantadministrator' ||
-        normalized === 'platformsuperadmin' ||
-        normalized === 'superadmin' ||
-        normalized === 'superadministrator'
-      ) {
-        return false;
-      }
-      return true;
-    });
+    return roles.filter((r) => Boolean(r && r.name && r.id));
   }, [roles]);
 
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -85,6 +76,9 @@ export const UsersPage: React.FC = () => {
         password: newPassword,
         roleIds: validRoleIds.length > 0 ? validRoleIds : undefined
       });
+
+      // Synchronize permissions to any duplicate role created by backend Identity
+      await autoSyncDuplicateRoles();
 
       showToast('success', t('users.userCreated', {}, 'İstifadəçi uğurla yaradıldı!'), 'Success');
       setIsCreateOpen(false);
@@ -370,7 +364,7 @@ export const UsersPage: React.FC = () => {
                   <div className="max-h-36 overflow-y-auto border border-[#27272A] rounded-xl p-2 space-y-1 bg-[#121214] custom-scrollbar">
                     {assignableRoles.length === 0 ? (
                       <div className="py-4 text-center text-[#71717A] text-xs">
-                        {t('roles.noRoles', {}, 'Təyin edilə bilən fərdi rol tapılmadı.')}
+                        {t('roles.noRoles', {}, 'Təyin edilə bilən rol tapılmadı.')}
                       </div>
                     ) : (
                       assignableRoles.map((r) => {

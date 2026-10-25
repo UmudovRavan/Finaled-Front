@@ -2,9 +2,9 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../layout';
 import { KpiCard, ActivityFeed } from '../components';
-import { dashboardService, notificationService, authService } from '../api';
+import { dashboardService, notificationService, authService, userService } from '../api';
 import type { DashboardOverviewResponse } from '../api/dashboardService';
-import type { TaskResponse, NotificationResponse } from '../dto';
+import type { TaskResponse, NotificationResponse, UserResponse } from '../dto';
 import { TaskStatus } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, formatDateTime } from '../utils';
 import type { UserInfo } from '../utils';
@@ -63,12 +63,23 @@ const DashboardOverview: React.FC = () => {
     const { t, language } = useLanguage();
     const [overview, setOverview] = useState<DashboardOverviewResponse | null>(null);
     const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
+    const [allUsers, setAllUsers] = useState<UserResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
     const [activePeriod, setActivePeriod] = useState<'30days' | '7days' | 'thisMonth'>('30days');
     const [isPeriodOpen, setIsPeriodOpen] = useState(false);
     const [activeSliceIndex, setActiveSliceIndex] = useState(0);
+
+    const userMap = useMemo(() => {
+        const map = new Map<string, UserResponse>();
+        allUsers.forEach((u) => {
+            if (u.id) {
+                map.set(String(u.id).toLowerCase(), u);
+            }
+        });
+        return map;
+    }, [allUsers]);
 
     const displayName = useMemo(() => {
         if (!userInfo) return t('common.user', {}, 'İstifadəçi');
@@ -110,13 +121,17 @@ const DashboardOverview: React.FC = () => {
     const loadDashboardData = async (period: '30days' | '7days' | 'thisMonth' = '30days') => {
         try {
             setLoading(true);
-            const [overviewData, notificationsData] = await Promise.all([
+            const [overviewData, notificationsData, usersData] = await Promise.all([
                 dashboardService.getDashboardOverview(period).catch(() => null),
                 notificationService.getMyNotifications().catch(() => []),
+                userService.getAllUsers().catch(() => [] as UserResponse[]),
             ]);
 
             setOverview(overviewData);
             setNotifications(notificationsData);
+            if (Array.isArray(usersData) && usersData.length > 0) {
+                setAllUsers(usersData);
+            }
         } catch {
             // silent
         } finally {
@@ -547,6 +562,7 @@ const DashboardOverview: React.FC = () => {
                                         <tr className="border-b border-[#27272A] text-[#71717A] font-semibold">
                                             <th className="pb-3 pl-1 font-medium">{t('common.title', {}, 'Tapşırıq')}</th>
                                             <th className="pb-3 font-medium">{t('common.priority', {}, 'Prioritet')}</th>
+                                            <th className="pb-3 font-medium">{t('tasks.assignedBy', {}, 'Məsul / Verən şəxs')}</th>
                                             <th className="pb-3 font-medium">{t('common.dueDate', {}, 'İcra Tarixi')}</th>
                                             <th className="pb-3 pr-1 text-right font-medium">{t('common.status', {}, 'Status')}</th>
                                         </tr>
@@ -554,7 +570,7 @@ const DashboardOverview: React.FC = () => {
                                     <tbody className="divide-y divide-[#27272A]">
                                         {recentTasks.length === 0 ? (
                                             <tr>
-                                                <td colSpan={4} className="py-8 text-center text-xs text-[#71717A]">
+                                                <td colSpan={5} className="py-8 text-center text-xs text-[#71717A]">
                                                     {t('tasks.noTasksFound', {}, 'Tapşırıq tapılmadı')}
                                                 </td>
                                             </tr>
@@ -565,7 +581,7 @@ const DashboardOverview: React.FC = () => {
                                                     onClick={() => navigate(`/tasks/${tItem.id}`)}
                                                     className="hover:bg-white/[0.02] transition-colors cursor-pointer group"
                                                 >
-                                                    <td className="py-3 pl-1 max-w-[220px]">
+                                                    <td className="py-3 pl-1 max-w-[200px]">
                                                         <div className="font-semibold text-[#E4E4E7] group-hover:text-white truncate">
                                                             {tItem.title}
                                                         </div>
@@ -577,6 +593,38 @@ const DashboardOverview: React.FC = () => {
                                                     </td>
                                                     <td className="py-3">
                                                         {getPriorityBadge(tItem.difficulty)}
+                                                    </td>
+                                                    <td className="py-3">
+                                                        {(() => {
+                                                            const creator = tItem.createdByUserId ? userMap.get(String(tItem.createdByUserId).toLowerCase()) : null;
+                                                            const creatorName = tItem.createdByUserName || creator?.userName || (tItem.createdByUserId ? `${t('common.user', {}, 'İstifadəçi')}` : '—');
+                                                            const avatarUrl = creator ? getProfilePictureUrl(creator.id, creator.profilePictureUrl) : null;
+                                                            const initial = creatorName !== '—' ? creatorName.charAt(0).toUpperCase() : '?';
+
+                                                            return (
+                                                                <div className="flex items-center gap-2 max-w-[160px]">
+                                                                    <div
+                                                                        className="w-6 h-6 rounded-full bg-[#27272A] border border-[#3F3F46] flex items-center justify-center text-[10px] font-bold text-white shrink-0 overflow-hidden bg-cover bg-center"
+                                                                        style={{
+                                                                            backgroundImage: avatarUrl ? `url("${avatarUrl}")` : undefined,
+                                                                        }}
+                                                                        title={creatorName}
+                                                                    >
+                                                                        {!avatarUrl && initial}
+                                                                    </div>
+                                                                    <div className="min-w-0">
+                                                                        <div className="font-medium text-[#E4E4E7] group-hover:text-white truncate text-xs" title={creatorName}>
+                                                                            {creatorName}
+                                                                        </div>
+                                                                        {tItem.assignedToUserName && tItem.assignedToUserName !== creatorName && (
+                                                                            <div className="text-[10px] text-[#71717A] truncate" title={`${t('tasks.assignee', {}, 'İcraçı')}: ${tItem.assignedToUserName}`}>
+                                                                                {t('tasks.assignee', {}, 'İcraçı')}: {tItem.assignedToUserName}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })()}
                                                     </td>
                                                     <td className="py-3 text-[#A1A1AA]">
                                                         <div className="flex items-center gap-1">

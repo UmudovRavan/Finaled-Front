@@ -11,8 +11,10 @@ export interface ProjectDTO {
     id: string | number;
     name: string;
     description?: string;
-    divisionId: string | number;
+    divisionId?: string | number | null;
     divisionName?: string;
+    titleId?: string | number | null;
+    titleName?: string;
     managerId?: string | null;
     managerName?: string;
     startDate?: string;
@@ -28,7 +30,8 @@ export interface ProjectDTO {
 export interface CreateProjectRequest {
     name: string;
     description?: string;
-    divisionId: string | number;
+    divisionId?: string | number | null;
+    titleId?: string | number | null;
     managerId?: string | null;
     startDate?: string;
     endDate?: string;
@@ -38,7 +41,8 @@ export interface UpdateProjectRequest {
     id: string | number;
     name: string;
     description?: string;
-    divisionId: string | number;
+    divisionId?: string | number | null;
+    titleId?: string | number | null;
     managerId?: string | null;
     startDate?: string;
     endDate?: string;

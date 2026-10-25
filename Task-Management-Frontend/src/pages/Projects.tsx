@@ -2,8 +2,8 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Sidebar, Header } from '../layout';
 import KpiCard from '../components/KpiCard';
-import { projectService, divisionService, taskService, notificationService, userService, authService } from '../api';
-import type { ProjectDTO, DivisionDTO, CreateProjectRequest, NotificationResponse, UserResponse, TaskResponse } from '../dto';
+import { projectService, divisionService, taskService, notificationService, userService, authService, titleService } from '../api';
+import type { ProjectDTO, DivisionDTO, CreateProjectRequest, NotificationResponse, UserResponse, TaskResponse, CompanyTitleDTO } from '../dto';
 import { ProjectStatus } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, isUserAdmin, isUserManager, formatDateOnly } from '../utils';
 import type { UserInfo } from '../utils';
@@ -38,6 +38,7 @@ const Projects: React.FC = () => {
 
     const [projects, setProjects] = useState<ProjectDTO[]>([]);
     const [divisions, setDivisions] = useState<DivisionDTO[]>([]);
+    const [titles, setTitles] = useState<CompanyTitleDTO[]>([]);
     const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -46,6 +47,7 @@ const Projects: React.FC = () => {
     // Filters
     const divisionParam = searchParams.get('divisionId') || 'all';
     const [selectedDivisionId, setSelectedDivisionId] = useState<string>(divisionParam);
+    const [selectedTitleId, setSelectedTitleId] = useState<string>('all');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -93,6 +95,7 @@ const Projects: React.FC = () => {
     const [formName, setFormName] = useState('');
     const [formDesc, setFormDesc] = useState('');
     const [formDivisionId, setFormDivisionId] = useState<string>('');
+    const [formTitleId, setFormTitleId] = useState<string>('');
     const [formManagerId, setFormManagerId] = useState<string>('');
     const [formStartDate, setFormStartDate] = useState('');
     const [formEndDate, setFormEndDate] = useState('');
@@ -151,14 +154,16 @@ const Projects: React.FC = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [projRes, divRes, notifRes] = await Promise.all([
+            const [projRes, divRes, titleRes, notifRes] = await Promise.all([
                 projectService.getAllProjects().catch(() => [] as ProjectDTO[]),
                 divisionService.getAllDivisions().catch(() => [] as DivisionDTO[]),
+                titleService.getAllTitles().catch(() => [] as CompanyTitleDTO[]),
                 notificationService.getMyNotifications().catch(() => [] as NotificationResponse[]),
             ]);
 
             setProjects(Array.isArray(projRes) ? projRes : []);
             setDivisions(Array.isArray(divRes) ? divRes : []);
+            setTitles(Array.isArray(titleRes) ? titleRes : []);
             setNotifications(Array.isArray(notifRes) ? notifRes : []);
         } catch (err) {
             console.error('Failed to load projects data:', err);
@@ -195,6 +200,11 @@ const Projects: React.FC = () => {
                 return false;
             }
 
+            // Title (Holdinq / Şirkət) filter
+            if (selectedTitleId !== 'all' && String(proj.titleId) !== String(selectedTitleId)) {
+                return false;
+            }
+
             // Status filter
             if (statusFilter !== 'all') {
                 if (statusFilter === 'active' && proj.status !== ProjectStatus.Active) return false;
@@ -209,13 +219,14 @@ const Projects: React.FC = () => {
                 const matchName = proj.name.toLowerCase().includes(query);
                 const matchDesc = proj.description?.toLowerCase().includes(query) || false;
                 const matchDivision = proj.divisionName?.toLowerCase().includes(query) || false;
+                const matchTitle = proj.titleName?.toLowerCase().includes(query) || false;
                 const matchManager = proj.managerName?.toLowerCase().includes(query) || false;
-                if (!matchName && !matchDesc && !matchDivision && !matchManager) return false;
+                if (!matchName && !matchDesc && !matchDivision && !matchTitle && !matchManager) return false;
             }
 
             return true;
         });
-    }, [projects, selectedDivisionId, statusFilter, searchQuery]);
+    }, [projects, selectedDivisionId, selectedTitleId, statusFilter, searchQuery]);
 
     // KPI Metrics calculation
     const totalProjectsCount = projects.length;
@@ -229,6 +240,7 @@ const Projects: React.FC = () => {
         setFormName('');
         setFormDesc('');
         setFormDivisionId(selectedDivisionId !== 'all' ? selectedDivisionId : divisions[0]?.id ? String(divisions[0].id) : '');
+        setFormTitleId(selectedTitleId !== 'all' ? selectedTitleId : titles[0]?.id ? String(titles[0].id) : '');
         setFormManagerId('');
         setFormStartDate('');
         setFormEndDate('');
@@ -243,6 +255,7 @@ const Projects: React.FC = () => {
         setFormName(proj.name);
         setFormDesc(proj.description || '');
         setFormDivisionId(String(proj.divisionId));
+        setFormTitleId(proj.titleId ? String(proj.titleId) : '');
         setFormManagerId(proj.managerId ? String(proj.managerId) : '');
         setFormStartDate(proj.startDate ? proj.startDate.split('T')[0] : '');
         setFormEndDate(proj.endDate ? proj.endDate.split('T')[0] : '');
@@ -271,6 +284,7 @@ const Projects: React.FC = () => {
                     name: formName.trim(),
                     description: formDesc.trim() || undefined,
                     divisionId: formDivisionId,
+                    titleId: formTitleId ? Number(formTitleId) : undefined,
                     managerId: formManagerId || null,
                     startDate: formStartDate || undefined,
                     endDate: formEndDate || undefined,
@@ -282,6 +296,7 @@ const Projects: React.FC = () => {
                     name: formName.trim(),
                     description: formDesc.trim() || undefined,
                     divisionId: formDivisionId,
+                    titleId: formTitleId ? Number(formTitleId) : undefined,
                     managerId: formManagerId || null,
                     startDate: formStartDate || undefined,
                     endDate: formEndDate || undefined,
@@ -415,8 +430,19 @@ const Projects: React.FC = () => {
                             />
                         </div>
 
-                        {/* Filter Selects - Soft Custom Popover Dropdowns */}
+                        {/* Filter Selects */}
                         <div className="flex flex-wrap items-center gap-2.5">
+                            {/* Title (Holdinq / Şirkət) Filter Dropdown */}
+                            <CustomSelect
+                                value={selectedTitleId}
+                                onChange={(val) => setSelectedTitleId(String(val))}
+                                options={[
+                                    { value: 'all', label: 'Bütün Holdinqlər / Şirkətlər' },
+                                    ...titles.map((item) => ({ value: String(item.id), label: item.name })),
+                                ]}
+                                icon={<BuildingOfficeIcon className="w-3.5 h-3.5 text-indigo-500" />}
+                            />
+
                             {/* Division Filter Dropdown */}
                             <div className="relative" ref={divisionDropdownRef}>
                                 <button
@@ -597,6 +623,12 @@ const Projects: React.FC = () => {
                                                             {proj.name}
                                                         </h3>
                                                         <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                                            {proj.titleName && (
+                                                                <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 flex items-center gap-1">
+                                                                    <BuildingOfficeIcon className="w-3 h-3 text-indigo-500" />
+                                                                    {proj.titleName}
+                                                                </span>
+                                                            )}
                                                             {proj.divisionName && (
                                                                 <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 flex items-center gap-1">
                                                                     <BuildingOfficeIcon className="w-3 h-3" />
@@ -801,6 +833,22 @@ const Projects: React.FC = () => {
                                     onChange={(val) => setFormDivisionId(String(val))}
                                     options={divisions.map((d) => ({ value: d.id, label: d.name }))}
                                     placeholder={t('divisions.selectDivision', {}, 'Şöbə seçin')}
+                                    size="md"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA] mb-1.5">
+                                    Holdinq / Müştəri / Şirkət (Title)
+                                </label>
+                                <CustomSelect
+                                    value={formTitleId}
+                                    onChange={(val) => setFormTitleId(String(val))}
+                                    options={[
+                                        { value: '', label: 'Təyin edilməyib' },
+                                        ...titles.map((item) => ({ value: String(item.id), label: item.name })),
+                                    ]}
+                                    placeholder="Holdinq / Şirkət seçin"
                                     size="md"
                                 />
                             </div>

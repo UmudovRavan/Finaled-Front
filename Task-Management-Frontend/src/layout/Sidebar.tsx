@@ -17,6 +17,7 @@ import {
     ChartBarIcon,
     ClipboardDocumentListIcon,
     BuildingOfficeIcon,
+    BuildingOffice2Icon,
     FolderIcon,
     TrophyIcon,
     ScaleIcon,
@@ -257,6 +258,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         // 6. Hierarchy: Layihələr (Projects)
         if (isAdmin || isDirector || isManager || hasPermission('tms.projects.view')) {
             items.push({ path: '/projects', label: t('nav.projects', {}, 'Layihələr'), icon: FolderIcon });
+            items.push({ path: '/titles', label: 'Holdinqlər', icon: BuildingOffice2Icon });
         }
 
         // 7. Workload Analysis (İş Yükü - Scale / Tərəzi ikonu)

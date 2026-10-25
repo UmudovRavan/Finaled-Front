@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../layout';
 import CreateTaskModal from '../components/CreateTaskModal';
 import CustomSelect, { type SelectOption } from '../components/CustomSelect';
-import { taskService, authService, notificationService } from '../api';
+import { taskService, authService, notificationService, titleService, divisionService, projectService } from '../api';
 import { signalRService } from '../services/signalRService';
-import type { TaskResponse, NotificationResponse } from '../dto';
+import type { TaskResponse, NotificationResponse, CompanyTitleDTO, DivisionDTO, ProjectDTO } from '../dto';
 import { TaskStatus, DifficultyLevel, Priority } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, isUserAdmin, isUserManager, formatDateTime } from '../utils';
 import type { UserInfo } from '../utils';
@@ -28,6 +28,10 @@ import {
     SparklesIcon,
     FunnelIcon,
     XMarkIcon,
+    ArrowDownTrayIcon,
+    BuildingOfficeIcon,
+    FolderIcon,
+    TagIcon,
 } from '@heroicons/react/24/outline';
 
 const MyTasks: React.FC = () => {
@@ -37,13 +41,22 @@ const MyTasks: React.FC = () => {
     const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [exportingExcel, setExportingExcel] = useState(false);
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 
     // View Mode: 'List' | 'Kanban'
     const [viewMode, setViewMode] = useState<'List' | 'Kanban'>('List');
 
+    // Hierarchy filter data
+    const [titles, setTitles] = useState<CompanyTitleDTO[]>([]);
+    const [divisions, setDivisions] = useState<DivisionDTO[]>([]);
+    const [projects, setProjects] = useState<ProjectDTO[]>([]);
+
     // Filter states
     const [searchQuery, setSearchQuery] = useState('');
+    const [titleFilter, setTitleFilter] = useState<string>('all');
+    const [divisionFilter, setDivisionFilter] = useState<string>('all');
+    const [projectFilter, setProjectFilter] = useState<string>('all');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [priorityFilter, setPriorityFilter] = useState<string>('all');
     const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
@@ -143,18 +156,43 @@ const MyTasks: React.FC = () => {
     const loadData = async () => {
         try {
             setLoading(true);
-            const [tasksData, notificationsData] = await Promise.all([
+            const [tasksData, notificationsData, titlesData, divsData, projsData] = await Promise.all([
                 taskService.getAllTasks().catch(() => []),
                 notificationService.getMyNotifications().catch(() => []),
+                titleService.getAllTitles().catch(() => []),
+                divisionService.getAllDivisions().catch(() => []),
+                projectService.getAllProjects().catch(() => []),
             ]);
             const cleanTasks = (tasksData || []).filter((t: any) => !taskService.isSystemActivityTask(t));
             setAllTasks(cleanTasks);
             setNotifications(notificationsData);
+            setTitles(titlesData);
+            setDivisions(divsData);
+            setProjects(projsData);
         } catch {
             // Silent fail
         } finally {
             setLoading(false);
             setRefreshing(false);
+        }
+    };
+
+    const handleExportExcel = async () => {
+        try {
+            setExportingExcel(true);
+            await taskService.exportTasksToExcel({
+                titleId: titleFilter !== 'all' ? titleFilter : undefined,
+                divisionId: divisionFilter !== 'all' ? divisionFilter : undefined,
+                projectId: projectFilter !== 'all' ? projectFilter : undefined,
+                status: statusFilter !== 'all' ? Number(statusFilter) : undefined,
+                priority: priorityFilter !== 'all' ? Number(priorityFilter) : undefined,
+                search: searchQuery.trim() || undefined,
+            });
+        } catch (err) {
+            console.error('Failed to export tasks to Excel', err);
+            alert('Excel faylı yüklənərkən xəta baş verdi');
+        } finally {
+            setExportingExcel(false);
         }
     };
 
@@ -236,22 +274,37 @@ const MyTasks: React.FC = () => {
             );
         }
 
-        // 3. Status Filter
+        // 3. Title (Holdinq / Şirkət) Filter
+        if (titleFilter !== 'all') {
+            result = result.filter((task) => String(task.titleId) === String(titleFilter));
+        }
+
+        // 4. Division (Şöbə) Filter
+        if (divisionFilter !== 'all') {
+            result = result.filter((task) => String(task.divisionId) === String(divisionFilter));
+        }
+
+        // 5. Project (Layihə) Filter
+        if (projectFilter !== 'all') {
+            result = result.filter((task) => String(task.projectId) === String(projectFilter));
+        }
+
+        // 6. Status Filter
         if (statusFilter !== 'all') {
             result = result.filter((task) => task.status === parseInt(statusFilter));
         }
 
-        // 4. Priority Filter
+        // 7. Priority Filter
         if (priorityFilter !== 'all') {
             result = result.filter((task) => (task.priority !== undefined ? task.priority : 1) === parseInt(priorityFilter));
         }
 
-        // 5. Difficulty Filter
+        // 8. Difficulty Filter
         if (difficultyFilter !== 'all') {
             result = result.filter((task) => task.difficulty === parseInt(difficultyFilter));
         }
 
-        // 6. Date Preset Filter
+        // 9. Date Preset Filter
         if (datePreset !== 'all') {
             const now = new Date();
             const todayStr = now.toISOString().split('T')[0];
@@ -269,12 +322,15 @@ const MyTasks: React.FC = () => {
         }
 
         return taskService.sortTasksNewestFirst(result);
-    }, [allTasks, userInfo, ownershipFilter, isManager, searchQuery, statusFilter, priorityFilter, difficultyFilter, datePreset]);
+    }, [allTasks, userInfo, ownershipFilter, isManager, searchQuery, titleFilter, divisionFilter, projectFilter, statusFilter, priorityFilter, difficultyFilter, datePreset]);
 
-    const hasActiveFilters = searchQuery || statusFilter !== 'all' || priorityFilter !== 'all' || difficultyFilter !== 'all' || ownershipFilter !== 'all' || datePreset !== 'all';
+    const hasActiveFilters = searchQuery || titleFilter !== 'all' || divisionFilter !== 'all' || projectFilter !== 'all' || statusFilter !== 'all' || priorityFilter !== 'all' || difficultyFilter !== 'all' || ownershipFilter !== 'all' || datePreset !== 'all';
 
     const clearAllFilters = () => {
         setSearchQuery('');
+        setTitleFilter('all');
+        setDivisionFilter('all');
+        setProjectFilter('all');
         setStatusFilter('all');
         setPriorityFilter('all');
         setDifficultyFilter('all');
@@ -443,6 +499,21 @@ const MyTasks: React.FC = () => {
         { value: String(TaskStatus.Expired), label: t('common.overdue', {}, 'Gecikmiş'), icon: <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> },
     ], [t]);
 
+    const titleOptions = useMemo<SelectOption<string>[]>(() => [
+        { value: 'all', label: 'Bütün Şirkətlər / Holdinqlər' },
+        ...titles.map((item) => ({ value: String(item.id), label: item.name })),
+    ], [titles]);
+
+    const divisionOptions = useMemo<SelectOption<string>[]>(() => [
+        { value: 'all', label: 'Bütün Bölmələr' },
+        ...divisions.map((item) => ({ value: String(item.id), label: item.name })),
+    ], [divisions]);
+
+    const projectOptions = useMemo<SelectOption<string>[]>(() => [
+        { value: 'all', label: 'Bütün Layihələr' },
+        ...projects.map((item) => ({ value: String(item.id), label: item.name })),
+    ], [projects]);
+
     const dateOptions = useMemo<SelectOption<string>[]>(() => [
         { value: 'all', label: t('common.all', {}, 'Bütün Tarixlər') },
         { value: 'today', label: t('common.today', {}, 'Bugün') },
@@ -589,6 +660,30 @@ const MyTasks: React.FC = () => {
                                 </button>
                             </div>
 
+                            {/* Title (Holdinq / Şirkət) Select */}
+                            <CustomSelect
+                                value={titleFilter}
+                                onChange={setTitleFilter}
+                                options={titleOptions}
+                                icon={<BuildingOfficeIcon className="w-3.5 h-3.5" />}
+                            />
+
+                            {/* Division (Bölmə / Şöbə) Select */}
+                            <CustomSelect
+                                value={divisionFilter}
+                                onChange={setDivisionFilter}
+                                options={divisionOptions}
+                                icon={<TagIcon className="w-3.5 h-3.5" />}
+                            />
+
+                            {/* Project (Layihə) Select */}
+                            <CustomSelect
+                                value={projectFilter}
+                                onChange={setProjectFilter}
+                                options={projectOptions}
+                                icon={<FolderIcon className="w-3.5 h-3.5" />}
+                            />
+
                             {/* Priority Select */}
                             <CustomSelect
                                 value={priorityFilter}
@@ -619,17 +714,34 @@ const MyTasks: React.FC = () => {
                             />
                         </div>
 
-                        {/* Right: Clear Filters Button */}
-                        {hasActiveFilters && (
+                        {/* Right Actions: Excel Export & Clear Filters */}
+                        <div className="flex items-center gap-2 shrink-0">
                             <button
-                                onClick={clearAllFilters}
+                                onClick={handleExportExcel}
+                                disabled={exportingExcel}
                                 type="button"
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold transition-colors cursor-pointer shrink-0"
+                                title="Filtrlənmiş tapşırıqları Excel (.xlsx) olaraq ixrac et"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer shrink-0"
                             >
-                                <XMarkIcon className="w-3.5 h-3.5" />
-                                <span>{t('common.clear', {}, 'Təmizlə')}</span>
+                                {exportingExcel ? (
+                                    <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                    <ArrowDownTrayIcon className="w-3.5 h-3.5" />
+                                )}
+                                <span>{exportingExcel ? 'Yüklənir...' : 'Excel (.xlsx)'}</span>
                             </button>
-                        )}
+
+                            {hasActiveFilters && (
+                                <button
+                                    onClick={clearAllFilters}
+                                    type="button"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold transition-colors cursor-pointer shrink-0"
+                                >
+                                    <XMarkIcon className="w-3.5 h-3.5" />
+                                    <span>{t('common.clear', {}, 'Təmizlə')}</span>
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     {/* VIEW MODE 1: KANBAN BOARD */}

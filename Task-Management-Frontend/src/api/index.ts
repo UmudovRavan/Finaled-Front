@@ -14,6 +14,7 @@ export { divisionService } from './divisionService';
 export { projectService } from './projectService';
 export { projectLevelService } from './projectLevelService';
 export { workloadService } from './workloadService';
+export { titleService } from './titleService';
 export { tenantSettingsService } from './tenantSettingsService';
 export { kpiService, getKpiErrorMessage } from './kpiService';
 

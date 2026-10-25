@@ -22,6 +22,261 @@ import {
     FireIcon,
     ShieldExclamationIcon,
 } from '@heroicons/react/24/outline';
+import {
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell,
+    Tooltip,
+} from 'recharts';
+
+interface EmployeeStatusDonutProps {
+    tasks: TaskResponse[];
+    onTaskClick: (taskId: string | number) => void;
+    getStatusBadge: (status: TaskStatus) => React.ReactNode;
+    getPriorityBadge: (priority?: Priority) => React.ReactNode;
+}
+
+const EmployeeStatusDonut: React.FC<EmployeeStatusDonutProps> = ({
+    tasks,
+    onTaskClick,
+    getStatusBadge,
+    getPriorityBadge,
+}) => {
+    const { t } = useLanguage();
+    const [viewMode, setViewMode] = useState<'chart' | 'list'>('chart');
+    const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+    const now = Date.now();
+    const total = tasks.length;
+    const completed = tasks.filter((t) => t.status === TaskStatus.Completed).length;
+    const inProgress = tasks.filter((t) => t.status === TaskStatus.InProgress || t.status === TaskStatus.Assigned).length;
+    const pending = tasks.filter((t) => t.status === TaskStatus.Pending || t.status === TaskStatus.UnderReview).length;
+    const overdueOrOther = tasks.filter((t) => {
+        if (t.status === TaskStatus.Completed) return false;
+        if (t.status === TaskStatus.Canceled || t.status === TaskStatus.Expired) return true;
+        if (t.deadline) {
+            const d = new Date(t.deadline).getTime();
+            return !isNaN(d) && d < now;
+        }
+        return false;
+    }).length;
+
+    const data = [
+        {
+            name: t('statuses.completed', {}, 'Tamamlandı'),
+            count: completed,
+            value: total > 0 ? Math.round((completed / total) * 100) : 0,
+            color: '#34D399',
+        },
+        {
+            name: t('statuses.inProgress', {}, 'İcrada'),
+            count: inProgress,
+            value: total > 0 ? Math.round((inProgress / total) * 100) : 0,
+            color: '#FBBF24',
+        },
+        {
+            name: t('statuses.pending', {}, 'Gözləmədə'),
+            count: pending,
+            value: total > 0 ? Math.round((pending / total) * 100) : 0,
+            color: '#38BDF8',
+        },
+        {
+            name: t('common.overdue', {}, 'Gecikmiş'),
+            count: overdueOrOther,
+            value: total > 0 ? Math.round((overdueOrOther / total) * 100) : 0,
+            color: '#F87171',
+        },
+    ];
+
+    const hasAny = total > 0 && data.some((d) => d.count > 0);
+    const activeItem = hoveredIndex !== null ? data[hoveredIndex] : (hasAny ? data.find((d) => d.count > 0) || data[0] : null);
+
+    const chartData = hasAny
+        ? data.filter((d) => d.count > 0)
+        : [{ name: t('common.noData', {}, 'Məlumat yoxdur'), value: 1, count: 0, color: '#27272A' }];
+
+    return (
+        <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-[#27272A] space-y-3 animate-in fade-in duration-150">
+            {/* Header Switcher */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1 bg-zinc-100 dark:bg-[#27272A] p-0.5 rounded-lg text-[10px]">
+                    <button
+                        type="button"
+                        onClick={() => setViewMode('chart')}
+                        className={`px-2 py-0.5 rounded-md font-semibold transition-all cursor-pointer ${
+                            viewMode === 'chart'
+                                ? 'bg-white dark:bg-[#18181B] text-zinc-900 dark:text-white shadow-xs'
+                                : 'text-zinc-500 dark:text-[#71717A] hover:text-zinc-900 dark:hover:text-white'
+                        }`}
+                    >
+                        {t('dashboard.statusDistribution', {}, 'Status Qrafiki')}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setViewMode('list')}
+                        className={`px-2 py-0.5 rounded-md font-semibold transition-all cursor-pointer ${
+                            viewMode === 'list'
+                                ? 'bg-white dark:bg-[#18181B] text-zinc-900 dark:text-white shadow-xs'
+                                : 'text-zinc-500 dark:text-[#71717A] hover:text-zinc-900 dark:hover:text-white'
+                        }`}
+                    >
+                        {t('projects.tasksCount', {}, 'Siyahı')} ({total})
+                    </button>
+                </div>
+                <span className="text-[10px] text-zinc-500 dark:text-[#71717A] font-medium">
+                    {total} {t('common.total', {}, 'ümumi')}
+                </span>
+            </div>
+
+            {viewMode === 'chart' ? (
+                <div className="space-y-3">
+                    {/* Donut Chart */}
+                    <div className="relative w-full h-36 flex items-center justify-center">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={chartData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={42}
+                                    outerRadius={60}
+                                    paddingAngle={hasAny ? 3 : 0}
+                                    dataKey="value"
+                                    onMouseEnter={(_, idx) => {
+                                        if (hasAny) {
+                                            const originalIdx = data.findIndex((d) => d.name === chartData[idx]?.name);
+                                            setHoveredIndex(originalIdx >= 0 ? originalIdx : null);
+                                        }
+                                    }}
+                                    onMouseLeave={() => setHoveredIndex(null)}
+                                    cursor={hasAny ? 'pointer' : 'default'}
+                                >
+                                    {chartData.map((entry, idx) => (
+                                        <Cell
+                                            key={`cell-${idx}`}
+                                            fill={entry.color}
+                                            stroke="#18181B"
+                                            strokeWidth={2}
+                                        />
+                                    ))}
+                                </Pie>
+                                {hasAny && (
+                                    <Tooltip
+                                        content={({ active, payload }) => {
+                                            if (active && payload && payload.length) {
+                                                const d = payload[0].payload;
+                                                return (
+                                                    <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-xl p-2 shadow-2xl text-[11px] min-w-[120px] z-50">
+                                                        <div className="flex items-center gap-1.5 font-semibold text-white">
+                                                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }} />
+                                                            <span>{d.name}</span>
+                                                        </div>
+                                                        <div className="flex items-center justify-between text-[#A1A1AA] mt-1 pt-1 border-t border-[#2C2C2E]">
+                                                            <span>Say:</span>
+                                                            <span className="font-bold text-white">{d.count} ({d.value}%)</span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        }}
+                                    />
+                                )}
+                            </PieChart>
+                        </ResponsiveContainer>
+
+                        {/* Center stats */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                            {hasAny ? (
+                                <>
+                                    <span className="text-xl font-extrabold text-white tracking-tight leading-none">
+                                        {activeItem ? `${activeItem.value}%` : `${total}`}
+                                    </span>
+                                    <span className="text-[9px] text-[#A1A1AA] truncate max-w-[70px] mt-0.5 font-medium">
+                                        {activeItem ? activeItem.name : t('common.tasks', {}, 'Tapşırıq')}
+                                    </span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="text-lg font-bold text-zinc-400 dark:text-[#71717A] tracking-tight leading-none">
+                                        0
+                                    </span>
+                                    <span className="text-[9px] text-zinc-500 dark:text-[#71717A] mt-0.5 font-medium">
+                                        {t('common.noData', {}, 'Məlumat yoxdur')}
+                                    </span>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Legend Grid */}
+                    <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-zinc-100 dark:border-[#27272A]">
+                        {data.map((item) => (
+                            <div
+                                key={item.name}
+                                className={`flex items-center justify-between p-1.5 px-2 rounded-lg transition-colors text-[10px] ${
+                                    hoveredIndex !== null && data[hoveredIndex]?.name === item.name
+                                        ? 'bg-zinc-200 dark:bg-[#27272A]'
+                                        : 'bg-zinc-50 dark:bg-[#27272A]/40'
+                                }`}
+                            >
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                                    <span className="text-zinc-600 dark:text-[#D4D4D8] truncate">{item.name}</span>
+                                </div>
+                                <span className="font-bold text-zinc-900 dark:text-white shrink-0 ml-1">
+                                    {item.count} ({item.value}%)
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ) : (
+                /* List View */
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    {tasks.length === 0 ? (
+                        <p className="text-xs text-zinc-400 dark:text-[#71717A] py-2 text-center">
+                            {t('common.noData', {}, 'Bu əməkdaşa təyin olunmuş tapşırıq yoxdur')}
+                        </p>
+                    ) : (
+                        tasks.map((tItem) => (
+                            <div
+                                key={tItem.id}
+                                onClick={() => onTaskClick(tItem.id)}
+                                className="p-2.5 rounded-xl bg-zinc-50 hover:bg-zinc-100 dark:bg-[#27272A]/40 dark:hover:bg-[#27272A] border border-zinc-200/80 dark:border-[#27272A] hover:border-zinc-300 dark:hover:border-[#3F3F46] text-xs text-zinc-900 dark:text-white cursor-pointer transition-all flex flex-col gap-1.5 group"
+                            >
+                                <div className="flex items-start justify-between gap-2">
+                                    <span className="font-medium text-zinc-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors line-clamp-1">
+                                        {tItem.title}
+                                    </span>
+                                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                                        {getPriorityBadge(tItem.priority)}
+                                        {getStatusBadge(tItem.status)}
+                                    </div>
+                                </div>
+                                {(tItem.projectName || tItem.deadline) && (
+                                    <div className="flex items-center justify-between text-[10px] text-zinc-500 dark:text-[#71717A]">
+                                        {tItem.projectName ? (
+                                            <span className="truncate max-w-[150px] text-zinc-600 dark:text-[#A1A1AA]">
+                                                📁 {tItem.projectName}
+                                            </span>
+                                        ) : <span />}
+                                        {tItem.deadline && (
+                                            <span>
+                                                📅 {formatDateTime(tItem.deadline)}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ))
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const WorkloadView: React.FC = () => {
     const navigate = useNavigate();
@@ -140,14 +395,20 @@ const WorkloadView: React.FC = () => {
                     t.status === TaskStatus.UnderReview
                 );
                 const completedTasks = uTasks.filter((t) => t.status === TaskStatus.Completed);
-                const hardTasks = activeTasks.filter((t) => Number(t.difficulty) === 2);
-                const mediumTasks = activeTasks.filter((t) => Number(t.difficulty) === 1);
-                const easyTasks = activeTasks.filter((t) => Number(t.difficulty) === 0);
+                const hardTasks = activeTasks.filter((t) => Number(t.difficulty) === 30 || Number(t.difficulty) === 2);
+                const mediumTasks = activeTasks.filter((t) => Number(t.difficulty) === 20 || Number(t.difficulty) === 1);
+                const easyTasks = activeTasks.filter((t) => Number(t.difficulty) === 10 || Number(t.difficulty) === 0);
                 const hasUrgent = activeTasks.some((t) => t.priority === Priority.Urgent);
-                const activeCount = activeTasks.length;
-                const maxActive = 5;
-                const workloadPercentage = Math.min(100, Math.round((activeCount / maxActive) * 100));
-                const isOverloaded = activeCount >= 5;
+
+                const easyCount = serverItem?.easyTasksCount ?? serverItem?.easyTaskCount ?? easyTasks.length;
+                const mediumCount = serverItem?.mediumTasksCount ?? serverItem?.mediumTaskCount ?? mediumTasks.length;
+                const hardCount = serverItem?.hardTasksCount ?? serverItem?.hardTaskCount ?? hardTasks.length;
+                const activeCount = serverItem?.activeTaskCount ?? activeTasks.length;
+
+                // 30-luq kvota sistemi: 10 Asan + 10 Orta + 10 Çətin (Cəmi 30)
+                const maxQuota = 30;
+                const workloadPercentage = Math.min(100, Math.round((activeCount / maxQuota) * 100));
+                const isOverloaded = serverItem?.isOverloaded ?? (easyCount > 10 || mediumCount > 10 || hardCount > 10 || activeCount > maxQuota);
 
                 return {
                     userId: u.id,
@@ -157,9 +418,12 @@ const WorkloadView: React.FC = () => {
                     activeTaskCount: activeCount,
                     totalTaskCount: uTasks.length,
                     completedTaskCount: completedTasks.length,
-                    hardTaskCount: hardTasks.length,
-                    mediumTaskCount: mediumTasks.length,
-                    easyTaskCount: easyTasks.length,
+                    easyTasksCount: easyCount,
+                    mediumTasksCount: mediumCount,
+                    hardTasksCount: hardCount,
+                    hardTaskCount: hardCount,
+                    mediumTaskCount: mediumCount,
+                    easyTaskCount: easyCount,
                     workloadPercentage,
                     isOverloaded,
                     hasUrgentTasks: hasUrgent,
@@ -184,7 +448,7 @@ const WorkloadView: React.FC = () => {
             if (searchQuery.trim()) {
                 const q = searchQuery.toLowerCase();
                 return (
-                    w.userName.toLowerCase().includes(q) ||
+                    (w.userName || '').toLowerCase().includes(q) ||
                     (w.userEmail && w.userEmail.toLowerCase().includes(q))
                 );
             }
@@ -196,7 +460,7 @@ const WorkloadView: React.FC = () => {
     const overloadedCount = workloads.filter((w) => w.isOverloaded).length;
     const urgentCount = workloads.filter((w) => w.hasUrgentTasks).length;
     const avgWorkload = totalEmployees > 0
-        ? Math.round(workloads.reduce((sum, w) => sum + w.workloadPercentage, 0) / totalEmployees)
+        ? Math.round(workloads.reduce((sum, w) => sum + (w.workloadPercentage || 0), 0) / totalEmployees)
         : 0;
 
     const getWorkloadColor = (percentage: number) => {
@@ -327,7 +591,7 @@ const WorkloadView: React.FC = () => {
                                 }`}
                             >
                                 <FireIcon className="w-4 h-4 text-rose-500 dark:text-rose-400" />
-                                <span>{t('workload.onlyOverloaded', {}, 'Yalnız Yüklənmişlər (≥5 tapşırıq)')}</span>
+                                <span>{t('workload.onlyOverloaded', {}, 'Yalnız Yüklənmişlər (Kvota aşılıb)')}</span>
                             </button>
                         </div>
                     </div>
@@ -365,11 +629,11 @@ const WorkloadView: React.FC = () => {
                                             <div className="flex items-start justify-between gap-3 mb-3">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-[#27272A] border border-zinc-200 dark:border-[#3F3F46]/50 flex items-center justify-center text-zinc-900 dark:text-white font-bold text-sm">
-                                                        {w.userName.charAt(0).toUpperCase()}
+                                                        {(w.userName || 'İ').charAt(0).toUpperCase()}
                                                     </div>
                                                     <div>
                                                         <h3 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                                                            {w.userName}
+                                                            {w.userName || 'İstifadəçi'}
                                                             {w.isOverloaded && (
                                                                 <span className="p-0.5 rounded-md bg-rose-500/20 text-rose-500 dark:text-rose-400" title={t('workload.overloaded', {}, 'Həddindən artıq yüklənib')}>
                                                                     <ShieldExclamationIcon className="w-3.5 h-3.5" />
@@ -388,7 +652,7 @@ const WorkloadView: React.FC = () => {
                                                     <span className={`text-base font-extrabold ${w.isOverloaded ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-900 dark:text-white'}`}>
                                                         {w.activeTaskCount}
                                                     </span>
-                                                    <span className="text-[10px] text-zinc-500 dark:text-[#71717A] block">{t('workload.activeTasks', {}, 'aktiv tapşırıq')}</span>
+                                                    <span className="text-[10px] text-zinc-500 dark:text-[#71717A] block">/ 30 aktiv</span>
                                                 </div>
                                             </div>
 
@@ -405,28 +669,46 @@ const WorkloadView: React.FC = () => {
                                                         className={`absolute left-0 top-0 h-full rounded-full transition-all duration-500 ${
                                                             w.isOverloaded
                                                                 ? 'bg-rose-500'
-                                                                : w.workloadPercentage >= 60
+                                                                : (w.workloadPercentage || 0) >= 60
                                                                 ? 'bg-amber-500'
                                                                 : 'bg-emerald-500'
                                                         }`}
-                                                        style={{ width: `${Math.min(100, w.workloadPercentage)}%` }}
+                                                        style={{ width: `${Math.min(100, w.workloadPercentage || 0)}%` }}
                                                     ></div>
                                                 </div>
                                             </div>
 
-                                            {/* Difficulty Distribution Chips */}
+                                            {/* Difficulty Distribution Chips (10 / 10 / 10 Limits) */}
                                             <div className="grid grid-cols-3 gap-1.5 mb-4 text-center">
-                                                <div className="bg-zinc-50 dark:bg-[#27272A]/60 rounded-xl p-2 border border-zinc-200/70 dark:border-[#27272A]">
-                                                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold block">{t('difficulties.easy', {}, 'Asan')}</span>
-                                                    <span className="text-xs font-bold text-zinc-900 dark:text-white">{w.easyTaskCount}</span>
+                                                <div className={`rounded-xl p-2 border ${
+                                                    (w.easyTasksCount || 0) > 10 
+                                                        ? 'bg-rose-500/10 border-rose-500/30' 
+                                                        : 'bg-zinc-50 dark:bg-[#27272A]/60 border-zinc-200/70 dark:border-[#27272A]'
+                                                }`}>
+                                                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold block">{t('difficulties.easy', {}, 'Asan')} (10)</span>
+                                                    <span className={`text-xs font-bold ${(w.easyTasksCount || 0) > 10 ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-900 dark:text-white'}`}>
+                                                        {w.easyTasksCount || 0} / 10
+                                                    </span>
                                                 </div>
-                                                <div className="bg-zinc-50 dark:bg-[#27272A]/60 rounded-xl p-2 border border-zinc-200/70 dark:border-[#27272A]">
-                                                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold block">{t('difficulties.medium', {}, 'Orta')}</span>
-                                                    <span className="text-xs font-bold text-zinc-900 dark:text-white">{w.mediumTaskCount}</span>
+                                                <div className={`rounded-xl p-2 border ${
+                                                    (w.mediumTasksCount || 0) > 10 
+                                                        ? 'bg-rose-500/10 border-rose-500/30' 
+                                                        : 'bg-zinc-50 dark:bg-[#27272A]/60 border-zinc-200/70 dark:border-[#27272A]'
+                                                }`}>
+                                                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold block">{t('difficulties.medium', {}, 'Orta')} (10)</span>
+                                                    <span className={`text-xs font-bold ${(w.mediumTasksCount || 0) > 10 ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-900 dark:text-white'}`}>
+                                                        {w.mediumTasksCount || 0} / 10
+                                                    </span>
                                                 </div>
-                                                <div className="bg-zinc-50 dark:bg-[#27272A]/60 rounded-xl p-2 border border-zinc-200/70 dark:border-[#27272A]">
-                                                    <span className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold block">{t('difficulties.hard', {}, 'Çətin')}</span>
-                                                    <span className="text-xs font-bold text-zinc-900 dark:text-white">{w.hardTaskCount}</span>
+                                                <div className={`rounded-xl p-2 border ${
+                                                    (w.hardTasksCount || 0) > 10 
+                                                        ? 'bg-rose-500/10 border-rose-500/30' 
+                                                        : 'bg-zinc-50 dark:bg-[#27272A]/60 border-zinc-200/70 dark:border-[#27272A]'
+                                                }`}>
+                                                    <span className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold block">{t('difficulties.hard', {}, 'Çətin')} (10)</span>
+                                                    <span className={`text-xs font-bold ${(w.hardTasksCount || 0) > 10 ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-900 dark:text-white'}`}>
+                                                        {w.hardTasksCount || 0} / 10
+                                                    </span>
                                                 </div>
                                             </div>
 
@@ -434,58 +716,18 @@ const WorkloadView: React.FC = () => {
                                             {w.isOverloaded && (
                                                 <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-[11px] text-rose-600 dark:text-rose-400 flex items-center gap-2 mb-4">
                                                     <ExclamationTriangleIcon className="w-4 h-4 flex-shrink-0" />
-                                                    <span>{t('workload.heavyLoad', {}, 'Tövsiyə olunan 5 aktiv tapşırıq limitini keçib')}</span>
+                                                    <span>Kvota aşılıb (Maks: 10 Asan / 10 Orta / 10 Çətin, ümumi 30)</span>
                                                 </div>
                                             )}
 
-                                            {/* Expanded Tasks List */}
+                                            {/* Expanded Status Donut Chart & Task List */}
                                             {isExpanded && (
-                                                <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-[#27272A] space-y-2 max-h-60 overflow-y-auto pr-1 animate-in fade-in duration-150">
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <span className="text-[10px] font-bold text-zinc-500 dark:text-[#71717A] uppercase tracking-wider">
-                                                            {t('projects.tasksCount', {}, 'Tapşırıqlar')} ({(w.tasks || []).length})
-                                                        </span>
-                                                        <span className="text-[10px] text-amber-600 dark:text-amber-400/90 font-medium">
-                                                            {w.activeTaskCount} {t('common.active', {}, 'aktiv')}
-                                                        </span>
-                                                    </div>
-                                                    {(!w.tasks || w.tasks.length === 0) ? (
-                                                        <p className="text-xs text-zinc-400 dark:text-[#71717A] py-2 text-center">{t('common.noData', {}, 'Bu əməkdaşa təyin olunmuş tapşırıq yoxdur')}</p>
-                                                    ) : (
-                                                        w.tasks.map((tItem) => (
-                                                            <div
-                                                                key={tItem.id}
-                                                                onClick={() => navigate(`/tasks/${tItem.id}`)}
-                                                                className="p-2.5 rounded-xl bg-zinc-50 hover:bg-zinc-100 dark:bg-[#27272A]/40 dark:hover:bg-[#27272A] border border-zinc-200/80 dark:border-[#27272A] hover:border-zinc-300 dark:hover:border-[#3F3F46] text-xs text-zinc-900 dark:text-white cursor-pointer transition-all flex flex-col gap-1.5 group"
-                                                            >
-                                                                <div className="flex items-start justify-between gap-2">
-                                                                    <span className="font-medium text-zinc-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors line-clamp-1">
-                                                                        {tItem.title}
-                                                                    </span>
-                                                                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                                                                        {getPriorityBadge(tItem.priority)}
-                                                                        {getStatusBadge(tItem.status)}
-                                                                    </div>
-                                                                </div>
-
-                                                                {(tItem.projectName || tItem.deadline) && (
-                                                                    <div className="flex items-center justify-between text-[10px] text-zinc-500 dark:text-[#71717A]">
-                                                                        {tItem.projectName ? (
-                                                                            <span className="truncate max-w-[150px] text-zinc-600 dark:text-[#A1A1AA]">
-                                                                                📁 {tItem.projectName}
-                                                                            </span>
-                                                                        ) : <span />}
-                                                                        {tItem.deadline && (
-                                                                            <span>
-                                                                                📅 {formatDateTime(tItem.deadline)}
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        ))
-                                                    )}
-                                                </div>
+                                                <EmployeeStatusDonut
+                                                    tasks={w.tasks || []}
+                                                    onTaskClick={(id) => navigate(`/tasks/${id}`)}
+                                                    getStatusBadge={getStatusBadge}
+                                                    getPriorityBadge={getPriorityBadge}
+                                                />
                                             )}
                                         </div>
 
@@ -494,7 +736,7 @@ const WorkloadView: React.FC = () => {
                                             onClick={() => setExpandedUserId(isExpanded ? null : w.userId)}
                                             className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-[#27272A]/60 dark:hover:bg-[#27272A] border border-zinc-200/80 dark:border-[#3F3F46]/40 text-xs text-zinc-700 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white font-medium transition-all cursor-pointer"
                                         >
-                                            <span>{isExpanded ? t('workload.hideTasks', {}, 'Tapşırıqları Gizlət') : t('workload.viewTasks', {}, 'Tapşırıqlara Bax')}</span>
+                                            <span>{isExpanded ? t('workload.hideTasks', {}, 'Status Qrafikini Gizlət') : t('workload.viewTasks', {}, 'Status Qrafiki və Tapşırıqlar')}</span>
                                             {isExpanded ? (
                                                 <ChevronUpIcon className="w-3.5 h-3.5" />
                                             ) : (

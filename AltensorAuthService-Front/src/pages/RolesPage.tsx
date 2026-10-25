@@ -6,6 +6,7 @@ import { PermissionResponse } from '../types/permission.types';
 import { useToast } from '../context/ToastContext';
 import { useLanguage } from '../context/LanguageContext';
 import ActionConfirmModal from '../components/common/ActionConfirmModal';
+import { autoSyncDuplicateRoles } from '../utils/roleUtils';
 
 const moduleMap: Record<string, string> = {
   crm: 'CRM Modulu',
@@ -141,6 +142,9 @@ export const RolesPage: React.FC = () => {
         setRoles(rolesData);
         setPermissions(permsData);
 
+        // Auto-sync in background if any duplicate role with 0 permissions exists in the database
+        autoSyncDuplicateRoles().catch(() => {});
+
         const activeId = targetRoleId || selectedRoleIdRef.current;
         if (activeId) {
           const found = rolesData.find((r) => r.id === activeId);
@@ -200,11 +204,21 @@ export const RolesPage: React.FC = () => {
     setSaving(true);
     try {
       const fullPermissionIds = expandWithPairedPermissions(selectedPermissionIds, permissions);
-      await tenantApi.updateRole(selectedRole.id, {
-        name: selectedRole.name,
-        description: selectedRole.description,
-        permissionIds: fullPermissionIds
-      });
+      const idsToUpdate = selectedRole.duplicateIds && selectedRole.duplicateIds.length > 0
+        ? selectedRole.duplicateIds
+        : [selectedRole.id];
+
+      for (const id of idsToUpdate) {
+        try {
+          await tenantApi.updateRole(id, {
+            name: selectedRole.name,
+            description: selectedRole.description,
+            permissionIds: fullPermissionIds
+          });
+        } catch (err) {
+          console.warn('Update role copy failed:', id, err);
+        }
+      }
       showToast('success', t('roles.roleUpdated', {}, 'Rol məlumatları yeniləndi!'), 'Success');
       await loadData(selectedRole.id);
     } catch (err: any) {
@@ -217,7 +231,17 @@ export const RolesPage: React.FC = () => {
   const executeDeleteRole = async () => {
     if (!selectedRole || selectedRole.isSystemRole) return;
     try {
-      await tenantApi.deleteRole(selectedRole.id);
+      const idsToDelete = selectedRole.duplicateIds && selectedRole.duplicateIds.length > 0
+        ? selectedRole.duplicateIds
+        : [selectedRole.id];
+
+      for (const id of idsToDelete) {
+        try {
+          await tenantApi.deleteRole(id);
+        } catch (err) {
+          console.warn('Delete role copy failed:', id, err);
+        }
+      }
       showToast('success', t('roles.roleDeleted', {}, 'Rol silindi.'), 'Success');
       setIsDeleteModalOpen(false);
       setSelectedRole(null);

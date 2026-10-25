@@ -6,8 +6,16 @@ export function normalizeProject(raw: any): ProjectDTO {
     const id = raw.id ?? raw.Id ?? raw.projectId ?? raw.ProjectId ?? '';
     const name = String(raw.name ?? raw.Name ?? raw.title ?? raw.Title ?? '');
     const description = raw.description ?? raw.Description ?? '';
-    const divisionId = raw.divisionId ?? raw.DivisionId ?? '';
+    const divisionId = raw.divisionId ?? raw.DivisionId ?? null;
     const divisionName = raw.divisionName ?? raw.DivisionName ?? raw.division?.name ?? raw.Division?.Name ?? undefined;
+    const titleId = raw.titleId ?? raw.TitleId
+        ?? raw.title?.id ?? raw.Title?.Id
+        ?? raw.companyTitle?.id ?? raw.CompanyTitle?.Id
+        ?? null;
+    const titleName = raw.titleName ?? raw.TitleName
+        ?? raw.title?.name ?? raw.Title?.Name
+        ?? raw.companyTitle?.name ?? raw.CompanyTitle?.Name
+        ?? undefined;
     const managerId = raw.managerId ?? raw.ManagerId ?? null;
     const managerName = raw.managerName ?? raw.ManagerName ?? raw.manager?.userName ?? raw.Manager?.UserName ?? undefined;
     const startDate = raw.startDate ?? raw.StartDate ?? undefined;
@@ -25,6 +33,8 @@ export function normalizeProject(raw: any): ProjectDTO {
         description,
         divisionId,
         divisionName,
+        titleId,
+        titleName,
         managerId,
         managerName,
         startDate,
@@ -39,17 +49,25 @@ export function normalizeProject(raw: any): ProjectDTO {
 }
 
 export const projectService = {
-    async getAllProjects(): Promise<ProjectDTO[]> {
+    async getAllProjects(divisionId?: string | number, titleId?: string | number): Promise<ProjectDTO[]> {
+        const params: Record<string, any> = {};
+        if (divisionId && String(divisionId) !== 'all' && String(divisionId).trim() !== '') {
+            params.divisionId = divisionId;
+        }
+        if (titleId && String(titleId) !== 'all' && String(titleId).trim() !== '') {
+            params.titleId = titleId;
+        }
+
         const candidateEndpoints = [
+            '/Project',
             '/Project/GetAll',
             '/Project/GetAllProjects',
-            '/Project',
             '/Projects',
         ];
 
         for (const ep of candidateEndpoints) {
             try {
-                const response = await httpClient.get<any>(ep);
+                const response = await httpClient.get<any>(ep, { params });
                 const data = response.data;
                 let list: any[] = [];
                 if (Array.isArray(data)) {
@@ -74,49 +92,19 @@ export const projectService = {
     },
 
     async getProjectsByDivision(divisionId: string | number): Promise<ProjectDTO[]> {
-        const divId = String(divisionId || '').trim();
-        const candidateEndpoints = [
-            `/Project/GetByDivision/${divId}`,
-            `/Project/GetByDivision?divisionId=${encodeURIComponent(divId)}`,
-            `/Project?divisionId=${encodeURIComponent(divId)}`,
-        ];
+        return this.getAllProjects(divisionId);
+    },
 
-        for (const ep of candidateEndpoints) {
-            try {
-                const response = await httpClient.get<any>(ep);
-                const data = response.data;
-                let list: any[] = [];
-                if (Array.isArray(data)) {
-                    list = data;
-                } else if (data && Array.isArray(data.data)) {
-                    list = data.data;
-                } else if (data && Array.isArray(data.items)) {
-                    list = data.items;
-                }
-
-                if (list.length > 0 || Array.isArray(data)) {
-                    return list.map(normalizeProject);
-                }
-            } catch {
-                // Try next
-            }
-        }
-
-        // Fallback: filter from getAllProjects
-        try {
-            const all = await this.getAllProjects();
-            return all.filter((p) => String(p.divisionId) === divId);
-        } catch {
-            return [];
-        }
+    async getProjectsByTitle(titleId: string | number): Promise<ProjectDTO[]> {
+        return this.getAllProjects(undefined, titleId);
     },
 
     async getProjectById(id: string | number): Promise<ProjectDTO> {
         const projId = String(id || '').trim();
         const candidateEndpoints = [
+            `/Project/${projId}`,
             `/Project/GetById/${projId}`,
             `/Project/GetProject/${projId}`,
-            `/Project/${projId}`,
             `/Project?id=${encodeURIComponent(projId)}`,
         ];
 
@@ -145,6 +133,7 @@ export const projectService = {
             Name: data.name,
             Description: data.description || '',
             DivisionId: data.divisionId || null,
+            TitleId: data.titleId || null,
             ManagerId: data.managerId || null,
         };
 
@@ -176,6 +165,7 @@ export const projectService = {
             Name: data.name,
             Description: data.description || '',
             DivisionId: data.divisionId || null,
+            TitleId: data.titleId || null,
             ManagerId: data.managerId || null,
         };
 

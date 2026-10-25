@@ -42,3 +42,4 @@ export type {
     DivisionKpiAnalyticsDTO,
     CompanyKpiAnalyticsDTO,
 } from './KpiResponse';
+export type { CompanyTitleDTO, CreateCompanyTitleDTO, UpdateCompanyTitleDTO, CreateCompanyTitleRequest } from './CompanyTitleDTO';
