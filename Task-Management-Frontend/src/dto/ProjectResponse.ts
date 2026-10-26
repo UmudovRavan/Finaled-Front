@@ -13,6 +13,8 @@ export interface ProjectDTO {
     description?: string;
     divisionId: string | number;
     divisionName?: string;
+    titleId?: string | number | null;
+    titleName?: string;
     managerId?: string | null;
     managerName?: string;
     startDate?: string;
@@ -29,6 +31,7 @@ export interface CreateProjectRequest {
     name: string;
     description?: string;
     divisionId: string | number;
+    titleId?: string | number | null;
     managerId?: string | null;
     startDate?: string;
     endDate?: string;
@@ -39,6 +42,7 @@ export interface UpdateProjectRequest {
     name: string;
     description?: string;
     divisionId: string | number;
+    titleId?: string | number | null;
     managerId?: string | null;
     startDate?: string;
     endDate?: string;

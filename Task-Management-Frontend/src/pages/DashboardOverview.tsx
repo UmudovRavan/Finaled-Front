@@ -2,9 +2,9 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../layout';
 import { KpiCard, ActivityFeed } from '../components';
-import { dashboardService, notificationService, authService } from '../api';
+import { dashboardService, notificationService, authService, userService } from '../api';
 import type { DashboardOverviewResponse } from '../api/dashboardService';
-import type { TaskResponse, NotificationResponse } from '../dto';
+import type { TaskResponse, NotificationResponse, UserResponse } from '../dto';
 import { TaskStatus } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, formatDateTime } from '../utils';
 import type { UserInfo } from '../utils';
@@ -63,6 +63,7 @@ const DashboardOverview: React.FC = () => {
     const { t, language } = useLanguage();
     const [overview, setOverview] = useState<DashboardOverviewResponse | null>(null);
     const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
+    const [allUsers, setAllUsers] = useState<UserResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
@@ -90,6 +91,28 @@ const DashboardOverview: React.FC = () => {
         return getProfilePictureUrl(userInfo?.userId, userInfo?.profilePictureUrl);
     }, [userInfo]);
 
+    const getUserInfoById = (userId?: string, fallbackName?: string) => {
+        if (!userId && !fallbackName) return null;
+        const normalizedId = String(userId || '').trim().toLowerCase();
+        const found = allUsers.find(
+            u => String(u.id).trim().toLowerCase() === normalizedId ||
+                 (u.email && u.email.trim().toLowerCase() === normalizedId)
+        );
+        if (found) {
+            return {
+                name: found.userName || found.email?.split('@')[0] || 'İstifadəçi',
+                avatarUrl: getProfilePictureUrl(found.id, found.profilePictureUrl),
+                initial: (found.userName || found.email || 'U').charAt(0).toUpperCase(),
+            };
+        }
+        const name = fallbackName || (userId?.includes('@') ? userId.split('@')[0] : userId) || 'Məsul şəxs';
+        return {
+            name,
+            avatarUrl: undefined,
+            initial: name.charAt(0).toUpperCase(),
+        };
+    };
+
     useEffect(() => {
         const token = authService.getToken();
 
@@ -110,13 +133,15 @@ const DashboardOverview: React.FC = () => {
     const loadDashboardData = async (period: '30days' | '7days' | 'thisMonth' = '30days') => {
         try {
             setLoading(true);
-            const [overviewData, notificationsData] = await Promise.all([
+            const [overviewData, notificationsData, usersData] = await Promise.all([
                 dashboardService.getDashboardOverview(period).catch(() => null),
                 notificationService.getMyNotifications().catch(() => []),
+                userService.getAllUsers().catch(() => [] as UserResponse[]),
             ]);
 
             setOverview(overviewData);
             setNotifications(notificationsData);
+            setAllUsers(usersData);
         } catch {
             // silent
         } finally {
@@ -545,17 +570,18 @@ const DashboardOverview: React.FC = () => {
                                 <table className="w-full text-left text-xs">
                                     <thead>
                                         <tr className="border-b border-[#27272A] text-[#71717A] font-semibold">
-                                            <th className="pb-3 pl-1 font-medium">{t('common.title', {}, 'Tapşırıq')}</th>
+                                            <th className="pb-3 pl-1 font-medium">{t('common.title', {}, 'Başlıq')}</th>
+                                            <th className="pb-3 font-medium">{t('common.responsible', {}, 'Məsul Şəxs')}</th>
                                             <th className="pb-3 font-medium">{t('common.priority', {}, 'Prioritet')}</th>
-                                            <th className="pb-3 font-medium">{t('common.dueDate', {}, 'İcra Tarixi')}</th>
+                                            <th className="pb-3 font-medium">{t('common.dueDate', {}, 'Son Tarix')}</th>
                                             <th className="pb-3 pr-1 text-right font-medium">{t('common.status', {}, 'Status')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[#27272A]">
                                         {recentTasks.length === 0 ? (
                                             <tr>
-                                                <td colSpan={4} className="py-8 text-center text-xs text-[#71717A]">
-                                                    {t('tasks.noTasksFound', {}, 'Tapşırıq tapılmadı')}
+                                                <td colSpan={5} className="py-8 text-center text-xs text-[#71717A]">
+                                                    {t('tasks.noTasksFound', {}, 'Heç bir tapşırıq tapılmadı.')}
                                                 </td>
                                             </tr>
                                         ) : (
@@ -565,15 +591,57 @@ const DashboardOverview: React.FC = () => {
                                                     onClick={() => navigate(`/tasks/${tItem.id}`)}
                                                     className="hover:bg-white/[0.02] transition-colors cursor-pointer group"
                                                 >
-                                                    <td className="py-3 pl-1 max-w-[220px]">
+                                                    <td className="py-3 pl-1 max-w-[210px]">
                                                         <div className="font-semibold text-[#E4E4E7] group-hover:text-white truncate">
                                                             {tItem.title}
                                                         </div>
-                                                        {tItem.description && (
+                                                        {tItem.projectName ? (
+                                                            <div className="text-[11px] text-[#71717A] truncate">
+                                                                📁 {tItem.projectName}
+                                                            </div>
+                                                        ) : tItem.description ? (
                                                             <div className="text-[11px] text-[#71717A] truncate">
                                                                 {tItem.description}
                                                             </div>
-                                                        )}
+                                                        ) : null}
+                                                    </td>
+                                                    <td className="py-3 pr-2">
+                                                        {(() => {
+                                                            const creator = getUserInfoById(tItem.createdByUserId, tItem.createdByUserName);
+                                                            const assignee = tItem.assignedToUserName || (tItem.assignedToUserId ? getUserInfoById(tItem.assignedToUserId)?.name : null);
+                                                            
+                                                            if (!creator && !assignee) {
+                                                                return <span className="text-zinc-600 text-xs">—</span>;
+                                                            }
+
+                                                            const primaryUser = creator || {
+                                                                name: assignee || 'İstifadəçi',
+                                                                initial: (assignee || 'U').charAt(0).toUpperCase(),
+                                                                avatarUrl: undefined
+                                                            };
+
+                                                            return (
+                                                                <div className="flex items-center gap-2 max-w-[170px]">
+                                                                    <div className="w-6 h-6 rounded-full shrink-0 flex items-center justify-center overflow-hidden bg-[#27272A] border border-[#3F3F46]/50 text-[10px] font-bold text-zinc-200">
+                                                                        {primaryUser.avatarUrl ? (
+                                                                            <img src={primaryUser.avatarUrl} alt="" className="w-full h-full object-cover" />
+                                                                        ) : (
+                                                                            <span>{primaryUser.initial}</span>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="min-w-0">
+                                                                        <div className="text-xs font-semibold text-zinc-200 truncate group-hover:text-white transition-colors" title={`${t('common.responsible', {}, 'Məsul şəxs')}: ${primaryUser.name}`}>
+                                                                            {primaryUser.name}
+                                                                        </div>
+                                                                        {assignee && creator && assignee !== creator.name && (
+                                                                            <div className="text-[10px] text-zinc-500 truncate" title={`${t('common.assignedTo', {}, 'İcraçı')}: ${assignee}`}>
+                                                                                → {assignee}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })()}
                                                     </td>
                                                     <td className="py-3">
                                                         {getPriorityBadge(tItem.difficulty)}

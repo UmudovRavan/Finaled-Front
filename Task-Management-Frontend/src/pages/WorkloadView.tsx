@@ -22,6 +22,172 @@ import {
     FireIcon,
     ShieldExclamationIcon,
 } from '@heroicons/react/24/outline';
+import {
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell,
+} from 'recharts';
+
+interface StatusDistributionItem {
+    name: string;
+    count: number;
+    value: number;
+    color: string;
+    percentage: number;
+}
+
+const WorkloadStatusDonut: React.FC<{ tasks?: TaskResponse[]; activeCount: number }> = ({ tasks = [], activeCount }) => {
+    const { t } = useLanguage();
+    const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
+    const { donutData, allStatusItems, totalTasks, hasData } = useMemo(() => {
+        let completed = 0;
+        let inProgress = 0;
+        let underReview = 0;
+        let pending = 0;
+        let expired = 0;
+
+        tasks.forEach((task) => {
+            if (task.status === TaskStatus.Completed) completed++;
+            else if (task.status === TaskStatus.InProgress) inProgress++;
+            else if (task.status === TaskStatus.UnderReview) underReview++;
+            else if (task.status === TaskStatus.Expired || task.status === TaskStatus.Canceled) expired++;
+            else pending++;
+        });
+
+        const total = tasks.length;
+        const has = total > 0;
+
+        const allItems: StatusDistributionItem[] = [
+            {
+                name: t('statuses.completed', {}, 'Tamamlandı'),
+                count: completed,
+                value: completed,
+                color: '#34D399',
+                percentage: total > 0 ? Math.round((completed / total) * 100) : 0,
+            },
+            {
+                name: t('statuses.inProgress', {}, 'İcrada'),
+                count: inProgress,
+                value: inProgress,
+                color: '#38BDF8',
+                percentage: total > 0 ? Math.round((inProgress / total) * 100) : 0,
+            },
+            {
+                name: t('statuses.review', {}, 'Yoxlanışda'),
+                count: underReview,
+                value: underReview,
+                color: '#A855F7',
+                percentage: total > 0 ? Math.round((underReview / total) * 100) : 0,
+            },
+            {
+                name: t('statuses.pending', {}, 'Gözləmədə'),
+                count: pending,
+                value: pending,
+                color: '#FBBF24',
+                percentage: total > 0 ? Math.round((pending / total) * 100) : 0,
+            },
+            {
+                name: t('common.overdue', {}, 'Gecikmiş'),
+                count: expired,
+                value: expired,
+                color: '#F87171',
+                percentage: total > 0 ? Math.round((expired / total) * 100) : 0,
+            },
+        ];
+
+        const chartItems = has
+            ? allItems.filter((i) => i.count > 0)
+            : [{ name: t('tasks.noTasksFound', {}, 'Tapşırıq yoxdur'), count: 0, value: 1, color: '#3F3F46', percentage: 0 }];
+
+        return {
+            donutData: chartItems,
+            allStatusItems: allItems,
+            totalTasks: total,
+            hasData: has,
+        };
+    }, [tasks, t]);
+
+    const activeItem = hoveredIdx !== null && hasData ? donutData[hoveredIdx] : null;
+
+    return (
+        <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-[#27272A] animate-in fade-in duration-200">
+            <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold text-zinc-500 dark:text-[#71717A] uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                    {t('dashboard.statusDistribution', {}, 'Status Bölgüsü')}
+                </span>
+                <span className="text-[10px] text-zinc-500 dark:text-[#A1A1AA] font-medium">
+                    {totalTasks} {t('common.total', {}, 'ümumi')} · <span className="text-amber-500 font-semibold">{activeCount} {t('common.active', {}, 'aktiv')}</span>
+                </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 rounded-xl bg-zinc-50/70 dark:bg-[#202024]/80 border border-zinc-200/70 dark:border-[#2C2C2E]">
+                {/* Donut Chart */}
+                <div className="relative w-32 h-32 flex items-center justify-center shrink-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                            <Pie
+                                data={donutData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={36}
+                                outerRadius={52}
+                                paddingAngle={hasData && donutData.length > 1 ? 3 : 0}
+                                dataKey="value"
+                                onMouseEnter={(_, idx) => hasData && setHoveredIdx(idx)}
+                                onMouseLeave={() => setHoveredIdx(null)}
+                                cursor={hasData ? 'pointer' : 'default'}
+                            >
+                                {donutData.map((entry, idx) => (
+                                    <Cell
+                                        key={`cell-${idx}`}
+                                        fill={entry.color}
+                                        stroke="#18181B"
+                                        strokeWidth={1.5}
+                                    />
+                                ))}
+                            </Pie>
+                        </PieChart>
+                    </ResponsiveContainer>
+
+                    {/* Center count / label */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                        <span className="text-lg font-extrabold text-zinc-900 dark:text-white leading-tight">
+                            {activeItem ? `${activeItem.count}` : `${totalTasks}`}
+                        </span>
+                        <span className="text-[9px] text-zinc-500 dark:text-[#A1A1AA] font-medium leading-none truncate max-w-[70px]">
+                            {activeItem ? activeItem.name : t('tasks.taskList', {}, 'Tapşırıq')}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Status Legend Grid */}
+                <div className="flex-1 w-full grid grid-cols-2 gap-1.5">
+                    {allStatusItems.map((item) => (
+                        <div
+                            key={item.name}
+                            className={`flex items-center justify-between p-1.5 px-2 rounded-lg transition-colors border ${
+                                item.count > 0
+                                    ? 'bg-white dark:bg-[#27272A]/80 border-zinc-200/60 dark:border-[#38383C]'
+                                    : 'bg-zinc-100/50 dark:bg-[#1E1E22]/50 border-transparent opacity-60'
+                            }`}
+                        >
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }}></span>
+                                <span className="text-[11px] text-zinc-700 dark:text-[#D4D4D8] truncate font-medium">{item.name}</span>
+                            </div>
+                            <span className="text-[11px] font-bold text-zinc-900 dark:text-white ml-1">
+                                {item.count}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const WorkloadView: React.FC = () => {
     const navigate = useNavigate();
@@ -140,26 +306,36 @@ const WorkloadView: React.FC = () => {
                     t.status === TaskStatus.UnderReview
                 );
                 const completedTasks = uTasks.filter((t) => t.status === TaskStatus.Completed);
-                const hardTasks = activeTasks.filter((t) => Number(t.difficulty) === 2);
-                const mediumTasks = activeTasks.filter((t) => Number(t.difficulty) === 1);
-                const easyTasks = activeTasks.filter((t) => Number(t.difficulty) === 0);
+                const hardCount = serverItem?.hardTasksCount ?? serverItem?.hardTaskCount ?? activeTasks.filter((t) => Number(t.difficulty) === 2).length;
+                const mediumCount = serverItem?.mediumTasksCount ?? serverItem?.mediumTaskCount ?? activeTasks.filter((t) => Number(t.difficulty) === 1).length;
+                const easyCount = serverItem?.easyTasksCount ?? serverItem?.easyTaskCount ?? activeTasks.filter((t) => Number(t.difficulty) === 0).length;
                 const hasUrgent = activeTasks.some((t) => t.priority === Priority.Urgent);
-                const activeCount = activeTasks.length;
-                const maxActive = 5;
-                const workloadPercentage = Math.min(100, Math.round((activeCount / maxActive) * 100));
-                const isOverloaded = activeCount >= 5;
+                const activeCount = serverItem?.activeTaskCount ?? activeTasks.length;
+                
+                const isOverloaded = Boolean(
+                    serverItem?.isOverloaded ?? (serverItem?.workloadLevel === 'Overloaded' || easyCount > 10 || mediumCount > 10 || hardCount > 10 || activeCount > 30)
+                );
+                const workloadPercentage = Math.min(100, Math.round((activeCount / 30) * 100));
 
                 return {
                     userId: u.id,
                     userName: serverItem?.userName || u.name,
+                    fullName: serverItem?.fullName,
                     userEmail: serverItem?.userEmail || u.email,
                     avatarUrl: serverItem?.avatarUrl,
                     activeTaskCount: activeCount,
-                    totalTaskCount: uTasks.length,
-                    completedTaskCount: completedTasks.length,
-                    hardTaskCount: hardTasks.length,
-                    mediumTaskCount: mediumTasks.length,
-                    easyTaskCount: easyTasks.length,
+                    totalTaskCount: serverItem?.totalTaskCount ?? uTasks.length,
+                    completedTaskCount: serverItem?.completedTaskCount ?? completedTasks.length,
+                    hardTaskCount: hardCount,
+                    mediumTaskCount: mediumCount,
+                    easyTaskCount: easyCount,
+                    easyTasksCount: easyCount,
+                    mediumTasksCount: mediumCount,
+                    hardTasksCount: hardCount,
+                    workloadLevel: serverItem?.workloadLevel ?? (isOverloaded ? 'Overloaded' : 'Normal'),
+                    workloadScore: serverItem?.workloadScore,
+                    tasksDueToday: serverItem?.tasksDueToday,
+                    overdueTasks: serverItem?.overdueTasks,
                     workloadPercentage,
                     isOverloaded,
                     hasUrgentTasks: hasUrgent,
@@ -388,16 +564,29 @@ const WorkloadView: React.FC = () => {
                                                     <span className={`text-base font-extrabold ${w.isOverloaded ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-900 dark:text-white'}`}>
                                                         {w.activeTaskCount}
                                                     </span>
-                                                    <span className="text-[10px] text-zinc-500 dark:text-[#71717A] block">{t('workload.activeTasks', {}, 'aktiv tapşırıq')}</span>
+                                                    <span className="text-[10px] text-zinc-500 dark:text-[#71717A] block">
+                                                        / 30 {t('workload.activeTasks', {}, 'aktiv tapşırıq')}
+                                                    </span>
                                                 </div>
                                             </div>
 
                                             {/* Workload Progress Bar */}
                                             <div className="space-y-1.5 mb-4">
                                                 <div className="flex items-center justify-between text-[11px]">
-                                                    <span className="text-zinc-500 dark:text-[#A1A1AA]">{t('workload.loadPercentage', {}, 'Yüklənmə Faizi')}</span>
+                                                    <span className="text-zinc-500 dark:text-[#A1A1AA] flex items-center gap-1.5">
+                                                        <span>{t('workload.loadPercentage', {}, 'Yüklənmə Faizi')}</span>
+                                                        {w.workloadLevel && (
+                                                            <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                                                                w.isOverloaded
+                                                                    ? 'bg-rose-500/20 text-rose-500'
+                                                                    : 'bg-zinc-200 dark:bg-white/10 text-zinc-700 dark:text-zinc-300'
+                                                            }`}>
+                                                                {w.workloadLevel}
+                                                            </span>
+                                                        )}
+                                                    </span>
                                                     <span className={`font-bold ${w.isOverloaded ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-700 dark:text-zinc-200'}`}>
-                                                        {w.workloadPercentage}%
+                                                        {w.activeTaskCount} / 30 ({w.workloadPercentage}%)
                                                     </span>
                                                 </div>
                                                 <div className="relative h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-[#27272A]">
@@ -405,7 +594,7 @@ const WorkloadView: React.FC = () => {
                                                         className={`absolute left-0 top-0 h-full rounded-full transition-all duration-500 ${
                                                             w.isOverloaded
                                                                 ? 'bg-rose-500'
-                                                                : w.workloadPercentage >= 60
+                                                                : w.workloadPercentage >= 80
                                                                 ? 'bg-amber-500'
                                                                 : 'bg-emerald-500'
                                                         }`}
@@ -414,78 +603,53 @@ const WorkloadView: React.FC = () => {
                                                 </div>
                                             </div>
 
-                                            {/* Difficulty Distribution Chips */}
+                                            {/* Difficulty Distribution Chips with 10 Task Quota */}
                                             <div className="grid grid-cols-3 gap-1.5 mb-4 text-center">
-                                                <div className="bg-zinc-50 dark:bg-[#27272A]/60 rounded-xl p-2 border border-zinc-200/70 dark:border-[#27272A]">
+                                                <div className={`rounded-xl p-2 border ${
+                                                    (w.easyTaskCount || 0) > 10
+                                                        ? 'bg-rose-500/10 border-rose-500/30'
+                                                        : 'bg-zinc-50 dark:bg-[#27272A]/60 border-zinc-200/70 dark:border-[#27272A]'
+                                                }`}>
                                                     <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold block">{t('difficulties.easy', {}, 'Asan')}</span>
-                                                    <span className="text-xs font-bold text-zinc-900 dark:text-white">{w.easyTaskCount}</span>
+                                                    <span className={`text-xs font-bold ${(w.easyTaskCount || 0) > 10 ? 'text-rose-500' : 'text-zinc-900 dark:text-white'}`}>
+                                                        {w.easyTaskCount} <span className="text-[10px] text-zinc-400 font-normal">/ 10</span>
+                                                    </span>
                                                 </div>
-                                                <div className="bg-zinc-50 dark:bg-[#27272A]/60 rounded-xl p-2 border border-zinc-200/70 dark:border-[#27272A]">
+                                                <div className={`rounded-xl p-2 border ${
+                                                    (w.mediumTaskCount || 0) > 10
+                                                        ? 'bg-rose-500/10 border-rose-500/30'
+                                                        : 'bg-zinc-50 dark:bg-[#27272A]/60 border-zinc-200/70 dark:border-[#27272A]'
+                                                }`}>
                                                     <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold block">{t('difficulties.medium', {}, 'Orta')}</span>
-                                                    <span className="text-xs font-bold text-zinc-900 dark:text-white">{w.mediumTaskCount}</span>
+                                                    <span className={`text-xs font-bold ${(w.mediumTaskCount || 0) > 10 ? 'text-rose-500' : 'text-zinc-900 dark:text-white'}`}>
+                                                        {w.mediumTaskCount} <span className="text-[10px] text-zinc-400 font-normal">/ 10</span>
+                                                    </span>
                                                 </div>
-                                                <div className="bg-zinc-50 dark:bg-[#27272A]/60 rounded-xl p-2 border border-zinc-200/70 dark:border-[#27272A]">
+                                                <div className={`rounded-xl p-2 border ${
+                                                    (w.hardTaskCount || 0) > 10
+                                                        ? 'bg-rose-500/10 border-rose-500/30'
+                                                        : 'bg-zinc-50 dark:bg-[#27272A]/60 border-zinc-200/70 dark:border-[#27272A]'
+                                                }`}>
                                                     <span className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold block">{t('difficulties.hard', {}, 'Çətin')}</span>
-                                                    <span className="text-xs font-bold text-zinc-900 dark:text-white">{w.hardTaskCount}</span>
+                                                    <span className={`text-xs font-bold ${(w.hardTaskCount || 0) > 10 ? 'text-rose-500' : 'text-zinc-900 dark:text-white'}`}>
+                                                        {w.hardTaskCount} <span className="text-[10px] text-zinc-400 font-normal">/ 10</span>
+                                                    </span>
                                                 </div>
                                             </div>
 
                                             {/* Warning Alert if overloaded */}
                                             {w.isOverloaded && (
-                                                <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-[11px] text-rose-600 dark:text-rose-400 flex items-center gap-2 mb-4">
-                                                    <ExclamationTriangleIcon className="w-4 h-4 flex-shrink-0" />
-                                                    <span>{t('workload.heavyLoad', {}, 'Tövsiyə olunan 5 aktiv tapşırıq limitini keçib')}</span>
+                                                <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-[11px] text-rose-600 dark:text-rose-400 flex items-start gap-2 mb-4 leading-tight">
+                                                    <ExclamationTriangleIcon className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                                    <span>
+                                                        ⚠️ {t('workload.quotaExceeded', {}, 'Əməkdaş icazə verilən kvotanı aşıb!')} ({t('common.easy', {}, 'Asan')}: {w.easyTaskCount}/10, {t('common.medium', {}, 'Orta')}: {w.mediumTaskCount}/10, {t('common.hard', {}, 'Çətin')}: {w.hardTaskCount}/10, {t('common.total', {}, 'Cəmi')}: {w.activeTaskCount}/30)
+                                                    </span>
                                                 </div>
                                             )}
 
-                                            {/* Expanded Tasks List */}
+                                            {/* Expanded Status Donut Chart */}
                                             {isExpanded && (
-                                                <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-[#27272A] space-y-2 max-h-60 overflow-y-auto pr-1 animate-in fade-in duration-150">
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <span className="text-[10px] font-bold text-zinc-500 dark:text-[#71717A] uppercase tracking-wider">
-                                                            {t('projects.tasksCount', {}, 'Tapşırıqlar')} ({(w.tasks || []).length})
-                                                        </span>
-                                                        <span className="text-[10px] text-amber-600 dark:text-amber-400/90 font-medium">
-                                                            {w.activeTaskCount} {t('common.active', {}, 'aktiv')}
-                                                        </span>
-                                                    </div>
-                                                    {(!w.tasks || w.tasks.length === 0) ? (
-                                                        <p className="text-xs text-zinc-400 dark:text-[#71717A] py-2 text-center">{t('common.noData', {}, 'Bu əməkdaşa təyin olunmuş tapşırıq yoxdur')}</p>
-                                                    ) : (
-                                                        w.tasks.map((tItem) => (
-                                                            <div
-                                                                key={tItem.id}
-                                                                onClick={() => navigate(`/tasks/${tItem.id}`)}
-                                                                className="p-2.5 rounded-xl bg-zinc-50 hover:bg-zinc-100 dark:bg-[#27272A]/40 dark:hover:bg-[#27272A] border border-zinc-200/80 dark:border-[#27272A] hover:border-zinc-300 dark:hover:border-[#3F3F46] text-xs text-zinc-900 dark:text-white cursor-pointer transition-all flex flex-col gap-1.5 group"
-                                                            >
-                                                                <div className="flex items-start justify-between gap-2">
-                                                                    <span className="font-medium text-zinc-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors line-clamp-1">
-                                                                        {tItem.title}
-                                                                    </span>
-                                                                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                                                                        {getPriorityBadge(tItem.priority)}
-                                                                        {getStatusBadge(tItem.status)}
-                                                                    </div>
-                                                                </div>
-
-                                                                {(tItem.projectName || tItem.deadline) && (
-                                                                    <div className="flex items-center justify-between text-[10px] text-zinc-500 dark:text-[#71717A]">
-                                                                        {tItem.projectName ? (
-                                                                            <span className="truncate max-w-[150px] text-zinc-600 dark:text-[#A1A1AA]">
-                                                                                📁 {tItem.projectName}
-                                                                            </span>
-                                                                        ) : <span />}
-                                                                        {tItem.deadline && (
-                                                                            <span>
-                                                                                📅 {formatDateTime(tItem.deadline)}
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        ))
-                                                    )}
-                                                </div>
+                                                <WorkloadStatusDonut tasks={w.tasks} activeCount={w.activeTaskCount} />
                                             )}
                                         </div>
 
@@ -494,7 +658,7 @@ const WorkloadView: React.FC = () => {
                                             onClick={() => setExpandedUserId(isExpanded ? null : w.userId)}
                                             className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-[#27272A]/60 dark:hover:bg-[#27272A] border border-zinc-200/80 dark:border-[#3F3F46]/40 text-xs text-zinc-700 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white font-medium transition-all cursor-pointer"
                                         >
-                                            <span>{isExpanded ? t('workload.hideTasks', {}, 'Tapşırıqları Gizlət') : t('workload.viewTasks', {}, 'Tapşırıqlara Bax')}</span>
+                                            <span>{isExpanded ? t('workload.hideStatusChart', {}, 'Status qrafikini gizlət') : t('workload.viewStatusChart', {}, 'Status qrafikinə bax')}</span>
                                             {isExpanded ? (
                                                 <ChevronUpIcon className="w-3.5 h-3.5" />
                                             ) : (

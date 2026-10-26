@@ -15,5 +15,6 @@ export { projectService } from './projectService';
 export { projectLevelService } from './projectLevelService';
 export { workloadService } from './workloadService';
 export { tenantSettingsService } from './tenantSettingsService';
+export { titleService } from './titleService';
 export { kpiService, getKpiErrorMessage } from './kpiService';
 

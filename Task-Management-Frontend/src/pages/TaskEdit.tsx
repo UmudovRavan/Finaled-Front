@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../layout';
-import { taskService, authService, notificationService, userService, divisionService, projectService, projectLevelService } from '../api';
-import type { TaskResponse, NotificationResponse, UserResponse, DivisionDTO, ProjectDTO, ProjectLevelDTO } from '../dto';
+import { taskService, authService, notificationService, userService, divisionService, projectService, titleService } from '../api';
+import type { TaskResponse, NotificationResponse, UserResponse, DivisionDTO, ProjectDTO, TitleDTO } from '../dto';
 import { TaskStatus, DifficultyLevel, Priority } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
 import type { UserInfo } from '../utils';
@@ -19,7 +19,7 @@ import {
     XMarkIcon,
     BuildingOfficeIcon,
     FolderIcon,
-    QueueListIcon,
+    TagIcon,
 } from '@heroicons/react/24/outline';
 
 const TaskEdit: React.FC = () => {
@@ -45,13 +45,14 @@ const TaskEdit: React.FC = () => {
     const [deadline, setDeadline] = useState('');
     const [assignedUser, setAssignedUser] = useState<UserResponse | null>(null);
 
-    // Hierarchy states
+    // Hierarchy states: Şöbə -> Layihə -> Title
     const [divisions, setDivisions] = useState<DivisionDTO[]>([]);
     const [selectedDivisionId, setSelectedDivisionId] = useState<string>('');
     const [projects, setProjects] = useState<ProjectDTO[]>([]);
     const [selectedProjectId, setSelectedProjectId] = useState<string>('');
-    const [levels, setLevels] = useState<ProjectLevelDTO[]>([]);
-    const [selectedLevelId, setSelectedLevelId] = useState<string>('');
+    const [titles, setTitles] = useState<TitleDTO[]>([]);
+    const [selectedTitleId, setSelectedTitleId] = useState<string>('');
+    const [preservedLevelId, setPreservedLevelId] = useState<string>('');
 
     // File upload state
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -123,11 +124,12 @@ const TaskEdit: React.FC = () => {
                 return;
             }
 
-            const [taskData, notificationsData, usersData, divsData] = await Promise.all([
+            const [taskData, notificationsData, usersData, divsData, titlesData] = await Promise.all([
                 taskService.getTaskById(taskId).catch(() => null),
                 notificationService.getMyNotifications().catch(() => []),
                 userService.getAllUsers().catch(() => []),
                 divisionService.getAllDivisions().catch(() => []),
+                titleService.getAllTitles().catch(() => []),
             ]);
 
             if (!taskData) {
@@ -142,24 +144,26 @@ const TaskEdit: React.FC = () => {
             setDifficulty(taskData.difficulty || DifficultyLevel.Medium);
             setPriority(typeof taskData.priority === 'number' ? taskData.priority : Priority.Normal);
             setDivisions(divsData);
+            setTitles(titlesData);
+
+            if (taskData.titleId) {
+                setSelectedTitleId(String(taskData.titleId));
+            }
+            if (taskData.levelId) {
+                setPreservedLevelId(String(taskData.levelId));
+            }
+
+            const projs = await projectService.getProjects({
+                divisionId: taskData.divisionId ? String(taskData.divisionId) : undefined,
+                titleId: taskData.titleId ? String(taskData.titleId) : undefined,
+            }).catch(() => []);
+            setProjects(projs);
 
             if (taskData.divisionId) {
                 setSelectedDivisionId(String(taskData.divisionId));
-                const projs = await projectService.getProjectsByDivision(taskData.divisionId).catch(() => []);
-                setProjects(projs);
-            } else {
-                const projs = await projectService.getAllProjects().catch(() => []);
-                setProjects(projs);
             }
-
             if (taskData.projectId) {
                 setSelectedProjectId(String(taskData.projectId));
-                const lvls = await projectLevelService.getLevelsByProject(taskData.projectId).catch(() => []);
-                setLevels(lvls);
-            }
-
-            if (taskData.levelId) {
-                setSelectedLevelId(String(taskData.levelId));
             }
 
             if (taskData.deadline) {
@@ -189,34 +193,48 @@ const TaskEdit: React.FC = () => {
 
     const handleDivisionChange = async (divId: string) => {
         setSelectedDivisionId(divId);
-        setSelectedProjectId('');
-        setSelectedLevelId('');
-        setLevels([]);
-        if (divId) {
-            try {
-                const projs = await projectService.getProjectsByDivision(divId);
-                setProjects(projs);
-            } catch {
-                setProjects([]);
-            }
-        } else {
-            const projs = await projectService.getAllProjects().catch(() => []);
+        try {
+            const projs = await projectService.getProjects({
+                divisionId: divId || undefined,
+                titleId: selectedTitleId || undefined,
+            });
             setProjects(projs);
+            if (selectedProjectId && !projs.some((p) => String(p.id) === String(selectedProjectId))) {
+                setSelectedProjectId('');
+            }
+        } catch {
+            setProjects([]);
         }
     };
 
-    const handleProjectChange = async (projId: string) => {
-        setSelectedProjectId(projId);
-        setSelectedLevelId('');
-        if (projId) {
-            try {
-                const lvls = await projectLevelService.getLevelsByProject(projId);
-                setLevels(lvls);
-            } catch {
-                setLevels([]);
+    const handleTitleChange = async (titleId: string) => {
+        setSelectedTitleId(titleId);
+        try {
+            const projs = await projectService.getProjects({
+                divisionId: selectedDivisionId || undefined,
+                titleId: titleId || undefined,
+            });
+            setProjects(projs);
+            if (selectedProjectId && !projs.some((p) => String(p.id) === String(selectedProjectId))) {
+                setSelectedProjectId('');
             }
-        } else {
-            setLevels([]);
+        } catch {
+            setProjects([]);
+        }
+    };
+
+    const handleProjectChange = (projId: string) => {
+        setSelectedProjectId(projId);
+        if (projId) {
+            const foundProject = projects.find((p) => String(p.id) === String(projId));
+            if (foundProject) {
+                if (!selectedDivisionId && foundProject.divisionId) {
+                    setSelectedDivisionId(String(foundProject.divisionId));
+                }
+                if (!selectedTitleId && foundProject.titleId) {
+                    setSelectedTitleId(String(foundProject.titleId));
+                }
+            }
         }
     };
 
@@ -275,12 +293,17 @@ const TaskEdit: React.FC = () => {
         setSuccessMessage(null);
 
         if (!title.trim()) {
-            setError('Tapşırıq başlığı mütləqdir');
+            setError(t('tasks.titleRequiredError', {}, 'Tapşırıq başlığı mütləqdir'));
+            return;
+        }
+
+        if (!selectedProjectId || selectedProjectId.trim() === '') {
+            setError(t('tasks.projectRequired', {}, 'Tapşırıq mütləq bir layihəyə bağlanmalıdır. Layihəsiz seçim mümkün deyil.'));
             return;
         }
 
         if (!deadline) {
-            setError('İcra tarixi mütləqdir');
+            setError(t('tasks.deadlineRequiredError', {}, 'İcra tarixi mütləqdir'));
             return;
         }
 
@@ -293,8 +316,9 @@ const TaskEdit: React.FC = () => {
                 difficulty,
                 priority,
                 divisionId: selectedDivisionId || undefined,
-                projectId: selectedProjectId || undefined,
-                levelId: selectedLevelId || undefined,
+                projectId: selectedProjectId,
+                titleId: selectedTitleId || undefined,
+                levelId: preservedLevelId || undefined,
                 status,
                 deadline: new Date(deadline).toISOString(),
                 assignedToUserId: assignedUser?.id,
@@ -385,18 +409,18 @@ const TaskEdit: React.FC = () => {
                                 />
                             </div>
 
-                            {/* Hierarchy: Division > Project > Level */}
+                            {/* Hierarchy: Division > Project > Title */}
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-zinc-50 dark:bg-[#222226] p-3.5 rounded-xl border border-zinc-200/80 dark:border-[#2C2C2E]">
                                 <div className="space-y-1">
                                     <label className="text-[11px] font-semibold text-zinc-600 dark:text-[#A1A1AA] flex items-center gap-1">
-                                        <BuildingOfficeIcon className="w-3 h-3 text-sky-500 dark:text-sky-400" />
-                                        Şöbə
+                                        <BuildingOfficeIcon className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400" />
+                                        {t('common.department', {}, 'Şöbə')}
                                     </label>
                                     <CustomSelect
                                         value={String(selectedDivisionId)}
                                         onChange={handleDivisionChange}
                                         options={[
-                                            { value: '', label: 'Şöbəsiz' },
+                                            { value: '', label: t('tasks.noDivision', {}, 'Hamısı / Avtomatik') },
                                             ...divisions.map((d) => ({
                                                 value: String(d.id),
                                                 label: d.name,
@@ -408,14 +432,14 @@ const TaskEdit: React.FC = () => {
 
                                 <div className="space-y-1">
                                     <label className="text-[11px] font-semibold text-zinc-600 dark:text-[#A1A1AA] flex items-center gap-1">
-                                        <FolderIcon className="w-3 h-3 text-purple-500 dark:text-purple-400" />
-                                        Layihə
+                                        <FolderIcon className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
+                                        <span>{t('common.project', {}, 'Layihə')} <span className="text-rose-500">*</span></span>
                                     </label>
                                     <CustomSelect
                                         value={String(selectedProjectId)}
                                         onChange={handleProjectChange}
                                         options={[
-                                            { value: '', label: 'Layihəsiz' },
+                                            { value: '', label: t('tasks.selectProject', {}, 'Layihə seçin *') },
                                             ...projects.map((p) => ({
                                                 value: String(p.id),
                                                 label: p.name,
@@ -427,17 +451,17 @@ const TaskEdit: React.FC = () => {
 
                                 <div className="space-y-1">
                                     <label className="text-[11px] font-semibold text-zinc-600 dark:text-[#A1A1AA] flex items-center gap-1">
-                                        <QueueListIcon className="w-3 h-3 text-emerald-500 dark:text-emerald-400" />
-                                        Mərhələ
+                                        <TagIcon className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                                        {t('tasks.titleDimension', {}, 'Title (Holdinq / MMC)')}
                                     </label>
                                     <CustomSelect
-                                        value={String(selectedLevelId)}
-                                        onChange={setSelectedLevelId}
+                                        value={String(selectedTitleId)}
+                                        onChange={handleTitleChange}
                                         options={[
-                                            { value: '', label: 'Mərhələsiz' },
-                                            ...levels.map((lvl) => ({
-                                                value: String(lvl.id),
-                                                label: lvl.name,
+                                            { value: '', label: t('tasks.titleAuto', {}, 'Avtomatik / Bütün Title-lar') },
+                                            ...titles.map((tl) => ({
+                                                value: String(tl.id),
+                                                label: tl.name,
                                             })),
                                         ]}
                                         className="w-full"
@@ -447,7 +471,7 @@ const TaskEdit: React.FC = () => {
 
                             {/* Description */}
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">Təsvir</label>
+                                <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">{t('common.description', {}, 'Təsvir')}</label>
                                 <textarea
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
@@ -459,46 +483,46 @@ const TaskEdit: React.FC = () => {
                             {/* Row: Status, Priority & Difficulty */}
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">Status</label>
+                                    <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">{t('common.status', {}, 'Status')}</label>
                                     <CustomSelect
                                         value={String(status)}
                                         onChange={(val) => setStatus(Number(val))}
                                         options={[
-                                            { value: String(TaskStatus.Pending), label: 'Gözləmədə', icon: <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> },
-                                            { value: String(TaskStatus.Assigned), label: 'Təyin Edildi', icon: <span className="w-2 h-2 rounded-full bg-sky-500 inline-block" /> },
-                                            { value: String(TaskStatus.InProgress), label: 'İcrada', icon: <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> },
-                                            { value: String(TaskStatus.UnderReview), label: 'Nəzərdən keçirilir', icon: <span className="w-2 h-2 rounded-full bg-purple-500 inline-block" /> },
-                                            { value: String(TaskStatus.Completed), label: 'Tamamlandı', icon: <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> },
-                                            { value: String(TaskStatus.Expired), label: 'Gecikmiş', icon: <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> },
+                                            { value: String(TaskStatus.Pending), label: t('statuses.pending', {}, 'Gözləmədə'), icon: <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> },
+                                            { value: String(TaskStatus.Assigned), label: t('statuses.assigned', {}, 'Təyin Edildi'), icon: <span className="w-2 h-2 rounded-full bg-sky-500 inline-block" /> },
+                                            { value: String(TaskStatus.InProgress), label: t('statuses.inProgress', {}, 'İcrada'), icon: <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> },
+                                            { value: String(TaskStatus.UnderReview), label: t('statuses.review', {}, 'Nəzərdən keçirilir'), icon: <span className="w-2 h-2 rounded-full bg-purple-500 inline-block" /> },
+                                            { value: String(TaskStatus.Completed), label: t('statuses.completed', {}, 'Tamamlandı'), icon: <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> },
+                                            { value: String(TaskStatus.Expired), label: t('common.overdue', {}, 'Gecikmiş'), icon: <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> },
                                         ]}
                                         className="w-full"
                                     />
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">Prioritet</label>
+                                    <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">{t('common.priority', {}, 'Prioritet')}</label>
                                     <CustomSelect
                                         value={String(priority)}
                                         onChange={(val) => setPriority(Number(val))}
                                         options={[
-                                            { value: String(Priority.Low), label: 'Aşağı', icon: <span className="w-2 h-2 rounded-full bg-zinc-400 inline-block" /> },
-                                            { value: String(Priority.Normal), label: 'Normal', icon: <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> },
-                                            { value: String(Priority.High), label: 'Yüksək', icon: <span className="text-xs">⚡</span> },
-                                            { value: String(Priority.Urgent), label: 'Təcili', icon: <span className="text-xs">🔥</span> },
+                                            { value: String(Priority.Low), label: t('priorities.low', {}, 'Aşağı'), icon: <span className="w-2 h-2 rounded-full bg-zinc-400 inline-block" /> },
+                                            { value: String(Priority.Normal), label: t('priorities.medium', {}, 'Normal'), icon: <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> },
+                                            { value: String(Priority.High), label: t('priorities.high', {}, 'Yüksək'), icon: <span className="text-xs">⚡</span> },
+                                            { value: String(Priority.Urgent), label: t('priorities.urgent', {}, 'Təcili'), icon: <span className="text-xs">🔥</span> },
                                         ]}
                                         className="w-full"
                                     />
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">Çətinlik</label>
+                                    <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">{t('tasks.difficultyLabel', {}, 'Çətinlik')}</label>
                                     <CustomSelect
                                         value={String(difficulty)}
                                         onChange={(val) => setDifficulty(Number(val))}
                                         options={[
-                                            { value: String(DifficultyLevel.Easy), label: 'Asan (10 bal)', badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">10 bal</span> },
-                                            { value: String(DifficultyLevel.Medium), label: 'Orta (20 bal)', badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/20">20 bal</span> },
-                                            { value: String(DifficultyLevel.Hard), label: 'Çətin (30 bal)', badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold border border-rose-500/20">30 bal</span> },
+                                            { value: String(DifficultyLevel.Easy), label: t('tasks.difficultyEasy', {}, 'Asan (10 bal)'), badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">10 bal</span> },
+                                            { value: String(DifficultyLevel.Medium), label: t('tasks.difficultyMedium', {}, 'Orta (20 bal)'), badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/20">20 bal</span> },
+                                            { value: String(DifficultyLevel.Hard), label: t('tasks.difficultyHard', {}, 'Çətin (30 bal)'), badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold border border-rose-500/20">30 bal</span> },
                                         ]}
                                         className="w-full"
                                     />
@@ -508,7 +532,7 @@ const TaskEdit: React.FC = () => {
                             {/* Row: Deadline & Assignee */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">İcra Tarixi *</label>
+                                    <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">{t('tasks.deadlineRequired', {}, 'İcra Tarixi *')}</label>
                                     <input
                                         type="datetime-local"
                                         value={deadline}
@@ -519,7 +543,7 @@ const TaskEdit: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-1.5 relative">
-                                    <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">Təyin Edilən Şəxs</label>
+                                    <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">{t('common.assignedTo', {}, 'Təyin Edilən Şəxs')}</label>
                                     <div className="relative flex items-center">
                                         <input
                                             ref={assignInputRef}

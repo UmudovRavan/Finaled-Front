@@ -8,6 +8,8 @@ export function normalizeProject(raw: any): ProjectDTO {
     const description = raw.description ?? raw.Description ?? '';
     const divisionId = raw.divisionId ?? raw.DivisionId ?? '';
     const divisionName = raw.divisionName ?? raw.DivisionName ?? raw.division?.name ?? raw.Division?.Name ?? undefined;
+    const titleId = raw.titleId ?? raw.TitleId ?? raw.title?.id ?? raw.Title?.Id ?? undefined;
+    const titleName = raw.titleName ?? raw.TitleName ?? raw.title?.name ?? raw.Title?.Name ?? undefined;
     const managerId = raw.managerId ?? raw.ManagerId ?? null;
     const managerName = raw.managerName ?? raw.ManagerName ?? raw.manager?.userName ?? raw.Manager?.UserName ?? undefined;
     const startDate = raw.startDate ?? raw.StartDate ?? undefined;
@@ -25,6 +27,8 @@ export function normalizeProject(raw: any): ProjectDTO {
         description,
         divisionId,
         divisionName,
+        titleId,
+        titleName,
         managerId,
         managerName,
         startDate,
@@ -145,6 +149,7 @@ export const projectService = {
             Name: data.name,
             Description: data.description || '',
             DivisionId: data.divisionId || null,
+            TitleId: data.titleId || null,
             ManagerId: data.managerId || null,
         };
 
@@ -176,6 +181,7 @@ export const projectService = {
             Name: data.name,
             Description: data.description || '',
             DivisionId: data.divisionId || null,
+            TitleId: data.titleId || null,
             ManagerId: data.managerId || null,
         };
 
@@ -224,7 +230,44 @@ export const projectService = {
         throw lastErr || new Error('Failed to delete project');
     },
 
-    getProjects(): Promise<ProjectDTO[]> {
+    async getProjects(params?: { divisionId?: string | number; titleId?: string | number }): Promise<ProjectDTO[]> {
+        const queryParams = new URLSearchParams();
+        if (params?.divisionId && String(params.divisionId).trim() !== '' && String(params.divisionId) !== 'all') {
+            queryParams.append('divisionId', String(params.divisionId).trim());
+        }
+        if (params?.titleId && String(params.titleId).trim() !== '' && String(params.titleId) !== 'all') {
+            queryParams.append('titleId', String(params.titleId).trim());
+        }
+        const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+
+        const candidateEndpoints = [
+            `/Project${queryString}`,
+            `/Project/GetAll${queryString}`,
+        ];
+
+        for (const ep of candidateEndpoints) {
+            try {
+                const response = await httpClient.get<any>(ep);
+                const data = response.data;
+                let list: any[] = [];
+                if (Array.isArray(data)) {
+                    list = data;
+                } else if (data && Array.isArray(data.data)) {
+                    list = data.data;
+                } else if (data && Array.isArray(data.items)) {
+                    list = data.items;
+                } else if (data && typeof data === 'object') {
+                    const arr = Object.values(data).find((v) => Array.isArray(v));
+                    if (arr) list = arr as any[];
+                }
+
+                if (list.length > 0 || Array.isArray(data)) {
+                    return list.map(normalizeProject);
+                }
+            } catch {
+                // Try next
+            }
+        }
         return this.getAllProjects();
     },
 };

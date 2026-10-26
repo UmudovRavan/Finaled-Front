@@ -1,24 +1,22 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     XMarkIcon,
-    CalendarIcon,
     PaperClipIcon,
     ExclamationTriangleIcon,
-    ChevronDownIcon,
     UserIcon,
     BuildingOfficeIcon,
     FolderIcon,
-    QueueListIcon,
+    TagIcon,
     ShieldExclamationIcon,
     SparklesIcon,
 } from '@heroicons/react/24/outline';
 import { DifficultyLevel, Priority } from '../dto';
-import type { UserResponse, DivisionDTO, ProjectDTO, ProjectLevelDTO, WorkloadWarningDTO } from '../dto';
-import { taskService, userService, divisionService, projectService, projectLevelService, workloadService, authService } from '../api';
+import type { UserResponse, DivisionDTO, ProjectDTO, TitleDTO, WorkloadWarningDTO } from '../dto';
+import { taskService, userService, divisionService, projectService, titleService, workloadService, authService } from '../api';
 import { parseJwtToken } from '../utils';
 import { useLanguage } from '../context/LanguageContext';
 import UserSuggestionList from './UserSuggestionList';
-import CustomSelect, { type SelectOption } from './CustomSelect';
+import CustomSelect from './CustomSelect';
 
 interface CreateTaskModalProps {
     isOpen: boolean;
@@ -40,6 +38,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     const { t } = useLanguage();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
+    const [difficulty, setDifficulty] = useState<DifficultyLevel>(DifficultyLevel.Medium);
     const [priority, setPriority] = useState<Priority>(Priority.Normal);
     const [deadline, setDeadline] = useState('');
     const [assignedUser, setAssignedUser] = useState<UserResponse | null>(null);
@@ -47,13 +46,16 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Hierarchy selection states
+    // Hierarchy selection states: Şöbə (Division) -> Layihə (Project) -> Title (Holdinq / MMC)
     const [divisions, setDivisions] = useState<DivisionDTO[]>([]);
     const [selectedDivisionId, setSelectedDivisionId] = useState<string>('');
     const [projects, setProjects] = useState<ProjectDTO[]>([]);
     const [selectedProjectId, setSelectedProjectId] = useState<string>('');
-    const [levels, setLevels] = useState<ProjectLevelDTO[]>([]);
-    const [selectedLevelId, setSelectedLevelId] = useState<string>('');
+    const [titles, setTitles] = useState<TitleDTO[]>([]);
+    const [selectedTitleId, setSelectedTitleId] = useState<string>('');
+
+    // Hidden levelId state preserved for ProjectDetail level board compatibility
+    const [hiddenLevelId, setHiddenLevelId] = useState<string>('');
 
     // Workload warning state
     const [workloadWarning, setWorkloadWarning] = useState<WorkloadWarningDTO | null>(null);
@@ -73,6 +75,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             fetchInitialData();
             setTitle('');
             setDescription('');
+            setDifficulty(DifficultyLevel.Medium);
             setPriority(Priority.Normal);
             setDeadline('');
             setAssignedUser(null);
@@ -85,68 +88,79 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
             if (defaultDivisionId) setSelectedDivisionId(String(defaultDivisionId));
             if (defaultProjectId) setSelectedProjectId(String(defaultProjectId));
-            if (defaultLevelId) setSelectedLevelId(String(defaultLevelId));
+            if (defaultLevelId) setHiddenLevelId(String(defaultLevelId));
+            else setHiddenLevelId('');
         }
     }, [isOpen, defaultDivisionId, defaultProjectId, defaultLevelId]);
 
     const fetchInitialData = async () => {
         try {
-            const [usersData, divsData] = await Promise.all([
+            const [usersData, divsData, titlesData, projsData] = await Promise.all([
                 userService.getAllUsers().catch(() => []),
                 divisionService.getAllDivisions().catch(() => []),
+                titleService.getAllTitles().catch(() => []),
+                projectService.getProjects({
+                    divisionId: defaultDivisionId ? String(defaultDivisionId) : undefined,
+                }).catch(() => []),
             ]);
             setAllUsers(usersData);
             setDivisions(divsData);
-
-            if (defaultDivisionId) {
-                const projs = await projectService.getProjectsByDivision(defaultDivisionId).catch(() => []);
-                setProjects(projs);
-            } else if (divsData.length > 0) {
-                const projs = await projectService.getAllProjects().catch(() => []);
-                setProjects(projs);
-            }
-
-            if (defaultProjectId) {
-                const lvls = await projectLevelService.getLevelsByProject(defaultProjectId).catch(() => []);
-                setLevels(lvls);
-            }
+            setTitles(titlesData);
+            setProjects(projsData);
         } catch (err) {
             console.error('Failed to load initial data in CreateTaskModal', err);
         }
     };
 
-    // When division changes, update projects
+    // When division changes, filter project list
     const handleDivisionChange = async (divId: string) => {
         setSelectedDivisionId(divId);
-        setSelectedProjectId('');
-        setSelectedLevelId('');
-        setLevels([]);
-        if (divId) {
-            try {
-                const projs = await projectService.getProjectsByDivision(divId);
-                setProjects(projs);
-            } catch {
-                setProjects([]);
-            }
-        } else {
-            const projs = await projectService.getAllProjects().catch(() => []);
+        try {
+            const projs = await projectService.getProjects({
+                divisionId: divId || undefined,
+                titleId: selectedTitleId || undefined,
+            });
             setProjects(projs);
+            // If currently selected project is not in filtered list, reset project
+            if (selectedProjectId && !projs.some((p) => String(p.id) === String(selectedProjectId))) {
+                setSelectedProjectId('');
+            }
+        } catch {
+            setProjects([]);
         }
     };
 
-    // When project changes, update levels
-    const handleProjectChange = async (projId: string) => {
-        setSelectedProjectId(projId);
-        setSelectedLevelId('');
-        if (projId) {
-            try {
-                const lvls = await projectLevelService.getLevelsByProject(projId);
-                setLevels(lvls);
-            } catch {
-                setLevels([]);
+    // When title changes, filter project list
+    const handleTitleChange = async (titleId: string) => {
+        setSelectedTitleId(titleId);
+        try {
+            const projs = await projectService.getProjects({
+                divisionId: selectedDivisionId || undefined,
+                titleId: titleId || undefined,
+            });
+            setProjects(projs);
+            // If currently selected project is not in filtered list, reset project
+            if (selectedProjectId && !projs.some((p) => String(p.id) === String(selectedProjectId))) {
+                setSelectedProjectId('');
             }
-        } else {
-            setLevels([]);
+        } catch {
+            setProjects([]);
+        }
+    };
+
+    // When project changes, auto-fill division and title if not already selected
+    const handleProjectChange = (projId: string) => {
+        setSelectedProjectId(projId);
+        if (projId) {
+            const foundProject = projects.find((p) => String(p.id) === String(projId));
+            if (foundProject) {
+                if (!selectedDivisionId && foundProject.divisionId) {
+                    setSelectedDivisionId(String(foundProject.divisionId));
+                }
+                if (!selectedTitleId && foundProject.titleId) {
+                    setSelectedTitleId(String(foundProject.titleId));
+                }
+            }
         }
     };
 
@@ -258,6 +272,12 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             return;
         }
 
+        // Project selection is mandatory. Layihəsiz selection is prohibited.
+        if (!selectedProjectId || selectedProjectId.trim() === '') {
+            setError(t('tasks.projectRequired', {}, 'Tapşırıq mütləq bir layihəyə bağlanmalıdır. Layihəsiz seçim mümkün deyil.'));
+            return;
+        }
+
         if (!deadline) {
             setError(t('tasks.deadlineRequiredError', {}, 'İcra tarixi mütləqdir'));
             return;
@@ -281,14 +301,15 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 {
                     title: title.trim(),
                     description: description.trim(),
-                    difficulty: DifficultyLevel.Medium,
+                    difficulty: typeof difficulty === 'number' ? difficulty : DifficultyLevel.Medium,
                     priority: typeof priority === 'number' ? priority : 1,
                     status: assignedUser ? 1 : 0,
                     deadline: new Date(deadline).toISOString(),
                     assignedToUserId: assignedUser?.id || undefined,
                     divisionId: selectedDivisionId || undefined,
-                    projectId: selectedProjectId || undefined,
-                    levelId: selectedLevelId || undefined,
+                    projectId: selectedProjectId,
+                    titleId: selectedTitleId || undefined,
+                    levelId: hiddenLevelId || undefined,
                     createdByUserId,
                     files: files.length > 0 ? files : undefined,
                 },
@@ -346,243 +367,291 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                     <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
                         {error && (
                             <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-xs flex items-center gap-2 animate-in fade-in">
-                            <ExclamationTriangleIcon className="w-4 h-4 shrink-0" />
-                            <span>{error}</span>
-                        </div>
-                    )}
+                                <ExclamationTriangleIcon className="w-4 h-4 shrink-0" />
+                                <span>{error}</span>
+                            </div>
+                        )}
 
-                    {/* Title */}
-                    <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
-                            {t('tasks.taskTitleRequired', {}, 'Tapşırıq Başlığı *')}
-                        </label>
-                        <input
-                            type="text"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            placeholder={t('tasks.titlePlaceholder', {}, 'Məsələn: API inteqrasiyasını tamamla...')}
-                            className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium transition-all"
-                            required
-                        />
-                    </div>
-
-                    {/* Hierarchy: Division > Project > Level */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-zinc-50 dark:bg-[#222226] p-3 rounded-xl border border-zinc-200/80 dark:border-[#2C2C2E]">
-                        {/* Division */}
-                        <div className="space-y-1">
-                            <label className="text-[11px] font-semibold text-zinc-600 dark:text-[#A1A1AA] flex items-center gap-1">
-                                <BuildingOfficeIcon className="w-3 h-3 text-sky-500 dark:text-sky-400" />
-                                {t('common.department', {}, 'Şöbə')}
-                            </label>
-                            <CustomSelect
-                                value={String(selectedDivisionId)}
-                                onChange={handleDivisionChange}
-                                options={[
-                                    { value: '', label: t('tasks.noDivision', {}, 'Şöbəsiz') },
-                                    ...divisions.map((d) => ({
-                                        value: String(d.id),
-                                        label: d.name,
-                                    })),
-                                ]}
-                                className="w-full"
-                            />
-                        </div>
-
-                        {/* Project */}
-                        <div className="space-y-1">
-                            <label className="text-[11px] font-semibold text-zinc-600 dark:text-[#A1A1AA] flex items-center gap-1">
-                                <FolderIcon className="w-3 h-3 text-purple-500 dark:text-purple-400" />
-                                {t('projects.title', {}, 'Layihə')}
-                            </label>
-                            <CustomSelect
-                                value={String(selectedProjectId)}
-                                onChange={handleProjectChange}
-                                options={[
-                                    { value: '', label: t('tasks.noProject', {}, 'Layihəsiz') },
-                                    ...projects.map((p) => ({
-                                        value: String(p.id),
-                                        label: p.name,
-                                    })),
-                                ]}
-                                className="w-full"
-                            />
-                        </div>
-
-                        {/* Level */}
-                        <div className="space-y-1">
-                            <label className="text-[11px] font-semibold text-zinc-600 dark:text-[#A1A1AA] flex items-center gap-1">
-                                <QueueListIcon className="w-3 h-3 text-emerald-500 dark:text-emerald-400" />
-                                {t('tasks.stage', {}, 'Mərhələ')}
-                            </label>
-                            <CustomSelect
-                                value={String(selectedLevelId)}
-                                onChange={setSelectedLevelId}
-                                options={[
-                                    { value: '', label: t('tasks.noStage', {}, 'Mərhələsiz') },
-                                    ...levels.map((lvl) => ({
-                                        value: String(lvl.id),
-                                        label: lvl.name,
-                                    })),
-                                ]}
-                                disabled={!selectedProjectId && levels.length === 0}
-                                className="w-full"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Description */}
-                    <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
-                            {t('common.description', {}, 'Təsvir')}
-                        </label>
-                        <textarea
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            placeholder={t('tasks.descriptionPlaceholder', {}, 'Tapşırıq haqqında ətraflı qeydlər...')}
-                            rows={3}
-                            className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl p-3 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium resize-none transition-all"
-                        />
-                    </div>
-
-                    {/* Row: Priority & Deadline */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {/* Priority */}
+                        {/* Title */}
                         <div className="space-y-1.5">
                             <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
-                                {t('common.priority', {}, 'Prioritet')}
-                            </label>
-                            <CustomSelect
-                                value={String(priority)}
-                                onChange={(val) => setPriority(Number(val) as Priority)}
-                                options={[
-                                    { value: String(Priority.Low), label: t('tasks.priorityLow', {}, 'Aşağı'), icon: <span className="w-2 h-2 rounded-full bg-zinc-400 inline-block" /> },
-                                    { value: String(Priority.Normal), label: t('tasks.priorityNormal', {}, 'Normal'), icon: <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> },
-                                    { value: String(Priority.High), label: t('tasks.priorityHigh', {}, 'Yüksək'), icon: <span className="text-xs">⚡</span> },
-                                    { value: String(Priority.Urgent), label: t('tasks.priorityUrgent', {}, 'Təcili'), icon: <span className="text-xs">🔥</span> },
-                                ]}
-                                className="w-full"
-                            />
-                        </div>
-
-                        {/* Deadline */}
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
-                                {t('tasks.deadlineRequired', {}, 'İcra Tarixi *')}
+                                {t('tasks.taskTitleRequired', {}, 'Tapşırıq Başlığı *')}
                             </label>
                             <input
-                                type="datetime-local"
-                                value={deadline}
-                                onChange={(e) => setDeadline(e.target.value)}
-                                className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl px-2.5 py-2.5 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-blue-500 font-medium transition-all"
+                                type="text"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                placeholder={t('tasks.titlePlaceholder', {}, 'Məsələn: API inteqrasiyasını tamamla...')}
+                                className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium transition-all"
                                 required
                             />
                         </div>
-                    </div>
 
-                    {/* Assignee Search / Mention */}
-                    <div ref={assignContainerRef} className="space-y-1.5 relative">
-                        <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
-                            {t('tasks.assignedUser', {}, 'Təyin Edilən Şəxs')}
-                        </label>
-                        <div className="relative flex items-center">
-                            <input
-                                ref={assignInputRef}
-                                type="text"
-                                value={assignInputValue}
-                                onChange={handleAssignInputChange}
-                                onFocus={handleAssignInputFocus}
-                                onClick={handleAssignInputFocus}
-                                onKeyDown={handleAssignKeyDown}
-                                placeholder={t('tasks.assigneePlaceholder', {}, '@ istifadəçi axtarın və ya seçin...')}
-                                className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium transition-all"
-                            />
-                            <UserIcon className="w-4 h-4 text-zinc-400 dark:text-[#71717A] absolute left-3 pointer-events-none" />
+                        {/* Hierarchy: 1. Şöbə (Division) -> 2. Layihə * (Project) -> 3. Title (Holdinq / MMC) */}
+                        <div className="space-y-1.5 bg-zinc-50 dark:bg-[#222226] p-3 rounded-xl border border-zinc-200/80 dark:border-[#2C2C2E]">
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                                    {t('tasks.analyticsDimensions', {}, 'Layihə və Analitik Bölgülər')}
+                                </span>
+                                <span className="text-[10px] font-semibold text-rose-500">
+                                    {t('tasks.projectRequiredShort', {}, '* Layihə mütləqdir')}
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                {/* 1. Şöbə (Division) */}
+                                <div className="space-y-1">
+                                    <label className="text-[11px] font-semibold text-zinc-600 dark:text-[#A1A1AA] flex items-center gap-1">
+                                        <BuildingOfficeIcon className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400" />
+                                        {t('common.department', {}, 'Şöbə')}
+                                    </label>
+                                    <CustomSelect
+                                        value={String(selectedDivisionId)}
+                                        onChange={handleDivisionChange}
+                                        options={[
+                                            { value: '', label: t('tasks.noDivision', {}, 'Hamısı / Avtomatik') },
+                                            ...divisions.map((d) => ({
+                                                value: String(d.id),
+                                                label: d.name,
+                                            })),
+                                        ]}
+                                        className="w-full"
+                                    />
+                                </div>
+
+                                {/* 2. Layihə * (Project) - MƏCBURİ */}
+                                <div className="space-y-1">
+                                    <label className="text-[11px] font-semibold text-zinc-600 dark:text-[#A1A1AA] flex items-center gap-1">
+                                        <FolderIcon className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
+                                        <span>{t('common.project', {}, 'Layihə')} <span className="text-rose-500">*</span></span>
+                                    </label>
+                                    <CustomSelect
+                                        value={String(selectedProjectId)}
+                                        onChange={handleProjectChange}
+                                        options={[
+                                            { value: '', label: t('tasks.selectProject', {}, 'Layihə seçin *') },
+                                            ...projects.map((p) => ({
+                                                value: String(p.id),
+                                                label: p.name,
+                                            })),
+                                        ]}
+                                        className={`w-full ${!selectedProjectId && error ? 'ring-1 ring-rose-500 rounded-xl' : ''}`}
+                                    />
+                                </div>
+
+                                {/* 3. Title (Holdinq / Müştəri / Şirkət / MMC) */}
+                                <div className="space-y-1">
+                                    <label className="text-[11px] font-semibold text-zinc-600 dark:text-[#A1A1AA] flex items-center gap-1">
+                                        <TagIcon className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                                        {t('tasks.titleDimension', {}, 'Title (Holdinq / MMC)')}
+                                    </label>
+                                    <CustomSelect
+                                        value={String(selectedTitleId)}
+                                        onChange={handleTitleChange}
+                                        options={[
+                                            { value: '', label: t('tasks.titleAuto', {}, 'Avtomatik / Bütün Title-lar') },
+                                            ...titles.map((tl) => ({
+                                                value: String(tl.id),
+                                                label: tl.name,
+                                            })),
+                                        ]}
+                                        className="w-full"
+                                    />
+                                </div>
+                            </div>
                         </div>
 
-                        {showSuggestions && filteredUsers.length > 0 && (
-                            <UserSuggestionList
-                                users={filteredUsers}
-                                onSelect={handleSelectUser}
-                                selectedIndex={suggestionIndex}
-                            />
-                        )}
-
-                        {/* Workload Warning Notification */}
-                        {workloadWarning && (
-                            <div
-                                className={`p-2.5 rounded-xl border text-xs flex items-center gap-2 animate-in fade-in ${
-                                    workloadWarning.isOverloaded
-                                        ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-300'
-                                        : workloadWarning.warningLevel === 'warning'
-                                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-300'
-                                        : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-300'
-                                }`}
-                            >
-                                {workloadWarning.isOverloaded ? (
-                                    <ShieldExclamationIcon className="w-4 h-4 text-rose-500 dark:text-rose-400 flex-shrink-0" />
-                                ) : (
-                                    <SparklesIcon className="w-4 h-4 text-amber-500 dark:text-amber-400 flex-shrink-0" />
-                                )}
-                                <span>{workloadWarning.message}</span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Attachments */}
-                    <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
-                            {t('tasks.attachments', {}, 'Qoşma Fayllar')}
-                        </label>
-                        <div className="flex items-center gap-2">
-                            <label className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-[#27272A] dark:hover:bg-[#3F3F46] border border-zinc-200 dark:border-[#3F3F46] text-xs font-medium text-zinc-800 dark:text-white cursor-pointer transition-colors">
-                                <PaperClipIcon className="w-4 h-4 text-zinc-500 dark:text-[#A1A1AA]" />
-                                <span>{t('tasks.selectFile', {}, 'Fayl seçin')}</span>
-                                <input type="file" multiple onChange={handleFileChange} className="hidden" />
+                        {/* Description */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
+                                {t('common.description', {}, 'Təsvir')}
                             </label>
-                            <span className="text-[11px] text-zinc-500 dark:text-[#71717A]">
-                                {files.length > 0
-                                    ? t('tasks.filesSelected', { count: files.length }, `${files.length} fayl seçildi`)
-                                    : t('tasks.optional', {}, 'İstəyə görə')}
-                            </span>
+                            <textarea
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder={t('tasks.descriptionPlaceholder', {}, 'Tapşırıq haqqında ətraflı qeydlər...')}
+                                rows={3}
+                                className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl p-3 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium resize-none transition-all"
+                            />
                         </div>
 
-                        {files.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 pt-2">
-                                {files.map((file, idx) => (
-                                    <div key={idx} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-[#27272A] text-xs text-zinc-800 dark:text-[#D4D4D8] border border-zinc-200 dark:border-transparent">
-                                        <span className="truncate max-w-[150px]">{file.name}</span>
-                                        <button type="button" onClick={() => removeFile(idx)} className="text-zinc-400 hover:text-rose-500 cursor-pointer">
-                                            <XMarkIcon className="w-3.5 h-3.5" />
-                                        </button>
-                                    </div>
-                                ))}
+                        {/* Row: Çətinlik, Prioritet & Deadline */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            {/* Çətinlik (Difficulty) */}
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
+                                    {t('tasks.difficultyLabel', {}, 'Çətinlik')}
+                                </label>
+                                <CustomSelect
+                                    value={String(difficulty)}
+                                    onChange={(val) => setDifficulty(Number(val) as DifficultyLevel)}
+                                    options={[
+                                        { value: String(DifficultyLevel.Easy), label: t('tasks.difficultyEasy', {}, 'Asan (10 bal)'), icon: <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> },
+                                        { value: String(DifficultyLevel.Medium), label: t('tasks.difficultyMedium', {}, 'Orta (20 bal)'), icon: <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> },
+                                        { value: String(DifficultyLevel.Hard), label: t('tasks.difficultyHard', {}, 'Çətin (30 bal)'), icon: <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> },
+                                    ]}
+                                    className="w-full"
+                                />
                             </div>
-                        )}
-                    </div>
-                </div>
 
-                {/* Footer Actions - Sticky Bottom */}
-                <div className="flex items-center justify-end gap-3 p-4 sm:p-6 border-t border-zinc-100 dark:border-[#2C2C2E] shrink-0 bg-white dark:bg-[#1C1C1E]">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-4 py-2 rounded-xl bg-transparent hover:bg-zinc-100 dark:hover:bg-white/5 text-xs font-semibold text-zinc-600 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
-                    >
-                        {t('common.cancel', {}, 'İmtina')}
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 hover:shadow-lg transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
-                    >
-                        {isSubmitting && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-                        <span>{isSubmitting ? t('tasks.creating', {}, 'Yaradılır...') : t('tasks.createTaskButton', {}, 'Tapşırığı Yarat')}</span>
-                    </button>
-                </div>
-            </form>
+                            {/* Prioritet (Priority) */}
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
+                                    {t('common.priority', {}, 'Prioritet')}
+                                </label>
+                                <CustomSelect
+                                    value={String(priority)}
+                                    onChange={(val) => setPriority(Number(val) as Priority)}
+                                    options={[
+                                        { value: String(Priority.Low), label: t('tasks.priorityLow', {}, 'Aşağı'), icon: <span className="w-2 h-2 rounded-full bg-zinc-400 inline-block" /> },
+                                        { value: String(Priority.Normal), label: t('tasks.priorityNormal', {}, 'Normal'), icon: <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> },
+                                        { value: String(Priority.High), label: t('tasks.priorityHigh', {}, 'Yüksək'), icon: <span className="text-xs">⚡</span> },
+                                        { value: String(Priority.Urgent), label: t('tasks.priorityUrgent', {}, 'Təcili'), icon: <span className="text-xs">🔥</span> },
+                                    ]}
+                                    className="w-full"
+                                />
+                            </div>
+
+                            {/* Deadline */}
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
+                                    {t('tasks.deadlineRequired', {}, 'İcra Tarixi *')}
+                                </label>
+                                <input
+                                    type="datetime-local"
+                                    value={deadline}
+                                    onChange={(e) => setDeadline(e.target.value)}
+                                    className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl px-2.5 py-2.5 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-blue-500 font-medium transition-all"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        {/* Assignee Search / Mention */}
+                        <div ref={assignContainerRef} className="space-y-1.5 relative">
+                            <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
+                                {t('tasks.assignedUser', {}, 'Təyin Edilən Şəxs')}
+                            </label>
+                            <div className="relative flex items-center">
+                                <input
+                                    ref={assignInputRef}
+                                    type="text"
+                                    value={assignInputValue}
+                                    onChange={handleAssignInputChange}
+                                    onFocus={handleAssignInputFocus}
+                                    onClick={handleAssignInputFocus}
+                                    onKeyDown={handleAssignKeyDown}
+                                    placeholder={t('tasks.assigneePlaceholder', {}, '@ istifadəçi axtarın və ya seçin...')}
+                                    className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium transition-all"
+                                />
+                                <UserIcon className="w-4 h-4 text-zinc-400 dark:text-[#71717A] absolute left-3 pointer-events-none" />
+                            </div>
+
+                            {showSuggestions && filteredUsers.length > 0 && (
+                                <UserSuggestionList
+                                    users={filteredUsers}
+                                    onSelect={handleSelectUser}
+                                    selectedIndex={suggestionIndex}
+                                />
+                            )}
+
+                            {/* Workload Warning Notification with Quotas */}
+                            {workloadWarning && (workloadWarning.isWarning || workloadWarning.isOverloaded) && (
+                                <div
+                                    className={`p-3 rounded-xl border text-xs space-y-1.5 animate-in fade-in ${
+                                        workloadWarning.isOverloaded
+                                            ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-300'
+                                            : 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-300'
+                                    }`}
+                                >
+                                    <div className="flex items-start gap-2">
+                                        {workloadWarning.isOverloaded ? (
+                                            <ShieldExclamationIcon className="w-4 h-4 text-rose-500 dark:text-rose-400 flex-shrink-0 mt-0.5" />
+                                        ) : (
+                                            <SparklesIcon className="w-4 h-4 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                                        )}
+                                        <span className="leading-snug">
+                                            {workloadWarning.warningMessage || workloadWarning.message || t('tasks.userOverloadedDefault', {}, '⚠️ Əməkdaş hal-hazırda həddindən artıq yüklənib!')}
+                                        </span>
+                                    </div>
+                                    {(workloadWarning.easyTasksCount !== undefined ||
+                                        workloadWarning.mediumTasksCount !== undefined ||
+                                        workloadWarning.hardTasksCount !== undefined) && (
+                                        <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] font-medium opacity-90 border-t border-current/15">
+                                            <span>{t('tasks.quotasMax10', {}, 'Kvotalar (maks 10):')}</span>
+                                            <span className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10">
+                                                {t('common.easy', {}, 'Asan')}: {workloadWarning.easyTasksCount ?? 0}/10
+                                            </span>
+                                            <span className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10">
+                                                {t('common.medium', {}, 'Orta')}: {workloadWarning.mediumTasksCount ?? 0}/10
+                                            </span>
+                                            <span className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10">
+                                                {t('common.hard', {}, 'Çətin')}: {workloadWarning.hardTasksCount ?? 0}/10
+                                            </span>
+                                            <span className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 font-bold">
+                                                {t('common.total', {}, 'Cəmi')}: {workloadWarning.activeTaskCount}/30
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Attachments */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
+                                {t('tasks.attachments', {}, 'Qoşma Fayllar')}
+                            </label>
+                            <div className="flex items-center gap-2">
+                                <label className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-[#27272A] dark:hover:bg-[#3F3F46] border border-zinc-200 dark:border-[#3F3F46] text-xs font-medium text-zinc-800 dark:text-white cursor-pointer transition-colors">
+                                    <PaperClipIcon className="w-4 h-4 text-zinc-500 dark:text-[#A1A1AA]" />
+                                    <span>{t('tasks.selectFile', {}, 'Fayl seçin')}</span>
+                                    <input type="file" multiple onChange={handleFileChange} className="hidden" />
+                                </label>
+                                <span className="text-[11px] text-zinc-500 dark:text-[#71717A]">
+                                    {files.length > 0
+                                        ? t('tasks.filesSelected', { count: files.length }, `${files.length} fayl seçildi`)
+                                        : t('tasks.optional', {}, 'İstəyə görə')}
+                                </span>
+                            </div>
+
+                            {files.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 pt-2">
+                                    {files.map((file, idx) => (
+                                        <div key={idx} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-[#27272A] text-xs text-zinc-800 dark:text-[#D4D4D8] border border-zinc-200 dark:border-transparent">
+                                            <span className="truncate max-w-[150px]">{file.name}</span>
+                                            <button type="button" onClick={() => removeFile(idx)} className="text-zinc-400 hover:text-rose-500 cursor-pointer">
+                                                <XMarkIcon className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Footer Actions - Sticky Bottom */}
+                    <div className="flex items-center justify-end gap-3 p-4 sm:p-6 border-t border-zinc-100 dark:border-[#2C2C2E] shrink-0 bg-white dark:bg-[#1C1C1E]">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2 rounded-xl bg-transparent hover:bg-zinc-100 dark:hover:bg-white/5 text-xs font-semibold text-zinc-600 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
+                        >
+                            {t('common.cancel', {}, 'İmtina')}
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 hover:shadow-lg transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                        >
+                            {isSubmitting && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                            <span>{isSubmitting ? t('tasks.creating', {}, 'Yaradılır...') : t('tasks.createTaskButton', {}, 'Tapşırığı Yarat')}</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
-    </div>
-);
+    );
 };
 
 export default CreateTaskModal;

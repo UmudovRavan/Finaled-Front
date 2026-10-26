@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../layout';
 import CreateTaskModal from '../components/CreateTaskModal';
 import CustomSelect, { type SelectOption } from '../components/CustomSelect';
-import { taskService, authService, notificationService } from '../api';
+import { taskService, authService, notificationService, divisionService, projectService, titleService, userService } from '../api';
 import { signalRService } from '../services/signalRService';
-import type { TaskResponse, NotificationResponse } from '../dto';
+import type { TaskResponse, NotificationResponse, DivisionDTO, ProjectDTO, TitleDTO, UserResponse } from '../dto';
 import { TaskStatus, DifficultyLevel, Priority } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, isUserAdmin, isUserManager, formatDateTime } from '../utils';
 import type { UserInfo } from '../utils';
@@ -28,6 +28,11 @@ import {
     SparklesIcon,
     FunnelIcon,
     XMarkIcon,
+    ArrowDownTrayIcon,
+    BuildingOfficeIcon,
+    FolderIcon,
+    TagIcon,
+    UserIcon,
 } from '@heroicons/react/24/outline';
 
 const MyTasks: React.FC = () => {
@@ -37,10 +42,22 @@ const MyTasks: React.FC = () => {
     const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 
     // View Mode: 'List' | 'Kanban'
     const [viewMode, setViewMode] = useState<'List' | 'Kanban'>('List');
+
+    // 3 Analytical Dimensions (Division, Project, Title) + Assignee
+    const [divisions, setDivisions] = useState<DivisionDTO[]>([]);
+    const [projects, setProjects] = useState<ProjectDTO[]>([]);
+    const [titles, setTitles] = useState<TitleDTO[]>([]);
+    const [users, setUsers] = useState<UserResponse[]>([]);
+
+    const [divisionFilter, setDivisionFilter] = useState<string>('all');
+    const [projectFilter, setProjectFilter] = useState<string>('all');
+    const [titleFilter, setTitleFilter] = useState<string>('all');
+    const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
 
     // Filter states
     const [searchQuery, setSearchQuery] = useState('');
@@ -143,13 +160,21 @@ const MyTasks: React.FC = () => {
     const loadData = async () => {
         try {
             setLoading(true);
-            const [tasksData, notificationsData] = await Promise.all([
+            const [tasksData, notificationsData, divsData, titlesData, projsData, usersData] = await Promise.all([
                 taskService.getAllTasks().catch(() => []),
                 notificationService.getMyNotifications().catch(() => []),
+                divisionService.getAllDivisions().catch(() => []),
+                titleService.getAllTitles().catch(() => []),
+                projectService.getProjects().catch(() => []),
+                userService.getAllUsers().catch(() => [] as UserResponse[]),
             ]);
             const cleanTasks = (tasksData || []).filter((t: any) => !taskService.isSystemActivityTask(t));
             setAllTasks(cleanTasks);
             setNotifications(notificationsData);
+            setDivisions(divsData);
+            setTitles(titlesData);
+            setProjects(projsData);
+            setUsers(usersData);
         } catch {
             // Silent fail
         } finally {
@@ -163,15 +188,81 @@ const MyTasks: React.FC = () => {
         await loadData();
     };
 
+    const handleDivisionFilterChange = async (divId: string) => {
+        setDivisionFilter(divId);
+        try {
+            const projs = await projectService.getProjects({
+                divisionId: divId !== 'all' ? divId : undefined,
+                titleId: titleFilter !== 'all' ? titleFilter : undefined,
+            });
+            setProjects(projs);
+            if (projectFilter !== 'all' && !projs.some((p) => String(p.id) === projectFilter)) {
+                setProjectFilter('all');
+            }
+        } catch {
+            // ignore
+        }
+    };
+
+    const handleTitleFilterChange = async (ttlId: string) => {
+        setTitleFilter(ttlId);
+        try {
+            const projs = await projectService.getProjects({
+                divisionId: divisionFilter !== 'all' ? divisionFilter : undefined,
+                titleId: ttlId !== 'all' ? ttlId : undefined,
+            });
+            setProjects(projs);
+            if (projectFilter !== 'all' && !projs.some((p) => String(p.id) === projectFilter)) {
+                setProjectFilter('all');
+            }
+        } catch {
+            // ignore
+        }
+    };
+
+    const handleExportExcel = async () => {
+        try {
+            setIsExporting(true);
+            const statusMap: Record<string, string> = {
+                '0': 'Pending',
+                '1': 'Assigned',
+                '2': 'InProgress',
+                '3': 'UnderReview',
+                '4': 'Completed',
+                '5': 'Expired',
+            };
+            const priorityMap: Record<string, string> = {
+                '0': 'Low',
+                '1': 'Normal',
+                '2': 'High',
+                '3': 'Urgent',
+            };
+            await taskService.exportTasksToExcel({
+                titleId: titleFilter !== 'all' ? titleFilter : undefined,
+                divisionId: divisionFilter !== 'all' ? divisionFilter : undefined,
+                projectId: projectFilter !== 'all' ? projectFilter : undefined,
+                assignedToUserId: assigneeFilter !== 'all' ? assigneeFilter : undefined,
+                status: statusFilter !== 'all' ? statusMap[statusFilter] : undefined,
+                priority: priorityFilter !== 'all' ? priorityMap[priorityFilter] : undefined,
+                search: searchQuery.trim() || undefined,
+            });
+        } catch (err: any) {
+            console.error('Excel export error:', err);
+            alert(err?.response?.data?.message || err.message || t('tasks.excelExportFailed', {}, 'Excel faylını yükləmək mümkün olmadı'));
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     const handleDeleteTask = async (taskId: string | number, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!confirm('Bu tapşırığı silmək istədiyinizə əminsiniz?')) return;
+        if (!confirm(t('tasks.deleteConfirm', {}, 'Bu tapşırığı silmək istədiyinizə əminsiniz?'))) return;
 
         try {
             await taskService.deleteTask(taskId);
             setAllTasks((prev) => prev.filter((t) => String(t.id) !== String(taskId)));
         } catch {
-            alert('Tapşırığı silmək mümkün olmadı');
+            alert(t('tasks.deleteFailed', {}, 'Tapşırığı silmək mümkün olmadı'));
         }
     };
 
@@ -183,20 +274,20 @@ const MyTasks: React.FC = () => {
                 prev.map((t) => (String(t.id) === String(taskId) ? { ...t, status: TaskStatus.InProgress } : t))
             );
         } catch {
-            alert('Tapşırıq qəbul edilə bilmədi');
+            alert(t('tasks.acceptFailed', {}, 'Tapşırıq qəbul edilə bilmədi'));
         }
     };
 
     const handleRejectTask = async (taskId: string | number, e: React.MouseEvent) => {
         e.stopPropagation();
-        const reason = window.prompt('İmtina səbəbini daxil edin:') || 'İmtina edildi';
+        const reason = window.prompt(t('tasks.rejectPrompt', {}, 'İmtina səbəbini daxil edin:')) || t('tasks.rejectedDefault', {}, 'İmtina edildi');
         try {
             await taskService.rejectTask(taskId, reason);
             setAllTasks((prev) =>
                 prev.map((t) => (String(t.id) === String(taskId) ? { ...t, status: TaskStatus.Pending, assignedToUserId: undefined } : t))
             );
         } catch {
-            alert('Tapşırıqdan imtina edilə bilmədi');
+            alert(t('tasks.rejectFailed', {}, 'Tapşırıqdan imtina edilə bilmədi'));
         }
     };
 
@@ -210,7 +301,7 @@ const MyTasks: React.FC = () => {
                 prev.map((t) => (String(t.id) === String(taskId) ? { ...t, status: TaskStatus.UnderReview } : t))
             );
         } catch {
-            alert('Tapşırıq tamamlana bilmədi');
+            alert(t('tasks.completeFailed', {}, 'Tapşırıq tamamlana bilmədi'));
         }
     };
 
@@ -268,10 +359,30 @@ const MyTasks: React.FC = () => {
             }
         }
 
-        return taskService.sortTasksNewestFirst(result);
-    }, [allTasks, userInfo, ownershipFilter, isManager, searchQuery, statusFilter, priorityFilter, difficultyFilter, datePreset]);
+        // 7. Division Filter
+        if (divisionFilter !== 'all') {
+            result = result.filter((task) => String(task.divisionId || '') === divisionFilter);
+        }
 
-    const hasActiveFilters = searchQuery || statusFilter !== 'all' || priorityFilter !== 'all' || difficultyFilter !== 'all' || ownershipFilter !== 'all' || datePreset !== 'all';
+        // 8. Project Filter
+        if (projectFilter !== 'all') {
+            result = result.filter((task) => String(task.projectId || '') === projectFilter);
+        }
+
+        // 9. Title Filter
+        if (titleFilter !== 'all') {
+            result = result.filter((task) => String(task.titleId || '') === titleFilter);
+        }
+
+        // 10. Individual Assignee Filter
+        if (assigneeFilter !== 'all') {
+            result = result.filter((task) => String(task.assignedToUserId || '') === assigneeFilter);
+        }
+
+        return taskService.sortTasksNewestFirst(result);
+    }, [allTasks, userInfo, ownershipFilter, isManager, searchQuery, statusFilter, priorityFilter, difficultyFilter, datePreset, divisionFilter, projectFilter, titleFilter, assigneeFilter]);
+
+    const hasActiveFilters = searchQuery || statusFilter !== 'all' || priorityFilter !== 'all' || difficultyFilter !== 'all' || ownershipFilter !== 'all' || datePreset !== 'all' || divisionFilter !== 'all' || projectFilter !== 'all' || titleFilter !== 'all' || assigneeFilter !== 'all';
 
     const clearAllFilters = () => {
         setSearchQuery('');
@@ -280,6 +391,10 @@ const MyTasks: React.FC = () => {
         setDifficultyFilter('all');
         setOwnershipFilter('all');
         setDatePreset('all');
+        setDivisionFilter('all');
+        setProjectFilter('all');
+        setTitleFilter('all');
+        setAssigneeFilter('all');
     };
 
     const handleQuickStatusChange = async (taskId: string | number, newStatus: TaskStatus, e: React.MouseEvent) => {
@@ -419,16 +534,76 @@ const MyTasks: React.FC = () => {
         }
     };
 
+    const divisionOptions = useMemo<SelectOption<string>[]>(() => [
+        { value: 'all', label: t('common.allDepartments', {}, 'Bütün Şöbələr'), icon: <BuildingOfficeIcon className="w-3.5 h-3.5 text-sky-500" /> },
+        ...divisions.map((d) => ({
+            value: String(d.id),
+            label: d.name,
+        })),
+    ], [divisions, t]);
+
+    const projectOptions = useMemo<SelectOption<string>[]>(() => [
+        { value: 'all', label: t('projects.allProjects', {}, 'Bütün Layihələr'), icon: <FolderIcon className="w-3.5 h-3.5 text-purple-500" /> },
+        ...projects.map((p) => ({
+            value: String(p.id),
+            label: p.name,
+        })),
+    ], [projects, t]);
+
+    const titleOptions = useMemo<SelectOption<string>[]>(() => [
+        { value: 'all', label: t('tasks.allTitles', {}, 'Bütün Title-lar'), icon: <TagIcon className="w-3.5 h-3.5 text-amber-500" /> },
+        ...titles.map((tl) => ({
+            value: String(tl.id),
+            label: tl.name,
+        })),
+    ], [titles, t]);
+
+    const assigneeOptions = useMemo<SelectOption<string>[]>(() => {
+        const userMap = new Map<string, string>();
+        
+        users.forEach((u) => {
+            if (u.id) {
+                const name = u.userName || u.email || 'İstifadəçi';
+                userMap.set(String(u.id), name);
+            }
+        });
+
+        allTasks.forEach((tItem) => {
+            if (tItem.assignedToUserId && !userMap.has(String(tItem.assignedToUserId))) {
+                userMap.set(String(tItem.assignedToUserId), tItem.assignedToUserName || 'İstifadəçi');
+            }
+        });
+
+        const list = Array.from(userMap.entries()).map(([id, name]) => ({
+            id,
+            name,
+        }));
+        list.sort((a, b) => a.name.localeCompare(b.name));
+
+        return [
+            {
+                value: 'all',
+                label: t('tasks.allAssignees', {}, 'Bütün İcraçılar'),
+                icon: <UserIcon className="w-3.5 h-3.5 text-blue-500" />,
+            },
+            ...list.map((u) => ({
+                value: u.id,
+                label: u.name,
+                icon: <span className="w-2 h-2 rounded-full bg-blue-400 inline-block" />,
+            })),
+        ];
+    }, [users, allTasks, t]);
+
     const priorityOptions = useMemo<SelectOption<string>[]>(() => [
-        { value: 'all', label: 'Bütün Prioritetlər' },
-        { value: String(Priority.Urgent), label: 'Təcili', icon: <span className="text-xs">🔥</span> },
-        { value: String(Priority.High), label: 'Yüksək', icon: <span className="text-xs">⚡</span> },
-        { value: String(Priority.Normal), label: 'Normal', icon: <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> },
-        { value: String(Priority.Low), label: 'Aşağı', icon: <span className="w-2 h-2 rounded-full bg-zinc-400 inline-block" /> },
-    ], []);
+        { value: 'all', label: t('tasks.filterByPriority', {}, 'Bütün Prioritetlər') },
+        { value: String(Priority.Urgent), label: t('tasks.priorityUrgent', {}, 'Təcili'), icon: <span className="text-xs">🔥</span> },
+        { value: String(Priority.High), label: t('tasks.priorityHigh', {}, 'Yüksək'), icon: <span className="text-xs">⚡</span> },
+        { value: String(Priority.Normal), label: t('tasks.priorityNormal', {}, 'Normal'), icon: <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> },
+        { value: String(Priority.Low), label: t('tasks.priorityLow', {}, 'Aşağı'), icon: <span className="w-2 h-2 rounded-full bg-zinc-400 inline-block" /> },
+    ], [t]);
 
     const difficultyOptions = useMemo<SelectOption<string>[]>(() => [
-        { value: 'all', label: 'Bütün Çətinliklər' },
+        { value: 'all', label: t('tasks.difficultyLabel', {}, 'Çətinlik') },
         { value: String(DifficultyLevel.Hard), label: t('difficulties.hard', {}, 'Çətin (Yüksək)'), badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold border border-rose-500/20">30 bal</span> },
         { value: String(DifficultyLevel.Medium), label: t('difficulties.medium', {}, 'Orta'), badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/20">20 bal</span> },
         { value: String(DifficultyLevel.Easy), label: t('difficulties.easy', {}, 'Asan (Aşağı)'), badge: <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">10 bal</span> },
@@ -446,8 +621,8 @@ const MyTasks: React.FC = () => {
     const dateOptions = useMemo<SelectOption<string>[]>(() => [
         { value: 'all', label: t('common.all', {}, 'Bütün Tarixlər') },
         { value: 'today', label: t('common.today', {}, 'Bugün') },
-        { value: 'tomorrow', label: 'Sabah' },
-        { value: 'nextWeek', label: '+7 Gün' },
+        { value: 'tomorrow', label: t('common.tomorrow', {}, 'Sabah') },
+        { value: 'nextWeek', label: t('common.nextWeek', {}, '+7 Gün') },
     ], [t]);
 
     if (loading) {
@@ -533,6 +708,18 @@ const MyTasks: React.FC = () => {
                                 </button>
                             </div>
 
+                            {/* Export to Excel Button */}
+                            <button
+                                onClick={handleExportExcel}
+                                disabled={isExporting}
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                                title={t('tasks.exportToExcel', {}, 'Excel-ə ixrac')}
+                                type="button"
+                            >
+                                <ArrowDownTrayIcon className={`w-4 h-4 ${isExporting ? 'animate-bounce' : ''}`} />
+                                <span>{isExporting ? t('tasks.exportingExcel', {}, 'İxrac edilir...') : t('tasks.exportToExcel', {}, 'Excel-ə ixrac')}</span>
+                            </button>
+
                             {/* Create Task Button */}
                             <button
                                 onClick={() => setIsCreateModalOpen(true)}
@@ -548,9 +735,9 @@ const MyTasks: React.FC = () => {
                     {/* CRM Style Unified Filter Bar */}
                     <div className="rounded-2xl border border-zinc-200/80 dark:border-[#27272A] bg-white dark:bg-[#18181B] p-3 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
                         {/* Left Side Filters */}
-                        <div className="flex items-center gap-2.5 flex-wrap flex-1">
+                        <div className="flex items-center gap-2 flex-wrap flex-1">
                             {/* Search Input */}
-                            <div className="relative flex items-center min-w-[200px] flex-1 sm:flex-initial">
+                            <div className="relative flex items-center min-w-[180px] flex-1 sm:flex-initial">
                                 <MagnifyingGlassIcon className="w-4 h-4 text-zinc-400 dark:text-[#71717A] absolute left-3 pointer-events-none" />
                                 <input
                                     type="text"
@@ -588,6 +775,34 @@ const MyTasks: React.FC = () => {
                                     {t('common.all', {}, 'Hamısı')}
                                 </button>
                             </div>
+
+                            {/* 1. Şöbə (Division) Select */}
+                            <CustomSelect
+                                value={divisionFilter}
+                                onChange={handleDivisionFilterChange}
+                                options={divisionOptions}
+                            />
+
+                            {/* 2. Layihə (Project) Select */}
+                            <CustomSelect
+                                value={projectFilter}
+                                onChange={setProjectFilter}
+                                options={projectOptions}
+                            />
+
+                            {/* 3. Title (Holdinq / MMC) Select */}
+                            <CustomSelect
+                                value={titleFilter}
+                                onChange={handleTitleFilterChange}
+                                options={titleOptions}
+                            />
+
+                            {/* 4. İcraçı / Əməkdaş (Assignee) Select */}
+                            <CustomSelect
+                                value={assigneeFilter}
+                                onChange={setAssigneeFilter}
+                                options={assigneeOptions}
+                            />
 
                             {/* Priority Select */}
                             <CustomSelect

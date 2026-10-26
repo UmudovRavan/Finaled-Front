@@ -41,10 +41,13 @@ export interface TaskResponse {
     projectName?: string;
     divisionId?: string | number | null;
     divisionName?: string;
+    titleId?: string | number | null;
+    titleName?: string;
     workGroupId?: string | number | null;
     assignedToUserId?: string;
     assignedToUserName?: string;
     createdByUserId: string;
+    createdByUserName?: string;
     parentTaskId?: string | number | null;
     taskCommentId?: (string | number)[];
     files?: FileDto[];
