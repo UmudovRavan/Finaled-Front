@@ -74,6 +74,26 @@ export const titleService = {
 
         throw new Error(`Title with id ${id} not found`);
     },
+
+    async createTitle(data: { name: string; description?: string; voen?: string }): Promise<TitleDTO> {
+        const response = await httpClient.post<any>('/Title', {
+            name: data.name.trim(),
+            description: data.description?.trim() || undefined,
+            voen: data.voen?.trim() || undefined,
+        });
+        const raw = response.data?.data || response.data;
+        return normalizeTitle(raw);
+    },
+
+    async updateTitle(id: string | number, data: { name: string; description?: string; voen?: string; isActive?: boolean }): Promise<TitleDTO> {
+        const response = await httpClient.put<any>(`/Title/${id}`, data);
+        const raw = response.data?.data || response.data;
+        return normalizeTitle(raw);
+    },
+
+    async deleteTitle(id: string | number): Promise<void> {
+        await httpClient.delete(`/Title/${id}`);
+    },
 };
 
 export default titleService;

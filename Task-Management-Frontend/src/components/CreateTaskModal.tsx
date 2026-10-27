@@ -25,6 +25,7 @@ interface CreateTaskModalProps {
     defaultDivisionId?: string | number;
     defaultProjectId?: string | number;
     defaultLevelId?: string | number;
+    defaultTitleId?: string | number;
 }
 
 const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
@@ -34,6 +35,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     defaultDivisionId,
     defaultProjectId,
     defaultLevelId,
+    defaultTitleId,
 }) => {
     const { t } = useLanguage();
     const [title, setTitle] = useState('');
@@ -88,10 +90,12 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
             if (defaultDivisionId) setSelectedDivisionId(String(defaultDivisionId));
             if (defaultProjectId) setSelectedProjectId(String(defaultProjectId));
+            if (defaultTitleId) setSelectedTitleId(String(defaultTitleId));
+            else setSelectedTitleId('');
             if (defaultLevelId) setHiddenLevelId(String(defaultLevelId));
             else setHiddenLevelId('');
         }
-    }, [isOpen, defaultDivisionId, defaultProjectId, defaultLevelId]);
+    }, [isOpen, defaultDivisionId, defaultProjectId, defaultTitleId, defaultLevelId]);
 
     const fetchInitialData = async () => {
         try {
@@ -99,70 +103,75 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 userService.getAllUsers().catch(() => []),
                 divisionService.getAllDivisions().catch(() => []),
                 titleService.getAllTitles().catch(() => []),
-                projectService.getProjects({
-                    divisionId: defaultDivisionId ? String(defaultDivisionId) : undefined,
-                }).catch(() => []),
+                projectService.getAllProjects().catch(() => []),
             ]);
             setAllUsers(usersData);
             setDivisions(divsData);
             setTitles(titlesData);
             setProjects(projsData);
+
+            // Auto-populate Title and Division if project is pre-selected
+            const targetProjId = defaultProjectId ? String(defaultProjectId) : selectedProjectId;
+            if (targetProjId) {
+                const found = projsData.find((p) => String(p.id) === String(targetProjId));
+                if (found) {
+                    if (found.titleId) setSelectedTitleId(String(found.titleId));
+                    if (found.divisionId && !defaultDivisionId) setSelectedDivisionId(String(found.divisionId));
+                }
+            }
         } catch (err) {
             console.error('Failed to load initial data in CreateTaskModal', err);
         }
     };
 
-    // When division changes, filter project list
-    const handleDivisionChange = async (divId: string) => {
+    // When division changes, filter available projects without resetting selected project
+    const handleDivisionChange = (divId: string) => {
         setSelectedDivisionId(divId);
-        try {
-            const projs = await projectService.getProjects({
-                divisionId: divId || undefined,
-                titleId: selectedTitleId || undefined,
-            });
-            setProjects(projs);
-            // If currently selected project is not in filtered list, reset project
-            if (selectedProjectId && !projs.some((p) => String(p.id) === String(selectedProjectId))) {
-                setSelectedProjectId('');
-            }
-        } catch {
-            setProjects([]);
-        }
     };
 
-    // When title changes, filter project list
-    const handleTitleChange = async (titleId: string) => {
+    // When title changes, keep selected project intact
+    const handleTitleChange = (titleId: string) => {
         setSelectedTitleId(titleId);
-        try {
-            const projs = await projectService.getProjects({
-                divisionId: selectedDivisionId || undefined,
-                titleId: titleId || undefined,
-            });
-            setProjects(projs);
-            // If currently selected project is not in filtered list, reset project
-            if (selectedProjectId && !projs.some((p) => String(p.id) === String(selectedProjectId))) {
-                setSelectedProjectId('');
-            }
-        } catch {
-            setProjects([]);
-        }
     };
 
-    // When project changes, auto-fill division and title if not already selected
+    // When project changes, automatically set the Title and Division belonging to that project
     const handleProjectChange = (projId: string) => {
         setSelectedProjectId(projId);
         if (projId) {
             const foundProject = projects.find((p) => String(p.id) === String(projId));
             if (foundProject) {
-                if (!selectedDivisionId && foundProject.divisionId) {
+                // Auto-set the Title associated with this project
+                if (foundProject.titleId) {
+                    setSelectedTitleId(String(foundProject.titleId));
+                } else {
+                    setSelectedTitleId('');
+                }
+                // Auto-set the Division associated with this project
+                if (foundProject.divisionId) {
                     setSelectedDivisionId(String(foundProject.divisionId));
                 }
-                if (!selectedTitleId && foundProject.titleId) {
-                    setSelectedTitleId(String(foundProject.titleId));
-                }
             }
+        } else {
+            setSelectedTitleId('');
         }
     };
+
+    // Computed filtered projects for selection dropdown
+    const filteredProjects = useMemo(() => {
+        return projects.filter((p) => {
+            // Selected project always stays in the list so it never disappears
+            if (selectedProjectId && String(p.id) === String(selectedProjectId)) {
+                return true;
+            }
+            if (selectedDivisionId && String(p.divisionId) !== String(selectedDivisionId)) {
+                return false;
+            }
+            if (selectedTitleId && p.titleId && String(p.titleId) !== String(selectedTitleId)) {
+                return false;
+            }
+            return true;
+        });
+    }, [projects, selectedDivisionId, selectedTitleId, selectedProjectId]);
 
     // Check workload when user is assigned
     const checkUserWorkload = async (userId: string) => {
@@ -430,7 +439,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                                         onChange={handleProjectChange}
                                         options={[
                                             { value: '', label: t('tasks.selectProject', {}, 'Layihə seçin *') },
-                                            ...projects.map((p) => ({
+                                            ...filteredProjects.map((p) => ({
                                                 value: String(p.id),
                                                 label: p.name,
                                             })),

@@ -62,7 +62,7 @@ export const KpiAdminEditModal: React.FC<KpiAdminEditModalProps> = ({
     }, [isOpen, kpi]);
 
     // Toggle handlers: clicking active option deselects back to 0
-    const handleToggleDuty = (val: 1 | -1) => {
+    const handleToggleDuty = (val: 1) => {
         setDutyScore((prev) => (prev === val ? 0 : val));
     };
 
@@ -70,7 +70,7 @@ export const KpiAdminEditModal: React.FC<KpiAdminEditModalProps> = ({
         setDisciplineScore((prev) => (prev === val ? 0 : val));
     };
 
-    const handleToggleBonus = (val: 1 | -1) => {
+    const handleToggleBonus = (val: 1) => {
         setBonusScore((prev) => (prev === val ? 0 : val));
     };
 
@@ -203,13 +203,9 @@ export const KpiAdminEditModal: React.FC<KpiAdminEditModalProps> = ({
                                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                         +1 {t('common.points', {}, 'Bal')}
                                     </span>
-                                ) : dutyScore === -1 ? (
-                                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-                                        -1 {t('common.points', {}, 'Bal')}
-                                    </span>
                                 ) : (
                                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-zinc-100 dark:bg-white/[0.04] text-zinc-500 dark:text-zinc-400 border border-zinc-200/60 dark:border-white/[0.05]">
-                                        0 {t('common.none', {}, 'Neytral')}
+                                        0 {t('common.none', {}, 'Heç biri')}
                                     </span>
                                 )}
                             </div>
@@ -240,33 +236,6 @@ export const KpiAdminEditModal: React.FC<KpiAdminEditModalProps> = ({
                                 </div>
                                 <span className="text-[11px] text-zinc-500 dark:text-[#A1A1AA] leading-snug">
                                     {t('kpi.dutyFullDesc', {}, 'Vəzifə və tapşırıqlar tam yerinə yetirilib')}
-                                </span>
-                            </button>
-
-                            {/* -1 Button */}
-                            <button
-                                type="button"
-                                onClick={() => handleToggleDuty(-1)}
-                                className={`group p-3 sm:p-3.5 rounded-2xl border text-left flex flex-col justify-between gap-1.5 transition-all duration-150 cursor-pointer ${
-                                    dutyScore === -1
-                                        ? 'bg-rose-500/[0.08] dark:bg-rose-500/[0.14] border-rose-500/40 text-rose-600 dark:text-rose-400 shadow-xs ring-1 ring-rose-500/20'
-                                        : 'bg-zinc-50/70 hover:bg-zinc-100/80 dark:bg-[#18181B]/80 dark:hover:bg-[#202024] border-zinc-200/70 dark:border-[#27272A] text-zinc-700 dark:text-zinc-300'
-                                }`}
-                            >
-                                <div className="flex items-center justify-between">
-                                    <span className={`text-xs font-bold ${dutyScore === -1 ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-800 dark:text-zinc-200'}`}>
-                                        -1 {t('kpi.dutyNotFulfilled', {}, 'İcra olunmadı')}
-                                    </span>
-                                    <div className={`w-4 h-4 rounded-full flex items-center justify-center transition-all ${
-                                        dutyScore === -1
-                                            ? 'bg-rose-500 text-white shadow-xs'
-                                            : 'border border-zinc-300 dark:border-zinc-600 group-hover:border-zinc-400'
-                                    }`}>
-                                        {dutyScore === -1 && <Minus className="w-2.5 h-2.5 stroke-[3]" />}
-                                    </div>
-                                </div>
-                                <span className="text-[11px] text-zinc-500 dark:text-[#A1A1AA] leading-snug">
-                                    {t('kpi.dutyNotFulfilledDesc', {}, 'Öhdəliklər və ya tapşırıqlar yerinə yetirilməyib')}
                                 </span>
                             </button>
                         </div>
@@ -390,10 +359,6 @@ export const KpiAdminEditModal: React.FC<KpiAdminEditModalProps> = ({
                                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                                         +1 {t('kpi.bonus', {}, 'Bonus')}
                                     </span>
-                                ) : bonusScore === -1 ? (
-                                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-                                        -1 {t('common.points', {}, 'Bal')}
-                                    </span>
                                 ) : (
                                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-zinc-100 dark:bg-white/[0.04] text-zinc-500 dark:text-zinc-400 border border-zinc-200/60 dark:border-white/[0.05]">
                                         0 {t('kpi.bonusStandard', {}, 'Standart')}
@@ -428,33 +393,6 @@ export const KpiAdminEditModal: React.FC<KpiAdminEditModalProps> = ({
                                 </div>
                                 <span className="text-[11px] text-zinc-500 dark:text-[#A1A1AA] leading-snug">
                                     {t('kpi.bonusSpecialDesc', {}, 'Fövqəladə səmərəlilik və ya böyük uğur')}
-                                </span>
-                            </button>
-
-                            {/* -1 Button */}
-                            <button
-                                type="button"
-                                onClick={() => handleToggleBonus(-1)}
-                                className={`group p-3 sm:p-3.5 rounded-2xl border text-left flex flex-col justify-between gap-1.5 transition-all duration-150 cursor-pointer ${
-                                    bonusScore === -1
-                                        ? 'bg-rose-500/[0.08] dark:bg-rose-500/[0.14] border-rose-500/40 text-rose-600 dark:text-rose-400 shadow-xs ring-1 ring-rose-500/20'
-                                        : 'bg-zinc-50/70 hover:bg-zinc-100/80 dark:bg-[#18181B]/80 dark:hover:bg-[#202024] border-zinc-200/70 dark:border-[#27272A] text-zinc-700 dark:text-zinc-300'
-                                }`}
-                            >
-                                <div className="flex items-center justify-between">
-                                    <span className={`text-xs font-bold ${bonusScore === -1 ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-800 dark:text-zinc-200'}`}>
-                                        -1 {t('kpi.bonusPassive', {}, 'Passivlik / Xəta')}
-                                    </span>
-                                    <div className={`w-4 h-4 rounded-full flex items-center justify-center transition-all ${
-                                        bonusScore === -1
-                                            ? 'bg-rose-500 text-white shadow-xs'
-                                            : 'border border-zinc-300 dark:border-zinc-600 group-hover:border-zinc-400'
-                                    }`}>
-                                        {bonusScore === -1 && <Minus className="w-2.5 h-2.5 stroke-[3]" />}
-                                    </div>
-                                </div>
-                                <span className="text-[11px] text-zinc-500 dark:text-[#A1A1AA] leading-snug">
-                                    {t('kpi.bonusPassiveDesc', {}, 'Ciddi səhlənkarlıq və ya təşəbbüssüzlük')}
                                 </span>
                             </button>
                         </div>
