@@ -2,9 +2,9 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Sidebar, Header } from '../layout';
 import KpiCard from '../components/KpiCard';
-import { projectService, divisionService, taskService, notificationService, userService, authService } from '../api';
-import type { ProjectDTO, DivisionDTO, CreateProjectRequest, NotificationResponse, UserResponse, TaskResponse } from '../dto';
-import { ProjectStatus } from '../dto';
+import { projectService, projectLevelService, divisionService, taskService, notificationService, userService, authService } from '../api';
+import type { ProjectDTO, ProjectLevelDTO, DivisionDTO, CreateProjectRequest, NotificationResponse, UserResponse, TaskResponse } from '../dto';
+import { ProjectStatus, TaskStatus } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, isUserAdmin, isUserManager, formatDateOnly } from '../utils';
 import type { UserInfo } from '../utils';
 import CustomSelect from '../components/CustomSelect';
@@ -151,13 +151,102 @@ const Projects: React.FC = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [projRes, divRes, notifRes] = await Promise.all([
+            setRefreshing(true);
+            const [projRes, divRes, notifRes, allTasksRes] = await Promise.all([
                 projectService.getAllProjects().catch(() => [] as ProjectDTO[]),
                 divisionService.getAllDivisions().catch(() => [] as DivisionDTO[]),
                 notificationService.getMyNotifications().catch(() => [] as NotificationResponse[]),
+                taskService.getAllTasks().catch(() => [] as TaskResponse[]),
             ]);
 
-            setProjects(Array.isArray(projRes) ? projRes : []);
+            const baseProjects = Array.isArray(projRes) ? projRes : [];
+            const safeAllTasks = Array.isArray(allTasksRes) ? allTasksRes : [];
+
+            // Fetch levels and direct tasks for each project to ensure accurate metrics
+            const perProjectDetails = await Promise.all(
+                baseProjects.map(async (p) => {
+                    const normId = String(p.id || '').trim().toLowerCase();
+                    const [lvls, pTasks] = await Promise.all([
+                        projectLevelService.getLevelsByProject(p.id).catch(() => [] as ProjectLevelDTO[]),
+                        taskService.getTasksByProject(p.id).catch(() => [] as TaskResponse[]),
+                    ]);
+                    return {
+                        id: normId,
+                        lvls: Array.isArray(lvls) ? lvls : [],
+                        pTasks: Array.isArray(pTasks) ? pTasks : [],
+                    };
+                })
+            );
+
+            const detailMap = new Map<string, { lvls: ProjectLevelDTO[]; pTasks: TaskResponse[] }>();
+            perProjectDetails.forEach((d) => detailMap.set(d.id, d));
+
+            // Enhance each project with accurate level and task metrics
+            const enhancedProjects = baseProjects.map((p) => {
+                const normId = String(p.id || '').trim().toLowerCase();
+                const pName = p.name ? p.name.trim().toLowerCase() : '';
+                const details = detailMap.get(normId);
+                const lvls = details?.lvls || [];
+                const pTasks = details?.pTasks || [];
+
+                const levelIds = new Set(lvls.map((l) => String(l.id).toLowerCase()));
+
+                // Aggregate unique tasks for this project
+                const taskMap = new Map<string, TaskResponse>();
+
+                // 1. Direct project tasks returned by getTasksByProject
+                pTasks.forEach((t) => taskMap.set(String(t.id), t));
+
+                // 2. Embedded tasks in project levels
+                lvls.forEach((l) => {
+                    if (l.tasks && Array.isArray(l.tasks)) {
+                        l.tasks.forEach((t) => taskMap.set(String(t.id), t));
+                    }
+                });
+
+                // 3. Embedded tasks in project raw object (if any)
+                const rawP = p as any;
+                const rawTasks = rawP.tasks || rawP.Tasks || [];
+                if (Array.isArray(rawTasks)) {
+                    rawTasks.forEach((t: any) => {
+                        if (t && t.id) taskMap.set(String(t.id), t);
+                    });
+                }
+
+                // 4. Tasks from getAllTasks matching projectId, projectName, or levelId
+                safeAllTasks.forEach((t) => {
+                    const tProjId = t.projectId ? String(t.projectId).trim().toLowerCase() : '';
+                    const tProjName = t.projectName ? t.projectName.trim().toLowerCase() : '';
+                    const tLevelId = t.levelId ? String(t.levelId).trim().toLowerCase() : '';
+
+                    if (
+                        (tProjId && tProjId === normId) ||
+                        (tLevelId && levelIds.has(tLevelId)) ||
+                        (tProjName && pName && tProjName === pName)
+                    ) {
+                        taskMap.set(String(t.id), t);
+                    }
+                });
+
+                const allUniqueTasks = Array.from(taskMap.values());
+                const computedTaskCount = allUniqueTasks.length;
+                const computedCompletedCount = allUniqueTasks.filter(
+                    (t) => t.status === TaskStatus.Completed || t.status === 4 || String(t.status).toLowerCase() === 'completed'
+                ).length;
+
+                const finalLevelCount = Math.max(p.levelCount || 0, lvls.length);
+                const finalTaskCount = Math.max(p.taskCount || 0, computedTaskCount);
+                const finalCompletedCount = Math.max(p.completedTaskCount || 0, computedCompletedCount);
+
+                return {
+                    ...p,
+                    levelCount: finalLevelCount,
+                    taskCount: finalTaskCount,
+                    completedTaskCount: finalCompletedCount,
+                };
+            });
+
+            setProjects(enhancedProjects);
             setDivisions(Array.isArray(divRes) ? divRes : []);
             setNotifications(Array.isArray(notifRes) ? notifRes : []);
         } catch (err) {

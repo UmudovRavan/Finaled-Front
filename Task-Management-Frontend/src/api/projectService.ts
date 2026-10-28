@@ -15,9 +15,14 @@ export function normalizeProject(raw: any): ProjectDTO {
     const startDate = raw.startDate ?? raw.StartDate ?? undefined;
     const endDate = raw.endDate ?? raw.EndDate ?? undefined;
     const status = Number(raw.status ?? raw.Status ?? 0);
-    const levelCount = Number(raw.levelCount ?? raw.LevelCount ?? raw.levels?.length ?? 0);
-    const taskCount = Number(raw.taskCount ?? raw.TaskCount ?? 0);
-    const completedTaskCount = Number(raw.completedTaskCount ?? raw.CompletedTaskCount ?? 0);
+    const rawLevels = raw.levels ?? raw.Levels ?? [];
+    const levelCount = Number(raw.levelCount ?? raw.LevelCount ?? (Array.isArray(rawLevels) ? rawLevels.length : 0));
+    const rawTasks = raw.tasks ?? raw.Tasks ?? [];
+    const taskCount = Number(raw.taskCount ?? raw.TaskCount ?? (Array.isArray(rawTasks) ? rawTasks.length : 0));
+    const completedTaskCount = Number(
+        raw.completedTaskCount ?? raw.CompletedTaskCount ??
+        (Array.isArray(rawTasks) ? rawTasks.filter((t: any) => t.status === 4 || t.status === 'Completed' || t.Status === 4 || t.Status === 'Completed').length : 0)
+    );
     const createdAt = raw.createdAt ?? raw.CreatedAt ?? undefined;
     const updatedAt = raw.updatedAt ?? raw.UpdatedAt ?? undefined;
 

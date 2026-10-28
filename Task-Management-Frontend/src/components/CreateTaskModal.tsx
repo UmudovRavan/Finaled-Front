@@ -11,8 +11,8 @@ import {
     SparklesIcon,
 } from '@heroicons/react/24/outline';
 import { DifficultyLevel, Priority } from '../dto';
-import type { UserResponse, DivisionDTO, ProjectDTO, TitleDTO, WorkloadWarningDTO } from '../dto';
-import { taskService, userService, divisionService, projectService, titleService, workloadService, authService } from '../api';
+import type { UserResponse, DivisionDTO, ProjectDTO, TitleDTO, WorkloadWarningDTO, ProjectLevelDTO } from '../dto';
+import { taskService, userService, divisionService, projectService, titleService, workloadService, authService, projectLevelService } from '../api';
 import { parseJwtToken } from '../utils';
 import { useLanguage } from '../context/LanguageContext';
 import UserSuggestionList from './UserSuggestionList';
@@ -58,6 +58,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
     // Hidden levelId state preserved for ProjectDetail level board compatibility
     const [hiddenLevelId, setHiddenLevelId] = useState<string>('');
+    const [availableLevels, setAvailableLevels] = useState<ProjectLevelDTO[]>([]);
 
     // Workload warning state
     const [workloadWarning, setWorkloadWarning] = useState<WorkloadWarningDTO | null>(null);
@@ -123,6 +124,22 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             console.error('Failed to load initial data in CreateTaskModal', err);
         }
     };
+
+    useEffect(() => {
+        if (selectedProjectId) {
+            projectLevelService.getLevelsByProject(selectedProjectId)
+                .then((lvls) => {
+                    const list = Array.isArray(lvls) ? lvls : [];
+                    setAvailableLevels(list);
+                    if (defaultLevelId && list.some((l) => String(l.id) === String(defaultLevelId))) {
+                        setHiddenLevelId(String(defaultLevelId));
+                    }
+                })
+                .catch(() => setAvailableLevels([]));
+        } else {
+            setAvailableLevels([]);
+        }
+    }, [selectedProjectId, defaultLevelId]);
 
     // When division changes, filter available projects without resetting selected project
     const handleDivisionChange = (divId: string) => {
@@ -407,7 +424,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                                 </span>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            <div className={`grid grid-cols-1 ${availableLevels.length > 0 ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'} gap-2.5`}>
                                 {/* 1. Şöbə (Division) */}
                                 <div className="space-y-1">
                                     <label className="text-[11px] font-semibold text-zinc-600 dark:text-[#A1A1AA] flex items-center gap-1">
@@ -467,6 +484,28 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                                         className="w-full"
                                     />
                                 </div>
+
+                                {/* 4. Mərhələ (Stage / Level) */}
+                                {availableLevels.length > 0 && (
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold text-zinc-600 dark:text-[#A1A1AA] flex items-center gap-1">
+                                            <FolderIcon className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
+                                            {t('projects.stage', {}, 'Mərhələ')}
+                                        </label>
+                                        <CustomSelect
+                                            value={String(hiddenLevelId)}
+                                            onChange={(lvlId) => setHiddenLevelId(lvlId)}
+                                            options={[
+                                                { value: '', label: t('projects.unassignedStage', {}, 'Ümumi / Mərhələsiz') },
+                                                ...availableLevels.map((lvl) => ({
+                                                    value: String(lvl.id),
+                                                    label: lvl.name,
+                                                })),
+                                            ]}
+                                            className="w-full"
+                                        />
+                                    </div>
+                                )}
                             </div>
                         </div>
 

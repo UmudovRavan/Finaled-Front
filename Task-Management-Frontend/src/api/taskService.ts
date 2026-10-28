@@ -150,7 +150,8 @@ export function normalizeTask(raw: any): TaskResponse {
     const deadline = String(raw.deadline ?? raw.Deadline ?? raw.dueDate ?? raw.DueDate ?? '');
     const workGroupId = raw.workGroupId ?? raw.WorkGroupId ?? null;
 
-    const levelId = raw.levelId ?? raw.LevelId ?? raw.projectLevelId ?? raw.ProjectLevelId
+    const levelId = raw.levelId ?? raw.LevelId ?? raw.level_id ?? raw.Level_Id
+        ?? raw.projectLevelId ?? raw.ProjectLevelId ?? raw.project_level_id ?? raw.Project_Level_Id
         ?? raw.level?.id ?? raw.Level?.Id ?? raw.projectLevel?.id ?? raw.ProjectLevel?.Id
         ?? raw.level?.levelId ?? raw.Level?.LevelId ?? raw.projectLevel?.projectLevelId ?? raw.ProjectLevel?.ProjectLevelId
         ?? (typeof raw.level === 'string' || typeof raw.level === 'number' ? raw.level : null)
@@ -162,7 +163,8 @@ export function normalizeTask(raw: any): TaskResponse {
         ?? raw.level?.title ?? raw.Level?.Title ?? raw.projectLevel?.title ?? raw.ProjectLevel?.Title
         ?? undefined;
 
-    const projectId = raw.projectId ?? raw.ProjectId
+    const projectId = raw.projectId ?? raw.ProjectId ?? raw.project_id ?? raw.Project_Id
+        ?? raw.projId ?? raw.ProjId
         ?? raw.project?.id ?? raw.Project?.Id ?? raw.project?.projectId ?? raw.Project?.ProjectId
         ?? (typeof raw.project === 'string' || typeof raw.project === 'number' ? raw.project : null)
         ?? null;
@@ -171,7 +173,8 @@ export function normalizeTask(raw: any): TaskResponse {
         ?? raw.project?.name ?? raw.Project?.Name ?? raw.project?.title ?? raw.Project?.Title
         ?? undefined;
 
-    const divisionId = raw.divisionId ?? raw.DivisionId
+    const divisionId = raw.divisionId ?? raw.DivisionId ?? raw.division_id ?? raw.Division_Id
+        ?? raw.divId ?? raw.DivId
         ?? raw.division?.id ?? raw.Division?.Id ?? raw.division?.divisionId ?? raw.Division?.DivisionId
         ?? (typeof raw.division === 'string' || typeof raw.division === 'number' ? raw.division : null)
         ?? null;
@@ -180,7 +183,7 @@ export function normalizeTask(raw: any): TaskResponse {
         ?? raw.division?.name ?? raw.Division?.Name ?? raw.division?.title ?? raw.Division?.Title
         ?? undefined;
 
-    const titleId = raw.titleId ?? raw.TitleId
+    const titleId = raw.titleId ?? raw.TitleId ?? raw.title_id ?? raw.Title_Id
         ?? raw.titleEntity?.id ?? raw.TitleEntity?.Id ?? raw.title?.id ?? raw.Title?.Id
         ?? (typeof raw.titleEntity === 'string' || typeof raw.titleEntity === 'number' ? raw.titleEntity : null)
         ?? (typeof raw.title === 'string' || typeof raw.title === 'number' ? raw.title : null)
