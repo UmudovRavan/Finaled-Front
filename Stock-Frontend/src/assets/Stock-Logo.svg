@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="626" height="585" viewBox="0 0 626 585">
+  <defs>
+    <linearGradient id="neon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff00a8"/>
+      <stop offset="48%" stop-color="#b000ff"/>
+      <stop offset="100%" stop-color="#00a8ff"/>
+    </linearGradient>
+    <linearGradient id="boxGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff00a8"/>
+      <stop offset="50%" stop-color="#b000ed"/>
+      <stop offset="100%" stop-color="#087dff"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background (Transparent for theme adaptability) -->
+  <rect width="626" height="585" fill="none"/>
+
+  <!-- Neon warehouse outline -->
+  <path d="M 315 58
+           L 540 164
+           Q 546 167 546 179
+           L 546 416
+           Q 546 493 472 493
+           L 154 493
+           Q 81 493 81 416
+           L 81 179
+           Q 81 167 92 161
+           L 304 58
+           Q 310 55 315 58 Z"
+        fill="none" stroke="url(#neon)" stroke-width="32"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Upper package, centered over the two lower packages -->
+  <path d="M 239 170
+           H 357
+           Q 369 170 369 182
+           V 278
+           Q 369 290 357 290
+           H 208
+           Q 196 290 196 278
+           V 182
+           Q 196 170 208 170
+           H 263
+           Q 275 170 275 182
+           V 206
+           Q 275 218 287.5 218
+           Q 300 218 300 206
+           V 182
+           Q 300 170 312 170 Z"
+        fill="url(#boxGradient)"/>
+
+  <!-- Lower-left package -->
+  <path d="M 144 307
+           H 187
+           Q 199 307 199 319
+           V 340
+           Q 199 352 211 352
+           Q 223 352 223 340
+           V 319
+           Q 223 307 235 307
+           H 285
+           Q 297 307 297 319
+           V 428
+           Q 297 440 285 440
+           H 144
+           Q 132 440 132 428
+           V 319
+           Q 132 307 144 307 Z"
+        fill="url(#boxGradient)"/>
+
+  <!-- Lower-right package -->
+  <path d="M 337 307
+           H 385
+           Q 397 307 397 319
+           V 340
+           Q 397 352 409 352
+           Q 421 352 421 340
+           V 319
+           Q 421 307 433 307
+           H 483
+           Q 495 307 495 319
+           V 428
+           Q 495 440 483 440
+           H 337
+           Q 325 440 325 428
+           V 319
+           Q 325 307 337 307 Z"
+        fill="url(#boxGradient)"/>
+</svg>

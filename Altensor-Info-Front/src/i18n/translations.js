@@ -498,6 +498,7 @@ export const translations = {
       tasksAppName: 'Task Management',
       crmAppName: 'Altensor CRM',
       accountingAppName: 'Accounting',
+      stockAppName: 'Stock',
       authAppName: 'Auth Service'
     },
     settings: {
@@ -1027,6 +1028,7 @@ export const translations = {
       tasksAppName: 'Task Management',
       crmAppName: 'Altensor CRM',
       accountingAppName: 'Accounting',
+      stockAppName: 'Stock',
       authAppName: 'Auth Service'
     },
     settings: {
@@ -1556,6 +1558,7 @@ export const translations = {
       tasksAppName: 'Task Management',
       crmAppName: 'Altensor CRM',
       accountingAppName: 'Accounting',
+      stockAppName: 'Stock',
       authAppName: 'Auth Service'
     },
     settings: {

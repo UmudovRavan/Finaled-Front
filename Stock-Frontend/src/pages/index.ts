@@ -1,0 +1,12 @@
+export { HomePage } from './HomePage';
+export { DashboardPage } from './DashboardPage';
+export { StockEntryPage } from './StockEntryPage';
+export { NewStockEntryPage } from './NewStockEntryPage';
+export { StockEntryDetailPage } from './StockEntryDetailPage';
+export { WarehousesPage } from './WarehousesPage';
+export { ProductsPage } from './ProductsPage';
+export { StockMovementsPage } from './StockMovementsPage';
+export { SuppliersPage } from './SuppliersPage';
+export { SettingsPage } from './SettingsPage';
+export { LoginPage } from './LoginPage';
+export { NotFoundPage } from './NotFoundPage';
