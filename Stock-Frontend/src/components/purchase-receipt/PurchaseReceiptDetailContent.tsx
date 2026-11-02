@@ -580,3 +580,6 @@ export const PurchaseReceiptDetailContent: React.FC<PurchaseReceiptDetailContent
     </div>
   );
 };
+
+export default PurchaseReceiptDetailContent;
+

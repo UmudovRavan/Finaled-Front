@@ -127,3 +127,7 @@ export const PurchaseReceiptDashboardView: React.FC = () => {
     </div>
   );
 };
+
+export default PurchaseReceiptDashboardView;
+
+

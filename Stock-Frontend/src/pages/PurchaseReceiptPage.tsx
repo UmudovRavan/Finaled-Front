@@ -1,11 +1,11 @@
 import React from 'react';
-import { PurchaseReceiptQuickFilters } from '../components/purchase-receipt/PurchaseReceiptQuickFilters';
-import { PurchaseReceiptListView } from '../components/purchase-receipt/PurchaseReceiptListView';
-import { PurchaseReceiptReportView } from '../components/purchase-receipt/PurchaseReceiptReportView';
-import { PurchaseReceiptDashboardView } from '../components/purchase-receipt/PurchaseReceiptDashboardView';
-import { PurchaseReceiptKanbanView } from '../components/purchase-receipt/PurchaseReceiptKanbanView';
-import { AddPurchaseReceiptModal } from '../components/purchase-receipt/AddPurchaseReceiptModal';
-import { PurchaseReceiptDetailModal } from '../components/purchase-receipt/PurchaseReceiptDetailModal';
+import PurchaseReceiptQuickFilters from '../components/purchase-receipt/PurchaseReceiptQuickFilters';
+import PurchaseReceiptListView from '../components/purchase-receipt/PurchaseReceiptListView';
+import PurchaseReceiptReportView from '../components/purchase-receipt/PurchaseReceiptReportView';
+import PurchaseReceiptDashboardView from '../components/purchase-receipt/PurchaseReceiptDashboardView';
+import PurchaseReceiptKanbanView from '../components/purchase-receipt/PurchaseReceiptKanbanView';
+import AddPurchaseReceiptModal from '../components/purchase-receipt/AddPurchaseReceiptModal';
+import PurchaseReceiptDetailModal from '../components/purchase-receipt/PurchaseReceiptDetailModal';
 import { usePurchaseReceipt } from '../context';
 
 export const PurchaseReceiptPage: React.FC = () => {
@@ -28,3 +28,7 @@ export const PurchaseReceiptPage: React.FC = () => {
     </div>
   );
 };
+
+export default PurchaseReceiptPage;
+
+

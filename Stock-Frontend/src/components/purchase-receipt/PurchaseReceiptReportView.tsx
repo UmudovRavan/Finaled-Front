@@ -133,3 +133,6 @@ export const PurchaseReceiptReportView: React.FC = () => {
     </div>
   );
 };
+
+export default PurchaseReceiptReportView;
+

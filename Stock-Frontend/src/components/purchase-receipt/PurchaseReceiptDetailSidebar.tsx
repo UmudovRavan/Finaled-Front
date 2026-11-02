@@ -225,3 +225,6 @@ export const PurchaseReceiptDetailSidebar: React.FC<PurchaseReceiptDetailSidebar
     </aside>
   );
 };
+
+export default PurchaseReceiptDetailSidebar;
+

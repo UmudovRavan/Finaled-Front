@@ -28,3 +28,7 @@ export const AddPurchaseReceiptModal: React.FC = () => {
     </div>
   );
 };
+
+export default AddPurchaseReceiptModal;
+
+

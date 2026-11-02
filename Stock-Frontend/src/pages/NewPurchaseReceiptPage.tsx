@@ -8,3 +8,7 @@ export const NewPurchaseReceiptPage: React.FC = () => {
     </div>
   );
 };
+
+export default NewPurchaseReceiptPage;
+
+

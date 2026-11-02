@@ -122,7 +122,7 @@ export const PurchaseReceiptDetailModal: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-[#242428]">
-                  {selectedReceipt.items.map((it, idx) => (
+                  {selectedReceipt.items.map((it: any, idx: number) => (
                     <tr key={idx}>
                       <td className="py-2 px-3 font-medium text-slate-900 dark:text-white">
                         {it.itemName} ({it.itemCode})
@@ -167,3 +167,6 @@ export const PurchaseReceiptDetailModal: React.FC = () => {
     </div>
   );
 };
+
+export default PurchaseReceiptDetailModal;
+

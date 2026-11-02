@@ -225,3 +225,6 @@ export const PurchaseReceiptListView: React.FC = () => {
     </div>
   );
 };
+
+export default PurchaseReceiptListView;
+

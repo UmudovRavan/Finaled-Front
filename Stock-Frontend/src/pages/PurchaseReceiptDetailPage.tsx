@@ -60,3 +60,7 @@ export const PurchaseReceiptDetailPage: React.FC = () => {
     </div>
   );
 };
+
+export default PurchaseReceiptDetailPage;
+
+

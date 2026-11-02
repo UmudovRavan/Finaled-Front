@@ -141,3 +141,6 @@ export const PurchaseReceiptKanbanView: React.FC = () => {
     </div>
   );
 };
+
+export default PurchaseReceiptKanbanView;
+

@@ -540,3 +540,6 @@ export const NewPurchaseReceiptForm: React.FC<NewPurchaseReceiptFormProps> = ({
     </div>
   );
 };
+
+export default NewPurchaseReceiptForm;
+

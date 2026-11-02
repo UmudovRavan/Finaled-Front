@@ -380,3 +380,6 @@ export const PurchaseReceiptQuickFilters: React.FC = () => {
     </div>
   );
 };
+
+export default PurchaseReceiptQuickFilters;
+
