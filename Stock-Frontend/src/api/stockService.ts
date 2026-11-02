@@ -405,7 +405,61 @@ export const stockService = {
       return newEntry;
     }
   },
+
+  // Purchase Receipts (Frappe ERP / Purchase Receipt)
+  async getPurchaseReceipts(): Promise<import('../types').PurchaseReceiptRecord[]> {
+    try {
+      const res = await axiosClient.get<import('../types').PurchaseReceiptRecord[]>('/purchase-receipts');
+      return res.data;
+    } catch {
+      return INITIAL_PURCHASE_RECEIPTS;
+    }
+  },
+
+  async createPurchaseReceipt(entry: Partial<import('../types').PurchaseReceiptRecord>): Promise<import('../types').PurchaseReceiptRecord> {
+    try {
+      const res = await axiosClient.post<import('../types').PurchaseReceiptRecord[]>('/purchase-receipts', entry);
+      return res.data as any;
+    } catch {
+      const newEntry: import('../types').PurchaseReceiptRecord = {
+        id: `MAT-PR-RE-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 90000) + 10000)}`,
+        supplierName: entry.supplierName || 'Summit Traders Ltd.',
+        status: entry.status || 'Draft',
+        date: entry.date || '03-11-2026',
+        postingTime: entry.postingTime || '22:15:00',
+        grandTotal: entry.grandTotal || 396.0,
+        currency: entry.currency || 'USD',
+        perAmountBilled: entry.perAmountBilled || 0,
+        perReturned: entry.perReturned || 0,
+        company: entry.company || 'Avalon (Demo)',
+        series: entry.series || 'MAT-PR-RE-.YYYY.-',
+        acceptedWarehouse: entry.acceptedWarehouse || 'Devam Eden İşler - AD',
+        createdOn: new Date().toISOString(),
+        lastUpdatedOn: new Date().toISOString(),
+        timeAgoText: 'now',
+        commentsCount: 0,
+        isLiked: false,
+        items: entry.items || [
+          {
+            id: 'item-pr-1',
+            itemCode: 'SKU002: Laptop',
+            itemName: 'High Performance Business Laptop',
+            receivedQty: 10,
+            acceptedQty: 10,
+            rejectedQty: 0,
+            uom: 'Nos',
+            rate: 39.6,
+            amount: 396.0,
+            warehouse: 'Devam Eden İşler - AD',
+          },
+        ],
+        remarks: entry.remarks || 'Standard purchase receipt creation',
+      };
+      return newEntry;
+    }
+  },
 };
+
 
 export const INITIAL_STOCK_ENTRIES: import('../types').StockEntryRecord[] = [
   {
@@ -502,5 +556,111 @@ export const INITIAL_STOCK_ENTRIES: import('../types').StockEntryRecord[] = [
     remarks: 'Issued for scheduled plant maintenance',
   },
 ];
+
+export const INITIAL_PURCHASE_RECEIPTS: import('../types').PurchaseReceiptRecord[] = [
+  {
+    id: 'MAT-PR-RE-2026-00001',
+    supplierName: 'Summit Traders Ltd.',
+    status: 'Draft',
+    date: '03-11-2026',
+    postingTime: '22:15:00',
+    grandTotal: 396.0,
+    currency: 'USD',
+    perAmountBilled: 0,
+    perReturned: 0,
+    company: 'Avalon (Demo)',
+    series: 'MAT-PR-RE-.YYYY.-',
+    acceptedWarehouse: 'Devam Eden İşler - AD',
+    createdOn: new Date().toISOString(),
+    lastUpdatedOn: new Date().toISOString(),
+    timeAgoText: '3 m',
+    commentsCount: 0,
+    isLiked: false,
+    items: [
+      {
+        id: 'it-pr-1',
+        itemCode: 'SKU002: Laptop',
+        itemName: 'High Performance Business Laptop',
+        receivedQty: 10,
+        acceptedQty: 10,
+        rejectedQty: 0,
+        uom: 'Nos',
+        rate: 39.6,
+        amount: 396.0,
+        warehouse: 'Devam Eden İşler - AD',
+      },
+    ],
+    remarks: 'Received in good condition from Summit Traders',
+  },
+  {
+    id: 'MAT-PR-RE-2026-00002',
+    supplierName: 'AzLogistics Supply MMC',
+    status: 'To Bill',
+    date: '02-11-2026',
+    postingTime: '14:20:00',
+    grandTotal: 1850.0,
+    currency: 'USD',
+    perAmountBilled: 50,
+    perReturned: 0,
+    company: 'Avalon (Demo)',
+    series: 'MAT-PR-RE-.YYYY.-',
+    acceptedWarehouse: 'Mərkəzi Baş Anbar',
+    createdOn: new Date(Date.now() - 3600000 * 24).toISOString(),
+    lastUpdatedOn: new Date(Date.now() - 3600000 * 12).toISOString(),
+    timeAgoText: '1 day ago',
+    commentsCount: 2,
+    isLiked: true,
+    items: [
+      {
+        id: 'it-pr-2',
+        itemCode: 'SKU005: Raw Steel Sheets',
+        itemName: 'Cold Rolled Steel Sheets',
+        receivedQty: 50,
+        acceptedQty: 50,
+        rejectedQty: 0,
+        uom: 'Pcs',
+        rate: 37.0,
+        amount: 1850.0,
+        warehouse: 'Mərkəzi Baş Anbar',
+      },
+    ],
+    remarks: 'Partial billing requested by supplier',
+  },
+  {
+    id: 'MAT-PR-RE-2026-00003',
+    supplierName: 'Baku Tech Distribution',
+    status: 'Completed',
+    date: '28-10-2026',
+    postingTime: '11:00:00',
+    grandTotal: 720.0,
+    currency: 'USD',
+    perAmountBilled: 100,
+    perReturned: 0,
+    company: 'Avalon (Demo)',
+    series: 'MAT-PR-RE-.YYYY.-',
+    acceptedWarehouse: 'Sumqayıt Logistika Mərkəzi',
+    createdOn: new Date(Date.now() - 3600000 * 72).toISOString(),
+    lastUpdatedOn: new Date(Date.now() - 3600000 * 48).toISOString(),
+    timeAgoText: '3 days ago',
+    commentsCount: 1,
+    isLiked: false,
+    items: [
+      {
+        id: 'it-pr-3',
+        itemCode: 'SKU010: Power Supply 650W',
+        itemName: 'Industrial Power Supply 650W Bronze',
+        receivedQty: 12,
+        acceptedQty: 12,
+        rejectedQty: 0,
+        uom: 'Nos',
+        rate: 60.0,
+        amount: 720.0,
+        warehouse: 'Sumqayıt Logistika Mərkəzi',
+      },
+    ],
+    remarks: 'Full delivery and bill settlement complete',
+  },
+];
+
 
 

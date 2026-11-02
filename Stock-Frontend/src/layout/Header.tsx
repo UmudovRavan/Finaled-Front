@@ -20,7 +20,7 @@ import {
   Sliders,
   Settings,
 } from 'lucide-react';
-import { useTheme, useLanguage, useStockEntry } from '../context';
+import { useTheme, useLanguage, useStockEntry, usePurchaseReceipt } from '../context';
 import type { StockViewMode } from '../types';
 
 interface HeaderProps {
@@ -60,9 +60,18 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
   const isStockEntryDetail =
     location.pathname.startsWith('/stock-entry/') && !isNewStockEntry;
   const isStockEntry = isStockEntryList || isNewStockEntry || isStockEntryDetail;
+
+  const isNewPurchaseReceipt = location.pathname.startsWith('/purchase-receipt/new');
+  const isPurchaseReceiptList = location.pathname === '/purchase-receipt';
+  const isPurchaseReceiptDetail =
+    location.pathname.startsWith('/purchase-receipt/') && !isNewPurchaseReceipt;
+  const isPurchaseReceipt =
+    isPurchaseReceiptList || isNewPurchaseReceipt || isPurchaseReceiptDetail;
+
   const isDashboard = location.pathname.startsWith('/dashboard');
 
   const stockEntry = useStockEntry();
+  const purchaseReceipt = usePurchaseReceipt();
 
   const detailId = isStockEntryDetail
     ? location.pathname.replace('/stock-entry/', '')
@@ -78,6 +87,22 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
   const nextDetailEntry =
     currentDetailIndex < stockEntry.entries.length - 1
       ? stockEntry.entries[currentDetailIndex + 1]
+      : null;
+
+  const prDetailId = isPurchaseReceiptDetail
+    ? location.pathname.replace('/purchase-receipt/', '')
+    : '';
+  const currentPrDetailEntry =
+    purchaseReceipt.receipts.find((r) => r.id === prDetailId) || purchaseReceipt.receipts[0];
+
+  const currentPrDetailIndex = currentPrDetailEntry
+    ? purchaseReceipt.receipts.findIndex((r) => r.id === currentPrDetailEntry.id)
+    : 0;
+  const prevPrDetailEntry =
+    currentPrDetailIndex > 0 ? purchaseReceipt.receipts[currentPrDetailIndex - 1] : null;
+  const nextPrDetailEntry =
+    currentPrDetailIndex < purchaseReceipt.receipts.length - 1
+      ? purchaseReceipt.receipts[currentPrDetailIndex + 1]
       : null;
 
   useEffect(() => {
@@ -126,10 +151,14 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
     { id: 'kanban', label: 'Kanban View', icon: <Kanban className="w-3.5 h-3.5" /> },
   ];
 
-  const currentViewLabel =
-    viewOptions.find((v) => v.id === stockEntry?.viewMode)?.label || 'List View';
+  const activeViewMode = isPurchaseReceiptList
+    ? purchaseReceipt?.viewMode
+    : stockEntry?.viewMode;
 
-  const savedFilterOptions = [
+  const currentViewLabel =
+    viewOptions.find((v) => v.id === activeViewMode)?.label || 'List View';
+
+  const stockSavedFilters = [
     'All',
     'Draft',
     'Submitted',
@@ -139,6 +168,18 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
     'Manufacture',
     'Repack',
   ];
+
+  const purchaseReceiptSavedFilters = [
+    'All',
+    'Draft',
+    'To Bill',
+    'Completed',
+    'Cancelled',
+  ];
+
+  const savedFilterOptions = isPurchaseReceiptList
+    ? purchaseReceiptSavedFilters
+    : stockSavedFilters;
 
   return (
     <header className="sticky top-0 z-30 min-h-[48px] bg-white/95 dark:bg-[#18181B]/95 backdrop-blur-md border-b border-slate-200 dark:border-[#27272A] px-4 sm:px-5 py-1.5 flex flex-wrap items-center justify-between gap-2 transition-colors duration-200">
@@ -196,6 +237,55 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
             <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
             <span className="text-slate-900 dark:text-white font-semibold">Stock Entry</span>
           </>
+        ) : isPurchaseReceiptDetail ? (
+          <>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <Link to="/" className="text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white transition-colors">
+              Stock
+            </Link>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <Link to="/purchase-receipt" className="text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white transition-colors">
+              Purchase Receipt
+            </Link>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <span className="text-slate-900 dark:text-white font-semibold">
+              {currentPrDetailEntry?.supplierName || 'Summit Traders Ltd.'}
+            </span>
+            <span
+              className={`text-[11px] font-medium px-2 py-0.5 rounded-full ml-1 ${
+                currentPrDetailEntry?.status === 'Draft'
+                  ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-500'
+                  : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-500'
+              }`}
+            >
+              {currentPrDetailEntry?.status || 'Draft'}
+            </span>
+          </>
+        ) : isNewPurchaseReceipt ? (
+          <>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <Link to="/" className="text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white transition-colors">
+              Stock
+            </Link>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <Link to="/purchase-receipt" className="text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white transition-colors">
+              Purchase Receipt
+            </Link>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <span className="text-slate-900 dark:text-white font-semibold">New Purchase Receipt</span>
+            <span className="bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[11px] font-medium px-2 py-0.5 rounded-full ml-1">
+              Not Saved
+            </span>
+          </>
+        ) : isPurchaseReceiptList ? (
+          <>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <Link to="/" className="text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white transition-colors">
+              Stock
+            </Link>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <span className="text-slate-900 dark:text-white font-semibold">Purchase Receipt</span>
+          </>
         ) : isDashboard ? (
           <>
             <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
@@ -215,8 +305,8 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
 
       {/* Right side controls */}
       <div className="flex items-center gap-1.5 flex-wrap">
-        {/* If on Stock Entry List, render Image 1, 2, 3 action buttons */}
-        {isStockEntryList && stockEntry && (
+        {/* If on Stock Entry List or Purchase Receipt List, render Image 1, 2, 3 action buttons */}
+        {(isStockEntryList || isPurchaseReceiptList) && (
           <>
             {/* 1. List View ↕ (Image 2 Dropdown) */}
             <div className="relative" ref={viewMenuRef}>
@@ -233,12 +323,18 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
               {isViewMenuOpen && (
                 <div className="absolute right-0 top-9 z-50 w-44 bg-white dark:bg-[#1E1E22] border border-slate-200 dark:border-[#2E2E33] rounded-xl shadow-xl py-1 text-xs animate-in fade-in zoom-in-95 duration-100">
                   {viewOptions.map((opt) => {
-                    const isSelected = stockEntry.viewMode === opt.id;
+                    const isSelected = isPurchaseReceiptList
+                      ? purchaseReceipt.viewMode === opt.id
+                      : stockEntry.viewMode === opt.id;
                     return (
                       <button
                         key={opt.id}
                         onClick={() => {
-                          stockEntry.setViewMode(opt.id);
+                          if (isPurchaseReceiptList) {
+                            purchaseReceipt.setViewMode(opt.id);
+                          } else {
+                            stockEntry.setViewMode(opt.id);
+                          }
                           setIsViewMenuOpen(false);
                         }}
                         className={`w-full flex items-center justify-between px-3 py-1.5 text-left transition-colors ${
@@ -275,12 +371,18 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
                     Preset Filters
                   </div>
                   {savedFilterOptions.map((filter) => {
-                    const isSelected = stockEntry.savedFilter === filter;
+                    const isSelected = isPurchaseReceiptList
+                      ? purchaseReceipt.savedFilter === filter
+                      : stockEntry.savedFilter === filter;
                     return (
                       <button
                         key={filter}
                         onClick={() => {
-                          stockEntry.setSavedFilter(filter);
+                          if (isPurchaseReceiptList) {
+                            purchaseReceipt.setSavedFilter(filter);
+                          } else {
+                            stockEntry.setSavedFilter(filter);
+                          }
                           setIsSavedFiltersOpen(false);
                         }}
                         className={`w-full flex items-center justify-between px-3 py-1.5 text-left transition-colors ${
@@ -300,13 +402,17 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
 
             {/* 3. Refresh Button ↻ */}
             <button
-              onClick={stockEntry.refresh}
-              disabled={stockEntry.isRefreshing}
+              onClick={isPurchaseReceiptList ? purchaseReceipt.refresh : stockEntry.refresh}
+              disabled={isPurchaseReceiptList ? purchaseReceipt.isRefreshing : stockEntry.isRefreshing}
               className="p-1.5 rounded-lg text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-[#1E1E22] border border-slate-200 dark:border-[#2E2E33] shadow-sm hover:bg-slate-50 dark:hover:bg-[#27272A] transition-all disabled:opacity-50"
               title="Refresh List"
             >
               <RotateCw
-                className={`w-3.5 h-3.5 ${stockEntry.isRefreshing ? 'animate-spin text-indigo-500' : ''}`}
+                className={`w-3.5 h-3.5 ${
+                  (isPurchaseReceiptList ? purchaseReceipt.isRefreshing : stockEntry.isRefreshing)
+                    ? 'animate-spin text-indigo-500'
+                    : ''
+                }`}
               />
             </button>
 
@@ -377,21 +483,32 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
               )}
             </div>
 
-            {/* 5. + Add Stock Entry (Solid Black Button from Image 1) */}
-            <Link
-              to="/stock-entry/new"
-              className="bg-black hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-medium px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-sm transition-all"
-            >
-              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span>Add Stock Entry</span>
-            </Link>
+            {/* 5. Add Button (Solid Black Pill from Image 1) */}
+            {isPurchaseReceiptList ? (
+              <Link
+                to="/purchase-receipt/new"
+                className="bg-black hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-medium px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-sm transition-all"
+              >
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Add Purchase Receipt</span>
+              </Link>
+            ) : (
+              <Link
+                to="/stock-entry/new"
+                className="bg-black hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-medium px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-sm transition-all"
+              >
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Add Stock Entry</span>
+              </Link>
+            )}
 
             <div className="w-px h-4 bg-slate-200 dark:bg-[#2E2E33] mx-0.5" />
           </>
         )}
 
-        {/* If on Stock Entry Detail Page, render Image 1 Action Buttons */}
-        {isStockEntryDetail && currentDetailEntry && (
+        {/* If on Stock Entry Detail or Purchase Receipt Detail Page, render Image 1 Action Buttons */}
+        {((isStockEntryDetail && currentDetailEntry) ||
+          (isPurchaseReceiptDetail && currentPrDetailEntry)) && (
           <>
             {/* Create ↕ */}
             <div className="relative" ref={detailCreateRef}>
@@ -405,18 +522,30 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
               </button>
               {isDetailCreateOpen && (
                 <div className="absolute right-0 top-9 z-50 w-44 bg-white dark:bg-[#1E1E22] border border-slate-200 dark:border-[#2E2E33] rounded-xl shadow-xl py-1 text-xs animate-in fade-in zoom-in-95 duration-100">
-                  {['Material Receipt', 'Material Issue', 'Material Transfer'].map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => {
-                        navigate('/stock-entry/new');
-                        setIsDetailCreateOpen(false);
-                      }}
-                      className="w-full px-3 py-1.5 text-left text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-[#27272A]"
-                    >
-                      {t}
-                    </button>
-                  ))}
+                  {isPurchaseReceiptDetail
+                    ? ['Purchase Invoice', 'Stock Entry', 'Landed Cost Voucher'].map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => {
+                            setIsDetailCreateOpen(false);
+                          }}
+                          className="w-full px-3 py-1.5 text-left text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-[#27272A]"
+                        >
+                          {t}
+                        </button>
+                      ))
+                    : ['Material Receipt', 'Material Issue', 'Material Transfer'].map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => {
+                            navigate('/stock-entry/new');
+                            setIsDetailCreateOpen(false);
+                          }}
+                          className="w-full px-3 py-1.5 text-left text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-[#27272A]"
+                        >
+                          {t}
+                        </button>
+                      ))}
                 </div>
               )}
             </div>
@@ -433,7 +562,7 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
               </button>
               {isDetailGetItemsOpen && (
                 <div className="absolute right-0 top-9 z-50 w-48 bg-white dark:bg-[#1E1E22] border border-slate-200 dark:border-[#2E2E33] rounded-xl shadow-xl py-1 text-xs animate-in fade-in zoom-in-95 duration-100">
-                  {['Purchase Order', 'Material Request', 'Bill of Materials (BOM)'].map((opt) => (
+                  {['Purchase Order', 'Material Request', 'Supplier Quotation'].map((opt) => (
                     <button
                       key={opt}
                       onClick={() => setIsDetailGetItemsOpen(false)}
@@ -475,8 +604,14 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
             <div className="flex items-center rounded-lg border border-slate-200 dark:border-[#2E2E33] overflow-hidden bg-white dark:bg-[#1E1E22]">
               <button
                 type="button"
-                disabled={!prevDetailEntry}
-                onClick={() => prevDetailEntry && navigate(`/stock-entry/${prevDetailEntry.id}`)}
+                disabled={isPurchaseReceiptDetail ? !prevPrDetailEntry : !prevDetailEntry}
+                onClick={() => {
+                  if (isPurchaseReceiptDetail && prevPrDetailEntry) {
+                    navigate(`/purchase-receipt/${prevPrDetailEntry.id}`);
+                  } else if (prevDetailEntry) {
+                    navigate(`/stock-entry/${prevDetailEntry.id}`);
+                  }
+                }}
                 className="p-1.5 hover:bg-slate-100 dark:hover:bg-[#27272A] disabled:opacity-40 text-slate-600 dark:text-zinc-400 transition-colors"
                 title="Previous Document"
               >
@@ -485,8 +620,14 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
               <div className="w-px h-3.5 bg-slate-200 dark:bg-[#2E2E33]" />
               <button
                 type="button"
-                disabled={!nextDetailEntry}
-                onClick={() => nextDetailEntry && navigate(`/stock-entry/${nextDetailEntry.id}`)}
+                disabled={isPurchaseReceiptDetail ? !nextPrDetailEntry : !nextDetailEntry}
+                onClick={() => {
+                  if (isPurchaseReceiptDetail && nextPrDetailEntry) {
+                    navigate(`/purchase-receipt/${nextPrDetailEntry.id}`);
+                  } else if (nextDetailEntry) {
+                    navigate(`/stock-entry/${nextDetailEntry.id}`);
+                  }
+                }}
                 className="p-1.5 hover:bg-slate-100 dark:hover:bg-[#27272A] disabled:opacity-40 text-slate-600 dark:text-zinc-400 transition-colors"
                 title="Next Document"
               >
@@ -504,22 +645,42 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
             </button>
 
             {/* Submit Button (Image 1: Solid Black Pill) */}
-            {currentDetailEntry.status === 'Draft' ? (
-              <button
-                type="button"
-                onClick={() => stockEntry.updateStatus(currentDetailEntry.id, 'Submitted')}
-                className="bg-black hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-medium px-4 py-1.5 rounded-lg text-xs shadow-sm transition-all"
-              >
-                Submit
-              </button>
+            {isPurchaseReceiptDetail ? (
+              currentPrDetailEntry.status === 'Draft' ? (
+                <button
+                  type="button"
+                  onClick={() => purchaseReceipt.updateStatus(currentPrDetailEntry.id, 'Completed')}
+                  className="bg-black hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-medium px-4 py-1.5 rounded-lg text-xs shadow-sm transition-all"
+                >
+                  Submit
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => purchaseReceipt.updateStatus(currentPrDetailEntry.id, 'Cancelled')}
+                  className="bg-rose-600 hover:bg-rose-700 text-white font-medium px-4 py-1.5 rounded-lg text-xs shadow-sm transition-all"
+                >
+                  Cancel
+                </button>
+              )
             ) : (
-              <button
-                type="button"
-                onClick={() => stockEntry.updateStatus(currentDetailEntry.id, 'Cancelled')}
-                className="bg-rose-600 hover:bg-rose-700 text-white font-medium px-4 py-1.5 rounded-lg text-xs shadow-sm transition-all"
-              >
-                Cancel
-              </button>
+              currentDetailEntry.status === 'Draft' ? (
+                <button
+                  type="button"
+                  onClick={() => stockEntry.updateStatus(currentDetailEntry.id, 'Submitted')}
+                  className="bg-black hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-medium px-4 py-1.5 rounded-lg text-xs shadow-sm transition-all"
+                >
+                  Submit
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => stockEntry.updateStatus(currentDetailEntry.id, 'Cancelled')}
+                  className="bg-rose-600 hover:bg-rose-700 text-white font-medium px-4 py-1.5 rounded-lg text-xs shadow-sm transition-all"
+                >
+                  Cancel
+                </button>
+              )
             )}
 
             <div className="w-px h-4 bg-slate-200 dark:bg-[#2E2E33] mx-0.5" />

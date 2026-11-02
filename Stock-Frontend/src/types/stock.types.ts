@@ -140,4 +140,47 @@ export interface FilterRule {
   value: string;
 }
 
+// Frappe / Altensor ERP Purchase Receipt Types
+export type PurchaseReceiptStatus = 'Draft' | 'To Bill' | 'Completed' | 'Cancelled';
+
+export interface PurchaseReceiptItem {
+  id: string;
+  itemCode: string;
+  itemName: string;
+  receivedQty: number;
+  acceptedQty: number;
+  rejectedQty?: number;
+  uom: string;
+  rate: number;
+  amount: number;
+  warehouse: string;
+}
+
+export interface PurchaseReceiptRecord {
+  id: string;
+  supplierName: string;
+  status: PurchaseReceiptStatus;
+  date: string;
+  postingDate?: string;
+  postingTime?: string;
+  grandTotal: number;
+  currency: string;
+  perAmountBilled: number;
+  perReturned: number;
+  company: string;
+  series: string;
+  exchangeRate?: number;
+  netTotal?: number;
+  acceptedWarehouse?: string;
+  rejectedWarehouse?: string;
+  createdOn: string;
+  lastUpdatedOn: string;
+  timeAgoText: string;
+  commentsCount: number;
+  isLiked?: boolean;
+  items: PurchaseReceiptItem[];
+  remarks?: string;
+}
+
+
 

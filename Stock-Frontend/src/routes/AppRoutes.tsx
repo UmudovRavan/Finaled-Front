@@ -6,6 +6,9 @@ import { DashboardPage } from '../pages/DashboardPage';
 import { StockEntryPage } from '../pages/StockEntryPage';
 import { NewStockEntryPage } from '../pages/NewStockEntryPage';
 import { StockEntryDetailPage } from '../pages/StockEntryDetailPage';
+import { PurchaseReceiptPage } from '../pages/PurchaseReceiptPage';
+import { NewPurchaseReceiptPage } from '../pages/NewPurchaseReceiptPage';
+import { PurchaseReceiptDetailPage } from '../pages/PurchaseReceiptDetailPage';
 import { WarehousesPage } from '../pages/WarehousesPage';
 import { ProductsPage } from '../pages/ProductsPage';
 import { StockMovementsPage } from '../pages/StockMovementsPage';
@@ -35,7 +38,9 @@ export const AppRoutes: React.FC = () => {
           <Route path="stock-entry/new" element={<NewStockEntryPage />} />
           <Route path="stock-entry/new-stock-entry" element={<NewStockEntryPage />} />
           <Route path="stock-entry/:id" element={<StockEntryDetailPage />} />
-          <Route path="purchase-receipt" element={<StockMovementsPage />} />
+          <Route path="purchase-receipt" element={<PurchaseReceiptPage />} />
+          <Route path="purchase-receipt/new" element={<NewPurchaseReceiptPage />} />
+          <Route path="purchase-receipt/:id" element={<PurchaseReceiptDetailPage />} />
           <Route path="delivery-note" element={<StockMovementsPage />} />
           <Route path="material-request" element={<StockMovementsPage />} />
           <Route path="pick-list" element={<StockMovementsPage />} />

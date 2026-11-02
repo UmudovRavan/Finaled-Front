@@ -1,6 +1,12 @@
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import { ThemeProvider, LanguageProvider, AuthProvider, StockEntryProvider } from './context';
+import {
+  ThemeProvider,
+  LanguageProvider,
+  AuthProvider,
+  StockEntryProvider,
+  PurchaseReceiptProvider,
+} from './context';
 import { AppRoutes } from './routes';
 
 export const App: React.FC = () => {
@@ -10,7 +16,9 @@ export const App: React.FC = () => {
         <LanguageProvider>
           <AuthProvider>
             <StockEntryProvider>
-              <AppRoutes />
+              <PurchaseReceiptProvider>
+                <AppRoutes />
+              </PurchaseReceiptProvider>
             </StockEntryProvider>
           </AuthProvider>
         </LanguageProvider>

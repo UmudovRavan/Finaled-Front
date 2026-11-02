@@ -32,6 +32,10 @@ export const HomePage: React.FC = () => {
       navigate('/stock-entry');
       return;
     }
+    if (name === 'Purchase Receipt') {
+      navigate('/purchase-receipt');
+      return;
+    }
     setSelectedModal({
       isOpen: true,
       title: name,
