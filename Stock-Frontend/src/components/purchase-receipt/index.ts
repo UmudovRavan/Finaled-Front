@@ -8,3 +8,4 @@ export { PurchaseReceiptDetailContent } from './PurchaseReceiptDetailContent';
 export { PurchaseReceiptDetailSidebar } from './PurchaseReceiptDetailSidebar';
 export { AddPurchaseReceiptModal } from './AddPurchaseReceiptModal';
 export { PurchaseReceiptDetailModal } from './PurchaseReceiptDetailModal';
+

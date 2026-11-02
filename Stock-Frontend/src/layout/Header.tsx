@@ -506,6 +506,49 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
           </>
         )}
 
+        {/* If on New Purchase Receipt or New Stock Entry */}
+        {(isNewPurchaseReceipt || isNewStockEntry) && (
+          <>
+            <div className="relative" ref={detailGetItemsRef}>
+              <button
+                type="button"
+                onClick={() => setIsDetailGetItemsOpen(!isDetailGetItemsOpen)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#2E2E33] bg-white dark:bg-[#1E1E22] text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-[#27272A] text-xs transition-colors"
+              >
+                <span>Get Items From</span>
+                <ChevronsUpDown className="w-3.5 h-3.5 text-slate-400" />
+              </button>
+              {isDetailGetItemsOpen && (
+                <div className="absolute right-0 top-9 z-50 w-48 bg-white dark:bg-[#1E1E22] border border-slate-200 dark:border-[#2E2E33] rounded-xl shadow-xl py-1 text-xs animate-in fade-in zoom-in-95 duration-100">
+                  {['Purchase Order', 'Material Request', 'Supplier Quotation'].map((opt) => (
+                    <button
+                      key={opt}
+                      onClick={() => setIsDetailGetItemsOpen(false)}
+                      className="w-full px-3 py-1.5 text-left text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-[#27272A]"
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const saveButtons = Array.from(document.querySelectorAll('button'));
+                const saveBtn = saveButtons.find(b => b.textContent?.trim() === 'Save');
+                if (saveBtn) saveBtn.click();
+              }}
+              className="bg-black hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-medium px-4 py-1.5 rounded-lg text-xs shadow-sm transition-all"
+            >
+              Save
+            </button>
+
+            <div className="w-px h-4 bg-slate-200 dark:bg-[#2E2E33] mx-0.5" />
+          </>
+        )}
+
         {/* If on Stock Entry Detail or Purchase Receipt Detail Page, render Image 1 Action Buttons */}
         {((isStockEntryDetail && currentDetailEntry) ||
           (isPurchaseReceiptDetail && currentPrDetailEntry)) && (
