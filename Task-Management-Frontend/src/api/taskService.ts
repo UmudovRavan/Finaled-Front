@@ -59,8 +59,11 @@ export interface CreateTaskRequest {
     divisionId?: string | number | null;
     titleId?: string | number | null;
     workGroupId?: string | number | null;
-    deadline: string;
+    deadline?: string | null;
+    startDate?: string | null;
+    isDraft?: boolean;
     assignedToUserId?: string;
+    assignedToUserIds?: string[];
     createdByUserId?: string;
     parentTaskId?: string | number | null;
     files?: File[];
@@ -69,7 +72,7 @@ export interface CreateTaskRequest {
 export interface UpdateTaskRequest {
     id: string | number;
     title: string;
-    description: string;
+    description?: string;
     difficulty: number;
     status: number;
     priority?: number;
@@ -78,7 +81,8 @@ export interface UpdateTaskRequest {
     divisionId?: string | number | null;
     titleId?: string | number | null;
     workGroupId?: string | number | null;
-    deadline: string;
+    deadline?: string | null;
+    startDate?: string | null;
     assignedToUserId?: string;
     createdByUserId: string;
     parentTaskId?: string | number | null;
@@ -90,11 +94,63 @@ export interface TaskFilterParams {
     divisionId?: string;
     projectId?: string;
     assignedToUserId?: string;
-    status?: 'Pending' | 'Assigned' | 'InProgress' | 'UnderReview' | 'Completed' | 'Expired' | string;
+    status?: 'Pending' | 'Assigned' | 'InProgress' | 'UnderReview' | 'Completed' | 'Expired' | 'Draft' | string;
     priority?: 'Low' | 'Normal' | 'Urgent' | 'High' | string;
     fromDeadline?: string;
     toDeadline?: string;
+    startDate?: string;
+    endDate?: string;
+    selectedDate?: string;
+    isCompletedSuccessfully?: boolean;
+    includeDrafts?: boolean;
     search?: string;
+}
+
+export function buildTaskFilterSearchParams(params: TaskFilterParams): URLSearchParams {
+    const queryParams = new URLSearchParams();
+    if (params.titleId && String(params.titleId).trim() !== '' && params.titleId !== 'all') {
+        queryParams.append('titleId', String(params.titleId).trim());
+    }
+    if (params.divisionId && String(params.divisionId).trim() !== '' && params.divisionId !== 'all') {
+        queryParams.append('divisionId', String(params.divisionId).trim());
+    }
+    if (params.projectId && String(params.projectId).trim() !== '' && params.projectId !== 'all') {
+        queryParams.append('projectId', String(params.projectId).trim());
+    }
+    if (params.assignedToUserId && String(params.assignedToUserId).trim() !== '' && params.assignedToUserId !== 'all') {
+        queryParams.append('assignedToUserId', String(params.assignedToUserId).trim());
+    }
+    if (params.status && String(params.status).trim() !== '' && params.status !== 'all') {
+        queryParams.append('status', String(params.status).trim());
+    }
+    if (params.priority && String(params.priority).trim() !== '' && params.priority !== 'all') {
+        queryParams.append('priority', String(params.priority).trim());
+    }
+    if (params.fromDeadline && String(params.fromDeadline).trim() !== '') {
+        queryParams.append('fromDeadline', String(params.fromDeadline).trim());
+    }
+    if (params.toDeadline && String(params.toDeadline).trim() !== '') {
+        queryParams.append('toDeadline', String(params.toDeadline).trim());
+    }
+    if (params.startDate && String(params.startDate).trim() !== '') {
+        queryParams.append('startDate', String(params.startDate).trim());
+    }
+    if (params.endDate && String(params.endDate).trim() !== '') {
+        queryParams.append('endDate', String(params.endDate).trim());
+    }
+    if (params.selectedDate && String(params.selectedDate).trim() !== '') {
+        queryParams.append('selectedDate', String(params.selectedDate).trim());
+    }
+    if (typeof params.isCompletedSuccessfully === 'boolean') {
+        queryParams.append('isCompletedSuccessfully', String(params.isCompletedSuccessfully));
+    }
+    if (typeof params.includeDrafts === 'boolean') {
+        queryParams.append('includeDrafts', String(params.includeDrafts));
+    }
+    if (params.search && params.search.trim()) {
+        queryParams.append('search', params.search.trim());
+    }
+    return queryParams;
 }
 
 export function normalizeTask(raw: any): TaskResponse {
@@ -128,7 +184,7 @@ export function normalizeTask(raw: any): TaskResponse {
         else if (sLower === 'underreview' || sLower === 'under_review' || sLower === '3') st = 3;
         else if (sLower === 'completed' || sLower === '4') st = 4;
         else if (sLower === 'expired' || sLower === '5') st = 5;
-        else if (sLower === 'canceled' || sLower === 'cancelled' || sLower === '6') st = 6;
+        else if (sLower === 'draft' || sLower === '6') st = 6;
         else st = 0;
     }
     const status = typeof st === 'number' && !isNaN(st) ? (st as any) : 0;
@@ -147,7 +203,20 @@ export function normalizeTask(raw: any): TaskResponse {
         priority = pr;
     }
 
-    const deadline = String(raw.deadline ?? raw.Deadline ?? raw.dueDate ?? raw.DueDate ?? '');
+    const rawDeadline = raw.deadline ?? raw.Deadline ?? raw.dueDate ?? raw.DueDate ?? null;
+    const deadline = rawDeadline ? String(rawDeadline) : null;
+    const rawStartDate = raw.startDate ?? raw.StartDate ?? null;
+    const startDate = rawStartDate ? String(rawStartDate) : null;
+    const isDraft = Boolean(raw.isDraft ?? raw.IsDraft ?? status === 6);
+
+    const assignedAt = (raw.assignedAt ?? raw.AssignedAt) ? String(raw.assignedAt ?? raw.AssignedAt) : null;
+    const acceptedAt = (raw.acceptedAt ?? raw.AcceptedAt) ? String(raw.acceptedAt ?? raw.AcceptedAt) : null;
+    const submittedForReviewAt = (raw.submittedForReviewAt ?? raw.SubmittedForReviewAt) ? String(raw.submittedForReviewAt ?? raw.SubmittedForReviewAt) : null;
+    const completedAt = (raw.completedAt ?? raw.CompletedAt) ? String(raw.completedAt ?? raw.CompletedAt) : null;
+    const isCompletedSuccessfully = raw.isCompletedSuccessfully ?? raw.IsCompletedSuccessfully ?? null;
+    const completionStatusText = raw.completionStatusText ?? raw.CompletionStatusText ?? undefined;
+    const lastComment = raw.lastComment ?? raw.LastComment ?? undefined;
+
     const workGroupId = raw.workGroupId ?? raw.WorkGroupId ?? null;
 
     const levelId = raw.levelId ?? raw.LevelId ?? raw.level_id ?? raw.Level_Id
@@ -300,6 +369,15 @@ export function normalizeTask(raw: any): TaskResponse {
         difficulty,
         status,
         deadline,
+        startDate,
+        isDraft,
+        assignedAt,
+        acceptedAt,
+        submittedForReviewAt,
+        completedAt,
+        isCompletedSuccessfully,
+        completionStatusText,
+        lastComment,
         priority,
         levelId,
         levelName,
@@ -597,7 +675,7 @@ export const taskService = {
         return foundTask;
     },
 
-    async createTask(data: CreateTaskRequest, files?: File[]): Promise<TaskResponse> {
+    async createTask(data: CreateTaskRequest, files?: File[]): Promise<TaskResponse | TaskResponse[]> {
         const formData = new FormData();
         formData.append('Title', data.title || '');
         formData.append('Description', data.description || '');
@@ -622,13 +700,25 @@ export const taskService = {
         if (data.workGroupId !== undefined && data.workGroupId !== null && String(data.workGroupId).trim() !== '') {
             formData.append('WorkGroupId', String(data.workGroupId).trim());
         }
-        formData.append('Deadline', data.deadline);
+        if (data.deadline) {
+            formData.append('Deadline', data.deadline);
+        }
+        if (data.startDate) {
+            formData.append('StartDate', data.startDate);
+        }
+        if (data.isDraft) {
+            formData.append('IsDraft', 'true');
+        }
         
         if (data.createdByUserId) {
             formData.append('CreatedByUserId', data.createdByUserId);
         }
 
-        if (data.assignedToUserId) {
+        if (data.assignedToUserIds && data.assignedToUserIds.length > 0) {
+            data.assignedToUserIds.forEach((uid) => {
+                formData.append('AssignedToUserIds', uid);
+            });
+        } else if (data.assignedToUserId) {
             formData.append('AssignedToUserId', data.assignedToUserId);
         }
         if (data.parentTaskId) {
@@ -647,7 +737,11 @@ export const taskService = {
                 'Content-Type': 'multipart/form-data',
             },
         });
-        return normalizeTask(response.data?.data || response.data?.task || response.data);
+        const resData = response.data?.data || response.data?.tasks || response.data?.task || response.data;
+        if (Array.isArray(resData)) {
+            return resData.map(normalizeTask);
+        }
+        return normalizeTask(resData);
     },
 
     async updateTask(data: UpdateTaskRequest): Promise<void> {
@@ -665,6 +759,7 @@ export const taskService = {
             DivisionId: data.divisionId,
             TitleId: data.titleId,
             WorkGroupId: data.workGroupId,
+            StartDate: data.startDate,
             Deadline: data.deadline,
             AssignedToUserId: data.assignedToUserId,
             CreatedByUserId: data.createdByUserId,
@@ -792,7 +887,7 @@ export const taskService = {
         if (lastError) throw lastError;
     },
 
-    async finishTask(taskId: string | number, _userId?: string): Promise<void> {
+    async finishTask(taskId: string | number, _userId?: string): Promise<string> {
         const candidateEndpoints = [
             `/Task/FinishTask?taskId=${encodeURIComponent(String(taskId))}`,
             `/Task/Finish?taskId=${encodeURIComponent(String(taskId))}`,
@@ -800,16 +895,26 @@ export const taskService = {
         ];
         for (const ep of candidateEndpoints) {
             try {
+                let res: any;
                 if (ep.includes('?')) {
-                    await httpClient.post(ep);
+                    res = await httpClient.post(ep);
                 } else {
-                    await httpClient.post(ep, { taskId, TaskId: taskId });
+                    res = await httpClient.post(ep, { taskId, TaskId: taskId });
                 }
-                return;
+                return res?.data?.message || 'Tapşırıq bitirildi və rəhbərliyin yoxlanışına göndərildi.';
             } catch {
                 continue;
             }
         }
+        return 'Tapşırıq bitirildi və rəhbərliyin yoxlanışına göndərildi.';
+    },
+
+    async approveTask(taskId: string | number, comment?: string): Promise<string> {
+        const q = comment && comment.trim()
+            ? `?taskId=${encodeURIComponent(String(taskId))}&comment=${encodeURIComponent(comment.trim())}`
+            : `?taskId=${encodeURIComponent(String(taskId))}`;
+        const res = await httpClient.post<any>(`/Task/ApproveTask${q}`);
+        return res.data?.message || 'Tapşırıq uğurla təsdiqləndi və tamamlandı.';
     },
 
     async reopenTask(taskId: string | number, userId?: string, reason?: string): Promise<void> {
@@ -884,35 +989,7 @@ export const taskService = {
     },
 
     async filterTasks(params: TaskFilterParams): Promise<TaskResponse[]> {
-        const queryParams = new URLSearchParams();
-        if (params.titleId && String(params.titleId).trim() !== '' && params.titleId !== 'all') {
-            queryParams.append('titleId', String(params.titleId).trim());
-        }
-        if (params.divisionId && String(params.divisionId).trim() !== '' && params.divisionId !== 'all') {
-            queryParams.append('divisionId', String(params.divisionId).trim());
-        }
-        if (params.projectId && String(params.projectId).trim() !== '' && params.projectId !== 'all') {
-            queryParams.append('projectId', String(params.projectId).trim());
-        }
-        if (params.assignedToUserId && String(params.assignedToUserId).trim() !== '' && params.assignedToUserId !== 'all') {
-            queryParams.append('assignedToUserId', String(params.assignedToUserId).trim());
-        }
-        if (params.status && String(params.status).trim() !== '' && params.status !== 'all') {
-            queryParams.append('status', String(params.status).trim());
-        }
-        if (params.priority && String(params.priority).trim() !== '' && params.priority !== 'all') {
-            queryParams.append('priority', String(params.priority).trim());
-        }
-        if (params.fromDeadline && String(params.fromDeadline).trim() !== '') {
-            queryParams.append('fromDeadline', String(params.fromDeadline).trim());
-        }
-        if (params.toDeadline && String(params.toDeadline).trim() !== '') {
-            queryParams.append('toDeadline', String(params.toDeadline).trim());
-        }
-        if (params.search && params.search.trim()) {
-            queryParams.append('search', params.search.trim());
-        }
-
+        const queryParams = buildTaskFilterSearchParams(params);
         const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
         const response = await httpClient.get<any>(`/Task/filter${queryString}`);
         const data = response.data;
@@ -927,36 +1004,22 @@ export const taskService = {
         return list.map(normalizeTask);
     },
 
-    async exportTasksToExcel(params: TaskFilterParams): Promise<void> {
-        const queryParams = new URLSearchParams();
-        if (params.titleId && String(params.titleId).trim() !== '' && params.titleId !== 'all') {
-            queryParams.append('titleId', String(params.titleId).trim());
+    async getMyDrafts(userId?: string): Promise<TaskResponse[]> {
+        try {
+            const list = await this.filterTasks({
+                status: 'Draft',
+                includeDrafts: true,
+            });
+            if (!userId) return list;
+            const uid = String(userId).toLowerCase();
+            return list.filter((t) => String(t.createdByUserId).toLowerCase() === uid);
+        } catch {
+            return [];
         }
-        if (params.divisionId && String(params.divisionId).trim() !== '' && params.divisionId !== 'all') {
-            queryParams.append('divisionId', String(params.divisionId).trim());
-        }
-        if (params.projectId && String(params.projectId).trim() !== '' && params.projectId !== 'all') {
-            queryParams.append('projectId', String(params.projectId).trim());
-        }
-        if (params.assignedToUserId && String(params.assignedToUserId).trim() !== '' && params.assignedToUserId !== 'all') {
-            queryParams.append('assignedToUserId', String(params.assignedToUserId).trim());
-        }
-        if (params.status && String(params.status).trim() !== '' && params.status !== 'all') {
-            queryParams.append('status', String(params.status).trim());
-        }
-        if (params.priority && String(params.priority).trim() !== '' && params.priority !== 'all') {
-            queryParams.append('priority', String(params.priority).trim());
-        }
-        if (params.fromDeadline && String(params.fromDeadline).trim() !== '') {
-            queryParams.append('fromDeadline', String(params.fromDeadline).trim());
-        }
-        if (params.toDeadline && String(params.toDeadline).trim() !== '') {
-            queryParams.append('toDeadline', String(params.toDeadline).trim());
-        }
-        if (params.search && params.search.trim()) {
-            queryParams.append('search', params.search.trim());
-        }
+    },
 
+    async exportTasksToExcel(params: TaskFilterParams): Promise<void> {
+        const queryParams = buildTaskFilterSearchParams(params);
         const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
         const response = await httpClient.get<Blob>(`/Task/export-excel${queryString}`, {
             responseType: 'blob',

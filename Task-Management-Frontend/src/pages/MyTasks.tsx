@@ -66,6 +66,7 @@ const MyTasks: React.FC = () => {
     const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
     const [ownershipFilter, setOwnershipFilter] = useState<string>('all');
     const [datePreset, setDatePreset] = useState<string>('all');
+    const [completionFilter, setCompletionFilter] = useState<string>('all');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [openActionMenuId, setOpenActionMenuId] = useState<string | number | null>(null);
 
@@ -160,15 +161,19 @@ const MyTasks: React.FC = () => {
     const loadData = async () => {
         try {
             setLoading(true);
-            const [tasksData, notificationsData, divsData, titlesData, projsData, usersData] = await Promise.all([
+            const [tasksData, draftsData, notificationsData, divsData, titlesData, projsData, usersData] = await Promise.all([
                 taskService.getAllTasks().catch(() => []),
+                taskService.getMyDrafts(userInfo?.userId).catch(() => []),
                 notificationService.getMyNotifications().catch(() => []),
                 divisionService.getAllDivisions().catch(() => []),
                 titleService.getAllTitles().catch(() => []),
                 projectService.getProjects().catch(() => []),
                 userService.getAllUsers().catch(() => [] as UserResponse[]),
             ]);
-            const cleanTasks = (tasksData || []).filter((t: any) => !taskService.isSystemActivityTask(t));
+            const combined = [...(tasksData || []), ...(draftsData || [])];
+            const taskMap = new Map<string, TaskResponse>();
+            combined.forEach((t) => taskMap.set(String(t.id), t));
+            const cleanTasks = Array.from(taskMap.values()).filter((t: any) => !taskService.isSystemActivityTask(t));
             setAllTasks(cleanTasks);
             setNotifications(notificationsData);
             setDivisions(divsData);
@@ -230,6 +235,7 @@ const MyTasks: React.FC = () => {
                 '3': 'UnderReview',
                 '4': 'Completed',
                 '5': 'Expired',
+                '6': 'Draft',
             };
             const priorityMap: Record<string, string> = {
                 '0': 'Low',
@@ -244,6 +250,8 @@ const MyTasks: React.FC = () => {
                 assignedToUserId: assigneeFilter !== 'all' ? assigneeFilter : undefined,
                 status: statusFilter !== 'all' ? statusMap[statusFilter] : undefined,
                 priority: priorityFilter !== 'all' ? priorityMap[priorityFilter] : undefined,
+                isCompletedSuccessfully: completionFilter === 'successful' ? true : completionFilter === 'failed' ? false : undefined,
+                includeDrafts: statusFilter === '6',
                 search: searchQuery.trim() || undefined,
             });
         } catch (err: any) {
@@ -330,6 +338,9 @@ const MyTasks: React.FC = () => {
         // 3. Status Filter
         if (statusFilter !== 'all') {
             result = result.filter((task) => task.status === parseInt(statusFilter));
+        } else {
+            // Hide Drafts from general task view unless Draft status is explicitly selected
+            result = result.filter((task) => task.status !== TaskStatus.Draft);
         }
 
         // 4. Priority Filter
@@ -351,11 +362,11 @@ const MyTasks: React.FC = () => {
             const nextWeek = new Date(now.getTime() + 7 * 86400000);
 
             if (datePreset === 'today') {
-                result = result.filter((taskItem) => taskItem.deadline.startsWith(todayStr));
+                result = result.filter((taskItem) => Boolean(taskItem.deadline && taskItem.deadline.startsWith(todayStr)));
             } else if (datePreset === 'tomorrow') {
-                result = result.filter((taskItem) => taskItem.deadline.startsWith(tomorrowStr));
+                result = result.filter((taskItem) => Boolean(taskItem.deadline && taskItem.deadline.startsWith(tomorrowStr)));
             } else if (datePreset === 'nextWeek') {
-                result = result.filter((taskItem) => new Date(taskItem.deadline) <= nextWeek && new Date(taskItem.deadline) >= now);
+                result = result.filter((taskItem) => Boolean(taskItem.deadline && new Date(taskItem.deadline) <= nextWeek && new Date(taskItem.deadline) >= now));
             }
         }
 
@@ -379,10 +390,19 @@ const MyTasks: React.FC = () => {
             result = result.filter((task) => String(task.assignedToUserId || '') === assigneeFilter);
         }
 
-        return taskService.sortTasksNewestFirst(result);
-    }, [allTasks, userInfo, ownershipFilter, isManager, searchQuery, statusFilter, priorityFilter, difficultyFilter, datePreset, divisionFilter, projectFilter, titleFilter, assigneeFilter]);
+        // 11. Completion Result Filter
+        if (completionFilter !== 'all') {
+            if (completionFilter === 'successful') {
+                result = result.filter((task) => task.status === TaskStatus.Completed && task.isCompletedSuccessfully === true);
+            } else if (completionFilter === 'failed') {
+                result = result.filter((task) => task.status === TaskStatus.Completed && task.isCompletedSuccessfully === false);
+            }
+        }
 
-    const hasActiveFilters = searchQuery || statusFilter !== 'all' || priorityFilter !== 'all' || difficultyFilter !== 'all' || ownershipFilter !== 'all' || datePreset !== 'all' || divisionFilter !== 'all' || projectFilter !== 'all' || titleFilter !== 'all' || assigneeFilter !== 'all';
+        return taskService.sortTasksNewestFirst(result);
+    }, [allTasks, userInfo, ownershipFilter, isManager, searchQuery, statusFilter, priorityFilter, difficultyFilter, datePreset, divisionFilter, projectFilter, titleFilter, assigneeFilter, completionFilter]);
+
+    const hasActiveFilters = searchQuery || statusFilter !== 'all' || priorityFilter !== 'all' || difficultyFilter !== 'all' || ownershipFilter !== 'all' || datePreset !== 'all' || divisionFilter !== 'all' || projectFilter !== 'all' || titleFilter !== 'all' || assigneeFilter !== 'all' || completionFilter !== 'all';
 
     const clearAllFilters = () => {
         setSearchQuery('');
@@ -391,6 +411,7 @@ const MyTasks: React.FC = () => {
         setDifficultyFilter('all');
         setOwnershipFilter('all');
         setDatePreset('all');
+        setCompletionFilter('all');
         setDivisionFilter('all');
         setProjectFilter('all');
         setTitleFilter('all');
@@ -458,8 +479,8 @@ const MyTasks: React.FC = () => {
         },
         {
             id: 'expired',
-            title: `${t('statuses.cancelled', {}, 'Ləğv')} / ${t('statuses.pending', {}, 'Gecikmiş')}`,
-            statuses: [TaskStatus.Expired, TaskStatus.Canceled],
+            title: t('common.overdue', {}, 'Gecikmiş'),
+            statuses: [TaskStatus.Expired],
             color: '#F87171',
             bgGlow: 'bg-rose-500/10',
         },
@@ -517,11 +538,11 @@ const MyTasks: React.FC = () => {
                         {t('common.overdue', {}, 'Gecikmiş')}
                     </span>
                 );
-            case TaskStatus.Canceled:
+            case TaskStatus.Draft:
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-500/10 text-slate-400 border border-slate-500/20">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                        {t('statuses.cancelled', {}, 'Ləğv edildi')}
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-zinc-500/10 text-zinc-400 border border-dashed border-zinc-500/30">
+                        <span className="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>
+                        {t('statuses.draft', {}, 'Qaralama')}
                     </span>
                 );
             default:
@@ -612,10 +633,18 @@ const MyTasks: React.FC = () => {
     const statusOptions = useMemo<SelectOption<string>[]>(() => [
         { value: 'all', label: t('tasks.filterByStatus', {}, 'Bütün Statuslar') },
         { value: String(TaskStatus.Pending), label: t('statuses.pending', {}, 'Gözləmədə'), icon: <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> },
+        { value: String(TaskStatus.Assigned), label: t('statuses.assigned', {}, 'Təyin edilib'), icon: <span className="w-2 h-2 rounded-full bg-sky-500 inline-block" /> },
         { value: String(TaskStatus.InProgress), label: t('statuses.inProgress', {}, 'İcrada'), icon: <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> },
         { value: String(TaskStatus.UnderReview), label: t('statuses.review', {}, 'Yoxlanışda'), icon: <span className="w-2 h-2 rounded-full bg-purple-500 inline-block" /> },
         { value: String(TaskStatus.Completed), label: t('statuses.completed', {}, 'Tamamlandı'), icon: <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> },
         { value: String(TaskStatus.Expired), label: t('common.overdue', {}, 'Gecikmiş'), icon: <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> },
+        { value: String(TaskStatus.Draft), label: t('statuses.draft', {}, 'Qaralama'), icon: <span className="w-2 h-2 rounded-full bg-slate-400 inline-block" /> },
+    ], [t]);
+
+    const completionOptions = useMemo<SelectOption<string>[]>(() => [
+        { value: 'all', label: t('tasks.allResults', {}, 'Bütün Nəticələr') },
+        { value: 'successful', label: t('tasks.successfulOnly', {}, '✓ Yalnız Uğurlu'), icon: <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> },
+        { value: 'failed', label: t('tasks.failedOnly', {}, '⚠ Yalnız Uğursuz'), icon: <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> },
     ], [t]);
 
     const dateOptions = useMemo<SelectOption<string>[]>(() => [
@@ -823,6 +852,13 @@ const MyTasks: React.FC = () => {
                                 value={statusFilter}
                                 onChange={setStatusFilter}
                                 options={statusOptions}
+                            />
+
+                            {/* Completion Result Select */}
+                            <CustomSelect
+                                value={completionFilter}
+                                onChange={setCompletionFilter}
+                                options={completionOptions}
                             />
 
                             {/* Date Presets */}

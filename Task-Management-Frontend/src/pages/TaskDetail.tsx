@@ -78,6 +78,9 @@ const TaskDetail: React.FC = () => {
     const [showReturnModal, setShowReturnModal] = useState(false);
     const [returnReason, setReturnReason] = useState('');
 
+    // Publish draft state
+    const [publishingDraft, setPublishingDraft] = useState(false);
+
     // Mention state for comments
     const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
     const [mentionQuery, setMentionQuery] = useState('');
@@ -444,17 +447,23 @@ const TaskDetail: React.FC = () => {
 
         setSubmittingPerformance(true);
         try {
-            // Update task status to Completed and persist selected difficulty
-            await taskService.updateTask({
-                id: task.id,
-                title: task.title,
-                description: task.description,
-                difficulty: selectedDifficulty,
-                status: TaskStatus.Completed,
-                deadline: task.deadline,
-                assignedToUserId: task.assignedToUserId,
-                createdByUserId: task.createdByUserId,
-            });
+            // Update difficulty if changed
+            if (selectedDifficulty !== task.difficulty) {
+                await taskService.updateTask({
+                    id: task.id,
+                    title: task.title,
+                    description: task.description,
+                    difficulty: selectedDifficulty,
+                    status: task.status,
+                    startDate: task.startDate,
+                    deadline: task.deadline,
+                    assignedToUserId: task.assignedToUserId,
+                    createdByUserId: task.createdByUserId,
+                }).catch(() => {});
+            }
+
+            // Call backend ApproveTask with performance reason comment
+            const approveMsg = await taskService.approveTask(task.id, performanceReason.trim());
 
             // Add performance points
             await performanceService.addPerformancePoint({
@@ -467,12 +476,8 @@ const TaskDetail: React.FC = () => {
             // Immediately reflect Completed status & updated difficulty in state
             setTask((prev) => (prev ? { ...prev, status: TaskStatus.Completed, difficulty: selectedDifficulty } : prev));
 
-            // Add system comment for completion and performance
-            const approvalComment = `✨ [Sistem / Təsdiqləndi]: Tapşırıq rəhbər tərəfindən təsdiqləndi və tamamlandı.${performanceReason.trim() ? ` Performans qeydi: "${performanceReason.trim()}"` : ''}`;
-            await taskService.addComment(task.id, approvalComment).catch(() => {});
-
             setPerformanceReason('');
-            // Reload task to get updated status
+            // Reload task to get updated status and backend calculated IsCompletedSuccessfully
             const updatedTask = await taskService.getTaskById(task.id).catch(() => null);
             if (updatedTask) {
                 setTask({ ...updatedTask, status: TaskStatus.Completed, difficulty: selectedDifficulty });
@@ -481,7 +486,7 @@ const TaskDetail: React.FC = () => {
             if (updatedComments.length > 0) {
                 setComments(updatedComments);
             }
-            addToast('Performans xalları uğurla əlavə edildi və tapşırıq tamamlandı!', undefined, 'success');
+            addToast(approveMsg || 'Tapşırıq təsdiqləndi və performans xalları uğurla əlavə edildi!', undefined, 'success');
         } catch (error: any) {
             const errorMessage = error.response?.data?.message
                 || error.response?.data
@@ -489,6 +494,79 @@ const TaskDetail: React.FC = () => {
             addToast(errorMessage, undefined, 'error');
         } finally {
             setSubmittingPerformance(false);
+        }
+    };
+
+    const handleDirectApprove = async () => {
+        if (!task || !userInfo) return;
+        if (task.status !== TaskStatus.UnderReview) {
+            addToast('Yalnız "Nəzərdən keçirilir" statusundakı tapşırıqlar təsdiqlənə bilər', undefined, 'error');
+            return;
+        }
+
+        setSubmittingPerformance(true);
+        try {
+            if (selectedDifficulty !== task.difficulty) {
+                await taskService.updateTask({
+                    id: task.id,
+                    title: task.title,
+                    description: task.description,
+                    difficulty: selectedDifficulty,
+                    status: task.status,
+                    startDate: task.startDate,
+                    deadline: task.deadline,
+                    assignedToUserId: task.assignedToUserId,
+                    createdByUserId: task.createdByUserId,
+                }).catch(() => {});
+            }
+
+            const approveMsg = await taskService.approveTask(task.id);
+            setTask((prev) => (prev ? { ...prev, status: TaskStatus.Completed, difficulty: selectedDifficulty } : prev));
+
+            const updatedTask = await taskService.getTaskById(task.id).catch(() => null);
+            if (updatedTask) {
+                setTask({ ...updatedTask, status: TaskStatus.Completed, difficulty: selectedDifficulty });
+            }
+            addToast(approveMsg || 'Tapşırıq uğurla təsdiqləndi və tamamlandı!', undefined, 'success');
+        } catch (error: any) {
+            const errorMessage = error.response?.data?.message
+                || error.response?.data
+                || 'Tapşırığı təsdiqləmək mümkün olmadı';
+            addToast(errorMessage, undefined, 'error');
+        } finally {
+            setSubmittingPerformance(false);
+        }
+    };
+
+    const handlePublishDraft = async () => {
+        if (!task) return;
+        setPublishingDraft(true);
+        try {
+            const newStatus = task.assignedToUserId ? TaskStatus.Assigned : TaskStatus.Pending;
+            await taskService.updateTask({
+                id: task.id,
+                title: task.title,
+                description: task.description,
+                difficulty: task.difficulty,
+                status: newStatus,
+                startDate: task.startDate,
+                deadline: task.deadline,
+                assignedToUserId: task.assignedToUserId,
+                createdByUserId: task.createdByUserId,
+            });
+
+            if (task.assignedToUserId) {
+                await taskService.assignTask(task.id, task.assignedToUserId).catch(() => {});
+            }
+
+            const updated = await taskService.getTaskById(task.id);
+            setTask(updated);
+            addToast('Tapşırıq uğurla dərc edildi!', undefined, 'success');
+        } catch (err: any) {
+            const msg = err.response?.data?.message || err.message || 'Tapşırığı dərc etmək mümkün olmadı';
+            addToast(msg, undefined, 'error');
+        } finally {
+            setPublishingDraft(false);
         }
     };
 
@@ -887,9 +965,31 @@ const TaskDetail: React.FC = () => {
                 return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{t('statuses.completed', {}, 'Tamamlandı')}</span>;
             case TaskStatus.Expired:
                 return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">{t('common.overdue', {}, 'Vaxtı bitib')}</span>;
+            case TaskStatus.Draft:
+                return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-zinc-500/10 text-zinc-400 border border-dashed border-zinc-500/30">📝 {t('statuses.draft', {}, 'Qaralama')}</span>;
             default:
                 return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-[#27272A] text-[#A1A1AA]">{t('common.none', {}, 'Naməlum')}</span>;
         }
+    };
+
+    const getCompletionResultBadge = () => {
+        if (task?.status === TaskStatus.Completed && task.isCompletedSuccessfully !== null && task.isCompletedSuccessfully !== undefined) {
+            if (task.isCompletedSuccessfully) {
+                return (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        <CheckCircleIcon className="w-3.5 h-3.5" />
+                        <span>Uğurlu (Vaxtında)</span>
+                    </span>
+                );
+            }
+            return (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30">
+                    <ExclamationTriangleIcon className="w-3.5 h-3.5" />
+                    <span>Uğursuz (Gecikmə ilə)</span>
+                </span>
+            );
+        }
+        return null;
     };
 
     const getPriorityBadge = (priority?: any) => {
@@ -1051,9 +1151,41 @@ const TaskDetail: React.FC = () => {
                         <div className="lg:col-span-2 space-y-6">
                             {/* Task Overview Card */}
                             <div className="rounded-2xl border border-zinc-200/80 dark:border-[#27272A] bg-white dark:bg-[#18181B] p-6 sm:p-8 shadow-xs space-y-4">
+                                {/* Draft Banner */}
+                                {task.status === TaskStatus.Draft && (
+                                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div className="flex items-center gap-2.5">
+                                            <span className="text-xl">📝</span>
+                                            <div>
+                                                <p className="text-xs font-bold text-amber-700 dark:text-amber-300">Bu tapşırıq qaralama rejimindədir</p>
+                                                <p className="text-[11px] text-amber-600/90 dark:text-amber-400/90">Qaralamalar digər istifadəçilərə görünmür. Aktiv etmək üçün dərc edin.</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <button
+                                                type="button"
+                                                onClick={handlePublishDraft}
+                                                disabled={publishingDraft}
+                                                className="px-3.5 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-500 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                                            >
+                                                {publishingDraft && <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                                                <span>{publishingDraft ? 'Dərc edilir...' : 'Dərc Et'}</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => navigate(`/tasks/edit/${task.id}`)}
+                                                className="px-3 py-1.5 rounded-lg bg-zinc-200 dark:bg-[#27272A] hover:bg-zinc-300 dark:hover:bg-[#3F3F46] text-xs font-semibold text-zinc-800 dark:text-white transition-colors cursor-pointer"
+                                            >
+                                                Redaktə Et
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="flex items-center gap-2.5 flex-wrap">
                                     {getStatusBadge(task.status)}
                                     {getPriorityBadge(task.priority)}
+                                    {getCompletionResultBadge()}
 
                                     {task.divisionName && (
                                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
@@ -1345,11 +1477,21 @@ const TaskDetail: React.FC = () => {
                                         {getPriorityBadge(task.priority)}
                                     </div>
 
+                                    {task.startDate && (
+                                        <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-[#27272A]">
+                                            <span className="text-zinc-500 dark:text-[#71717A]">Başlama Tarixi</span>
+                                            <div className="flex items-center gap-1.5 text-zinc-900 dark:text-white font-semibold">
+                                                <CalendarIcon className="w-3.5 h-3.5 text-zinc-400 dark:text-[#71717A]" />
+                                                <span>{formatDateTime(task.startDate)}</span>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-[#27272A]">
                                         <span className="text-zinc-500 dark:text-[#71717A]">Son İcra Tarixi</span>
                                         <div className="flex items-center gap-1.5 text-zinc-900 dark:text-white font-semibold">
                                             <CalendarIcon className="w-3.5 h-3.5 text-zinc-400 dark:text-[#71717A]" />
-                                            <span>{formatDateTime(task.deadline)}</span>
+                                            <span>{task.deadline ? formatDateTime(task.deadline) : 'Təyin edilməyib'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1371,6 +1513,55 @@ const TaskDetail: React.FC = () => {
                                     </div>
                                 )}
                             </div>
+
+                            {/* Timeline Card */}
+                            {(task.createdAt || task.assignedAt || task.acceptedAt || task.submittedForReviewAt || task.completedAt) && (
+                                <div className="rounded-2xl border border-zinc-200/80 dark:border-[#27272A] bg-white dark:bg-[#18181B] p-6 shadow-xs space-y-4">
+                                    <h3 className="text-xs uppercase tracking-wider font-bold text-zinc-400 dark:text-[#71717A]">
+                                        İcra Zaman Xətti
+                                    </h3>
+                                    <div className="space-y-3 text-xs">
+                                        {task.createdAt && (
+                                            <div className="flex items-start justify-between gap-2">
+                                                <span className="text-zinc-500 dark:text-[#71717A]">Yaradıldı:</span>
+                                                <span className="font-medium text-zinc-800 dark:text-zinc-200">{formatDateTime(task.createdAt)}</span>
+                                            </div>
+                                        )}
+                                        {task.assignedAt && (
+                                            <div className="flex items-start justify-between gap-2">
+                                                <span className="text-zinc-500 dark:text-[#71717A]">Təyin edildi:</span>
+                                                <span className="font-medium text-zinc-800 dark:text-zinc-200">{formatDateTime(task.assignedAt)}</span>
+                                            </div>
+                                        )}
+                                        {task.acceptedAt && (
+                                            <div className="flex items-start justify-between gap-2">
+                                                <span className="text-zinc-500 dark:text-[#71717A]">Qəbul edildi:</span>
+                                                <span className="font-medium text-zinc-800 dark:text-zinc-200">{formatDateTime(task.acceptedAt)}</span>
+                                            </div>
+                                        )}
+                                        {task.submittedForReviewAt && (
+                                            <div className="flex items-start justify-between gap-2">
+                                                <span className="text-zinc-500 dark:text-[#71717A]">Yoxlanışa verildi:</span>
+                                                <span className="font-medium text-zinc-800 dark:text-zinc-200">{formatDateTime(task.submittedForReviewAt)}</span>
+                                            </div>
+                                        )}
+                                        {task.completedAt && (
+                                            <div className="flex items-start justify-between gap-2">
+                                                <span className="text-zinc-500 dark:text-[#71717A]">Tamamlandı:</span>
+                                                <span className="font-medium text-zinc-800 dark:text-zinc-200">{formatDateTime(task.completedAt)}</span>
+                                            </div>
+                                        )}
+                                        {task.isCompletedSuccessfully !== null && task.isCompletedSuccessfully !== undefined && (
+                                            <div className="flex items-start justify-between gap-2 pt-2 border-t border-zinc-100 dark:border-[#27272A]">
+                                                <span className="text-zinc-500 dark:text-[#71717A]">Nəticə:</span>
+                                                <span className={`font-bold ${task.isCompletedSuccessfully ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                    {task.isCompletedSuccessfully ? '✓ Uğurlu (Vaxtında)' : '⚠ Uğursuz (Gecikmiş)'}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Accept/Reject Task Banner - Show for assigned user when status is Assigned */}
                             {canAcceptReject && (
@@ -1493,6 +1684,16 @@ const TaskDetail: React.FC = () => {
                                         >
                                             <SparklesIcon className="w-4 h-4" />
                                             <span>{submittingPerformance ? 'Xallar əlavə edilir...' : 'Təsdiqlə və Tamamla'}</span>
+                                        </button>
+
+                                        {/* Standalone Direct Approve Button (without performance points) */}
+                                        <button
+                                            onClick={handleDirectApprove}
+                                            disabled={submittingPerformance || processingReturn}
+                                            className="w-full py-2 px-4 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-600 dark:text-emerald-400 border border-emerald-600/20 text-xs font-bold rounded-xl transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                                        >
+                                            <CheckCircleIcon className="w-4 h-4" />
+                                            <span>Yalnız Təsdiqlə (Xalsız)</span>
                                         </button>
 
                                         {/* Return for Revision Button */}

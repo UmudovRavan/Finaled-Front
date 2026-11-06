@@ -231,7 +231,7 @@ const Projects: React.FC = () => {
                 const allUniqueTasks = Array.from(taskMap.values());
                 const computedTaskCount = allUniqueTasks.length;
                 const computedCompletedCount = allUniqueTasks.filter(
-                    (t) => t.status === TaskStatus.Completed || t.status === 4 || String(t.status).toLowerCase() === 'completed'
+                    (t) => t.status === TaskStatus.Completed || String(t.status).toLowerCase() === 'completed'
                 ).length;
 
                 const finalLevelCount = Math.max(p.levelCount || 0, lvls.length);

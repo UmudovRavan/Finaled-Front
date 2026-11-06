@@ -114,7 +114,9 @@ const Leaderboard: React.FC = () => {
         const filteredTasks = allTasks.filter((task) => {
             if (task.status !== TaskStatus.Completed) return false;
 
-            const taskDate = new Date(task.deadline);
+            const dateStr = task.completedAt || task.deadline || task.createdAt;
+            if (!dateStr) return false;
+            const taskDate = new Date(dateStr);
             const now = new Date();
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 

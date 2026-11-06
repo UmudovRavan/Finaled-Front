@@ -124,7 +124,9 @@ const Performance: React.FC = () => {
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
             userTasks = userTasks.filter((task) => {
-                const taskDate = new Date(task.deadline);
+                const dateStr = task.completedAt || task.deadline || task.createdAt;
+                if (!dateStr) return false;
+                const taskDate = new Date(dateStr);
 
                 if (dateFilter === '7d') {
                     const sevenDaysAgo = new Date(today);
@@ -169,7 +171,9 @@ const Performance: React.FC = () => {
         });
 
         const last30DaysTask = completedTasks.filter((task) => {
-            const taskDate = new Date(task.deadline);
+            const dateStr = task.completedAt || task.deadline || task.createdAt;
+            if (!dateStr) return false;
+            const taskDate = new Date(dateStr);
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
             return taskDate >= thirtyDaysAgo;

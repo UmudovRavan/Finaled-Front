@@ -183,7 +183,7 @@ const WorkloadChart: React.FC<WorkloadChartProps> = ({ tasks, userRole, userId, 
             { label: 'Gələcəkdə', value: 0, color: '#10b981', darkColor: '#34d399', icon: 'event', filterKey: 'time', filterValue: 'future' },
         ];
         scopedTasks.forEach(t => {
-            if (t.status === TaskStatus.Completed || t.status === TaskStatus.Expired) return;
+            if (t.status === TaskStatus.Completed || t.status === TaskStatus.Expired || t.status === TaskStatus.Draft || !t.deadline) return;
             const dl = new Date(t.deadline);
             if (dl <= todayEnd) map[0].value++;
             else if (dl <= weekEnd) map[1].value++;
@@ -349,7 +349,7 @@ const WorkloadChart: React.FC<WorkloadChartProps> = ({ tasks, userRole, userId, 
             const weekEnd = new Date(todayEnd); weekEnd.setDate(weekEnd.getDate() + (7 - weekEnd.getDay()));
             const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
             filtered = scopedTasks.filter(t => {
-                if (t.status === TaskStatus.Completed || t.status === TaskStatus.Expired) return false;
+                if (t.status === TaskStatus.Completed || t.status === TaskStatus.Expired || t.status === TaskStatus.Draft || !t.deadline) return false;
                 const dl = new Date(t.deadline);
                 switch (sl.filterValue) { case 'today': return dl <= todayEnd; case 'week': return dl > todayEnd && dl <= weekEnd; case 'month': return dl > weekEnd && dl <= monthEnd; case 'future': return dl > monthEnd; default: return false; }
             });
@@ -361,7 +361,8 @@ const WorkloadChart: React.FC<WorkloadChartProps> = ({ tasks, userRole, userId, 
         return filtered.slice(0, 5);
     }, [selectedSlice, slices, scopedTasks, tasks, workGroups]);
 
-    const formatRemaining = (deadline: string) => {
+    const formatRemaining = (deadline?: string | null) => {
+        if (!deadline) return 'Təyin edilməyib';
         const diff = new Date(deadline).getTime() - Date.now();
         if (diff < 0) return 'Gecikib';
         const days = Math.floor(diff / 86400000);

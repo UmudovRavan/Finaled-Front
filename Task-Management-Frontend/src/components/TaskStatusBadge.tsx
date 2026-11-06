@@ -47,6 +47,12 @@ const TaskStatusBadge: React.FC<TaskStatusBadgeProps> = ({ status }) => {
                     bgColor: 'bg-red-100 dark:bg-red-900/30',
                     textColor: 'text-red-700 dark:text-red-400',
                 };
+            case TaskStatus.Draft:
+                return {
+                    label: t('statuses.draft', {}, 'Qaralama'),
+                    bgColor: 'bg-zinc-100 dark:bg-zinc-800 border border-dashed border-zinc-300 dark:border-zinc-700',
+                    textColor: 'text-zinc-600 dark:text-zinc-400',
+                };
             default:
                 return {
                     label: t('common.none', {}, 'Naməlum'),

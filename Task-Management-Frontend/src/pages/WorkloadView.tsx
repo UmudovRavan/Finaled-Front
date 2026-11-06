@@ -52,8 +52,8 @@ const WorkloadStatusDonut: React.FC<{ tasks?: TaskResponse[]; activeCount: numbe
             if (task.status === TaskStatus.Completed) completed++;
             else if (task.status === TaskStatus.InProgress) inProgress++;
             else if (task.status === TaskStatus.UnderReview) underReview++;
-            else if (task.status === TaskStatus.Expired || task.status === TaskStatus.Canceled) expired++;
-            else pending++;
+            else if (task.status === TaskStatus.Expired) expired++;
+            else if (task.status === TaskStatus.Pending || task.status === TaskStatus.Assigned) pending++;
         });
 
         const total = tasks.length;
@@ -395,8 +395,8 @@ const WorkloadView: React.FC = () => {
                 return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">{t('statuses.completed', {}, 'Tamamlandı')}</span>;
             case TaskStatus.Expired:
                 return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20">{t('common.overdue', {}, 'Gecikib')}</span>;
-            case TaskStatus.Canceled:
-                return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-zinc-500/15 text-zinc-600 dark:text-zinc-400 border border-zinc-500/20">{t('statuses.cancelled', {}, 'Ləğv edilib')}</span>;
+            case TaskStatus.Draft:
+                return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-zinc-500/15 text-zinc-600 dark:text-zinc-400 border border-zinc-500/20">{t('statuses.draft', {}, 'Qaralama')}</span>;
             default:
                 return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-zinc-500/15 text-zinc-600 dark:text-zinc-400 border border-zinc-500/20">{status}</span>;
         }

@@ -148,7 +148,8 @@ export const translations: { az: TranslationSchema; en: TranslationSchema; ru: T
       completed: 'Tamamlandı',
       cancelled: 'Ləğv edildi',
       paused: 'Dayandırıldı',
-      assigned: 'Təyin edildi'
+      assigned: 'Təyin edildi',
+      draft: 'Qaralama'
     },
     priorities: {
       low: 'Aşağı',
@@ -295,7 +296,18 @@ export const translations: { az: TranslationSchema; en: TranslationSchema; ru: T
       titleRequiredError: 'Tapşırığın başlığı mütləqdir',
       deadlineRequiredError: 'İcra tarixi mütləqdir',
       deadlineFutureError: 'İcra tarixi gələcək bir zaman olmalıdır',
-      createError: 'Tapşırıq yaradılarkən xəta baş verdi'
+      createError: 'Tapşırıq yaradılarkən xəta baş verdi',
+      saveAsDraft: 'Qaralama kimi saxla',
+      savingDraft: 'Qaralama yadda saxlanılır...',
+      saveDraftError: 'Qaralama saxlanılarkən xəta baş verdi',
+      startDate: 'Başlama tarixi',
+      startDateBeforeDeadline: 'Başlama tarixi bitmə tarixindən əvvəl olmalıdır',
+      addMoreAssignees: 'Daha çox icraçı əlavə et...',
+      allResults: 'Bütün Nəticələr',
+      successfulOnly: 'Yalnız Vaxtında (Uğurlu)',
+      failedOnly: 'Yalnız Gecikmiş (Uğursuz)',
+      successful: 'Uğurlu (Vaxtında)',
+      failed: 'Uğursuz (Gecikmiş)'
     },
     workgroups: {
       title: 'İş Qrupları',
@@ -352,6 +364,7 @@ export const translations: { az: TranslationSchema; en: TranslationSchema; ru: T
       commentAdded: 'Tapşırığa yeni şərh yazıldı',
       statusChanged: 'Tapşırığın statusu dəyişdirildi',
       deadlineApproaching: 'Tapşırığın son icra tarixi yaxınlaşır',
+      taskUnacceptedOverdue: '24 saat ərzində qəbul edilməmiş tapşırıq var',
       justNow: 'İndicə'
     },
     settings: {
@@ -787,7 +800,8 @@ export const translations: { az: TranslationSchema; en: TranslationSchema; ru: T
       completed: 'Completed',
       cancelled: 'Cancelled',
       paused: 'Paused',
-      assigned: 'Assigned'
+      assigned: 'Assigned',
+      draft: 'Draft'
     },
     priorities: {
       low: 'Low',
@@ -934,7 +948,18 @@ export const translations: { az: TranslationSchema; en: TranslationSchema; ru: T
       titleRequiredError: 'Task title is required',
       deadlineRequiredError: 'Deadline is required',
       deadlineFutureError: 'Deadline must be in the future',
-      createError: 'Failed to create task'
+      createError: 'Failed to create task',
+      saveAsDraft: 'Save as draft',
+      savingDraft: 'Saving draft...',
+      saveDraftError: 'Failed to save draft',
+      startDate: 'Start date',
+      startDateBeforeDeadline: 'Start date must be before deadline',
+      addMoreAssignees: 'Add more assignees...',
+      allResults: 'All Results',
+      successfulOnly: 'On Time (Successful) Only',
+      failedOnly: 'Overdue (Failed) Only',
+      successful: 'Successful (On Time)',
+      failed: 'Failed (Overdue)'
     },
     workgroups: {
       title: 'Work Groups',
@@ -991,6 +1016,7 @@ export const translations: { az: TranslationSchema; en: TranslationSchema; ru: T
       commentAdded: 'New comment on your task',
       statusChanged: 'Task status updated',
       deadlineApproaching: 'Delivery deadline is approaching',
+      taskUnacceptedOverdue: 'There is a task unaccepted within 24 hours',
       justNow: 'Just now'
     },
     settings: {
@@ -1426,7 +1452,8 @@ export const translations: { az: TranslationSchema; en: TranslationSchema; ru: T
       completed: 'Завершено',
       cancelled: 'Отменено',
       paused: 'Приостановлено',
-      assigned: 'Назначено'
+      assigned: 'Назначено',
+      draft: 'Черновик'
     },
     priorities: {
       low: 'Низкий',
@@ -1573,7 +1600,18 @@ export const translations: { az: TranslationSchema; en: TranslationSchema; ru: T
       titleRequiredError: 'Название задачи обязательно',
       deadlineRequiredError: 'Срок выполнения обязателен',
       deadlineFutureError: 'Срок выполнения должен быть в будущем',
-      createError: 'Ошибка при создании задачи'
+      createError: 'Ошибка при создании задачи',
+      saveAsDraft: 'Сохранить как черновик',
+      savingDraft: 'Сохранение черновика...',
+      saveDraftError: 'Ошибка при сохранении черновика',
+      startDate: 'Дата начала',
+      startDateBeforeDeadline: 'Дата начала должна быть раньше срока сдачи',
+      addMoreAssignees: 'Добавить еще исполнителей...',
+      allResults: 'Все Результаты',
+      successfulOnly: 'Только вовремя (Успешные)',
+      failedOnly: 'Только с опозданием',
+      successful: 'Успешно (Вовремя)',
+      failed: 'Неудачно (С опозданием)'
     },
     workgroups: {
       title: 'Рабочие группы',
@@ -1630,6 +1668,7 @@ export const translations: { az: TranslationSchema; en: TranslationSchema; ru: T
       commentAdded: 'Новый комментарий к задаче',
       statusChanged: 'Статус задачи изменен',
       deadlineApproaching: 'Приближается срок сдачи задачи',
+      taskUnacceptedOverdue: 'Задача не принята в течение 24 часов',
       justNow: 'Только что'
     },
     settings: {

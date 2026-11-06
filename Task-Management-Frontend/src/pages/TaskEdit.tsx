@@ -42,6 +42,7 @@ const TaskEdit: React.FC = () => {
     const [status, setStatus] = useState<number>(TaskStatus.Pending);
     const [difficulty, setDifficulty] = useState<number>(DifficultyLevel.Medium);
     const [priority, setPriority] = useState<number>(Priority.Normal);
+    const [startDate, setStartDate] = useState('');
     const [deadline, setDeadline] = useState('');
     const [assignedUser, setAssignedUser] = useState<UserResponse | null>(null);
 
@@ -164,6 +165,14 @@ const TaskEdit: React.FC = () => {
             }
             if (taskData.projectId) {
                 setSelectedProjectId(String(taskData.projectId));
+            }
+
+            if (taskData.startDate) {
+                const sDate = new Date(taskData.startDate);
+                const sLocalISO = new Date(sDate.getTime() - sDate.getTimezoneOffset() * 60000)
+                    .toISOString()
+                    .slice(0, 16);
+                setStartDate(sLocalISO);
             }
 
             if (taskData.deadline) {
@@ -320,7 +329,8 @@ const TaskEdit: React.FC = () => {
                 titleId: selectedTitleId || undefined,
                 levelId: preservedLevelId || undefined,
                 status,
-                deadline: new Date(deadline).toISOString(),
+                startDate: startDate ? new Date(startDate).toISOString() : undefined,
+                deadline: deadline ? new Date(deadline).toISOString() : undefined,
                 assignedToUserId: assignedUser?.id,
                 createdByUserId: task.createdByUserId,
                 files: selectedFiles.length > 0 ? selectedFiles : undefined,
@@ -494,6 +504,7 @@ const TaskEdit: React.FC = () => {
                                             { value: String(TaskStatus.UnderReview), label: t('statuses.review', {}, 'Nəzərdən keçirilir'), icon: <span className="w-2 h-2 rounded-full bg-purple-500 inline-block" /> },
                                             { value: String(TaskStatus.Completed), label: t('statuses.completed', {}, 'Tamamlandı'), icon: <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> },
                                             { value: String(TaskStatus.Expired), label: t('common.overdue', {}, 'Gecikmiş'), icon: <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> },
+                                            { value: String(TaskStatus.Draft), label: t('statuses.draft', {}, 'Qaralama'), icon: <span className="w-2 h-2 rounded-full bg-slate-400 inline-block" /> },
                                         ]}
                                         className="w-full"
                                     />
@@ -529,8 +540,18 @@ const TaskEdit: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Row: Deadline & Assignee */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* Row: StartDate, Deadline & Assignee */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">{t('tasks.startDate', {}, 'Başlama Tarixi')}</label>
+                                    <input
+                                        type="datetime-local"
+                                        value={startDate}
+                                        onChange={(e) => setStartDate(e.target.value)}
+                                        className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl px-3.5 py-2 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-blue-500 font-medium"
+                                    />
+                                </div>
+
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">{t('tasks.deadlineRequired', {}, 'İcra Tarixi *')}</label>
                                     <input

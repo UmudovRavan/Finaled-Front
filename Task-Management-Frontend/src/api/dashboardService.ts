@@ -135,19 +135,20 @@ export const dashboardService = {
         const activeTasks = activeList.length;
 
         const overdueList = tasksInPeriod.filter(t => {
-            if (!t.deadline || t.status === TaskStatus.Completed || t.status === TaskStatus.Canceled) return false;
+            if (!t.deadline || t.status === TaskStatus.Completed || t.status === TaskStatus.Draft) return false;
             const d = new Date(t.deadline);
             return !isNaN(d.getTime()) && d.getTime() < now.getTime();
         });
         const overdueTasks = overdueList.length;
         const overdueNew = overdueList.filter(t => {
+            if (!t.deadline) return false;
             const d = new Date(t.deadline);
             return (now.getTime() - d.getTime()) <= 3 * 24 * 60 * 60 * 1000;
         }).length;
 
         const completedList = tasksInPeriod.filter(t => t.status === TaskStatus.Completed);
         const completedTasks = completedList.length;
-        const totalTasks = tasksInPeriod.length;
+        const totalTasks = tasksInPeriod.filter(t => t.status !== TaskStatus.Draft).length;
 
         const completedGrowth = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
         const workloadPercentage = Math.min(100, Math.round((activeTasks / Math.max(1, totalTasks || 5)) * 100));
@@ -155,7 +156,7 @@ export const dashboardService = {
         // Donut Chart: Status distribution
         const inProgressCount = tasksInPeriod.filter(t => t.status === TaskStatus.InProgress || t.status === TaskStatus.Assigned).length;
         const pendingCount = tasksInPeriod.filter(t => t.status === TaskStatus.Pending || t.status === TaskStatus.UnderReview).length;
-        const otherCount = tasksInPeriod.filter(t => t.status === TaskStatus.Canceled || t.status === TaskStatus.Expired).length;
+        const otherCount = tasksInPeriod.filter(t => t.status === TaskStatus.Draft || t.status === TaskStatus.Expired).length;
 
         const statusDistribution = [
             {
@@ -273,7 +274,7 @@ export const dashboardService = {
         const activeTasks = allTasks.filter((t) => t.status === TaskStatus.InProgress || t.status === TaskStatus.Assigned || t.status === TaskStatus.Pending).length;
         const now = new Date().getTime();
         const overdueTasks = allTasks.filter((t) => {
-            if (!t.deadline || t.status === TaskStatus.Completed || t.status === TaskStatus.Canceled) return false;
+            if (!t.deadline || t.status === TaskStatus.Completed || t.status === TaskStatus.Draft) return false;
             const d = new Date(t.deadline).getTime();
             return !isNaN(d) && d < now;
         }).length;

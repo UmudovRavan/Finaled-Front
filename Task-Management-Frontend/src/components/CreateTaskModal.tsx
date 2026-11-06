@@ -42,10 +42,12 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     const [description, setDescription] = useState('');
     const [difficulty, setDifficulty] = useState<DifficultyLevel>(DifficultyLevel.Medium);
     const [priority, setPriority] = useState<Priority>(Priority.Normal);
+    const [startDate, setStartDate] = useState('');
     const [deadline, setDeadline] = useState('');
-    const [assignedUser, setAssignedUser] = useState<UserResponse | null>(null);
+    const [assignedUsers, setAssignedUsers] = useState<UserResponse[]>([]);
     const [files, setFiles] = useState<File[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSavingDraft, setIsSavingDraft] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     // Hierarchy selection states: Şöbə (Division) -> Layihə (Project) -> Title (Holdinq / MMC)
@@ -80,8 +82,9 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             setDescription('');
             setDifficulty(DifficultyLevel.Medium);
             setPriority(Priority.Normal);
+            setStartDate('');
             setDeadline('');
-            setAssignedUser(null);
+            setAssignedUsers([]);
             setFiles([]);
             setError(null);
             setAssignInputValue('');
@@ -236,11 +239,6 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
         setShowSuggestions(true);
         setSuggestionIndex(0);
-
-        if (!val.trim()) {
-            setAssignedUser(null);
-            setWorkloadWarning(null);
-        }
     };
 
     const handleAssignInputFocus = () => {
@@ -249,14 +247,20 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     };
 
     const handleSelectUser = (user: UserResponse) => {
-        setAssignedUser(user);
-        const isEmailUsername = !user.userName || user.userName.toLowerCase() === user.email?.toLowerCase();
-        const displayName = isEmailUsername
-            ? (user.email ? user.email.split('@')[0] : 'İstifadəçi')
-            : user.userName;
-        setAssignInputValue(displayName);
+        if (!assignedUsers.some((u) => u.id === user.id)) {
+            setAssignedUsers((prev) => [...prev, user]);
+            checkUserWorkload(user.id);
+        }
+        setAssignInputValue('');
+        setMentionQuery('');
         setShowSuggestions(false);
-        checkUserWorkload(user.id);
+    };
+
+    const handleRemoveAssignedUser = (userId: string) => {
+        setAssignedUsers((prev) => prev.filter((u) => u.id !== userId));
+        if (assignedUsers.length <= 1) {
+            setWorkloadWarning(null);
+        }
     };
 
     const handleAssignKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -289,6 +293,49 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         setFiles((prev) => prev.filter((_, i) => i !== index));
     };
 
+    const handleSaveDraft = async () => {
+        setError(null);
+        setIsSavingDraft(true);
+
+        try {
+            const token = authService.getToken();
+            const user = token ? parseJwtToken(token) : null;
+            const createdByUserId = user?.userId || '';
+            const userIds = assignedUsers.map((u) => u.id);
+
+            await taskService.createTask(
+                {
+                    title: title.trim() || 'Adsız Qaralama Tapşırıq',
+                    description: description.trim(),
+                    difficulty: typeof difficulty === 'number' ? difficulty : DifficultyLevel.Medium,
+                    priority: typeof priority === 'number' ? priority : 1,
+                    status: 6, // Draft
+                    isDraft: true,
+                    startDate: startDate ? new Date(startDate).toISOString() : undefined,
+                    deadline: deadline ? new Date(deadline).toISOString() : undefined,
+                    assignedToUserIds: userIds.length > 0 ? userIds : undefined,
+                    assignedToUserId: userIds.length === 1 ? userIds[0] : undefined,
+                    divisionId: selectedDivisionId || undefined,
+                    projectId: selectedProjectId || undefined,
+                    titleId: selectedTitleId || undefined,
+                    levelId: hiddenLevelId || undefined,
+                    createdByUserId,
+                    files: files.length > 0 ? files : undefined,
+                },
+                files.length > 0 ? files : undefined
+            );
+
+            onTaskCreated();
+            onClose();
+        } catch (err: any) {
+            console.error('Save draft error details:', err?.response?.data || err);
+            const serverMsg = err.response?.data?.message || err.response?.data?.Message || (typeof err.response?.data === 'string' ? err.response?.data : null);
+            setError(serverMsg || err.message || t('tasks.saveDraftError', {}, 'Qaralama saxlanılarkən xəta baş verdi'));
+        } finally {
+            setIsSavingDraft(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
@@ -316,22 +363,33 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             return;
         }
 
+        if (startDate) {
+            const startD = new Date(startDate);
+            if (startD > selectedDate) {
+                setError(t('tasks.startDateBeforeDeadline', {}, 'Başlama tarixi son tarixdən sonra ola bilməz'));
+                return;
+            }
+        }
+
         setIsSubmitting(true);
 
         try {
             const token = authService.getToken();
             const user = token ? parseJwtToken(token) : null;
             const createdByUserId = user?.userId || '';
+            const userIds = assignedUsers.map((u) => u.id);
 
-            const createdTask = await taskService.createTask(
+            await taskService.createTask(
                 {
                     title: title.trim(),
                     description: description.trim(),
                     difficulty: typeof difficulty === 'number' ? difficulty : DifficultyLevel.Medium,
                     priority: typeof priority === 'number' ? priority : 1,
-                    status: assignedUser ? 1 : 0,
+                    status: userIds.length > 0 ? 1 : 0,
+                    startDate: startDate ? new Date(startDate).toISOString() : undefined,
                     deadline: new Date(deadline).toISOString(),
-                    assignedToUserId: assignedUser?.id || undefined,
+                    assignedToUserIds: userIds.length > 0 ? userIds : undefined,
+                    assignedToUserId: userIds.length === 1 ? userIds[0] : undefined,
                     divisionId: selectedDivisionId || undefined,
                     projectId: selectedProjectId,
                     titleId: selectedTitleId || undefined,
@@ -341,14 +399,6 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 },
                 files.length > 0 ? files : undefined
             );
-
-            if (createdTask?.id && assignedUser?.id) {
-                try {
-                    await taskService.assignTask(createdTask.id, assignedUser.id);
-                } catch {
-                    // Task already created with AssignedToUserId
-                }
-            }
 
             onTaskCreated();
             onClose();
@@ -523,8 +573,8 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                             />
                         </div>
 
-                        {/* Row: Çətinlik, Prioritet & Deadline */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {/* Row: Çətinlik, Prioritet, Başlama Tarixi & Deadline */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                             {/* Çətinlik (Difficulty) */}
                             <div className="space-y-1.5">
                                 <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
@@ -560,6 +610,19 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                                 />
                             </div>
 
+                            {/* Başlama Tarixi (StartDate) */}
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
+                                    {t('tasks.startDate', {}, 'Başlama Tarixi')}
+                                </label>
+                                <input
+                                    type="datetime-local"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl px-2.5 py-2.5 text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-blue-500 font-medium transition-all"
+                                />
+                            </div>
+
                             {/* Deadline */}
                             <div className="space-y-1.5">
                                 <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
@@ -575,11 +638,42 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                             </div>
                         </div>
 
-                        {/* Assignee Search / Mention */}
+                        {/* Assignee Search / Mention with Chips */}
                         <div ref={assignContainerRef} className="space-y-1.5 relative">
-                            <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
-                                {t('tasks.assignedUser', {}, 'Təyin Edilən Şəxs')}
-                            </label>
+                            <div className="flex items-center justify-between">
+                                <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
+                                    {t('tasks.assignedUser', {}, 'Təyin Edilən Şəxslər')}
+                                </label>
+                                {assignedUsers.length > 1 && (
+                                    <span className="text-[11px] font-medium text-blue-500 dark:text-blue-400">
+                                        {assignedUsers.length} nəfər seçilib (hər birinə fərdi tapşırıq açılacaq)
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Selected User Chips */}
+                            {assignedUsers.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 p-2 bg-zinc-50 dark:bg-[#27272A]/50 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl">
+                                    {assignedUsers.map((user) => (
+                                        <span
+                                            key={user.id}
+                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-medium"
+                                        >
+                                            <UserIcon className="w-3.5 h-3.5" />
+                                            <span>{user.userName || user.email?.split('@')[0] || 'İstifadəçi'}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveAssignedUser(user.id)}
+                                                className="text-blue-400 hover:text-rose-500 transition-colors ml-0.5 cursor-pointer"
+                                                title={t('common.remove', {}, 'Sil')}
+                                            >
+                                                <XMarkIcon className="w-3.5 h-3.5" />
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+
                             <div className="relative flex items-center">
                                 <input
                                     ref={assignInputRef}
@@ -589,7 +683,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                                     onFocus={handleAssignInputFocus}
                                     onClick={handleAssignInputFocus}
                                     onKeyDown={handleAssignKeyDown}
-                                    placeholder={t('tasks.assigneePlaceholder', {}, '@ istifadəçi axtarın və ya seçin...')}
+                                    placeholder={assignedUsers.length > 0 ? t('tasks.addMoreAssignees', {}, '+ Başqa işçi əlavə et...') : t('tasks.assigneePlaceholder', {}, '@ istifadəçi axtarın və ya seçin...')}
                                     className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium transition-all"
                                 />
                                 <UserIcon className="w-4 h-4 text-zinc-400 dark:text-[#71717A] absolute left-3 pointer-events-none" />
@@ -679,22 +773,33 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                     </div>
 
                     {/* Footer Actions - Sticky Bottom */}
-                    <div className="flex items-center justify-end gap-3 p-4 sm:p-6 border-t border-zinc-100 dark:border-[#2C2C2E] shrink-0 bg-white dark:bg-[#1C1C1E]">
+                    <div className="flex items-center justify-between gap-3 p-4 sm:p-6 border-t border-zinc-100 dark:border-[#2C2C2E] shrink-0 bg-white dark:bg-[#1C1C1E]">
                         <button
                             type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 rounded-xl bg-transparent hover:bg-zinc-100 dark:hover:bg-white/5 text-xs font-semibold text-zinc-600 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
+                            onClick={handleSaveDraft}
+                            disabled={isSubmitting || isSavingDraft}
+                            className="px-4 py-2.5 rounded-xl border border-zinc-300 dark:border-[#3F3F46] hover:bg-zinc-100 dark:hover:bg-white/5 text-xs font-semibold text-zinc-700 dark:text-[#D4D4D8] transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
                         >
-                            {t('common.cancel', {}, 'İmtina')}
+                            {isSavingDraft && <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />}
+                            <span>{isSavingDraft ? t('tasks.savingDraft', {}, 'Saxlanılır...') : t('tasks.saveAsDraft', {}, 'Qaralama kimi saxla')}</span>
                         </button>
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 hover:shadow-lg transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
-                        >
-                            {isSubmitting && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-                            <span>{isSubmitting ? t('tasks.creating', {}, 'Yaradılır...') : t('tasks.createTaskButton', {}, 'Tapşırığı Yarat')}</span>
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="px-4 py-2 rounded-xl bg-transparent hover:bg-zinc-100 dark:hover:bg-white/5 text-xs font-semibold text-zinc-600 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
+                            >
+                                {t('common.cancel', {}, 'İmtina')}
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={isSubmitting || isSavingDraft}
+                                className="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 hover:shadow-lg transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                            >
+                                {isSubmitting && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                                <span>{isSubmitting ? t('tasks.creating', {}, 'Yaradılır...') : t('tasks.createTaskButton', {}, 'Tapşırığı Yarat')}</span>
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>

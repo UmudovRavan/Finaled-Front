@@ -5,7 +5,7 @@ export const TaskStatus = {
     UnderReview: 3,
     Completed: 4,
     Expired: 5,
-    Canceled: 6,
+    Draft: 6,
 } as const;
 
 export type TaskStatus = typeof TaskStatus[keyof typeof TaskStatus];
@@ -30,10 +30,19 @@ export type Priority = typeof Priority[keyof typeof Priority];
 export interface TaskResponse {
     id: string | number;
     title: string;
-    description: string;
+    description?: string;
     difficulty: DifficultyLevel;
     status: TaskStatus;
-    deadline: string;
+    deadline?: string | null;
+    startDate?: string | null;
+    isDraft?: boolean;
+    assignedAt?: string | null;
+    acceptedAt?: string | null;
+    submittedForReviewAt?: string | null;
+    completedAt?: string | null;
+    isCompletedSuccessfully?: boolean | null;
+    completionStatusText?: string | null;
+    lastComment?: string | null;
     priority?: Priority;
     levelId?: string | number | null;
     levelName?: string;
@@ -46,6 +55,7 @@ export interface TaskResponse {
     workGroupId?: string | number | null;
     assignedToUserId?: string;
     assignedToUserName?: string;
+    assignedToUserIds?: string[];
     createdByUserId: string;
     createdByUserName?: string;
     parentTaskId?: string | number | null;

@@ -208,7 +208,7 @@ const EmployeePerformance: React.FC = () => {
 
     const processTaskHistory = (userTasks: TaskResponse[]) => {
         const sortedTasks = [...userTasks].sort((a, b) => {
-            return new Date(b.deadline).getTime() - new Date(a.deadline).getTime();
+            return new Date(b.deadline || b.createdAt || 0).getTime() - new Date(a.deadline || a.createdAt || 0).getTime();
         });
 
         const history: TaskHistoryItem[] = sortedTasks.slice(0, 10).map((task) => {
@@ -221,7 +221,7 @@ const EmployeePerformance: React.FC = () => {
             if (task.status === TaskStatus.InProgress || task.status === TaskStatus.Assigned) statusLabel = 'In Progress';
 
             const points = DIFFICULTY_POINTS[task.difficulty] || 10;
-            const dateStr = formatShortDate(task.deadline);
+            const dateStr = task.deadline ? formatShortDate(task.deadline) : '-';
 
             return {
                 id: task.id,
@@ -272,7 +272,7 @@ const EmployeePerformance: React.FC = () => {
 
                 const dayPoints = completedTasks
                     .filter((t) => {
-                        const d = new Date(t.deadline);
+                        const d = new Date(t.completedAt || t.deadline || 0);
                         return d.getDate() === date.getDate() && d.getMonth() === date.getMonth();
                     })
                     .reduce((sum, t) => sum + (DIFFICULTY_POINTS[t.difficulty] || 10), 0);
@@ -293,7 +293,7 @@ const EmployeePerformance: React.FC = () => {
 
                 const chunkPoints = completedTasks
                     .filter((t) => {
-                        const d = new Date(t.deadline);
+                        const d = new Date(t.completedAt || t.deadline || 0);
                         return d > windowStart && d <= date;
                     })
                     .reduce((sum, t) => sum + (DIFFICULTY_POINTS[t.difficulty] || 10), 0);

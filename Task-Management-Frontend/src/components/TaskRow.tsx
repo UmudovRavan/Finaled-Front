@@ -20,8 +20,9 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, currentUserId, onEdit, onDelete
     };
 
     const isOverdue = (): boolean => {
+        if (!task.deadline) return false;
         const deadline = new Date(task.deadline);
-        return deadline < new Date() && task.status !== TaskStatus.Completed;
+        return deadline < new Date() && task.status !== TaskStatus.Completed && task.status !== TaskStatus.Draft;
     };
 
     // Check if current user is task creator and task is completed
@@ -58,6 +59,11 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, currentUserId, onEdit, onDelete
                         </h4>
                         <TaskStatusBadge status={task.status} />
                         {getPriorityBadge(task.priority)}
+                        {task.status === TaskStatus.Completed && task.isCompletedSuccessfully !== null && task.isCompletedSuccessfully !== undefined && (
+                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${task.isCompletedSuccessfully ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`}>
+                                {task.isCompletedSuccessfully ? '✓ Uğurlu' : '⚠ Uğursuz'}
+                            </span>
+                        )}
                         {task.projectName && (
                             <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
                                 {task.projectName}
@@ -79,7 +85,7 @@ const TaskRow: React.FC<TaskRowProps> = ({ task, currentUserId, onEdit, onDelete
                 <div className="hidden sm:flex flex-col items-end gap-0.5">
                     <span className="text-xs font-medium text-[#636f88] dark:text-gray-400">Son tarix</span>
                     <span className={`text-sm font-medium ${isOverdue() ? 'text-red-600' : 'text-[#111318] dark:text-white'}`}>
-                        {formatDate(task.deadline)}
+                        {task.deadline ? formatDate(task.deadline) : 'Təyin edilməyib'}
                     </span>
                 </div>
 

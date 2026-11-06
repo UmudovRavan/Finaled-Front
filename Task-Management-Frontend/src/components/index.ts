@@ -8,3 +8,4 @@ export { default as TaskStatusBadge } from './TaskStatusBadge';
 export { default as DifficultyDots } from './DifficultyDots';
 export { default as TaskRow } from './TaskRow';
 export { default as CustomSelect } from './CustomSelect';
+export { default as CompletionResultBadge } from './CompletionResultBadge';
