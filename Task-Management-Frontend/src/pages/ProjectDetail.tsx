@@ -124,11 +124,12 @@ const ProjectDetail: React.FC = () => {
     const fetchProjectData = async (projId: string) => {
         try {
             setRefreshing(true);
-            const [proj, lvls, projTasksRes, allTasksRes, notifs, titlesRes] = await Promise.all([
+            const [proj, lvls, projTasksRes, allTasksRes, draftsRes, notifs, titlesRes] = await Promise.all([
                 projectService.getProjectById(projId),
                 projectLevelService.getLevelsByProject(projId).catch(() => [] as ProjectLevelDTO[]),
                 taskService.getTasksByProject(projId).catch(() => [] as TaskResponse[]),
                 taskService.getAllTasks().catch(() => [] as TaskResponse[]),
+                taskService.getMyDrafts().catch(() => [] as TaskResponse[]),
                 notificationService.getMyNotifications().catch(() => [] as NotificationResponse[]),
                 titleService.getAllTitles().catch(() => [] as TitleDTO[]),
             ]);
@@ -191,22 +192,21 @@ const ProjectDetail: React.FC = () => {
                 });
             }
 
-            // Mənbə D: Ümumi tapşırıqlardan (getAllTasks) layihəyə və ya bu layihənin mərhələlərinə aid olanlar
-            if (Array.isArray(allTasksRes)) {
-                allTasksRes.forEach((t) => {
-                    if (t && t.id) {
-                        const tProjId = String(t.projectId || '').trim().toLowerCase();
-                        const tLvlId = String(t.levelId || '').trim().toLowerCase();
-                        const matchesProject = Boolean(tProjId && normProjId && tProjId === normProjId);
-                        const matchesLevel = Boolean(tLvlId && levelIdSet.has(tLvlId));
-                        const matchesName = Boolean(t.projectName && proj?.name && t.projectName.trim().toLowerCase() === proj.name.trim().toLowerCase());
-                        if (matchesProject || matchesLevel || matchesName) {
-                            if (!t.projectId) t.projectId = projId;
-                            taskMap.set(String(t.id), t);
-                        }
+            // Mənbə D: Ümumi tapşırıqlardan (getAllTasks) və qaralamalardan (draftsRes) layihəyə və ya mərhələlərinə aid olanlar
+            const combinedGlobalAndDrafts = [...(Array.isArray(allTasksRes) ? allTasksRes : []), ...(Array.isArray(draftsRes) ? draftsRes : [])];
+            combinedGlobalAndDrafts.forEach((t) => {
+                if (t && t.id) {
+                    const tProjId = String(t.projectId || '').trim().toLowerCase();
+                    const tLvlId = String(t.levelId || '').trim().toLowerCase();
+                    const matchesProject = Boolean(tProjId && normProjId && tProjId === normProjId);
+                    const matchesLevel = Boolean(tLvlId && levelIdSet.has(tLvlId));
+                    const matchesName = Boolean(t.projectName && proj?.name && t.projectName.trim().toLowerCase() === proj.name.trim().toLowerCase());
+                    if (matchesProject || matchesLevel || matchesName) {
+                        if (!t.projectId) t.projectId = projId;
+                        taskMap.set(String(t.id), t);
                     }
-                });
-            }
+                }
+            });
 
             setAllTasks(Array.from(taskMap.values()));
 
@@ -390,6 +390,10 @@ const ProjectDetail: React.FC = () => {
                 return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">{t('statuses.review', {}, 'Yoxlanışda')}</span>;
             case TaskStatus.Assigned:
                 return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">{t('statuses.assigned', {}, 'Təyin edildi')}</span>;
+            case TaskStatus.Expired:
+                return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">{t('common.overdue', {}, 'Gecikmiş')}</span>;
+            case TaskStatus.Draft:
+                return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-500/10 text-zinc-600 dark:text-zinc-300 border border-dashed border-zinc-400/50">{t('statuses.draft', {}, 'Qaralama')}</span>;
             default:
                 return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/20">{t('statuses.pending', {}, 'Gözləmədə')}</span>;
         }

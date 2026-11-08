@@ -32,9 +32,14 @@ const TaskEdit: React.FC = () => {
     const [allUsers, setAllUsers] = useState<UserResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [savingDraft, setSavingDraft] = useState(false);
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+
+    const isDraftTask = useMemo(() => {
+        return Boolean(task && (Number(task.status) === TaskStatus.Draft || task.isDraft));
+    }, [task]);
 
     // Form state
     const [title, setTitle] = useState('');
@@ -87,12 +92,13 @@ const TaskEdit: React.FC = () => {
     }, [userInfo]);
 
     const filteredUsers = useMemo(() => {
-        if (!mentionQuery || mentionQuery.trim().length === 0) {
-            return [];
-        }
         const employees = allUsers.filter(u => u.role?.toLowerCase() === 'employee' || !u.role);
+        const pool = employees.length > 0 ? employees : allUsers;
+        if (!mentionQuery || mentionQuery.trim().length === 0) {
+            return pool;
+        }
         const query = mentionQuery.toLowerCase();
-        return employees.filter(
+        return pool.filter(
             (u) =>
                 u.userName?.toLowerCase().includes(query) ||
                 u.email?.toLowerCase().includes(query)
@@ -125,12 +131,13 @@ const TaskEdit: React.FC = () => {
                 return;
             }
 
-            const [taskData, notificationsData, usersData, divsData, titlesData] = await Promise.all([
+            const [taskData, notificationsData, usersData, divsData, titlesData, projsData] = await Promise.all([
                 taskService.getTaskById(taskId).catch(() => null),
                 notificationService.getMyNotifications().catch(() => []),
                 userService.getAllUsers().catch(() => []),
                 divisionService.getAllDivisions().catch(() => []),
                 titleService.getAllTitles().catch(() => []),
+                projectService.getAllProjects().catch(() => []),
             ]);
 
             if (!taskData) {
@@ -146,6 +153,7 @@ const TaskEdit: React.FC = () => {
             setPriority(typeof taskData.priority === 'number' ? taskData.priority : Priority.Normal);
             setDivisions(divsData);
             setTitles(titlesData);
+            setProjects(projsData);
 
             if (taskData.titleId) {
                 setSelectedTitleId(String(taskData.titleId));
@@ -153,13 +161,6 @@ const TaskEdit: React.FC = () => {
             if (taskData.levelId) {
                 setPreservedLevelId(String(taskData.levelId));
             }
-
-            const projs = await projectService.getProjects({
-                divisionId: taskData.divisionId ? String(taskData.divisionId) : undefined,
-                titleId: taskData.titleId ? String(taskData.titleId) : undefined,
-            }).catch(() => []);
-            setProjects(projs);
-
             if (taskData.divisionId) {
                 setSelectedDivisionId(String(taskData.divisionId));
             }
@@ -167,24 +168,30 @@ const TaskEdit: React.FC = () => {
                 setSelectedProjectId(String(taskData.projectId));
             }
 
-            if (taskData.startDate) {
+            if (taskData.startDate && !String(taskData.startDate).startsWith('0001-01-01')) {
                 const sDate = new Date(taskData.startDate);
-                const sLocalISO = new Date(sDate.getTime() - sDate.getTimezoneOffset() * 60000)
-                    .toISOString()
-                    .slice(0, 16);
-                setStartDate(sLocalISO);
+                if (!isNaN(sDate.getTime())) {
+                    const sLocalISO = new Date(sDate.getTime() - sDate.getTimezoneOffset() * 60000)
+                        .toISOString()
+                        .slice(0, 16);
+                    setStartDate(sLocalISO);
+                }
             }
 
-            if (taskData.deadline) {
+            if (taskData.deadline && !String(taskData.deadline).startsWith('0001-01-01')) {
                 const date = new Date(taskData.deadline);
-                const localISO = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-                    .toISOString()
-                    .slice(0, 16);
-                setDeadline(localISO);
+                if (!isNaN(date.getTime())) {
+                    const localISO = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+                        .toISOString()
+                        .slice(0, 16);
+                    setDeadline(localISO);
+                }
             }
 
             if (taskData.assignedToUserId && usersData.length > 0) {
-                const assigned = usersData.find((u) => u.id === taskData.assignedToUserId);
+                const assigned = usersData.find(
+                    (u) => String(u.id).toLowerCase() === String(taskData.assignedToUserId).toLowerCase()
+                );
                 if (assigned) {
                     setAssignedUser(assigned);
                     setAssignInputValue(assigned.userName);
@@ -200,42 +207,42 @@ const TaskEdit: React.FC = () => {
         }
     };
 
-    const handleDivisionChange = async (divId: string) => {
-        setSelectedDivisionId(divId);
-        try {
-            const projs = await projectService.getProjects({
-                divisionId: divId || undefined,
-                titleId: selectedTitleId || undefined,
-            });
-            setProjects(projs);
-            if (selectedProjectId && !projs.some((p) => String(p.id) === String(selectedProjectId))) {
-                setSelectedProjectId('');
+    const filteredProjects = useMemo(() => {
+        const matched = projects.filter((p) => {
+            if (selectedProjectId && String(p.id).toLowerCase() === String(selectedProjectId).toLowerCase()) {
+                return true;
             }
-        } catch {
-            setProjects([]);
-        }
+            if (
+                selectedDivisionId &&
+                p.divisionId &&
+                String(p.divisionId).toLowerCase() !== String(selectedDivisionId).toLowerCase()
+            ) {
+                return false;
+            }
+            if (
+                selectedTitleId &&
+                p.titleId &&
+                String(p.titleId).toLowerCase() !== String(selectedTitleId).toLowerCase()
+            ) {
+                return false;
+            }
+            return true;
+        });
+        return matched.length > 0 ? matched : projects;
+    }, [projects, selectedDivisionId, selectedTitleId, selectedProjectId]);
+
+    const handleDivisionChange = (divId: string) => {
+        setSelectedDivisionId(divId);
     };
 
-    const handleTitleChange = async (titleId: string) => {
+    const handleTitleChange = (titleId: string) => {
         setSelectedTitleId(titleId);
-        try {
-            const projs = await projectService.getProjects({
-                divisionId: selectedDivisionId || undefined,
-                titleId: titleId || undefined,
-            });
-            setProjects(projs);
-            if (selectedProjectId && !projs.some((p) => String(p.id) === String(selectedProjectId))) {
-                setSelectedProjectId('');
-            }
-        } catch {
-            setProjects([]);
-        }
     };
 
     const handleProjectChange = (projId: string) => {
         setSelectedProjectId(projId);
         if (projId) {
-            const foundProject = projects.find((p) => String(p.id) === String(projId));
+            const foundProject = projects.find((p) => String(p.id).toLowerCase() === String(projId).toLowerCase());
             if (foundProject) {
                 if (!selectedDivisionId && foundProject.divisionId) {
                     setSelectedDivisionId(String(foundProject.divisionId));
@@ -294,6 +301,40 @@ const TaskEdit: React.FC = () => {
         setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
     };
 
+    const handleSaveAsDraft = async () => {
+        if (!task) return;
+        setError(null);
+        setSuccessMessage(null);
+        setSavingDraft(true);
+        try {
+            await taskService.updateTask({
+                id: task.id,
+                title: title.trim() || 'Adsız Qaralama Tapşırıq',
+                description: description.trim(),
+                difficulty,
+                priority,
+                divisionId: selectedDivisionId || undefined,
+                projectId: selectedProjectId || undefined,
+                titleId: selectedTitleId || undefined,
+                levelId: preservedLevelId || undefined,
+                status: TaskStatus.Draft,
+                startDate: startDate ? new Date(startDate).toISOString() : undefined,
+                deadline: deadline ? new Date(deadline).toISOString() : undefined,
+                assignedToUserId: assignedUser?.id,
+                createdByUserId: task.createdByUserId || userInfo?.userId || '',
+                files: selectedFiles.length > 0 ? selectedFiles : undefined,
+            });
+            setSuccessMessage(t('tasks.draftSavedSuccess', {}, 'Qaralama yadda saxlanıldı'));
+            setTimeout(() => {
+                navigate('/tasks');
+            }, 800);
+        } catch (err: any) {
+            setError(err.response?.data?.message || err.message || 'Qaralamanı saxlamaq mümkün olmadı');
+        } finally {
+            setSavingDraft(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!task) return;
@@ -318,6 +359,45 @@ const TaskEdit: React.FC = () => {
 
         setSaving(true);
         try {
+            if (isDraftTask) {
+                // Convert draft directly into an active task without user needing to touch Status
+                await taskService.publishDraftTask(
+                    task.id,
+                    {
+                        title: title.trim(),
+                        description: description.trim(),
+                        difficulty,
+                        priority,
+                        divisionId: selectedDivisionId || undefined,
+                        projectId: selectedProjectId,
+                        titleId: selectedTitleId || undefined,
+                        levelId: preservedLevelId || undefined,
+                        startDate: startDate ? new Date(startDate).toISOString() : undefined,
+                        deadline: new Date(deadline).toISOString(),
+                        assignedToUserId: assignedUser?.id,
+                        assignedToUserIds: assignedUser?.id ? [assignedUser.id] : undefined,
+                        createdByUserId: task.createdByUserId || userInfo?.userId || '',
+                        files: selectedFiles.length > 0 ? selectedFiles : undefined,
+                    },
+                    selectedFiles.length > 0 ? selectedFiles : undefined
+                );
+
+                setSuccessMessage(t('tasks.taskCreatedSuccess', {}, 'Tapşırıq uğurla yaradıldı!'));
+                setTimeout(() => {
+                    navigate('/tasks');
+                }, 800);
+                return;
+            }
+
+            const effectiveStatus =
+                status === TaskStatus.Draft
+                    ? assignedUser
+                        ? TaskStatus.Assigned
+                        : TaskStatus.Pending
+                    : assignedUser && status === TaskStatus.Pending
+                      ? TaskStatus.Assigned
+                      : status;
+
             await taskService.updateTask({
                 id: task.id,
                 title: title.trim(),
@@ -328,13 +408,17 @@ const TaskEdit: React.FC = () => {
                 projectId: selectedProjectId,
                 titleId: selectedTitleId || undefined,
                 levelId: preservedLevelId || undefined,
-                status,
+                status: effectiveStatus,
                 startDate: startDate ? new Date(startDate).toISOString() : undefined,
                 deadline: deadline ? new Date(deadline).toISOString() : undefined,
                 assignedToUserId: assignedUser?.id,
-                createdByUserId: task.createdByUserId,
+                createdByUserId: task.createdByUserId || userInfo?.userId || '',
                 files: selectedFiles.length > 0 ? selectedFiles : undefined,
             });
+
+            if (assignedUser?.id && assignedUser.id !== task.assignedToUserId) {
+                await taskService.assignTask(task.id, assignedUser.id).catch(() => {});
+            }
 
             setSuccessMessage('Tapşırıq uğurla yeniləndi');
             setTimeout(() => {
@@ -387,11 +471,30 @@ const TaskEdit: React.FC = () => {
                             <ArrowLeftIcon className="w-4 h-4" />
                             <span>Geri</span>
                         </button>
-                        <h1 className="text-base font-bold text-zinc-900 dark:text-white tracking-tight">Tapşırığı Redaktə Et</h1>
+                        <div className="flex items-center gap-2">
+                            {isDraftTask && (
+                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                    📝 Qaralama
+                                </span>
+                            )}
+                            <h1 className="text-base font-bold text-zinc-900 dark:text-white tracking-tight">
+                                {isDraftTask ? 'Qaralamanı Tamamla və Yarat' : 'Tapşırığı Redaktə Et'}
+                            </h1>
+                        </div>
                     </div>
 
                     {/* Form Card */}
                     <div className="rounded-2xl border border-zinc-200/80 dark:border-[#27272A] bg-white dark:bg-[#18181B] p-6 sm:p-8 shadow-xs">
+                        {isDraftTask && (
+                            <div className="mb-5 p-3.5 bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-300 rounded-xl text-xs flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2.5">
+                                    <span className="text-base shrink-0">📝</span>
+                                    <span>
+                                        Məlumatları tamamlayıb birbaşa <strong>«Tapşırığı Yarat»</strong> düyməsinə klikləyin. Status təyinata uyğun avtomatik seçiləcək.
+                                    </span>
+                                </div>
+                            </div>
+                        )}
                         {error && (
                             <div className="mb-5 p-3.5 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-xs flex items-center gap-2">
                                 <ExclamationTriangleIcon className="w-4 h-4 shrink-0" />
@@ -450,7 +553,7 @@ const TaskEdit: React.FC = () => {
                                         onChange={handleProjectChange}
                                         options={[
                                             { value: '', label: t('tasks.selectProject', {}, 'Layihə seçin *') },
-                                            ...projects.map((p) => ({
+                                            ...filteredProjects.map((p) => ({
                                                 value: String(p.id),
                                                 label: p.name,
                                             })),
@@ -490,25 +593,26 @@ const TaskEdit: React.FC = () => {
                                 />
                             </div>
 
-                            {/* Row: Status, Priority & Difficulty */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">{t('common.status', {}, 'Status')}</label>
-                                    <CustomSelect
-                                        value={String(status)}
-                                        onChange={(val) => setStatus(Number(val))}
-                                        options={[
-                                            { value: String(TaskStatus.Pending), label: t('statuses.pending', {}, 'Gözləmədə'), icon: <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> },
-                                            { value: String(TaskStatus.Assigned), label: t('statuses.assigned', {}, 'Təyin Edildi'), icon: <span className="w-2 h-2 rounded-full bg-sky-500 inline-block" /> },
-                                            { value: String(TaskStatus.InProgress), label: t('statuses.inProgress', {}, 'İcrada'), icon: <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> },
-                                            { value: String(TaskStatus.UnderReview), label: t('statuses.review', {}, 'Nəzərdən keçirilir'), icon: <span className="w-2 h-2 rounded-full bg-purple-500 inline-block" /> },
-                                            { value: String(TaskStatus.Completed), label: t('statuses.completed', {}, 'Tamamlandı'), icon: <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> },
-                                            { value: String(TaskStatus.Expired), label: t('common.overdue', {}, 'Gecikmiş'), icon: <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> },
-                                            { value: String(TaskStatus.Draft), label: t('statuses.draft', {}, 'Qaralama'), icon: <span className="w-2 h-2 rounded-full bg-slate-400 inline-block" /> },
-                                        ]}
-                                        className="w-full"
-                                    />
-                                </div>
+                            {/* Row: Status (hidden for Drafts), Priority & Difficulty */}
+                            <div className={`grid grid-cols-1 ${isDraftTask ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-4`}>
+                                {!isDraftTask && (
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">{t('common.status', {}, 'Status')}</label>
+                                        <CustomSelect
+                                            value={String(status)}
+                                            onChange={(val) => setStatus(Number(val))}
+                                            options={[
+                                                { value: String(TaskStatus.Pending), label: t('statuses.pending', {}, 'Gözləmədə'), icon: <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> },
+                                                { value: String(TaskStatus.Assigned), label: t('statuses.assigned', {}, 'Təyin Edildi'), icon: <span className="w-2 h-2 rounded-full bg-sky-500 inline-block" /> },
+                                                { value: String(TaskStatus.InProgress), label: t('statuses.inProgress', {}, 'İcrada'), icon: <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> },
+                                                { value: String(TaskStatus.UnderReview), label: t('statuses.review', {}, 'Nəzərdən keçirilir'), icon: <span className="w-2 h-2 rounded-full bg-purple-500 inline-block" /> },
+                                                { value: String(TaskStatus.Completed), label: t('statuses.completed', {}, 'Tamamlandı'), icon: <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> },
+                                                { value: String(TaskStatus.Expired), label: t('common.overdue', {}, 'Gecikmiş'), icon: <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> },
+                                            ]}
+                                            className="w-full"
+                                        />
+                                    </div>
+                                )}
 
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">{t('common.priority', {}, 'Prioritet')}</label>
@@ -571,13 +675,28 @@ const TaskEdit: React.FC = () => {
                                             type="text"
                                             value={assignInputValue}
                                             onChange={handleAssignInputChange}
+                                            onFocus={() => setShowSuggestions(true)}
+                                            onBlur={() => setTimeout(() => setShowSuggestions(false), 180)}
                                             placeholder="@ istifadəçi axtarın..."
-                                            className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium"
+                                            className="w-full bg-zinc-50 dark:bg-[#27272A]/80 border border-zinc-200 dark:border-[#3F3F46]/60 rounded-xl pl-9 pr-8 py-2.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium"
                                         />
                                         <UserIcon className="w-4 h-4 text-zinc-400 dark:text-[#71717A] absolute left-3 pointer-events-none" />
+                                        {assignInputValue && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setAssignedUser(null);
+                                                    setAssignInputValue('');
+                                                    setMentionQuery('');
+                                                }}
+                                                className="absolute right-2.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-white cursor-pointer"
+                                            >
+                                                <XMarkIcon className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
                                     </div>
 
-                                    {showSuggestions && (
+                                    {showSuggestions && filteredUsers.length > 0 && (
                                         <UserSuggestionList
                                             users={filteredUsers}
                                             onSelect={handleSelectUser}
@@ -633,20 +752,39 @@ const TaskEdit: React.FC = () => {
                             </div>
 
                             {/* Buttons */}
-                            <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-100 dark:border-[#27272A]">
+                            <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-zinc-100 dark:border-[#27272A]">
                                 <button
                                     type="button"
                                     onClick={() => navigate(`/tasks/${task.id}`)}
-                                    className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-600 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white"
+                                    className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-600 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-white cursor-pointer"
                                 >
                                     Ləğv et
                                 </button>
+                                {isDraftTask && (
+                                    <button
+                                        type="button"
+                                        onClick={handleSaveAsDraft}
+                                        disabled={saving || savingDraft}
+                                        className="px-4 py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50"
+                                    >
+                                        {savingDraft ? 'Saxlanılır...' : t('tasks.saveAsDraft', {}, 'Qaralama kimi saxla')}
+                                    </button>
+                                )}
                                 <button
                                     type="submit"
-                                    disabled={saving}
-                                    className="px-6 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-600/20 transition-colors cursor-pointer disabled:opacity-50"
+                                    disabled={saving || savingDraft}
+                                    className="px-6 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-600/20 transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
                                 >
-                                    {saving ? 'Yadda saxlanılır...' : 'Dəyişiklikləri Saxla'}
+                                    <CheckIcon className="w-4 h-4" />
+                                    <span>
+                                        {saving
+                                            ? isDraftTask
+                                                ? 'Tapşırıq yaradılır...'
+                                                : 'Yadda saxlanılır...'
+                                            : isDraftTask
+                                              ? t('tasks.createTaskAction', {}, 'Tapşırığı Yarat')
+                                              : 'Dəyişiklikləri Saxla'}
+                                    </span>
                                 </button>
                             </div>
                         </form>

@@ -6,7 +6,7 @@ import { taskService, authService, notificationService, userService, attachmentS
 import { signalRService } from '../services/signalRService';
 import type { TaskResponse, NotificationResponse, UserResponse, TaskCommentDto } from '../dto';
 import { TaskStatus, DifficultyLevel } from '../dto';
-import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, formatDateTime, formatDateOnly } from '../utils';
+import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, formatDateTime, formatDateOnly, formatUserDisplayName } from '../utils';
 import type { UserInfo } from '../utils';
 import { useLanguage } from '../context/LanguageContext';
 import UserSuggestionList from '../components/UserSuggestionList';
@@ -145,13 +145,41 @@ const TaskDetail: React.FC = () => {
     }, [task, userInfo]);
 
     const assignedUser = useMemo(() => {
-        if (!task?.assignedToUserId || !allUsers.length) return null;
-        return allUsers.find(u => u.id === task.assignedToUserId) || null;
+        if (!task?.assignedToUserId && !task?.assignedToUserName) return null;
+        if (task.assignedToUserId && allUsers.length) {
+            const found = allUsers.find(u => String(u.id).toLowerCase() === String(task.assignedToUserId).toLowerCase());
+            if (found) return found;
+        }
+        if (task.assignedToUserName) {
+            const name = formatUserDisplayName(task.assignedToUserName) || 'İcraçı';
+            return {
+                id: task.assignedToUserId || '',
+                userName: name,
+                fullName: name,
+                email: '',
+                role: 'Employee',
+            } as UserResponse;
+        }
+        return null;
     }, [task, allUsers]);
 
     const createdByUser = useMemo(() => {
-        if (!task?.createdByUserId || !allUsers.length) return null;
-        return allUsers.find(u => u.id === task.createdByUserId) || null;
+        if (!task?.createdByUserId && !task?.createdByUserName) return null;
+        if (task.createdByUserId && allUsers.length) {
+            const found = allUsers.find(u => String(u.id).toLowerCase() === String(task.createdByUserId).toLowerCase());
+            if (found) return found;
+        }
+        if (task.createdByUserName) {
+            const name = formatUserDisplayName(task.createdByUserName) || 'Yaradan';
+            return {
+                id: task.createdByUserId || '',
+                userName: name,
+                fullName: name,
+                email: '',
+                role: 'Employee',
+            } as UserResponse;
+        }
+        return null;
     }, [task, allUsers]);
 
     const getUserName = (userId: string) => {
@@ -540,30 +568,43 @@ const TaskDetail: React.FC = () => {
 
     const handlePublishDraft = async () => {
         if (!task) return;
+
+        const hasValidProject = Boolean(task.projectId && String(task.projectId).trim() !== '');
+        const hasValidDeadline = Boolean(task.deadline && !String(task.deadline).startsWith('0001-01-01'));
+
+        if (!hasValidProject || !hasValidDeadline) {
+            addToast('Tapşırığı yaratmaq üçün layihə və icra tarixini seçin', undefined, 'info');
+            navigate(`/tasks/edit/${task.id}`);
+            return;
+        }
+
         setPublishingDraft(true);
         try {
-            const newStatus = task.assignedToUserId ? TaskStatus.Assigned : TaskStatus.Pending;
-            await taskService.updateTask({
-                id: task.id,
+            const created = await taskService.publishDraftTask(task.id, {
                 title: task.title,
                 description: task.description,
                 difficulty: task.difficulty,
-                status: newStatus,
+                priority: typeof task.priority === 'number' ? task.priority : 1,
+                projectId: task.projectId,
+                divisionId: task.divisionId,
+                titleId: task.titleId,
+                levelId: task.levelId,
                 startDate: task.startDate,
                 deadline: task.deadline,
                 assignedToUserId: task.assignedToUserId,
-                createdByUserId: task.createdByUserId,
+                assignedToUserIds: task.assignedToUserId ? [task.assignedToUserId] : undefined,
+                createdByUserId: task.createdByUserId || userInfo?.userId || '',
             });
 
-            if (task.assignedToUserId) {
-                await taskService.assignTask(task.id, task.assignedToUserId).catch(() => {});
+            addToast('Tapşırıq uğurla yaradıldı!', undefined, 'success');
+            const targetTask = Array.isArray(created) ? created[0] : created;
+            if (targetTask && targetTask.id && String(targetTask.id) !== String(task.id)) {
+                navigate(`/tasks/${targetTask.id}`);
+            } else {
+                navigate('/tasks');
             }
-
-            const updated = await taskService.getTaskById(task.id);
-            setTask(updated);
-            addToast('Tapşırıq uğurla dərc edildi!', undefined, 'success');
         } catch (err: any) {
-            const msg = err.response?.data?.message || err.message || 'Tapşırığı dərc etmək mümkün olmadı';
+            const msg = err.response?.data?.message || err.message || 'Tapşırığı yaratmaq mümkün olmadı';
             addToast(msg, undefined, 'error');
         } finally {
             setPublishingDraft(false);
@@ -1152,13 +1193,13 @@ const TaskDetail: React.FC = () => {
                             {/* Task Overview Card */}
                             <div className="rounded-2xl border border-zinc-200/80 dark:border-[#27272A] bg-white dark:bg-[#18181B] p-6 sm:p-8 shadow-xs space-y-4">
                                 {/* Draft Banner */}
-                                {task.status === TaskStatus.Draft && (
+                                {(task.status === TaskStatus.Draft || task.isDraft) && (
                                     <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                         <div className="flex items-center gap-2.5">
                                             <span className="text-xl">📝</span>
                                             <div>
                                                 <p className="text-xs font-bold text-amber-700 dark:text-amber-300">Bu tapşırıq qaralama rejimindədir</p>
-                                                <p className="text-[11px] text-amber-600/90 dark:text-amber-400/90">Qaralamalar digər istifadəçilərə görünmür. Aktiv etmək üçün dərc edin.</p>
+                                                <p className="text-[11px] text-amber-600/90 dark:text-amber-400/90">Qaralamalar digər istifadəçilərə görünmür. Aktiv etmək üçün «Tapşırığı Yarat» düyməsinə klikləyin.</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2 shrink-0">
@@ -1169,7 +1210,7 @@ const TaskDetail: React.FC = () => {
                                                 className="px-3.5 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-500 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
                                             >
                                                 {publishingDraft && <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-                                                <span>{publishingDraft ? 'Dərc edilir...' : 'Dərc Et'}</span>
+                                                <span>{publishingDraft ? 'Yaradılır...' : 'Tapşırığı Yarat'}</span>
                                             </button>
                                             <button
                                                 type="button"
@@ -1294,7 +1335,7 @@ const TaskDetail: React.FC = () => {
                                         commentsList.map((comment: any) => {
                                             const commentUser = allUsers.find(u => String(u.id).toLowerCase() === String(comment.userId || '').toLowerCase());
                                             const commentAvatarUrl = getProfilePictureUrl(commentUser?.id, commentUser?.profilePictureUrl);
-                                            const authorName = comment.userName || commentUser?.userName || getUserName(comment.userId);
+                                            const authorName = commentUser?.userName || formatUserDisplayName(comment.userName) || getUserName(comment.userId);
                                             
                                             // Check if this is a system status event comment
                                             const isRevisionComment = comment.content?.includes('[Sistem / Geri Qaytarıldı') || comment.content?.includes('[Düzəliş Tələbi') || comment.content?.includes('Geri Qaytarıldı') || comment.content?.includes('🔄');

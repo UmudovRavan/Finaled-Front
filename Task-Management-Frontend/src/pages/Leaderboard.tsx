@@ -4,7 +4,7 @@ import { Sidebar, Header } from '../layout';
 import { performanceService, notificationService, taskService, userService, authService } from '../api';
 import type { LeaderboardEntry, NotificationResponse, TaskResponse } from '../dto';
 import { TaskStatus, DifficultyLevel } from '../dto';
-import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
+import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, formatUserDisplayName } from '../utils';
 import type { UserInfo } from '../utils';
 import { useLanguage } from '../context/LanguageContext';
 import {
@@ -209,10 +209,10 @@ const Leaderboard: React.FC = () => {
 
             const mappedData: LeaderboardEntry[] = leaderboardData.map((item: any) => {
                 const userId = item.userId || item.UserId;
-                const userObj = allUsersData.find((u: any) => u.id === userId);
+                const userObj = allUsersData.find((u: any) => String(u.id).toLowerCase() === String(userId || '').toLowerCase());
                 return {
                     userId,
-                    userName: item.userName || item.UserName,
+                    userName: userObj?.userName || formatUserDisplayName(item) || 'İstifadəçi',
                     profilePictureUrl: item.profilePictureUrl || item.ProfilePictureUrl || userObj?.profilePictureUrl,
                     totalPoints: item.totalPoints || item.TotalPoints || 0,
                 };

@@ -7,7 +7,7 @@ import { taskService, authService, notificationService, divisionService, project
 import { signalRService } from '../services/signalRService';
 import type { TaskResponse, NotificationResponse, DivisionDTO, ProjectDTO, TitleDTO, UserResponse } from '../dto';
 import { TaskStatus, DifficultyLevel, Priority } from '../dto';
-import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, isUserAdmin, isUserManager, formatDateTime } from '../utils';
+import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, isUserAdmin, isUserManager, formatDateTime, formatUserDisplayName } from '../utils';
 import type { UserInfo } from '../utils';
 import { useLanguage } from '../context/LanguageContext';
 import {
@@ -122,9 +122,17 @@ const MyTasks: React.FC = () => {
     // Live SignalR sync and focus/visibility auto-refresh for real-time task status updates
     useEffect(() => {
         const syncTasks = () => {
-            taskService.getAllTasks()
-                .then((tasks) => {
-                    const clean = (tasks || []).filter((t: any) => !taskService.isSystemActivityTask(t));
+            const currentToken = authService.getToken();
+            const currentUid = currentToken ? parseJwtToken(currentToken)?.userId : undefined;
+            Promise.all([
+                taskService.getAllTasks().catch(() => [] as TaskResponse[]),
+                taskService.getMyDrafts(currentUid).catch(() => [] as TaskResponse[]),
+            ])
+                .then(([tasks, drafts]) => {
+                    const combined = [...(tasks || []), ...(drafts || [])];
+                    const taskMap = new Map<string, TaskResponse>();
+                    combined.forEach((t) => taskMap.set(String(t.id).toLowerCase(), t));
+                    const clean = Array.from(taskMap.values()).filter((t: any) => !taskService.isSystemActivityTask(t));
                     setAllTasks(clean);
                 })
                 .catch(() => {});
@@ -161,9 +169,11 @@ const MyTasks: React.FC = () => {
     const loadData = async () => {
         try {
             setLoading(true);
+            const currentToken = authService.getToken();
+            const currentUid = userInfo?.userId || (currentToken ? parseJwtToken(currentToken)?.userId : undefined);
             const [tasksData, draftsData, notificationsData, divsData, titlesData, projsData, usersData] = await Promise.all([
                 taskService.getAllTasks().catch(() => []),
-                taskService.getMyDrafts(userInfo?.userId).catch(() => []),
+                taskService.getMyDrafts(currentUid).catch(() => []),
                 notificationService.getMyNotifications().catch(() => []),
                 divisionService.getAllDivisions().catch(() => []),
                 titleService.getAllTitles().catch(() => []),
@@ -172,7 +182,7 @@ const MyTasks: React.FC = () => {
             ]);
             const combined = [...(tasksData || []), ...(draftsData || [])];
             const taskMap = new Map<string, TaskResponse>();
-            combined.forEach((t) => taskMap.set(String(t.id), t));
+            combined.forEach((t) => taskMap.set(String(t.id).toLowerCase(), t));
             const cleanTasks = Array.from(taskMap.values()).filter((t: any) => !taskService.isSystemActivityTask(t));
             setAllTasks(cleanTasks);
             setNotifications(notificationsData);
@@ -319,7 +329,14 @@ const MyTasks: React.FC = () => {
 
         // 1. Ownership Filter
         if (ownershipFilter === 'created') {
-            result = result.filter((task) => task.createdByUserId === userInfo?.userId);
+            result = result.filter(
+                (task) =>
+                    task.createdByUserId === userInfo?.userId ||
+                    (task.status === TaskStatus.Draft &&
+                        (!task.createdByUserId ||
+                            String(task.createdByUserId).toLowerCase() === String(userInfo?.userId || '').toLowerCase() ||
+                            String(task.createdByUserId) === '00000000-0000-0000-0000-000000000000'))
+            );
         } else if (ownershipFilter === 'assigned') {
             result = result.filter((task) => task.assignedToUserId === userInfo?.userId);
         }
@@ -338,9 +355,6 @@ const MyTasks: React.FC = () => {
         // 3. Status Filter
         if (statusFilter !== 'all') {
             result = result.filter((task) => task.status === parseInt(statusFilter));
-        } else {
-            // Hide Drafts from general task view unless Draft status is explicitly selected
-            result = result.filter((task) => task.status !== TaskStatus.Draft);
         }
 
         // 4. Priority Filter
@@ -452,7 +466,7 @@ const MyTasks: React.FC = () => {
         {
             id: 'pending',
             title: t('statuses.pending', {}, 'Gözləmədə'),
-            statuses: [TaskStatus.Pending, TaskStatus.Assigned],
+            statuses: [TaskStatus.Draft, TaskStatus.Pending, TaskStatus.Assigned],
             color: '#38BDF8',
             bgGlow: 'bg-sky-500/10',
         },
@@ -579,19 +593,27 @@ const MyTasks: React.FC = () => {
         })),
     ], [titles, t]);
 
+    const getAssigneeDisplayName = (taskItem: TaskResponse): string => {
+        if (taskItem.assignedToUserId) {
+            const matched = users.find((u) => String(u.id).toLowerCase() === String(taskItem.assignedToUserId).toLowerCase());
+            if (matched?.userName) return matched.userName;
+        }
+        return taskItem.assignedToUserName ? formatUserDisplayName(taskItem.assignedToUserName) : '';
+    };
+
     const assigneeOptions = useMemo<SelectOption<string>[]>(() => {
         const userMap = new Map<string, string>();
         
         users.forEach((u) => {
             if (u.id) {
-                const name = u.userName || u.email || 'İstifadəçi';
+                const name = formatUserDisplayName(u) || 'İstifadəçi';
                 userMap.set(String(u.id), name);
             }
         });
 
         allTasks.forEach((tItem) => {
             if (tItem.assignedToUserId && !userMap.has(String(tItem.assignedToUserId))) {
-                userMap.set(String(tItem.assignedToUserId), tItem.assignedToUserName || 'İstifadəçi');
+                userMap.set(String(tItem.assignedToUserId), formatUserDisplayName(tItem.assignedToUserName) || 'İstifadəçi');
             }
         });
 
@@ -985,9 +1007,9 @@ const MyTasks: React.FC = () => {
                                                                 <span>{formatDateTime(taskItem.deadline)}</span>
                                                             </div>
 
-                                                            {taskItem.assignedToUserName && (
+                                                            {getAssigneeDisplayName(taskItem) && (
                                                                 <span className="font-semibold text-zinc-800 dark:text-white truncate max-w-[90px]">
-                                                                    {taskItem.assignedToUserName}
+                                                                    {getAssigneeDisplayName(taskItem)}
                                                                 </span>
                                                             )}
                                                         </div>
@@ -1089,7 +1111,7 @@ const MyTasks: React.FC = () => {
                                                         {getPriorityBadge(taskItem.difficulty)}
                                                     </td>
                                                     <td className="py-3.5 px-4 text-zinc-700 dark:text-[#D4D4D8] font-medium">
-                                                        {taskItem.assignedToUserName || t('tasks.unassigned', {}, 'Təyin edilməyib')}
+                                                        {getAssigneeDisplayName(taskItem) || t('tasks.unassigned', {}, 'Təyin edilməyib')}
                                                     </td>
                                                     <td className="py-3.5 px-4 text-zinc-500 dark:text-[#A1A1AA]">
                                                         <div className="flex items-center gap-1.5">

@@ -6,7 +6,7 @@ import { dashboardService, notificationService, authService, userService } from 
 import type { DashboardOverviewResponse } from '../api/dashboardService';
 import type { TaskResponse, NotificationResponse, UserResponse } from '../dto';
 import { TaskStatus } from '../dto';
-import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, formatDateTime } from '../utils';
+import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, formatDateTime, formatUserDisplayName } from '../utils';
 import type { UserInfo } from '../utils';
 import { useLanguage } from '../context/LanguageContext';
 import {
@@ -94,18 +94,22 @@ const DashboardOverview: React.FC = () => {
     const getUserInfoById = (userId?: string, fallbackName?: string) => {
         if (!userId && !fallbackName) return null;
         const normalizedId = String(userId || '').trim().toLowerCase();
-        const found = allUsers.find(
-            u => String(u.id).trim().toLowerCase() === normalizedId ||
-                 (u.email && u.email.trim().toLowerCase() === normalizedId)
-        );
+        const found = normalizedId
+            ? allUsers.find(
+                  u =>
+                      String(u.id).trim().toLowerCase() === normalizedId ||
+                      (u.email && u.email.trim().toLowerCase() === normalizedId)
+              )
+            : undefined;
         if (found) {
+            const name = formatUserDisplayName(found) || 'İstifadəçi';
             return {
-                name: found.userName || found.email?.split('@')[0] || 'İstifadəçi',
+                name,
                 avatarUrl: getProfilePictureUrl(found.id, found.profilePictureUrl),
-                initial: (found.userName || found.email || 'U').charAt(0).toUpperCase(),
+                initial: name.charAt(0).toUpperCase(),
             };
         }
-        const name = fallbackName || (userId?.includes('@') ? userId.split('@')[0] : userId) || 'Məsul şəxs';
+        const name = formatUserDisplayName(fallbackName) || 'Məsul şəxs';
         return {
             name,
             avatarUrl: undefined,
@@ -608,7 +612,8 @@ const DashboardOverview: React.FC = () => {
                                                     <td className="py-3 pr-2">
                                                         {(() => {
                                                             const creator = getUserInfoById(tItem.createdByUserId, tItem.createdByUserName);
-                                                            const assignee = tItem.assignedToUserName || (tItem.assignedToUserId ? getUserInfoById(tItem.assignedToUserId)?.name : null);
+                                                            const assigneeInfo = getUserInfoById(tItem.assignedToUserId, tItem.assignedToUserName);
+                                                            const assignee = assigneeInfo?.name || (tItem.assignedToUserName ? formatUserDisplayName(tItem.assignedToUserName) : null);
                                                             
                                                             if (!creator && !assignee) {
                                                                 return <span className="text-zinc-600 text-xs">—</span>;
@@ -617,8 +622,12 @@ const DashboardOverview: React.FC = () => {
                                                             const primaryUser = creator || {
                                                                 name: assignee || 'İstifadəçi',
                                                                 initial: (assignee || 'U').charAt(0).toUpperCase(),
-                                                                avatarUrl: undefined
+                                                                avatarUrl: assigneeInfo?.avatarUrl
                                                             };
+
+                                                            const isSamePerson =
+                                                                (tItem.assignedToUserId && tItem.createdByUserId && String(tItem.assignedToUserId).toLowerCase() === String(tItem.createdByUserId).toLowerCase()) ||
+                                                                (assignee && creator && assignee.trim().toLowerCase() === creator.name.trim().toLowerCase());
 
                                                             return (
                                                                 <div className="flex items-center gap-2 max-w-[170px]">
@@ -633,7 +642,7 @@ const DashboardOverview: React.FC = () => {
                                                                         <div className="text-xs font-semibold text-zinc-200 truncate group-hover:text-white transition-colors" title={`${t('common.responsible', {}, 'Məsul şəxs')}: ${primaryUser.name}`}>
                                                                             {primaryUser.name}
                                                                         </div>
-                                                                        {assignee && creator && assignee !== creator.name && (
+                                                                        {assignee && creator && !isSamePerson && (
                                                                             <div className="text-[10px] text-zinc-500 truncate" title={`${t('common.assignedTo', {}, 'İcraçı')}: ${assignee}`}>
                                                                                 → {assignee}
                                                                             </div>

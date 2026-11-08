@@ -1,6 +1,6 @@
 import httpClient from './httpClient';
 import { authService } from './authService';
-import { parseJwtToken } from '../utils/tokenUtils';
+import { parseJwtToken, formatUserDisplayName } from '../utils/tokenUtils';
 import type { TaskResponse, TaskCommentDto } from '../dto';
 
 const COMMENTS_STORAGE_PREFIX = 'altensor_task_comments_';
@@ -204,9 +204,11 @@ export function normalizeTask(raw: any): TaskResponse {
     }
 
     const rawDeadline = raw.deadline ?? raw.Deadline ?? raw.dueDate ?? raw.DueDate ?? null;
-    const deadline = rawDeadline ? String(rawDeadline) : null;
+    const deadlineStr = rawDeadline ? String(rawDeadline) : null;
+    const deadline = deadlineStr && !deadlineStr.startsWith('0001-01-01') ? deadlineStr : null;
     const rawStartDate = raw.startDate ?? raw.StartDate ?? null;
-    const startDate = rawStartDate ? String(rawStartDate) : null;
+    const startDateStr = rawStartDate ? String(rawStartDate) : null;
+    const startDate = startDateStr && !startDateStr.startsWith('0001-01-01') ? startDateStr : null;
     const isDraft = Boolean(raw.isDraft ?? raw.IsDraft ?? status === 6);
 
     const assignedAt = (raw.assignedAt ?? raw.AssignedAt) ? String(raw.assignedAt ?? raw.AssignedAt) : null;
@@ -263,16 +265,27 @@ export function normalizeTask(raw: any): TaskResponse {
         ?? undefined;
 
     const assignedToUserId = raw.assignedToUserId ?? raw.AssignedToUserId ?? raw.assignedToId ?? raw.AssignedToId ?? raw.assignedUserId ?? raw.AssignedUserId ?? undefined;
-    const assignedToUserName = raw.assignedToUserName ?? raw.AssignedToUserName ?? raw.assignedUserName ?? raw.AssignedUserName ?? raw.assignedUser?.userName ?? raw.AssignedUser?.UserName ?? undefined;
+    const rawAssignedName = raw.assignedToUser?.fullName ?? raw.AssignedToUser?.FullName
+        ?? raw.assignedUser?.fullName ?? raw.AssignedUser?.FullName
+        ?? raw.assignedToUserName ?? raw.AssignedToUserName
+        ?? raw.assignedUserName ?? raw.AssignedUserName
+        ?? raw.assignedToUser?.userName ?? raw.AssignedToUser?.UserName
+        ?? raw.assignedUser?.userName ?? raw.AssignedUser?.UserName
+        ?? undefined;
+    const assignedToUserName = rawAssignedName ? formatUserDisplayName(rawAssignedName) : undefined;
     const createdByUserId = String(raw.createdByUserId ?? raw.CreatedByUserId ?? raw.createdById ?? raw.CreatedById ?? raw.userId ?? raw.UserId ?? raw.createdUser?.id ?? '');
-    const createdByUserName = raw.createdByUserName ?? raw.CreatedByUserName
+    const rawCreatedName = raw.createdByUser?.fullName ?? raw.CreatedByUser?.FullName
+        ?? raw.createdUser?.fullName ?? raw.CreatedUser?.FullName
+        ?? raw.creator?.fullName ?? raw.Creator?.FullName
+        ?? raw.createdByUserName ?? raw.CreatedByUserName
         ?? raw.createdUserName ?? raw.CreatedUserName
-        ?? raw.createdUser?.userName ?? raw.CreatedUser?.UserName
         ?? raw.createdUser?.name ?? raw.CreatedUser?.Name
+        ?? raw.createdUser?.userName ?? raw.CreatedUser?.UserName
         ?? raw.creator?.userName ?? raw.Creator?.UserName
         ?? raw.createdBy?.userName ?? raw.CreatedBy?.UserName
         ?? raw.creatorName ?? raw.CreatorName
         ?? undefined;
+    const createdByUserName = rawCreatedName ? formatUserDisplayName(rawCreatedName) : undefined;
     const parentTaskId = raw.parentTaskId ?? raw.ParentTaskId ?? null;
 
     // Normalize files/attachments
@@ -335,11 +348,12 @@ export function normalizeTask(raw: any): TaskResponse {
                 taskCommentMentionIDs: [],
             };
         }
+        const rawCommentAuthor = c.fullName ?? c.FullName ?? c.user?.fullName ?? c.User?.FullName ?? c.user?.name ?? c.User?.Name ?? c.userName ?? c.UserName ?? c.user?.userName ?? c.User?.UserName ?? undefined;
         return {
             id: c.id ?? c.Id ?? c.taskCommentId ?? c.TaskCommentId ?? Math.random(),
             content: String(c.content ?? c.Content ?? c.comment ?? c.Comment ?? c.text ?? c.Text ?? c.message ?? c.Message ?? ''),
             userId: String(c.userId ?? c.UserId ?? c.createdByUserId ?? c.CreatedByUserId ?? c.senderId ?? c.SenderId ?? c.user?.id ?? c.User?.Id ?? c.appUserId ?? c.AppUserId ?? ''),
-            userName: c.userName ?? c.UserName ?? c.user?.userName ?? c.User?.UserName ?? c.user?.name ?? c.User?.Name ?? c.fullName ?? c.FullName ?? undefined,
+            userName: rawCommentAuthor ? formatUserDisplayName(rawCommentAuthor) : undefined,
             taskId: c.taskId ?? c.TaskId ?? id,
             createdAt: c.createdAt ?? c.CreatedAt ?? c.createdDate ?? c.CreatedDate ?? c.date ?? c.Date ?? new Date().toISOString(),
             taskCommentMentionIDs: c.taskCommentMentionIDs ?? c.TaskCommentMentionIDs ?? c.mentions ?? c.Mentions ?? [],
@@ -443,6 +457,39 @@ export function isSystemActivityTask(rawOrTask: any): boolean {
         title.includes('[deal_id:') ||
         title.includes('[lead_id:')
     );
+}
+
+const DRAFTS_STORAGE_KEY = 'tms_local_drafts_v1';
+
+function getStoredDrafts(): TaskResponse[] {
+    try {
+        const raw = localStorage.getItem(DRAFTS_STORAGE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
+
+function saveStoredDraft(task: TaskResponse): void {
+    try {
+        if (!task || !task.id) return;
+        const drafts = getStoredDrafts().filter((d) => String(d.id).toLowerCase() !== String(task.id).toLowerCase());
+        drafts.unshift({ ...task, status: 6 as any, isDraft: true });
+        localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(drafts.slice(0, 100)));
+    } catch {
+        // ignore storage errors
+    }
+}
+
+function removeStoredDraft(id: string | number): void {
+    try {
+        const drafts = getStoredDrafts().filter((d) => String(d.id).toLowerCase() !== String(id).toLowerCase());
+        localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(drafts));
+    } catch {
+        // ignore storage errors
+    }
 }
 
 export const taskService = {
@@ -668,6 +715,34 @@ export const taskService = {
             }
         }
 
+        // Check local stored drafts to preserve draft status/edits if this task is still a draft
+        const localDraft = getStoredDrafts().find((t) => String(t.id).toLowerCase() === taskId.toLowerCase());
+        if (localDraft) {
+            if (foundTask) {
+                foundTask = {
+                    ...foundTask,
+                    ...localDraft,
+                    id: foundTask.id,
+                    status: 6 as any,
+                    isDraft: true,
+                    files: foundTask.files && foundTask.files.length > 0 ? foundTask.files : localDraft.files,
+                };
+            } else {
+                foundTask = { ...localDraft, status: 6 as any, isDraft: true };
+            }
+        }
+
+        // Fallback 3: Check drafts (server + local storage)
+        if (!foundTask) {
+            try {
+                const drafts = await this.getMyDrafts();
+                const found = drafts.find((t) => String(t.id).toLowerCase() === taskId.toLowerCase());
+                if (found) foundTask = found;
+            } catch {
+                // ignore
+            }
+        }
+
         if (!foundTask) {
             throw new Error(`Task with id ${id} not found`);
         }
@@ -732,39 +807,170 @@ export const taskService = {
             });
         }
 
-        const response = await httpClient.post<any>('/Task/CreateTask', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
+        let response: any;
+        try {
+            response = await httpClient.post<any>('/Task/CreateTask', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+        } catch (err) {
+            // If saving as a draft without mandatory fields on an older backend, persist locally so draft never fails
+            if (data.isDraft || data.status === 6) {
+                const token = authService.getToken();
+                const currentUser = token ? parseJwtToken(token) : null;
+                const localDraftTask: TaskResponse = normalizeTask({
+                    id: `draft-${Date.now()}`,
+                    title: data.title || 'Adsız Qaralama Tapşırıq',
+                    description: data.description || '',
+                    difficulty: data.difficulty ?? 1,
+                    priority: data.priority ?? 1,
+                    status: 6,
+                    isDraft: true,
+                    startDate: data.startDate || null,
+                    deadline: data.deadline || null,
+                    projectId: data.projectId || null,
+                    divisionId: data.divisionId || null,
+                    titleId: data.titleId || null,
+                    levelId: data.levelId || null,
+                    assignedToUserId: data.assignedToUserId || (data.assignedToUserIds && data.assignedToUserIds[0]) || undefined,
+                    createdByUserId: data.createdByUserId || currentUser?.userId || '',
+                    createdAt: new Date().toISOString(),
+                });
+                saveStoredDraft(localDraftTask);
+                return localDraftTask;
+            }
+            throw err;
+        }
         const resData = response.data?.data || response.data?.tasks || response.data?.task || response.data;
         if (Array.isArray(resData)) {
-            return resData.map(normalizeTask);
+            const normalizedList = resData.map(normalizeTask);
+            if (data.isDraft || data.status === 6) {
+                normalizedList.forEach((t) => saveStoredDraft({ ...t, status: 6 as any, isDraft: true }));
+            }
+            return normalizedList;
         }
-        return normalizeTask(resData);
+        const normalizedSingle = normalizeTask(resData);
+        if (data.isDraft || data.status === 6) {
+            const draftTask: TaskResponse = {
+                ...normalizedSingle,
+                status: 6 as any,
+                isDraft: true,
+                createdByUserId: normalizedSingle.createdByUserId || data.createdByUserId || '',
+                projectId: normalizedSingle.projectId || data.projectId || null,
+                divisionId: normalizedSingle.divisionId || data.divisionId || null,
+                titleId: normalizedSingle.titleId || data.titleId || null,
+                levelId: normalizedSingle.levelId || data.levelId || null,
+                startDate: normalizedSingle.startDate || data.startDate || null,
+                deadline: normalizedSingle.deadline || data.deadline || null,
+            };
+            saveStoredDraft(draftTask);
+            return draftTask;
+        }
+        return normalizedSingle;
     },
 
     async updateTask(data: UpdateTaskRequest): Promise<void> {
+        const toGuidOrNull = (val: any): string | null => {
+            if (val === undefined || val === null) return null;
+            const s = String(val).trim();
+            if (!s || s === 'null' || s === 'undefined' || s === '00000000-0000-0000-0000-000000000000') return null;
+            const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            return guidRegex.test(s) ? s : null;
+        };
+
+        const token = authService.getToken();
+        const activeUser = token ? parseJwtToken(token) : null;
+        const resolvedCreatorId =
+            toGuidOrNull(data.createdByUserId) ||
+            toGuidOrNull(activeUser?.userId) ||
+            String(data.createdByUserId || activeUser?.userId || '');
+
+        const isDraftStatus = Number(data.status) === 6;
+
+        // If this is a purely local draft being saved as draft again
+        if (String(data.id).startsWith('draft-') && isDraftStatus) {
+            const existing = getStoredDrafts().find((d) => String(d.id) === String(data.id));
+            const updatedLocal = normalizeTask({
+                ...(existing || {}),
+                id: data.id,
+                title: data.title,
+                description: data.description,
+                difficulty: data.difficulty,
+                priority: data.priority ?? 1,
+                status: 6,
+                isDraft: true,
+                levelId: toGuidOrNull(data.levelId),
+                projectId: toGuidOrNull(data.projectId),
+                divisionId: toGuidOrNull(data.divisionId),
+                titleId: toGuidOrNull(data.titleId),
+                workGroupId: toGuidOrNull(data.workGroupId),
+                startDate: data.startDate || null,
+                deadline: data.deadline || null,
+                assignedToUserId: toGuidOrNull(data.assignedToUserId) || undefined,
+                createdByUserId: resolvedCreatorId,
+            });
+            saveStoredDraft(updatedLocal);
+            return;
+        }
+
+        const safeStartDate =
+            data.startDate && !String(data.startDate).startsWith('0001-01-01')
+                ? new Date(data.startDate).toISOString()
+                : null;
+        const safeDeadline =
+            data.deadline && !String(data.deadline).startsWith('0001-01-01')
+                ? new Date(data.deadline).toISOString()
+                : null;
+
         // Always update task metadata with JSON (backend only accepts application/json for UpdateTask)
         await httpClient.put('/Task/UpdateTask', {
             Id: data.id,
             Title: data.title,
-            Description: data.description,
-            Difficulty: data.difficulty,
+            Description: data.description || '',
+            Difficulty: data.difficulty ?? 1,
             Status: data.status,
-            Priority: data.priority,
-            LevelId: data.levelId,
-            ProjectLevelId: data.levelId,
-            ProjectId: data.projectId,
-            DivisionId: data.divisionId,
-            TitleId: data.titleId,
-            WorkGroupId: data.workGroupId,
-            StartDate: data.startDate,
-            Deadline: data.deadline,
-            AssignedToUserId: data.assignedToUserId,
-            CreatedByUserId: data.createdByUserId,
-            ParentTaskId: data.parentTaskId,
+            IsDraft: isDraftStatus,
+            Priority: data.priority ?? 1,
+            LevelId: toGuidOrNull(data.levelId),
+            ProjectLevelId: toGuidOrNull(data.levelId),
+            ProjectId: toGuidOrNull(data.projectId),
+            DivisionId: toGuidOrNull(data.divisionId),
+            TitleId: toGuidOrNull(data.titleId),
+            WorkGroupId: toGuidOrNull(data.workGroupId),
+            StartDate: safeStartDate,
+            Deadline: safeDeadline,
+            AssignedToUserId: toGuidOrNull(data.assignedToUserId),
+            CreatedByUserId: resolvedCreatorId,
+            ParentTaskId: toGuidOrNull(data.parentTaskId),
         });
+
+        if (isDraftStatus) {
+            const existing = getStoredDrafts().find((d) => String(d.id).toLowerCase() === String(data.id).toLowerCase());
+            saveStoredDraft(
+                normalizeTask({
+                    ...(existing || {}),
+                    id: data.id,
+                    title: data.title,
+                    description: data.description,
+                    difficulty: data.difficulty,
+                    priority: data.priority ?? 1,
+                    status: 6,
+                    isDraft: true,
+                    levelId: toGuidOrNull(data.levelId),
+                    projectId: toGuidOrNull(data.projectId),
+                    divisionId: toGuidOrNull(data.divisionId),
+                    titleId: toGuidOrNull(data.titleId),
+                    workGroupId: toGuidOrNull(data.workGroupId),
+                    startDate: safeStartDate,
+                    deadline: safeDeadline,
+                    assignedToUserId: toGuidOrNull(data.assignedToUserId) || undefined,
+                    createdByUserId: resolvedCreatorId,
+                })
+            );
+        } else {
+            removeStoredDraft(data.id);
+        }
 
         // Upload files separately if any were provided
         if (data.files && data.files.length > 0) {
@@ -774,6 +980,7 @@ export const taskService = {
 
             // Try multiple candidate endpoints for file upload
             const uploadEndpoints = [
+                `/Task/AddFilesToTask/${data.id}`,
                 '/TaskAttachment/Upload',
                 '/TaskAttachment/UploadFiles',
                 '/TaskAttachment/AddAttachment',
@@ -795,8 +1002,74 @@ export const taskService = {
         }
     },
 
+    async publishDraftTask(draftId: string | number, data: CreateTaskRequest, files?: File[]): Promise<TaskResponse | TaskResponse[]> {
+        const cleanDraftId = String(draftId).trim();
+        const hasAssignee =
+            (Array.isArray(data.assignedToUserIds) && data.assignedToUserIds.length > 0) ||
+            Boolean(data.assignedToUserId && String(data.assignedToUserId).trim() !== '');
+        const activeStatus = hasAssignee ? 1 : 0; // 1 = Assigned, 0 = Pending
+
+        const token = authService.getToken();
+        const activeUser = token ? parseJwtToken(token) : null;
+        const creatorId = data.createdByUserId || activeUser?.userId || '';
+
+        // Remove from local draft cache right away
+        removeStoredDraft(cleanDraftId);
+
+        // Create the real task via POST /Task/CreateTask so backend runs full creation logic
+        // (project inheritance, AssignedAt timestamp, notifications, multi-user support, file attachments)
+        try {
+            const created = await this.createTask(
+                {
+                    ...data,
+                    status: activeStatus,
+                    isDraft: false,
+                    createdByUserId: creatorId,
+                },
+                files
+            );
+
+            // Delete the old server draft if it existed on the server
+            if (!cleanDraftId.startsWith('draft-')) {
+                await httpClient.delete(`/Task/DeleteTask/${cleanDraftId}`).catch(() => {});
+            }
+            removeStoredDraft(cleanDraftId);
+            return created;
+        } catch (createErr) {
+            // Fallback: if CreateTask failed and draft exists on server, update it in-place
+            if (!cleanDraftId.startsWith('draft-')) {
+                await this.updateTask({
+                    id: cleanDraftId,
+                    title: data.title,
+                    description: data.description,
+                    difficulty: data.difficulty ?? 1,
+                    priority: data.priority ?? 1,
+                    status: activeStatus,
+                    levelId: data.levelId,
+                    projectId: data.projectId,
+                    divisionId: data.divisionId,
+                    titleId: data.titleId,
+                    workGroupId: data.workGroupId,
+                    startDate: data.startDate,
+                    deadline: data.deadline,
+                    assignedToUserId: data.assignedToUserId || (data.assignedToUserIds && data.assignedToUserIds[0]),
+                    createdByUserId: creatorId,
+                    files: files || data.files,
+                });
+                const singleAssignee = data.assignedToUserId || (data.assignedToUserIds && data.assignedToUserIds[0]);
+                if (singleAssignee) {
+                    await this.assignTask(cleanDraftId, singleAssignee).catch(() => {});
+                }
+                removeStoredDraft(cleanDraftId);
+                return this.getTaskById(cleanDraftId);
+            }
+            throw createErr;
+        }
+    },
+
     async deleteTask(id: string | number): Promise<void> {
         await httpClient.delete(`/Task/DeleteTask/${id}`);
+        removeStoredDraft(id);
     },
 
     async addComment(taskId: string | number, comment: string, commentObj?: Partial<TaskCommentDto>): Promise<TaskCommentDto> {
@@ -1005,17 +1278,51 @@ export const taskService = {
     },
 
     async getMyDrafts(userId?: string): Promise<TaskResponse[]> {
+        const draftMap = new Map<string, TaskResponse>();
+
+        // 1. Local stored drafts fallback
+        getStoredDrafts().forEach((d) => {
+            if (d && d.id) {
+                draftMap.set(String(d.id).toLowerCase(), { ...d, status: 6 as any, isDraft: true });
+            }
+        });
+
+        // 2. Server drafts via /Task/filter
         try {
-            const list = await this.filterTasks({
+            let serverDrafts = await this.filterTasks({
                 status: 'Draft',
                 includeDrafts: true,
+            }).catch(() => [] as TaskResponse[]);
+
+            serverDrafts = (serverDrafts || []).filter((t) => Number(t.status) === 6 || t.isDraft === true);
+
+            if (serverDrafts.length === 0) {
+                const allWithDrafts = await this.filterTasks({
+                    includeDrafts: true,
+                }).catch(() => [] as TaskResponse[]);
+                serverDrafts = allWithDrafts.filter((t) => Number(t.status) === 6 || t.isDraft === true);
+            }
+
+            serverDrafts.forEach((t) => {
+                if (t && t.id) {
+                    const draftItem: TaskResponse = { ...t, status: 6 as any, isDraft: true };
+                    draftMap.set(String(t.id).toLowerCase(), draftItem);
+                    saveStoredDraft(draftItem);
+                }
             });
-            if (!userId) return list;
-            const uid = String(userId).toLowerCase();
-            return list.filter((t) => String(t.createdByUserId).toLowerCase() === uid);
         } catch {
-            return [];
+            // fallback to local stored drafts
         }
+
+        const merged = Array.from(draftMap.values());
+        if (!userId) return merged;
+        const uid = String(userId).toLowerCase();
+        return merged.filter(
+            (t) =>
+                !t.createdByUserId ||
+                String(t.createdByUserId).toLowerCase() === uid ||
+                String(t.createdByUserId) === '00000000-0000-0000-0000-000000000000'
+        );
     },
 
     async exportTasksToExcel(params: TaskFilterParams): Promise<void> {

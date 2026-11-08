@@ -14,7 +14,7 @@ import type {
     UserResponse,
 } from '../dto';
 import { TaskStatus, DifficultyLevel } from '../dto';
-import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, formatShortDate } from '../utils';
+import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, formatShortDate, formatUserDisplayName } from '../utils';
 import type { UserInfo } from '../utils';
 import { useLanguage } from '../context/LanguageContext';
 import {
@@ -149,7 +149,7 @@ const EmployeePerformance: React.FC = () => {
 
             const leaderboard = leaderboardRaw.map((item: any) => ({
                 userId: item.userId || item.UserId,
-                userName: item.userName || item.UserName,
+                userName: formatUserDisplayName(item) || 'İstifadəçi',
                 totalPoints: item.totalPoints ?? item.TotalPoints ?? 0,
             }));
 

@@ -22,6 +22,70 @@ export const getProfilePictureUrl = (
     return `${base}/Authorize/ProfilePicture/${userId}${timestamp ? `?t=${timestamp}` : ''}`;
 };
 
+export const formatUserDisplayName = (rawOrName?: any, fallbackEmail?: string): string => {
+    const cleanString = (val?: any): string => (typeof val === 'string' ? val.trim() : '');
+
+    if (rawOrName && typeof rawOrName === 'object') {
+        const firstLast = cleanString(rawOrName.firstName || rawOrName.FirstName)
+            ? `${cleanString(rawOrName.firstName || rawOrName.FirstName)} ${cleanString(rawOrName.lastName || rawOrName.LastName)}`.trim()
+            : '';
+
+        const primaryCandidates = [
+            rawOrName.fullName,
+            rawOrName.FullName,
+            rawOrName.full_name,
+            rawOrName.employeeName,
+            rawOrName.EmployeeName,
+            firstLast,
+            rawOrName.name,
+            rawOrName.Name,
+        ];
+
+        for (const c of primaryCandidates) {
+            const s = cleanString(c);
+            if (s && !s.includes('@')) return s;
+        }
+
+        const secondaryCandidates = [
+            rawOrName.userName,
+            rawOrName.UserName,
+            rawOrName.username,
+        ];
+
+        for (const c of secondaryCandidates) {
+            const s = cleanString(c);
+            if (s && !s.includes('@')) return s;
+        }
+
+        const anyCandidate = [
+            ...primaryCandidates,
+            ...secondaryCandidates,
+            rawOrName.email,
+            rawOrName.Email,
+            fallbackEmail,
+        ]
+            .map(cleanString)
+            .find(Boolean);
+
+        if (anyCandidate) {
+            return anyCandidate.includes('@') ? anyCandidate.split('@')[0] : anyCandidate;
+        }
+        return '';
+    }
+
+    const str = cleanString(rawOrName);
+    if (str) {
+        return str.includes('@') ? str.split('@')[0] : str;
+    }
+
+    const fb = cleanString(fallbackEmail);
+    if (fb) {
+        return fb.includes('@') ? fb.split('@')[0] : fb;
+    }
+
+    return '';
+};
+
 const decodeJwtPayload = (token: string): any => {
     try {
         const parts = token.split('.');
@@ -72,11 +136,16 @@ export const parseJwtToken = (token: string): UserInfo | null => {
             payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ||
             '';
 
-        const userName =
+        const rawUserName =
+            payload.fullName ||
+            payload.FullName ||
+            payload.full_name ||
+            (payload.given_name ? `${payload.given_name} ${payload.family_name || ''}`.trim() : '') ||
             payload.name ||
             payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ||
             payload.unique_name ||
-            (email ? email.split('@')[0] : '');
+            '';
+        const userName = formatUserDisplayName(rawUserName, email);
 
         const tenantId = payload.tenant_id || payload.tenantId;
         const tenantSlug = payload.tenant_slug || payload.tenantSlug;

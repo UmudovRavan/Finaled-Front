@@ -154,43 +154,47 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         setSelectedTitleId(titleId);
     };
 
-    // When project changes, automatically set the Title and Division belonging to that project
+    // When project changes, automatically set the Title and Division belonging to that project if not already selected
     const handleProjectChange = (projId: string) => {
         setSelectedProjectId(projId);
         if (projId) {
-            const foundProject = projects.find((p) => String(p.id) === String(projId));
+            const foundProject = projects.find((p) => String(p.id).toLowerCase() === String(projId).toLowerCase());
             if (foundProject) {
-                // Auto-set the Title associated with this project
-                if (foundProject.titleId) {
+                if (!selectedTitleId && foundProject.titleId) {
                     setSelectedTitleId(String(foundProject.titleId));
-                } else {
-                    setSelectedTitleId('');
                 }
-                // Auto-set the Division associated with this project
-                if (foundProject.divisionId) {
+                if (!selectedDivisionId && foundProject.divisionId) {
                     setSelectedDivisionId(String(foundProject.divisionId));
                 }
             }
-        } else {
-            setSelectedTitleId('');
         }
     };
 
     // Computed filtered projects for selection dropdown
     const filteredProjects = useMemo(() => {
-        return projects.filter((p) => {
+        const matched = projects.filter((p) => {
             // Selected project always stays in the list so it never disappears
-            if (selectedProjectId && String(p.id) === String(selectedProjectId)) {
+            if (selectedProjectId && String(p.id).toLowerCase() === String(selectedProjectId).toLowerCase()) {
                 return true;
             }
-            if (selectedDivisionId && String(p.divisionId) !== String(selectedDivisionId)) {
+            if (
+                selectedDivisionId &&
+                p.divisionId &&
+                String(p.divisionId).toLowerCase() !== String(selectedDivisionId).toLowerCase()
+            ) {
                 return false;
             }
-            if (selectedTitleId && p.titleId && String(p.titleId) !== String(selectedTitleId)) {
+            if (
+                selectedTitleId &&
+                p.titleId &&
+                String(p.titleId).toLowerCase() !== String(selectedTitleId).toLowerCase()
+            ) {
                 return false;
             }
             return true;
         });
+        // If no project strictly matches the selected Division/Title, show all projects so the user is never blocked
+        return matched.length > 0 ? matched : projects;
     }, [projects, selectedDivisionId, selectedTitleId, selectedProjectId]);
 
     // Check workload when user is assigned
@@ -314,7 +318,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                     startDate: startDate ? new Date(startDate).toISOString() : undefined,
                     deadline: deadline ? new Date(deadline).toISOString() : undefined,
                     assignedToUserIds: userIds.length > 0 ? userIds : undefined,
-                    assignedToUserId: userIds.length === 1 ? userIds[0] : undefined,
+                    assignedToUserId: userIds.length > 0 ? userIds[0] : undefined,
                     divisionId: selectedDivisionId || undefined,
                     projectId: selectedProjectId || undefined,
                     titleId: selectedTitleId || undefined,
@@ -389,7 +393,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                     startDate: startDate ? new Date(startDate).toISOString() : undefined,
                     deadline: new Date(deadline).toISOString(),
                     assignedToUserIds: userIds.length > 0 ? userIds : undefined,
-                    assignedToUserId: userIds.length === 1 ? userIds[0] : undefined,
+                    assignedToUserId: userIds.length > 0 ? userIds[0] : undefined,
                     divisionId: selectedDivisionId || undefined,
                     projectId: selectedProjectId,
                     titleId: selectedTitleId || undefined,

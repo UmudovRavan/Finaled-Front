@@ -1,4 +1,5 @@
 import httpClient from './httpClient';
+import { formatUserDisplayName } from '../utils/tokenUtils';
 import type { ProjectDTO, CreateProjectRequest, UpdateProjectRequest } from '../dto';
 
 export function normalizeProject(raw: any): ProjectDTO {
@@ -6,12 +7,13 @@ export function normalizeProject(raw: any): ProjectDTO {
     const id = raw.id ?? raw.Id ?? raw.projectId ?? raw.ProjectId ?? '';
     const name = String(raw.name ?? raw.Name ?? raw.title ?? raw.Title ?? '');
     const description = raw.description ?? raw.Description ?? '';
-    const divisionId = raw.divisionId ?? raw.DivisionId ?? '';
+    const divisionId = raw.divisionId ?? raw.DivisionId ?? raw.division?.id ?? raw.Division?.Id ?? '';
     const divisionName = raw.divisionName ?? raw.DivisionName ?? raw.division?.name ?? raw.Division?.Name ?? undefined;
-    const titleId = raw.titleId ?? raw.TitleId ?? raw.title?.id ?? raw.Title?.Id ?? undefined;
-    const titleName = raw.titleName ?? raw.TitleName ?? raw.title?.name ?? raw.Title?.Name ?? undefined;
+    const titleId = raw.titleId ?? raw.TitleId ?? raw.titleCompany?.id ?? raw.TitleCompany?.Id ?? raw.title?.id ?? raw.Title?.Id ?? undefined;
+    const titleName = raw.titleName ?? raw.TitleName ?? raw.titleCompany?.name ?? raw.TitleCompany?.Name ?? raw.title?.name ?? raw.Title?.Name ?? undefined;
     const managerId = raw.managerId ?? raw.ManagerId ?? null;
-    const managerName = raw.managerName ?? raw.ManagerName ?? raw.manager?.userName ?? raw.Manager?.UserName ?? undefined;
+    const rawManagerName = raw.manager?.fullName ?? raw.Manager?.FullName ?? raw.managerName ?? raw.ManagerName ?? raw.manager?.userName ?? raw.Manager?.UserName ?? undefined;
+    const managerName = rawManagerName ? formatUserDisplayName(rawManagerName) : undefined;
     const startDate = raw.startDate ?? raw.StartDate ?? undefined;
     const endDate = raw.endDate ?? raw.EndDate ?? undefined;
     const status = Number(raw.status ?? raw.Status ?? 0);
@@ -236,44 +238,30 @@ export const projectService = {
     },
 
     async getProjects(params?: { divisionId?: string | number; titleId?: string | number }): Promise<ProjectDTO[]> {
-        const queryParams = new URLSearchParams();
-        if (params?.divisionId && String(params.divisionId).trim() !== '' && String(params.divisionId) !== 'all') {
-            queryParams.append('divisionId', String(params.divisionId).trim());
+        const allProjects = await this.getAllProjects();
+        const divId = params?.divisionId && String(params.divisionId).trim() !== '' && String(params.divisionId) !== 'all'
+            ? String(params.divisionId).trim().toLowerCase()
+            : '';
+        const ttlId = params?.titleId && String(params.titleId).trim() !== '' && String(params.titleId) !== 'all'
+            ? String(params.titleId).trim().toLowerCase()
+            : '';
+
+        if (!divId && !ttlId) {
+            return allProjects;
         }
-        if (params?.titleId && String(params.titleId).trim() !== '' && String(params.titleId) !== 'all') {
-            queryParams.append('titleId', String(params.titleId).trim());
-        }
-        const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
 
-        const candidateEndpoints = [
-            `/Project${queryString}`,
-            `/Project/GetAll${queryString}`,
-        ];
-
-        for (const ep of candidateEndpoints) {
-            try {
-                const response = await httpClient.get<any>(ep);
-                const data = response.data;
-                let list: any[] = [];
-                if (Array.isArray(data)) {
-                    list = data;
-                } else if (data && Array.isArray(data.data)) {
-                    list = data.data;
-                } else if (data && Array.isArray(data.items)) {
-                    list = data.items;
-                } else if (data && typeof data === 'object') {
-                    const arr = Object.values(data).find((v) => Array.isArray(v));
-                    if (arr) list = arr as any[];
-                }
-
-                if (list.length > 0 || Array.isArray(data)) {
-                    return list.map(normalizeProject);
-                }
-            } catch {
-                // Try next
+        const matched = allProjects.filter((p) => {
+            if (divId && p.divisionId && String(p.divisionId).toLowerCase() !== divId) {
+                return false;
             }
-        }
-        return this.getAllProjects();
+            if (ttlId && p.titleId && String(p.titleId).toLowerCase() !== ttlId) {
+                return false;
+            }
+            return true;
+        });
+
+        // Never return an empty list if projects exist in the tenant — fallback to allProjects
+        return matched.length > 0 ? matched : allProjects;
     },
 };
 

@@ -1,4 +1,5 @@
 import httpClient from './httpClient';
+import { formatUserDisplayName } from '../utils/tokenUtils';
 import type { LeaderboardEntry, AddPerformancePointRequest } from '../dto';
 
 /**
@@ -59,8 +60,14 @@ export const performanceService = {
      * @returns List of users sorted by total points
      */
     async getLeaderboard(): Promise<LeaderboardEntry[]> {
-        const response = await httpClient.get<LeaderboardEntry[]>('/Performance/GetLeaderboard');
-        return response.data;
+        const response = await httpClient.get<any>('/Performance/GetLeaderboard');
+        const list = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+        return list.map((item: any) => ({
+            ...item,
+            userId: item.userId || item.UserId || '',
+            userName: formatUserDisplayName(item) || 'İstifadəçi',
+            totalPoints: item.totalPoints ?? item.TotalPoints ?? 0,
+        }));
     }
 };
 

@@ -1,13 +1,15 @@
 import httpClient from './httpClient';
 import { normalizeTask } from './taskService';
+import { formatUserDisplayName } from '../utils/tokenUtils';
 import type { EmployeeWorkloadDTO, WorkloadWarningDTO } from '../dto';
 
 export function normalizeWorkload(raw: any): EmployeeWorkloadDTO {
     if (!raw || typeof raw !== 'object') return raw;
     const userId = String(raw.userId ?? raw.UserId ?? raw.id ?? raw.Id ?? '');
-    const fullName = raw.fullName ?? raw.FullName ?? undefined;
-    const userName = String(raw.userName ?? raw.UserName ?? raw.name ?? raw.Name ?? fullName ?? 'İşçi');
     const userEmail = raw.userEmail ?? raw.UserEmail ?? raw.email ?? raw.Email ?? undefined;
+    const displayName = formatUserDisplayName(raw, userEmail) || 'İşçi';
+    const fullName = raw.fullName ?? raw.FullName ?? displayName;
+    const userName = displayName;
     const avatarUrl = raw.avatarUrl ?? raw.AvatarUrl ?? raw.avatar ?? raw.Avatar ?? undefined;
     const activeTaskCount = Number(raw.activeTaskCount ?? raw.ActiveTaskCount ?? raw.activeTasks ?? raw.ActiveTasks ?? 0);
     const totalTaskCount = Number(raw.totalTaskCount ?? raw.TotalTaskCount ?? raw.totalTasks ?? raw.TotalTasks ?? 0);

@@ -5,7 +5,7 @@ import { authService, notificationService, performanceService } from '../api';
 import userService from '../api/userService';
 import { workGroupService } from '../api/workGroupService';
 import type { WorkGroupResponse, WorkGroupMemberPerformance, NotificationResponse, LeaderboardEntry, UserResponse } from '../dto';
-import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
+import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl, formatUserDisplayName } from '../utils';
 import type { UserInfo } from '../utils';
 import { useLanguage } from '../context/LanguageContext';
 import {
@@ -200,7 +200,7 @@ const WorkGroupRanking: React.FC = () => {
 
         const leaderboard = leaderboardRaw.map((item: any) => ({
             userId: item.userId || item.UserId,
-            userName: item.userName || item.UserName,
+            userName: formatUserDisplayName(item) || 'İstifadəçi',
             totalPoints: item.totalPoints ?? item.TotalPoints ?? 0,
         }));
 

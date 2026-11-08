@@ -1,4 +1,5 @@
 import httpClient from './httpClient';
+import { formatUserDisplayName } from '../utils/tokenUtils';
 import type { DivisionDTO, CreateDivisionRequest, UpdateDivisionRequest } from '../dto';
 
 export function normalizeDivision(raw: any): DivisionDTO {
@@ -7,7 +8,8 @@ export function normalizeDivision(raw: any): DivisionDTO {
     const name = String(raw.name ?? raw.Name ?? raw.title ?? raw.Title ?? '');
     const description = raw.description ?? raw.Description ?? '';
     const managerId = raw.managerId ?? raw.ManagerId ?? raw.headId ?? raw.HeadId ?? null;
-    const managerName = raw.managerName ?? raw.ManagerName ?? raw.manager?.userName ?? raw.Manager?.UserName ?? undefined;
+    const rawManagerName = raw.manager?.fullName ?? raw.Manager?.FullName ?? raw.managerName ?? raw.ManagerName ?? raw.manager?.userName ?? raw.Manager?.UserName ?? undefined;
+    const managerName = rawManagerName ? formatUserDisplayName(rawManagerName) : undefined;
     const projectCount = Number(raw.projectCount ?? raw.ProjectCount ?? raw.projects?.length ?? 0);
     const taskCount = Number(raw.taskCount ?? raw.TaskCount ?? 0);
     const completedTaskCount = Number(raw.completedTaskCount ?? raw.CompletedTaskCount ?? 0);
