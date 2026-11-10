@@ -10,6 +10,7 @@ import {
   Truck,
   CornerDownLeft,
   ListChecks,
+  Scale,
   Wrench,
   Database,
   FileSpreadsheet,
@@ -29,6 +30,47 @@ interface SidebarProps {
   setIsCollapsed: (collapsed: boolean) => void;
 }
 
+const setupItems = [
+  { name: 'Item', to: '/item' },
+  { name: 'Item Group', to: '/item-group' },
+  { name: 'Item Attribute', to: '/item-attribute' },
+  { name: 'Brand', to: '/brand' },
+  { name: 'Warehouse', to: '/warehouses' },
+  { name: 'Unit of Measure (UOM)', to: '/uom' },
+  { name: 'UOM Conversion Factor', to: '/uom-conversion-factor' },
+  { name: 'Serial No', to: '/serial-no' },
+  { name: 'Batch No', to: '/batch-no' },
+  { name: 'Serial and Batch Bundle', to: '/serial-and-batch-bundle' },
+  { name: 'Inventory Dimension', to: '/inventory-dimension' },
+  { name: 'Shipping Rule', to: '/shipping-rule' },
+  { name: 'Item Alternative', to: '/item-alternative' },
+  { name: 'Quality Inspection Template', to: '/quality-inspection-template' },
+  { name: 'Delivery Trip', to: '/delivery-trip' },
+];
+
+const reportsItems = [
+  { name: 'Stock Ledger', to: '/reports/stock-ledger' },
+  { name: 'Stock Balance', to: '/reports/stock-balance' },
+  { name: 'Quick Stock Balance', to: '/reports/quick-stock-balance' },
+  { name: 'Stock Projected Qty', to: '/reports/stock-projected-qty' },
+  { name: 'Stock Analytics', to: '/reports/stock-analytics' },
+  { name: 'Stock Ageing', to: '/reports/stock-ageing' },
+  { name: 'Purchase Receipt Trends', to: '/reports/purchase-receipt-trends' },
+  { name: 'Delivery Note Trends', to: '/reports/delivery-note-trends' },
+  { name: 'Item Price Stock', to: '/reports/item-price-stock' },
+  { name: 'Warehouse Wise Stock Balance', to: '/reports/warehouse-wise-stock-balance' },
+  { name: 'Item Shortage Report', to: '/reports/item-shortage-report' },
+  { name: 'Serial No and Batch Traceability', to: '/reports/serial-no-and-batch-traceability' },
+  { name: 'Serial No Status', to: '/reports/serial-no-status' },
+  { name: 'Serial No Ledger', to: '/reports/serial-no-ledger' },
+  { name: 'Serial No Warranty Expiry', to: '/reports/serial-no-warranty-expiry' },
+  { name: 'Batch-Wise Balance History', to: '/reports/batch-wise-balance-history' },
+  { name: 'Batch Item Expiry Status', to: '/reports/batch-item-expiry-status' },
+  { name: 'Requested Items To Be Transferred', to: '/reports/requested-items-to-be-transferred' },
+  { name: 'Itemwise Recommended Reorder Level', to: '/reports/itemwise-recommended-reorder-level' },
+  { name: 'Item Variant Details', to: '/reports/item-variant-details' },
+];
+
 export const Sidebar: React.FC<SidebarProps> = ({
   onOpenSearch,
   onOpenNotification,
@@ -40,12 +82,54 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { isDark } = useTheme();
 
   const [isBrandMenuOpen, setIsBrandMenuOpen] = useState(false);
+  const isToolsActive =
+    location.pathname.startsWith('/stock-reconciliation') ||
+    location.pathname.startsWith('/landed-cost-voucher') ||
+    location.pathname.startsWith('/repost-item-valuation') ||
+    location.pathname.startsWith('/packing-slip') ||
+    location.pathname.startsWith('/tools');
+
+  const isSetupActive =
+    location.pathname.startsWith('/item') ||
+    location.pathname.startsWith('/brand') ||
+    location.pathname.startsWith('/warehouse') ||
+    location.pathname.startsWith('/uom') ||
+    location.pathname.startsWith('/serial-no') ||
+    location.pathname.startsWith('/batch-no') ||
+    location.pathname.startsWith('/serial-and-batch-bundle') ||
+    location.pathname.startsWith('/inventory-dimension') ||
+    location.pathname.startsWith('/shipping-rule') ||
+    location.pathname.startsWith('/item-alternative') ||
+    location.pathname.startsWith('/quality-inspection-template') ||
+    location.pathname.startsWith('/delivery-trip') ||
+    location.pathname.startsWith('/setup');
+
+  const isReportsActive = location.pathname.startsWith('/reports');
+
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
-    tools: false,
-    setup: false,
-    reports: false,
+    tools: isToolsActive,
+    setup: isSetupActive,
+    reports: isReportsActive,
     settings: false,
   });
+
+  useEffect(() => {
+    if (isToolsActive) {
+      setExpandedGroups((prev) => ({ ...prev, tools: true }));
+    }
+  }, [isToolsActive]);
+
+  useEffect(() => {
+    if (isSetupActive) {
+      setExpandedGroups((prev) => ({ ...prev, setup: true }));
+    }
+  }, [isSetupActive]);
+
+  useEffect(() => {
+    if (isReportsActive) {
+      setExpandedGroups((prev) => ({ ...prev, reports: true }));
+    }
+  }, [isReportsActive]);
 
   const brandMenuRef = useRef<HTMLDivElement>(null);
 
@@ -314,6 +398,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {!isCollapsed && <span>Pick List</span>}
           </NavLink>
 
+          {/* Stock Reconciliation */}
+          <NavLink
+            to="/stock-reconciliation"
+            className={({ isActive }) =>
+              `flex items-center ${
+                isCollapsed ? 'justify-center px-0 py-2' : 'gap-2.5 px-2.5 py-1.5'
+              } rounded-lg text-[13px] transition-all duration-150 ${
+                isActive
+                  ? 'bg-slate-100 dark:bg-[#27272A] text-slate-900 dark:text-white font-medium'
+                  : 'text-slate-600 dark:text-[#A1A1AA] hover:bg-slate-50 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-white font-normal'
+              }`
+            }
+            title={isCollapsed ? 'Stock Reconciliation' : undefined}
+          >
+            <Scale className="w-4 h-4 stroke-[1.75] shrink-0" />
+            {!isCollapsed && <span>Stock Reconciliation</span>}
+          </NavLink>
+
           {/* Tools */}
           <div>
             <button
@@ -336,20 +438,73 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </button>
             {!isCollapsed && expandedGroups.tools && (
-              <div className="pl-9 pr-1 py-0.5 space-y-0.5 text-xs">
-                <NavLink to="/tools/reconciliation" className="block py-1 text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white text-[12.5px]">
+              <div className="pl-6 pr-1 py-1 space-y-0.5 text-xs">
+                <NavLink
+                  to="/stock-reconciliation"
+                  className={({ isActive }) =>
+                    `block px-3 py-1.5 rounded-lg text-[12.5px] transition-all ${
+                      isActive ||
+                      location.pathname.startsWith('/stock-reconciliation') ||
+                      location.pathname.startsWith('/tools/reconciliation')
+                        ? 'bg-white dark:bg-[#27272A] text-slate-900 dark:text-white font-medium shadow-xs border border-slate-200/70 dark:border-transparent'
+                        : 'text-slate-600 dark:text-[#A1A1AA] hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[0.04]'
+                    }`
+                  }
+                >
                   Stock Reconciliation
                 </NavLink>
-                <NavLink to="/tools/landed-cost" className="block py-1 text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white text-[12.5px]">
+                <NavLink
+                  to="/landed-cost-voucher"
+                  className={({ isActive }) =>
+                    `block px-3 py-1.5 rounded-lg text-[12.5px] transition-all ${
+                      isActive ||
+                      location.pathname.startsWith('/landed-cost-voucher') ||
+                      location.pathname.startsWith('/tools/landed-cost')
+                        ? 'bg-white dark:bg-[#27272A] text-slate-900 dark:text-white font-medium shadow-xs border border-slate-200/70 dark:border-transparent'
+                        : 'text-slate-600 dark:text-[#A1A1AA] hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[0.04]'
+                    }`
+                  }
+                >
                   Landed Cost Voucher
                 </NavLink>
-                <NavLink to="/tools/repost-valuation" className="block py-1 text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white text-[12.5px]">
+                <NavLink
+                  to="/repost-item-valuation"
+                  className={({ isActive }) =>
+                    `block px-3 py-1.5 rounded-lg text-[12.5px] transition-all ${
+                      isActive ||
+                      location.pathname.startsWith('/repost-item-valuation') ||
+                      location.pathname.startsWith('/tools/repost-valuation')
+                        ? 'bg-white dark:bg-[#27272A] text-slate-900 dark:text-white font-medium shadow-xs border border-slate-200/70 dark:border-transparent'
+                        : 'text-slate-600 dark:text-[#A1A1AA] hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[0.04]'
+                    }`
+                  }
+                >
                   Repost Item Valuation
                 </NavLink>
-                <NavLink to="/tools/packing-slip" className="block py-1 text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white text-[12.5px]">
+                <NavLink
+                  to="/packing-slip"
+                  className={({ isActive }) =>
+                    `block px-3 py-1.5 rounded-lg text-[12.5px] transition-all ${
+                      isActive ||
+                      location.pathname.startsWith('/packing-slip') ||
+                      location.pathname.startsWith('/tools/packing-slip')
+                        ? 'bg-white dark:bg-[#27272A] text-slate-900 dark:text-white font-medium shadow-xs border border-slate-200/70 dark:border-transparent'
+                        : 'text-slate-600 dark:text-[#A1A1AA] hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[0.04]'
+                    }`
+                  }
+                >
                   Packing Slip
                 </NavLink>
-                <NavLink to="/tools/quality-inspection" className="block py-1 text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white text-[12.5px]">
+                <NavLink
+                  to="/tools/quality-inspection"
+                  className={({ isActive }) =>
+                    `block px-3 py-1.5 rounded-lg text-[12.5px] transition-all ${
+                      isActive
+                        ? 'bg-white dark:bg-[#27272A] text-slate-900 dark:text-white font-medium shadow-xs border border-slate-200/70 dark:border-transparent'
+                        : 'text-slate-600 dark:text-[#A1A1AA] hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[0.04]'
+                    }`
+                  }
+                >
                   Quality Inspection
                 </NavLink>
               </div>
@@ -370,21 +525,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {!isCollapsed && <span>Setup</span>}
               </div>
               {!isCollapsed && (
-                <ChevronRight
+                <ChevronDown
                   className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
-                    expandedGroups.setup ? 'rotate-90' : ''
+                    expandedGroups.setup ? 'rotate-0' : '-rotate-90'
                   }`}
                 />
               )}
             </button>
             {!isCollapsed && expandedGroups.setup && (
-              <div className="pl-9 pr-1 py-0.5 space-y-0.5 text-xs">
-                <NavLink to="/warehouses" className="block py-1 text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white text-[12.5px]">
-                  Warehouse
-                </NavLink>
-                <NavLink to="/setup/uom" className="block py-1 text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white text-[12.5px]">
-                  Unit of Measure (UOM)
-                </NavLink>
+              <div className="pl-6 pr-1 py-1 space-y-0.5 text-xs">
+                {setupItems.map((item) => (
+                  <NavLink
+                    key={item.name}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      `block px-3 py-1.5 rounded-lg text-[12.5px] truncate transition-all ${
+                        isActive ||
+                        location.pathname === item.to ||
+                        (item.to === '/warehouses' && location.pathname.startsWith('/warehouses')) ||
+                        (item.to === '/item' &&
+                          (location.pathname === '/products' ||
+                            location.pathname === '/items' ||
+                            location.pathname.startsWith('/item')))
+                          ? 'bg-white dark:bg-[#27272A] text-slate-900 dark:text-white font-medium shadow-xs border border-slate-200/70 dark:border-transparent'
+                          : 'text-slate-600 dark:text-[#A1A1AA] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-[#27272A]'
+                      }`
+                    }
+                    title={item.name}
+                  >
+                    {item.name}
+                  </NavLink>
+                ))}
               </div>
             )}
           </div>
@@ -411,13 +582,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </button>
             {!isCollapsed && expandedGroups.reports && (
-              <div className="pl-9 pr-1 py-0.5 space-y-0.5 text-xs">
-                <NavLink to="/reports/ledger" className="block py-1 text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white text-[12.5px]">
-                  Stock Ledger
-                </NavLink>
-                <NavLink to="/reports/balance" className="block py-1 text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white text-[12.5px]">
-                  Stock Balance
-                </NavLink>
+              <div className="pl-6 pr-1 py-1 space-y-0.5 text-xs">
+                {reportsItems.map((item) => (
+                  <NavLink
+                    key={item.name}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      `block px-3 py-1.5 rounded-lg text-[12.5px] truncate transition-all ${
+                        isActive || location.pathname === item.to
+                          ? 'bg-white dark:bg-[#27272A] text-slate-900 dark:text-white font-medium shadow-xs border border-slate-200/70 dark:border-transparent'
+                          : 'text-slate-600 dark:text-[#A1A1AA] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-[#27272A]'
+                      }`
+                    }
+                    title={item.name}
+                  >
+                    {item.name}
+                  </NavLink>
+                ))}
               </div>
             )}
           </div>

@@ -1,0 +1,2 @@
+export { QualityInspectionTemplateDetailSidebar } from './QualityInspectionTemplateDetailSidebar';
+
