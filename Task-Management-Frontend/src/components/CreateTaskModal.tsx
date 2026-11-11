@@ -10,7 +10,7 @@ import {
     ShieldExclamationIcon,
     SparklesIcon,
 } from '@heroicons/react/24/outline';
-import { DifficultyLevel, Priority } from '../dto';
+import { Priority } from '../dto';
 import type { UserResponse, DivisionDTO, ProjectDTO, TitleDTO, WorkloadWarningDTO, ProjectLevelDTO } from '../dto';
 import { taskService, userService, divisionService, projectService, titleService, workloadService, authService, projectLevelService } from '../api';
 import { parseJwtToken } from '../utils';
@@ -40,7 +40,6 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     const { t } = useLanguage();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [difficulty, setDifficulty] = useState<DifficultyLevel>(DifficultyLevel.Medium);
     const [priority, setPriority] = useState<Priority>(Priority.Normal);
     const [startDate, setStartDate] = useState('');
     const [deadline, setDeadline] = useState('');
@@ -80,7 +79,6 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             fetchInitialData();
             setTitle('');
             setDescription('');
-            setDifficulty(DifficultyLevel.Medium);
             setPriority(Priority.Normal);
             setStartDate('');
             setDeadline('');
@@ -311,7 +309,6 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 {
                     title: title.trim() || 'Adsız Qaralama Tapşırıq',
                     description: description.trim(),
-                    difficulty: typeof difficulty === 'number' ? difficulty : DifficultyLevel.Medium,
                     priority: typeof priority === 'number' ? priority : 1,
                     status: 6, // Draft
                     isDraft: true,
@@ -387,7 +384,6 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 {
                     title: title.trim(),
                     description: description.trim(),
-                    difficulty: typeof difficulty === 'number' ? difficulty : DifficultyLevel.Medium,
                     priority: typeof priority === 'number' ? priority : 1,
                     status: userIds.length > 0 ? 1 : 0,
                     startDate: startDate ? new Date(startDate).toISOString() : undefined,
@@ -423,7 +419,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
             <div
-                className="w-full max-w-xl bg-white dark:bg-[#1C1C1E] border border-zinc-200 dark:border-[#2C2C2E] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[85vh] my-auto text-zinc-900 dark:text-[#F4F4F5]"
+                className="w-full max-w-2xl bg-white dark:bg-[#1C1C1E] border border-zinc-200 dark:border-[#2C2C2E] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[85vh] my-auto text-zinc-900 dark:text-[#F4F4F5]"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
@@ -577,25 +573,8 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                             />
                         </div>
 
-                        {/* Row: Çətinlik, Prioritet, Başlama Tarixi & Deadline */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                            {/* Çətinlik (Difficulty) */}
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">
-                                    {t('tasks.difficultyLabel', {}, 'Çətinlik')}
-                                </label>
-                                <CustomSelect
-                                    value={String(difficulty)}
-                                    onChange={(val) => setDifficulty(Number(val) as DifficultyLevel)}
-                                    options={[
-                                        { value: String(DifficultyLevel.Easy), label: t('tasks.difficultyEasy', {}, 'Asan (10 bal)'), icon: <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> },
-                                        { value: String(DifficultyLevel.Medium), label: t('tasks.difficultyMedium', {}, 'Orta (20 bal)'), icon: <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> },
-                                        { value: String(DifficultyLevel.Hard), label: t('tasks.difficultyHard', {}, 'Çətin (30 bal)'), icon: <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> },
-                                    ]}
-                                    className="w-full"
-                                />
-                            </div>
-
+                        {/* Row: Prioritet, Başlama Tarixi & Deadline */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             {/* Prioritet (Priority) */}
                             <div className="space-y-1.5">
                                 <label className="text-xs font-semibold text-zinc-700 dark:text-[#A1A1AA]">

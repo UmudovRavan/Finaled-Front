@@ -10,7 +10,6 @@ export { default as TaskDetail } from './TaskDetail';
 export { default as TaskEdit } from './TaskEdit';
 export { default as Notifications } from './Notifications';
 export { default as Performance } from './Performance';
-export { default as Leaderboard } from './Leaderboard';
 export { default as Divisions } from './Divisions';
 export { default as Projects } from './Projects';
 export { default as ProjectDetail } from './ProjectDetail';

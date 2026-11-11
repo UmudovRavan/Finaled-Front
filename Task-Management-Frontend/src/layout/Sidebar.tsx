@@ -18,7 +18,6 @@ import {
     ClipboardDocumentListIcon,
     BuildingOfficeIcon,
     FolderIcon,
-    TrophyIcon,
     ScaleIcon,
     ArrowTrendingUpIcon,
     XMarkIcon,
@@ -264,13 +263,8 @@ const Sidebar: React.FC<SidebarProps> = ({
             items.push({ path: '/workload', label: t('nav.workload', {}, 'İş Yükü'), icon: ScaleIcon });
         }
 
-        // 8. Performance & Leaderboard (Liderlər - Trophy / Kubok ikonu, Performans - Trending Up)
-        if (isAdmin || hasPermission('tms.performance.view')) {
-            items.push(
-                { path: '/leaderboard', label: t('nav.leaderboard', {}, 'Liderlər Lövhəsi'), icon: TrophyIcon },
-                { path: '/performance', label: t('nav.performance', {}, 'Performans'), icon: ArrowTrendingUpIcon }
-            );
-        }
+        // 8. Personal Performance (Performans - Trending Up)
+        items.push({ path: '/performance', label: t('nav.performance', {}, 'Performans'), icon: ArrowTrendingUpIcon });
 
         // 9. Dəyər-Zərər KPI Sistemi
         items.push({ path: '/kpi', label: t('nav.kpi', {}, 'KPI Paneli'), icon: BarChart3 });

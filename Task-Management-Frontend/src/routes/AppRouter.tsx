@@ -15,7 +15,6 @@ import {
     TaskAssignmentDetail,
     Notifications,
     Performance,
-    Leaderboard,
     Divisions,
     Projects,
     ProjectDetail,
@@ -42,6 +41,7 @@ const AppRouter: React.FC = () => {
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<DashboardOverview />} />
+                <Route path="/performance" element={<Performance />} />
                 <Route path="/settings" element={<Settings />} />
 
                 {/* Company Dashboard (Director / Executive Overview) */}
@@ -76,10 +76,8 @@ const AppRouter: React.FC = () => {
                     <Route path="/workload" element={<WorkloadView />} />
                 </Route>
 
-                {/* Performance & Leaderboard */}
+                {/* Employee Performance */}
                 <Route element={<ProtectedRoute requiredPermission="tms.performance.view" />}>
-                    <Route path="/performance" element={<Performance />} />
-                    <Route path="/leaderboard" element={<Leaderboard />} />
                     <Route path="/employee/:userId" element={<EmployeePerformance />} />
                 </Route>
 

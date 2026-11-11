@@ -175,8 +175,8 @@ const Header: React.FC<HeaderProps> = ({
                                 {[
                                     t('tasks.allTasksTitle', {}, 'Bütün aktiv tapşırıqlar'),
                                     t('common.overdue', {}, 'Gecikmiş tapşırıqlar'),
-                                    t('nav.workgroups', {}, 'İş Qrupları'),
-                                    t('nav.leaderboard', {}, 'Liderlər lövhəsi')
+                                    t('nav.projects', {}, 'Layihələr'),
+                                    t('nav.performance', {}, 'Performans')
                                 ].map((item, i) => (
                                     <button
                                         key={i}

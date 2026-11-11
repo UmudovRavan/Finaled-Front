@@ -86,6 +86,9 @@ import { StockAgeingReportPage } from '../pages/StockAgeingReportPage';
 import { ItemPriceStockReportPage } from '../pages/ItemPriceStockReportPage';
 import { PurchaseReceiptTrendsPage } from '../pages/PurchaseReceiptTrendsPage';
 import { DeliveryNoteTrendsPage } from '../pages/DeliveryNoteTrendsPage';
+import { WarehouseWiseStockBalancePage } from '../pages/WarehouseWiseStockBalancePage';
+import { ItemShortageReportPage } from '../pages/ItemShortageReportPage';
+import { SerialNoAndBatchTraceabilityPage } from '../pages/SerialNoAndBatchTraceabilityPage';
 
 
 
@@ -275,6 +278,12 @@ export const AppRoutes: React.FC = () => {
           <Route path="query-report/Purchase%20Receipt%20Trends" element={<PurchaseReceiptTrendsPage />} />
           <Route path="reports/delivery-note-trends" element={<DeliveryNoteTrendsPage />} />
           <Route path="query-report/Delivery%20Note%20Trends" element={<DeliveryNoteTrendsPage />} />
+          <Route path="reports/warehouse-wise-stock-balance" element={<WarehouseWiseStockBalancePage />} />
+          <Route path="query-report/Warehouse%20Wise%20Stock%20Balance" element={<WarehouseWiseStockBalancePage />} />
+          <Route path="reports/item-shortage-report" element={<ItemShortageReportPage />} />
+          <Route path="query-report/Item%20Shortage%20Report" element={<ItemShortageReportPage />} />
+          <Route path="reports/serial-no-and-batch-traceability" element={<SerialNoAndBatchTraceabilityPage />} />
+          <Route path="query-report/Serial%20No%20and%20Batch%20Traceability" element={<SerialNoAndBatchTraceabilityPage />} />
           <Route path="reports/:reportSlug" element={<StockReportPage />} />
           <Route path="reports/*" element={<StockReportPage />} />
           <Route path="setup/*" element={<WarehousesPage />} />

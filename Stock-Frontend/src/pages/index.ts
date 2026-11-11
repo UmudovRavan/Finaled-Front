@@ -85,6 +85,9 @@ export { StockAgeingReportPage } from './StockAgeingReportPage';
 export { ItemPriceStockReportPage } from './ItemPriceStockReportPage';
 export { PurchaseReceiptTrendsPage } from './PurchaseReceiptTrendsPage';
 export { DeliveryNoteTrendsPage } from './DeliveryNoteTrendsPage';
+export { WarehouseWiseStockBalancePage } from './WarehouseWiseStockBalancePage';
+export { ItemShortageReportPage } from './ItemShortageReportPage';
+export { SerialNoAndBatchTraceabilityPage } from './SerialNoAndBatchTraceabilityPage';
 
 
 
