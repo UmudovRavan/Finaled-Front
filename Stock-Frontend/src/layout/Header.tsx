@@ -410,6 +410,53 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
     location.pathname.startsWith('/reports/serial-no-and-batch-traceability') ||
     location.pathname.includes('Serial%20No%20and%20Batch%20Traceability');
 
+  const isSerialNoStatus =
+    location.pathname.startsWith('/reports/serial-no-status') ||
+    location.pathname.includes('Serial%20No%20Status');
+
+  const isSerialNoLedger =
+    location.pathname.startsWith('/reports/serial-no-ledger') ||
+    location.pathname.includes('Serial%20No%20Ledger');
+
+  const isSerialNoWarrantyExpiry =
+    location.pathname.startsWith('/reports/serial-no-warranty-expiry') ||
+    location.pathname.includes('Serial%20No%20Warranty%20Expiry');
+
+  const isBatchWiseBalanceHistory =
+    location.pathname.startsWith('/reports/batch-wise-balance-history') ||
+    location.pathname.includes('Batch-Wise%20Balance%20History');
+
+  const isBatchItemExpiryStatus =
+    location.pathname.startsWith('/reports/batch-item-expiry-status') ||
+    location.pathname.includes('Batch%20Item%20Expiry%20Status');
+
+  const isRequestedItemsToBeTransferred =
+    location.pathname.startsWith('/reports/requested-items-to-be-transferred') ||
+    location.pathname.includes('Requested%20Items%20To%20Be%20Transferred');
+
+  const isItemwiseRecommendedReorderLevel =
+    location.pathname.startsWith('/reports/itemwise-recommended-reorder-level') ||
+    location.pathname.includes('Itemwise%20Recommended%20Reorder%20Level');
+
+  const isItemVariantDetails =
+    location.pathname.startsWith('/reports/item-variant-details') ||
+    location.pathname.includes('Item%20Variant%20Details');
+  const isItemVariantSettings =
+    location.pathname === '/settings/item-variant-settings' ||
+    location.pathname.startsWith('/settings/item-variant-settings/');
+  const isStockRepostingSettings =
+    location.pathname === '/settings/stock-reposting-settings' ||
+    location.pathname.startsWith('/settings/stock-reposting-settings/');
+  const isDeliverySettings =
+    location.pathname === '/settings/delivery-settings' ||
+    location.pathname.startsWith('/settings/delivery-settings/');
+  const isStockSettings =
+    location.pathname === '/settings' ||
+    (location.pathname.startsWith('/settings/') &&
+      !isItemVariantSettings &&
+      !isStockRepostingSettings &&
+      !isDeliverySettings);
+
   const isReports = location.pathname.startsWith('/reports');
   const reportSlug = isReports ? location.pathname.replace(/^\/reports\/?/, '').split('/')[0] : '';
   const reportDisplayTitle = reportSlug
@@ -2443,6 +2490,120 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
             <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
             <span className="text-slate-900 dark:text-white font-semibold">Serial No and Batch Traceability</span>
           </>
+        ) : isSerialNoStatus ? (
+          <>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <Link to="/" className="text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white transition-colors">
+              Stock
+            </Link>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <span className="text-slate-900 dark:text-white font-semibold">Serial No</span>
+            <span className="ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400">
+              Not Saved
+            </span>
+          </>
+        ) : isSerialNoLedger ? (
+          <>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <Link to="/" className="text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white transition-colors">
+              Stock
+            </Link>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <span className="text-slate-900 dark:text-white font-semibold">Serial No Ledger</span>
+          </>
+        ) : isSerialNoWarrantyExpiry ? (
+          <>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <Link to="/" className="text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white transition-colors">
+              Stock
+            </Link>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <span className="text-slate-900 dark:text-white font-semibold">Serial No Warranty Expiry</span>
+            <span className="ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400">
+              Not Saved
+            </span>
+          </>
+        ) : isBatchWiseBalanceHistory ? (
+          <>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <Link to="/" className="text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white transition-colors">
+              Stock
+            </Link>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <span className="text-slate-900 dark:text-white font-semibold">Batch-Wise Balance History</span>
+          </>
+        ) : isBatchItemExpiryStatus ? (
+          <>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <Link to="/" className="text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white transition-colors">
+              Stock
+            </Link>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <span className="text-slate-900 dark:text-white font-semibold">Batch Item Expiry Status</span>
+          </>
+        ) : isRequestedItemsToBeTransferred ? (
+          <>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <Link to="/" className="text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white transition-colors">
+              Stock
+            </Link>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <span className="text-slate-900 dark:text-white font-semibold">Requested Items To Be Transferred</span>
+          </>
+        ) : isItemwiseRecommendedReorderLevel ? (
+          <>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <Link to="/" className="text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white transition-colors">
+              Stock
+            </Link>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <span className="text-slate-900 dark:text-white font-semibold">Itemwise Recommended Reorder Level</span>
+          </>
+        ) : isItemVariantDetails ? (
+          <>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <Link to="/" className="text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white transition-colors">
+              Stock
+            </Link>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <span className="text-slate-900 dark:text-white font-semibold">Item Variant Details</span>
+          </>
+        ) : isStockSettings ? (
+          <>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <Link to="/" className="text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white transition-colors">
+              Stock
+            </Link>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <span className="text-slate-900 dark:text-white font-semibold">Stock Settings</span>
+          </>
+        ) : isItemVariantSettings ? (
+          <>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <Link to="/" className="text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white transition-colors">
+              Stock
+            </Link>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <span className="text-slate-900 dark:text-white font-semibold">Item Variant Settings</span>
+          </>
+        ) : isStockRepostingSettings ? (
+          <>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <Link to="/" className="text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white transition-colors">
+              Stock
+            </Link>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <span className="text-slate-900 dark:text-white font-semibold">Stock Reposting Settings</span>
+          </>
+        ) : isDeliverySettings ? (
+          <>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <Link to="/" className="text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white transition-colors">
+              Stock
+            </Link>
+            <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
+            <span className="text-slate-900 dark:text-white font-semibold">Delivery Settings</span>
+          </>
         ) : isReports ? (
           <>
             <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
@@ -3029,8 +3190,8 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
           </>
         )}
 
-                {/* Purchase Receipt Trends, Delivery Note Trends, Warehouse Wise & Item Shortage Toolbar */}
-        {(isPurchaseReceiptTrends || isDeliveryNoteTrends || isWarehouseWiseStockBalance || isItemShortageReport) && (
+        {/* Purchase Receipt Trends, Delivery Note Trends, Warehouse Wise, Item Shortage, Batch History, Batch Expiry, Requested Transfers & Reorder Level Toolbar */}
+        {(isPurchaseReceiptTrends || isDeliveryNoteTrends || isWarehouseWiseStockBalance || isItemShortageReport || isBatchWiseBalanceHistory || isBatchItemExpiryStatus || isRequestedItemsToBeTransferred || isItemwiseRecommendedReorderLevel) && (
           <>
             {/* Actions ↕ dropdown */}
             <div className="relative" ref={ledgerActionsRef}>
@@ -3106,8 +3267,8 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
           </>
         )}
 
-        {/* Serial No and Batch Traceability Toolbar (Image 4: Refresh & More Options) */}
-        {isSerialNoAndBatchTraceability && (
+        {/* Serial No and Batch Traceability, Serial No Ledger & Item Variant Details Toolbar (Refresh & More Options) */}
+        {(isSerialNoAndBatchTraceability || isSerialNoLedger || isItemVariantDetails) && (
           <>
             {/* Refresh button */}
             <button
@@ -3148,6 +3309,184 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
                 </div>
               )}
             </div>
+
+            <div className="w-px h-4 bg-slate-200 dark:bg-[#2E2E33] mx-0.5" />
+          </>
+        )}
+
+        {/* Stock Settings, Item Variant Settings, Stock Reposting Settings & Delivery Settings Toolbar */}
+        {(isStockSettings || isItemVariantSettings || isStockRepostingSettings || isDeliverySettings) && (
+          <div className="flex items-center gap-2">
+            {isStockRepostingSettings && (
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent('stock-reposting-convert'))}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#F3F3F3] dark:bg-[#27272A] text-[#1F272E] dark:text-[#E4E4E7] hover:bg-[#E8E8E8] dark:hover:bg-[#3F3F46] border border-slate-200 dark:border-[#3F3F46] shadow-xs transition-colors"
+              >
+                Convert to Item Based Reposting
+              </button>
+            )}
+
+            <div className="relative" ref={ledgerMoreRef}>
+              <button
+                type="button"
+                onClick={() => setIsLedgerMoreOpen(!isLedgerMoreOpen)}
+                className="p-1.5 rounded-lg text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#27272A] border border-slate-200 dark:border-[#2E2E33] bg-white dark:bg-[#1E1E22] shadow-xs transition-colors"
+                title="More Options"
+              >
+                <MoreHorizontal className="w-3.5 h-3.5 stroke-[1.75]" />
+              </button>
+
+              {isLedgerMoreOpen && (
+                <div className="absolute right-0 top-9 z-50 w-44 bg-white dark:bg-[#1E1E22] border border-slate-200 dark:border-[#2E2E33] rounded-xl shadow-xl py-1 text-xs animate-in fade-in zoom-in-95 duration-100">
+                  {['Reload', 'Customize', 'Jump to field', 'Links'].map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => {
+                        setIsLedgerMoreOpen(false);
+                        if (item === 'Reload') window.location.reload();
+                      }}
+                      className="w-full text-left px-3 py-1.5 hover:bg-slate-50 dark:hover:bg-[#27272A] text-slate-700 dark:text-zinc-200 transition-colors"
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent(
+                    isItemVariantSettings
+                      ? 'item-variant-settings-save'
+                      : isStockRepostingSettings
+                      ? 'stock-reposting-settings-save'
+                      : isDeliverySettings
+                      ? 'delivery-settings-save'
+                      : 'stock-settings-save'
+                  )
+                )
+              }
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#171717] dark:bg-white text-white dark:text-[#171717] hover:bg-black/90 dark:hover:bg-zinc-200 shadow-xs transition-colors"
+            >
+              Save
+            </button>
+          </div>
+        )}
+
+        {/* Serial No Status & Serial No Warranty Expiry Toolbar (Images 1 & 3) */}
+        {(isSerialNoStatus || isSerialNoWarrantyExpiry) && (
+          <>
+            {/* Report View ↕ */}
+            <button
+              type="button"
+              onClick={() => navigate('/serial-no')}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-normal bg-white dark:bg-[#1E1E22] border border-slate-200 dark:border-[#2E2E33] text-slate-700 dark:text-zinc-200 shadow-xs hover:bg-slate-50 dark:hover:bg-[#27272A] transition-all"
+            >
+              <Table className="w-3.5 h-3.5 text-slate-500" />
+              <span>Report View</span>
+              <ChevronsUpDown className="w-3 h-3 text-slate-400" />
+            </button>
+
+            {/* Select Report ↕ */}
+            <div className="relative" ref={ledgerActionsRef}>
+              <button
+                type="button"
+                onClick={() => setIsLedgerActionsOpen(!isLedgerActionsOpen)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-normal bg-white dark:bg-[#1E1E22] border border-slate-200 dark:border-[#2E2E33] text-slate-700 dark:text-zinc-200 shadow-xs hover:bg-slate-50 dark:hover:bg-[#27272A] transition-all"
+              >
+                <span>Select Report</span>
+                <ChevronsUpDown className="w-3 h-3 text-slate-400" />
+              </button>
+
+              {isLedgerActionsOpen && (
+                <div className="absolute right-0 top-9 z-50 w-52 bg-white dark:bg-[#1E1E22] border border-slate-200 dark:border-[#2E2E33] rounded-xl shadow-xl py-1 text-xs animate-in fade-in zoom-in-95 duration-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsLedgerActionsOpen(false);
+                      navigate('/reports/serial-no-status');
+                    }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-slate-50 dark:hover:bg-[#27272A] text-slate-700 dark:text-zinc-200 transition-colors"
+                  >
+                    Serial No Status
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsLedgerActionsOpen(false);
+                      navigate('/reports/serial-no-warranty-expiry');
+                    }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-slate-50 dark:hover:bg-[#27272A] text-slate-700 dark:text-zinc-200 transition-colors"
+                  >
+                    Serial No Warranty Expiry
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Saved Filters ↕ */}
+            <button
+              type="button"
+              onClick={() => alert('Saved Filters')}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-normal bg-white dark:bg-[#1E1E22] border border-slate-200 dark:border-[#2E2E33] text-slate-700 dark:text-zinc-200 shadow-xs hover:bg-slate-50 dark:hover:bg-[#27272A] transition-all"
+            >
+              <span>Saved Filters</span>
+              <ChevronsUpDown className="w-3 h-3 text-slate-400" />
+            </button>
+
+            {/* Refresh button */}
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="p-1.5 rounded-lg text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#27272A] border border-slate-200 dark:border-[#2E2E33] bg-white dark:bg-[#1E1E22] shadow-xs transition-colors"
+              title="Refresh"
+            >
+              <RotateCw className="w-3.5 h-3.5 stroke-[1.75]" />
+            </button>
+
+            {/* Three Dots (...) Dropdown */}
+            <div className="relative" ref={ledgerMoreRef}>
+              <button
+                type="button"
+                onClick={() => setIsLedgerMoreOpen(!isLedgerMoreOpen)}
+                className="p-1.5 rounded-lg text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#27272A] border border-slate-200 dark:border-[#2E2E33] bg-white dark:bg-[#1E1E22] shadow-xs transition-colors"
+                title="More Options"
+              >
+                <MoreHorizontal className="w-3.5 h-3.5 stroke-[1.75]" />
+              </button>
+
+              {isLedgerMoreOpen && (
+                <div className="absolute right-0 top-9 z-50 w-44 bg-white dark:bg-[#1E1E22] border border-slate-200 dark:border-[#2E2E33] rounded-xl shadow-xl py-1 text-xs animate-in fade-in zoom-in-95 duration-100">
+                  {['Export', 'Print', 'Pick Columns', 'Save'].map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => {
+                        setIsLedgerMoreOpen(false);
+                        alert(`${item} clicked`);
+                      }}
+                      className="w-full text-left px-3 py-1.5 hover:bg-slate-50 dark:hover:bg-[#27272A] text-slate-700 dark:text-zinc-200 transition-colors"
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* + Add Serial No black button */}
+            <Link
+              to="/serial-no/new"
+              className="bg-black hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-medium px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-sm transition-all"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>Add Serial No</span>
+            </Link>
 
             <div className="w-px h-4 bg-slate-200 dark:bg-[#2E2E33] mx-0.5" />
           </>
@@ -4457,7 +4796,7 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
         </div>
 
         {/* Global Page Options Three Dots Button (hidden when specific dropdowns exist) */}
-        {!isStockEntry && !isPurchaseReceipt && !isDeliveryNote && !isMaterialRequest && !isPickList && !isStockLedger && !isStockBalance && !isStockProjectedQty && !isStockAnalytics && !isStockAgeing && !isItemPriceStock && !isPurchaseReceiptTrends && !isDeliveryNoteTrends && !isWarehouseWiseStockBalance && !isItemShortageReport && !isSerialNoAndBatchTraceability && (
+        {!isStockEntry && !isPurchaseReceipt && !isDeliveryNote && !isMaterialRequest && !isPickList && !isStockLedger && !isStockBalance && !isStockProjectedQty && !isStockAnalytics && !isStockAgeing && !isItemPriceStock && !isPurchaseReceiptTrends && !isDeliveryNoteTrends && !isWarehouseWiseStockBalance && !isItemShortageReport && !isSerialNoAndBatchTraceability && !isSerialNoStatus && !isSerialNoLedger && !isSerialNoWarrantyExpiry && !isBatchWiseBalanceHistory && !isBatchItemExpiryStatus && !isRequestedItemsToBeTransferred && !isItemwiseRecommendedReorderLevel && !isItemVariantDetails && !isStockSettings && !isItemVariantSettings && !isStockRepostingSettings && !isDeliverySettings && (
           <div className="relative" ref={pageMenuRef}>
             <button
               onClick={() => setIsPageMenuOpen(!isPageMenuOpen)}

@@ -71,6 +71,13 @@ const reportsItems = [
   { name: 'Item Variant Details', to: '/reports/item-variant-details' },
 ];
 
+const settingsItems = [
+  { name: 'Stock Settings', to: '/settings' },
+  { name: 'Item Variant Settings', to: '/settings/item-variant-settings' },
+  { name: 'Stock Reposting Settings', to: '/settings/stock-reposting-settings' },
+  { name: 'Delivery Settings', to: '/settings/delivery-settings' },
+];
+
 export const Sidebar: React.FC<SidebarProps> = ({
   onOpenSearch,
   onOpenNotification,
@@ -105,12 +112,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     location.pathname.startsWith('/setup');
 
   const isReportsActive = location.pathname.startsWith('/reports');
+  const isSettingsActive = location.pathname.startsWith('/settings');
 
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     tools: isToolsActive,
     setup: isSetupActive,
     reports: isReportsActive,
-    settings: false,
+    settings: isSettingsActive,
   });
 
   useEffect(() => {
@@ -130,6 +138,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       setExpandedGroups((prev) => ({ ...prev, reports: true }));
     }
   }, [isReportsActive]);
+
+  useEffect(() => {
+    if (isSettingsActive) {
+      setExpandedGroups((prev) => ({ ...prev, settings: true }));
+    }
+  }, [isSettingsActive]);
 
   const brandMenuRef = useRef<HTMLDivElement>(null);
 
@@ -625,10 +639,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </button>
             {!isCollapsed && expandedGroups.settings && (
-              <div className="pl-9 pr-1 py-0.5 space-y-0.5 text-xs">
-                <NavLink to="/settings" className="block py-1 text-slate-500 dark:text-[#71717A] hover:text-slate-900 dark:hover:text-white text-[12.5px]">
-                  Stock Settings
-                </NavLink>
+              <div className="pl-6 pr-1 py-1 space-y-0.5 text-xs">
+                {settingsItems.map((item) => (
+                  <NavLink
+                    key={item.name}
+                    to={item.to}
+                    end={item.to === '/settings'}
+                    className={({ isActive }) =>
+                      `block px-3 py-1.5 rounded-lg text-[12.5px] truncate transition-all ${
+                        isActive || location.pathname === item.to
+                          ? 'bg-white dark:bg-[#27272A] text-slate-900 dark:text-white font-medium shadow-xs border border-slate-200/70 dark:border-transparent'
+                          : 'text-slate-600 dark:text-[#A1A1AA] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-[#27272A]'
+                      }`
+                    }
+                    title={item.name}
+                  >
+                    {item.name}
+                  </NavLink>
+                ))}
               </div>
             )}
           </div>

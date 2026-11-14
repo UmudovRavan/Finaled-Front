@@ -89,6 +89,14 @@ import { DeliveryNoteTrendsPage } from '../pages/DeliveryNoteTrendsPage';
 import { WarehouseWiseStockBalancePage } from '../pages/WarehouseWiseStockBalancePage';
 import { ItemShortageReportPage } from '../pages/ItemShortageReportPage';
 import { SerialNoAndBatchTraceabilityPage } from '../pages/SerialNoAndBatchTraceabilityPage';
+import { SerialNoStatusReportPage } from '../pages/SerialNoStatusReportPage';
+import { SerialNoLedgerReportPage } from '../pages/SerialNoLedgerReportPage';
+import { SerialNoWarrantyExpiryReportPage } from '../pages/SerialNoWarrantyExpiryReportPage';
+import { BatchWiseBalanceHistoryReportPage } from '../pages/BatchWiseBalanceHistoryReportPage';
+import { BatchItemExpiryStatusReportPage } from '../pages/BatchItemExpiryStatusReportPage';
+import { RequestedItemsToBeTransferredReportPage } from '../pages/RequestedItemsToBeTransferredReportPage';
+import { ItemwiseRecommendedReorderLevelPage } from '../pages/ItemwiseRecommendedReorderLevelPage';
+import { ItemVariantDetailsPage } from '../pages/ItemVariantDetailsPage';
 
 
 
@@ -103,6 +111,9 @@ import { ProductsPage } from '../pages/ProductsPage';
 import { StockMovementsPage } from '../pages/StockMovementsPage';
 import { SuppliersPage } from '../pages/SuppliersPage';
 import { SettingsPage } from '../pages/SettingsPage';
+import { ItemVariantSettingsPage } from '../pages/ItemVariantSettingsPage';
+import { StockRepostingSettingsPage } from '../pages/StockRepostingSettingsPage';
+import { DeliverySettingsPage } from '../pages/DeliverySettingsPage';
 import { LoginPage } from '../pages/LoginPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { ProtectedRoute } from './ProtectedRoute';
@@ -284,10 +295,30 @@ export const AppRoutes: React.FC = () => {
           <Route path="query-report/Item%20Shortage%20Report" element={<ItemShortageReportPage />} />
           <Route path="reports/serial-no-and-batch-traceability" element={<SerialNoAndBatchTraceabilityPage />} />
           <Route path="query-report/Serial%20No%20and%20Batch%20Traceability" element={<SerialNoAndBatchTraceabilityPage />} />
+          <Route path="reports/serial-no-status" element={<SerialNoStatusReportPage />} />
+          <Route path="serial-no/view/report/Serial%20No%20Status" element={<SerialNoStatusReportPage />} />
+          <Route path="reports/serial-no-ledger" element={<SerialNoLedgerReportPage />} />
+          <Route path="query-report/Serial%20No%20Ledger" element={<SerialNoLedgerReportPage />} />
+          <Route path="reports/serial-no-warranty-expiry" element={<SerialNoWarrantyExpiryReportPage />} />
+          <Route path="serial-no/view/report/Serial%20No%20Warranty%20Expiry" element={<SerialNoWarrantyExpiryReportPage />} />
+          <Route path="reports/batch-wise-balance-history" element={<BatchWiseBalanceHistoryReportPage />} />
+          <Route path="query-report/Batch-Wise%20Balance%20History" element={<BatchWiseBalanceHistoryReportPage />} />
+          <Route path="reports/batch-item-expiry-status" element={<BatchItemExpiryStatusReportPage />} />
+          <Route path="query-report/Batch%20Item%20Expiry%20Status" element={<BatchItemExpiryStatusReportPage />} />
+          <Route path="reports/requested-items-to-be-transferred" element={<RequestedItemsToBeTransferredReportPage />} />
+          <Route path="query-report/Requested%20Items%20To%20Be%20Transferred" element={<RequestedItemsToBeTransferredReportPage />} />
+          <Route path="reports/itemwise-recommended-reorder-level" element={<ItemwiseRecommendedReorderLevelPage />} />
+          <Route path="query-report/Itemwise%20Recommended%20Reorder%20Level" element={<ItemwiseRecommendedReorderLevelPage />} />
+          <Route path="reports/item-variant-details" element={<ItemVariantDetailsPage />} />
+          <Route path="query-report/Item%20Variant%20Details" element={<ItemVariantDetailsPage />} />
           <Route path="reports/:reportSlug" element={<StockReportPage />} />
           <Route path="reports/*" element={<StockReportPage />} />
           <Route path="setup/*" element={<WarehousesPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="settings/item-variant-settings" element={<ItemVariantSettingsPage />} />
+          <Route path="settings/stock-reposting-settings" element={<StockRepostingSettingsPage />} />
+          <Route path="settings/delivery-settings" element={<DeliverySettingsPage />} />
+          <Route path="settings/*" element={<SettingsPage />} />
         </Route>
       </Route>
 

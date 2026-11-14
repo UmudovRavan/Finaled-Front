@@ -88,6 +88,14 @@ export { DeliveryNoteTrendsPage } from './DeliveryNoteTrendsPage';
 export { WarehouseWiseStockBalancePage } from './WarehouseWiseStockBalancePage';
 export { ItemShortageReportPage } from './ItemShortageReportPage';
 export { SerialNoAndBatchTraceabilityPage } from './SerialNoAndBatchTraceabilityPage';
+export { SerialNoStatusReportPage } from './SerialNoStatusReportPage';
+export { SerialNoLedgerReportPage } from './SerialNoLedgerReportPage';
+export { SerialNoWarrantyExpiryReportPage } from './SerialNoWarrantyExpiryReportPage';
+export { BatchWiseBalanceHistoryReportPage } from './BatchWiseBalanceHistoryReportPage';
+export { BatchItemExpiryStatusReportPage } from './BatchItemExpiryStatusReportPage';
+export { RequestedItemsToBeTransferredReportPage } from './RequestedItemsToBeTransferredReportPage';
+export { ItemwiseRecommendedReorderLevelPage } from './ItemwiseRecommendedReorderLevelPage';
+export { ItemVariantDetailsPage } from './ItemVariantDetailsPage';
 
 
 
