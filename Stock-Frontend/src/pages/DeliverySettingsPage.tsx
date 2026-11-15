@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { stockService } from '../api';
 import {
   Heart,
   Users,
@@ -36,11 +37,37 @@ export const DeliverySettingsPage: React.FC = () => {
     setTimeout(() => setToastMessage(null), 2500);
   };
 
+  const [settingsDto, setSettingsDto] = useState<any>(null);
+
   useEffect(() => {
-    const handleSave = () => showToast('Delivery Settings Saved');
+    stockService
+      .getDeliverySettings()
+      .then((dto: any) => {
+        if (!dto) return;
+        setSettingsDto(dto);
+        if (dto.dispatchNotificationTemplate !== undefined) setDispatchNotificationTemplate(dto.dispatchNotificationTemplate || '');
+        if (dto.sendEmailOnDispatch !== undefined) setSendWithAttachment(Boolean(dto.sendEmailOnDispatch));
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const handleSave = async () => {
+      try {
+        await stockService.updateDeliverySettings({
+          ...(settingsDto || {}),
+          dispatchNotificationTemplate: dispatchNotificationTemplate || null,
+          sendEmailOnDispatch: sendWithAttachment,
+        });
+        showToast('Delivery Settings Saved');
+      } catch (err) {
+        console.error('Failed to save delivery settings', err);
+        showToast('Failed to save Delivery Settings');
+      }
+    };
     window.addEventListener('delivery-settings-save', handleSave);
     return () => window.removeEventListener('delivery-settings-save', handleSave);
-  }, []);
+  }, [settingsDto, dispatchNotificationTemplate, sendWithAttachment]);
 
   const handleCommentKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && commentInput.trim()) {

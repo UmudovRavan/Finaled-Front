@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MessageSquare, Heart, ChevronDown, X, ArrowUpDown } from 'lucide-react';
 import { useUOM } from '../context';
+import { BulkActionMenu } from '../components/common';
+import { stockService } from '../api';
+import { toast } from '../utils/toast';
 
 export const UOMPage: React.FC = () => {
   const {
+    uoms,
     filteredUOMs,
     filterId,
     setFilterId,
@@ -16,14 +20,36 @@ export const UOMPage: React.FC = () => {
     toggleLike,
     pageSize,
     setPageSize,
+    refreshUOMs,
   } = useUOM();
 
   const [sortField, setSortField] = useState('Created On');
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [hasFilterActive, setHasFilterActive] = useState(true);
 
+  const sortedUOMs = useMemo(() => {
+    const list = [...filteredUOMs];
+    list.sort((a, b) => {
+      if (sortField === 'ID') return a.id.localeCompare(b.id);
+      if (sortField === 'Category') return (a.category || '').localeCompare(b.category || '');
+      if (sortField === 'UOM Name') return a.uomName.localeCompare(b.uomName);
+      return (b.createdOn || '').localeCompare(a.createdOn || '');
+    });
+    return list.slice(0, pageSize);
+  }, [filteredUOMs, sortField, pageSize]);
+
+  const handleBulkDelete = async () => {
+    try {
+      await stockService.executeBulkAction('Uom', 'Delete', selectedIds);
+      toast.success(`Deleted ${selectedIds.length} UOM(s)`);
+      await refreshUOMs();
+    } catch {
+      toast.error('Failed to delete selected UOMs');
+    }
+  };
+
   const allSelected =
-    filteredUOMs.length > 0 && selectedIds.length === filteredUOMs.length;
+    sortedUOMs.length > 0 && selectedIds.length === sortedUOMs.length;
 
   return (
     <div className="space-y-3 font-sans">
@@ -72,8 +98,9 @@ export const UOMPage: React.FC = () => {
           )}
         </div>
 
-        {/* Right side: Sort option */}
-        <div className="relative">
+        {/* Right side: Bulk Actions + Sort option */}
+        <div className="flex items-center gap-2 relative">
+          <BulkActionMenu selectedCount={selectedIds.length} onBulkDelete={handleBulkDelete} />
           <button
             type="button"
             onClick={() => setIsSortOpen(!isSortOpen)}
@@ -136,21 +163,21 @@ export const UOMPage: React.FC = () => {
                 </th>
                 <th className="py-2.5 px-3 font-normal text-right text-slate-500 dark:text-zinc-400">
                   <div className="flex items-center justify-end gap-1.5">
-                    <span>{filteredUOMs.length} of 239</span>
+                    <span>{sortedUOMs.length} of {uoms.length}</span>
                     <Heart className="w-3.5 h-3.5 text-slate-400" />
                   </div>
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-[#27272A]">
-              {filteredUOMs.length === 0 ? (
+              {sortedUOMs.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-8 text-center text-slate-400 dark:text-zinc-500">
                     No records found
                   </td>
                 </tr>
               ) : (
-                filteredUOMs.map((uom) => {
+                sortedUOMs.map((uom) => {
                   const isChecked = selectedIds.includes(uom.id);
                   return (
                     <tr
@@ -186,7 +213,7 @@ export const UOMPage: React.FC = () => {
                       </td>
                       <td className="py-2.5 px-3 text-right">
                         <div className="flex items-center justify-end gap-3 text-slate-400 dark:text-zinc-500 text-[11px]">
-                          <span>{uom.createdOn || '3 M'}</span>
+                          <span>{uom.createdOn ? new Date(uom.createdOn).toLocaleDateString() : 'Active'}</span>
                           <span className="inline-flex items-center gap-1 hover:text-slate-700 dark:hover:text-zinc-300">
                             <MessageSquare className="w-3.5 h-3.5" />
                             <span>{uom.commentsCount ?? 0}</span>
@@ -238,6 +265,7 @@ export const UOMPage: React.FC = () => {
 
         <button
           type="button"
+          onClick={() => setPageSize(pageSize + 20)}
           className="text-xs text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white font-normal px-2 py-1 transition-colors"
         >
           Load More

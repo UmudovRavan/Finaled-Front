@@ -1,5 +1,6 @@
 import React from 'react';
-import { Printer, Heart, Plus, UserPlus, Paperclip, Tag, Share2, Edit2 } from 'lucide-react';
+import { Printer, Heart, Edit2 } from 'lucide-react';
+import { DocumentSidebarMeta } from '../common';
 import type { QualityInspectionTemplateRecord } from '../../types';
 
 interface QualityInspectionTemplateDetailSidebarProps {
@@ -55,58 +56,12 @@ export const QualityInspectionTemplateDetailSidebar: React.FC<
       </div>
 
       {/* Action Items List */}
-      <div className="space-y-2.5 pt-1 pb-4 border-b border-slate-100 dark:border-[#27272A] text-slate-600 dark:text-zinc-300">
-        <div className="flex items-center justify-between group cursor-pointer hover:text-slate-900 dark:hover:text-zinc-100 transition-colors">
-          <div className="flex items-center gap-2">
-            <UserPlus className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600" />
-            <span>Assign</span>
-          </div>
-          <button
-            type="button"
-            className="text-slate-400 hover:text-slate-600 p-0.5 rounded transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <div className="flex items-center justify-between group cursor-pointer hover:text-slate-900 dark:hover:text-zinc-100 transition-colors">
-          <div className="flex items-center gap-2">
-            <Paperclip className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600" />
-            <span>Attachments</span>
-          </div>
-          <button
-            type="button"
-            className="text-slate-400 hover:text-slate-600 p-0.5 rounded transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <div className="flex items-center justify-between group cursor-pointer hover:text-slate-900 dark:hover:text-zinc-100 transition-colors">
-          <div className="flex items-center gap-2">
-            <Tag className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600" />
-            <span>Tags</span>
-          </div>
-          <button
-            type="button"
-            className="text-slate-400 hover:text-slate-600 p-0.5 rounded transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <div className="flex items-center justify-between group cursor-pointer hover:text-slate-900 dark:hover:text-zinc-100 transition-colors">
-          <div className="flex items-center gap-2">
-            <Share2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600" />
-            <span>Share</span>
-          </div>
-          <button
-            type="button"
-            className="text-slate-400 hover:text-slate-600 p-0.5 rounded transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-        </div>
+      <div className="pt-1 pb-4 border-b border-slate-100 dark:border-[#27272A]">
+        <DocumentSidebarMeta
+          docType="QualityInspectionTemplate"
+          docId={template.id}
+          docName={template.templateName || template.id}
+        />
       </div>
 
       {/* Metadata Timestamps */}
@@ -128,4 +83,3 @@ export const QualityInspectionTemplateDetailSidebar: React.FC<
     </div>
   );
 };
-

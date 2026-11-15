@@ -620,6 +620,9 @@ export interface ItemAttributeRecord {
   status: 'Enabled' | 'Disabled';
   disabled?: boolean;
   numericValues?: boolean;
+  fromRange?: number;
+  toRange?: number;
+  increment?: number;
   values?: ItemAttributeValueRow[];
   timeAgoText: string;
   commentsCount: number;
@@ -843,8 +846,10 @@ export type DeliveryTripStatus = 'Draft' | 'In Transit' | 'Completed' | 'Cancell
 export interface DeliveryStopItem {
   id: string;
   customer: string;
+  customerId?: string;
   addressName: string;
   locked: boolean;
+  visited?: boolean;
   deliveryNote: string;
   estimatedArrival: string;
 }
@@ -888,6 +893,58 @@ export interface QualityInspectionTemplateRecord {
   createdBy?: string;
   commentsCount?: number;
   isLiked?: boolean;
+}
+
+// ==========================================
+// 25. QUALITY INSPECTION (TOOLS) TYPES
+// ==========================================
+export type QualityInspectionType = 'Incoming' | 'Outgoing' | 'InProcess';
+export type QualityInspectionQualityStatus = 'Accepted' | 'Rejected';
+export type QualityInspectionDocStatus = 'Draft' | 'Submitted' | 'Cancelled';
+
+export interface QualityInspectionReadingItem {
+  id: string;
+  specification: string;
+  acceptanceCriteriaValue?: string;
+  numeric: boolean;
+  minValue?: number;
+  maxValue?: number;
+  formulaBasedCriteria?: boolean;
+  acceptanceFormula?: string;
+  readingValueText?: string;
+  reading1?: number | null;
+  reading2?: number | null;
+  reading3?: number | null;
+  reading4?: number | null;
+  reading5?: number | null;
+  status: QualityInspectionQualityStatus;
+}
+
+export interface QualityInspectionRecord {
+  id: string;
+  inspectionNo: string;
+  company?: string;
+  reportDate: string;
+  documentStatus: QualityInspectionDocStatus;
+  qualityStatus: QualityInspectionQualityStatus;
+  inspectionType: QualityInspectionType;
+  referenceType?: string;
+  referenceId?: string;
+  referenceDocumentNo?: string;
+  itemId: string;
+  itemCode?: string;
+  itemName?: string;
+  batchId?: string;
+  itemSerialNo?: string;
+  sampleSize: number;
+  qualityInspectionTemplateId?: string;
+  inspectedBy?: string;
+  verifiedBy?: string;
+  remarks?: string;
+  readings: QualityInspectionReadingItem[];
+  createdOn?: string;
+  lastEdited?: string;
+  createdBy?: string;
 }
 
 

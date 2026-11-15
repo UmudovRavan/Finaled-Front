@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { stockService } from '../api';
 import {
   Heart,
   Users,
@@ -169,14 +170,42 @@ export const ItemVariantSettingsPage: React.FC = () => {
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [activityExpanded, setActivityExpanded] = useState(false);
 
+  const [settingsDto, setSettingsDto] = useState<any>(null);
+
   useEffect(() => {
-    const handleSave = () => {
-      setSaveToast('Saved');
+    stockService
+      .getItemVariantSettings()
+      .then((dto: any) => {
+        if (!dto) return;
+        setSettingsDto(dto);
+        if (dto.doNotUpdateVariants !== undefined) setDoNotUpdateVariantsOnSave(Boolean(dto.doNotUpdateVariants));
+        if (dto.allowRenameAttributeValue !== undefined) setAllowRenameAttributeValue(Boolean(dto.allowRenameAttributeValue));
+        if (Array.isArray(dto.variantFields)) {
+          setRows(dto.variantFields.map((f: any, idx: number) => ({ id: f.id || `row-${idx}`, fieldName: f.fieldName || String(f) })));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const handleSave = async () => {
+      try {
+        await stockService.updateItemVariantSettings({
+          ...(settingsDto || {}),
+          doNotUpdateVariants: doNotUpdateVariantsOnSave,
+          allowRenameAttributeValue,
+          variantFields: rows.map((r) => ({ fieldName: r.fieldName })),
+        });
+        setSaveToast('Saved');
+      } catch (err) {
+        console.error('Failed to save item variant settings', err);
+        setSaveToast('Save Failed');
+      }
       setTimeout(() => setSaveToast(null), 2500);
     };
     window.addEventListener('item-variant-settings-save', handleSave);
     return () => window.removeEventListener('item-variant-settings-save', handleSave);
-  }, []);
+  }, [settingsDto, doNotUpdateVariantsOnSave, allowRenameAttributeValue, rows]);
 
   const filteredRows = useMemo(() => {
     const q = searchFilter.trim().toLowerCase();

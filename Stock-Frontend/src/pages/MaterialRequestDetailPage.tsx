@@ -25,6 +25,7 @@ import {
   Quote,
 } from 'lucide-react';
 import { useMaterialRequest, useItem, useWarehouse } from '../context';
+import { stockService } from '../api';
 import type { MaterialRequestItem, MaterialRequestPurpose } from '../types';
 import { MaterialRequestDetailSidebar } from '../components/material-request/MaterialRequestDetailSidebar';
 
@@ -39,7 +40,8 @@ const PURPOSE_OPTIONS: MaterialRequestPurpose[] = [
 export const MaterialRequestDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { requests, toggleLike } = useMaterialRequest();
+  const { requests, toggleLike, refresh } = useMaterialRequest();
+  const [isBusy, setIsBusy] = useState(false);
   const { items: rawItems } = useItem();
   const { warehouses: rawWarehouses } = useWarehouse();
   const products = rawItems.map((i) => ({ id: i.id, sku: i.itemCode, name: i.itemName }));
@@ -281,6 +283,81 @@ export const MaterialRequestDetailPage: React.FC = () => {
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           {/* LEFT MAIN CONTENT AREA */}
           <div className="flex-1 min-w-0 w-full">
+            <div className="flex flex-wrap items-center justify-end gap-2 mb-3">
+              <button
+                type="button"
+                disabled={isBusy}
+                onClick={async () => {
+                  setIsBusy(true);
+                  try {
+                    const created = await stockService.generateLowStockMaterialRequest(company);
+                    await refresh();
+                    if (created?.id) navigate(`/material-request/${encodeURIComponent(created.id)}`);
+                  } finally {
+                    setIsBusy(false);
+                  }
+                }}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#2E2E33] text-slate-700 dark:text-zinc-200 text-xs font-medium disabled:opacity-50"
+              >
+                Generate Low Stock
+              </button>
+              {entry && entry.status === 'Draft' && (
+                <>
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={async () => {
+                      setIsBusy(true);
+                      try {
+                        await stockService.updateMaterialRequest(entry.id, {
+                          title,
+                          purpose,
+                          company,
+                          items,
+                        });
+                        await refresh();
+                      } finally {
+                        setIsBusy(false);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-black dark:bg-white text-white dark:text-black text-xs font-medium disabled:opacity-50"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={async () => {
+                      if (!window.confirm('Delete this Draft Material Request?')) return;
+                      await stockService.deleteMaterialRequest(entry.id);
+                      await refresh();
+                      navigate('/material-request');
+                    }}
+                    className="px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-xs font-medium"
+                  >
+                    Delete
+                  </button>
+                </>
+              )}
+              {entry && entry.status !== 'Draft' && entry.status !== 'Cancelled' && (
+                <button
+                  type="button"
+                  disabled={isBusy}
+                  onClick={async () => {
+                    setIsBusy(true);
+                    try {
+                      const se = await stockService.createStockEntryFromMaterialRequest(entry.id);
+                      if (se?.id) navigate(`/stock-entry/${encodeURIComponent(se.id)}`);
+                    } finally {
+                      setIsBusy(false);
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-black dark:bg-white text-white dark:text-black text-xs font-medium disabled:opacity-50"
+                >
+                  Create Stock Entry
+                </button>
+              )}
+            </div>
             {/* Top Blue Info Banner when Draft (Image 1 & 5: "Submit this document to confirm") */}
             {entry.status === 'Draft' && (
               <div className="mb-3 px-4 py-2.5 rounded-lg bg-[#EBF5FF] dark:bg-sky-950/40 text-[#1E6091] dark:text-sky-300 text-xs font-normal">

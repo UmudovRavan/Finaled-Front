@@ -1,5 +1,6 @@
 import React from 'react';
-import { Printer, Heart, Plus } from 'lucide-react';
+import { Printer, Heart } from 'lucide-react';
+import { DocumentSidebarMeta } from '../common';
 import type { PackingSlipRecord } from '../../types';
 
 interface PackingSlipDetailSidebarProps {
@@ -46,34 +47,8 @@ export const PackingSlipDetailSidebar: React.FC<
       </div>
 
       {/* Action Items List */}
-      <div className="space-y-2.5 pb-3 border-b border-slate-100 dark:border-[#27272A] text-slate-600 dark:text-zinc-300">
-        <div className="flex items-center justify-between hover:text-slate-900 dark:hover:text-white cursor-pointer py-0.5">
-          <div className="flex items-center gap-2">
-            <span>Assign</span>
-          </div>
-          <Plus className="w-3.5 h-3.5 text-slate-400" />
-        </div>
-
-        <div className="flex items-center justify-between hover:text-slate-900 dark:hover:text-white cursor-pointer py-0.5">
-          <div className="flex items-center gap-2">
-            <span>Attachments</span>
-          </div>
-          <Plus className="w-3.5 h-3.5 text-slate-400" />
-        </div>
-
-        <div className="flex items-center justify-between hover:text-slate-900 dark:hover:text-white cursor-pointer py-0.5">
-          <div className="flex items-center gap-2">
-            <span>Tags</span>
-          </div>
-          <Plus className="w-3.5 h-3.5 text-slate-400" />
-        </div>
-
-        <div className="flex items-center justify-between hover:text-slate-900 dark:hover:text-white cursor-pointer py-0.5">
-          <div className="flex items-center gap-2">
-            <span>Share</span>
-          </div>
-          <Plus className="w-3.5 h-3.5 text-slate-400" />
-        </div>
+      <div className="pt-1 pb-3 border-b border-slate-100 dark:border-[#27272A]">
+        <DocumentSidebarMeta docType="PackingSlip" docId={entry.id} docName={entry.id} />
       </div>
 
       {/* Audit Info (Screenshot 4 & 5: 32 minutes ago) */}

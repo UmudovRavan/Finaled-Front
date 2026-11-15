@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Settings, Edit2 } from 'lucide-react';
-import { usePackingSlip } from '../context';
+import { Settings, Edit2, Trash2 } from 'lucide-react';
+import { usePackingSlip, useDeliveryNote } from '../context';
+import { stockService } from '../api';
 import type { PackingSlipItem } from '../types';
 import { PackingSlipDetailSidebar } from '../components/packing-slip/PackingSlipDetailSidebar';
 
 export const PackingSlipDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { slips, toggleLike, updateStatus } = usePackingSlip();
+  const { slips, toggleLike, refresh, updateStatus } = usePackingSlip();
+  const { notes: deliveryNotes } = useDeliveryNote();
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
   const entry = slips.find((s) => s.id === id) || slips[0] || {
     id: id || 'MAT-PAC-2026-00001',
@@ -65,6 +68,14 @@ export const PackingSlipDetailPage: React.FC = () => {
 
   const [netWeight, setNetWeight] = useState(entry.netWeight ?? 0);
   const [grossWeight, setGrossWeight] = useState(entry.grossWeight ?? 0.0);
+
+  useEffect(() => {
+    const computed = items.reduce(
+      (sum, it) => sum + Number(it.netWeight || 0) * Number(it.qty || 1),
+      0
+    );
+    setNetWeight(Number(computed.toFixed(3)));
+  }, [items]);
   const [grossWeightUom, setGrossWeightUom] = useState(
     entry.grossWeightUom || ''
   );
@@ -122,6 +133,60 @@ export const PackingSlipDetailPage: React.FC = () => {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* MAIN LEFT CONTENT */}
           <div className="flex-1 space-y-6 min-w-0">
+            <div className="flex items-center justify-end gap-2">
+              {entry.status === 'Draft' && (
+                <>
+                  <button
+                    type="button"
+                    disabled={isActionLoading}
+                    onClick={async () => {
+                      try {
+                        setIsActionLoading(true);
+                        await stockService.updatePackingSlip(entry.id, {
+                          deliveryNote,
+                          series,
+                          fromPackageNo,
+                          toPackageNo,
+                          items,
+                          netWeight,
+                          grossWeight,
+                          grossWeightUom,
+                          letterHead,
+                        });
+                        await refresh();
+                      } catch (err) {
+                        console.error('Failed to save packing slip', err);
+                        alert('Failed to save Packing Slip');
+                      } finally {
+                        setIsActionLoading(false);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-black dark:bg-white text-white dark:text-black text-xs font-medium disabled:opacity-50"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isActionLoading}
+                    onClick={async () => {
+                      if (!window.confirm('Delete this Packing Slip?')) return;
+                      await stockService.deletePackingSlip(entry.id);
+                      await refresh();
+                      navigate('/packing-slip');
+                    }}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-xs"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete</span>
+                  </button>
+                </>
+              )}
+            </div>
+            <datalist id="ps-delivery-notes-list">
+              {deliveryNotes.map((dn) => (
+                <option key={dn.id} value={dn.id} />
+              ))}
+            </datalist>
             {/* Alert / Notice for Draft (Screenshot 4) */}
             {entry.status === 'Draft' && (
               <div className="px-4 py-2.5 rounded-lg bg-[#EBF5FF] dark:bg-sky-950/40 text-[#1E6091] dark:text-sky-300 text-xs font-normal">

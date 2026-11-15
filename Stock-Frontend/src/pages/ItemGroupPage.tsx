@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MessageSquare, Heart, Check, ChevronDown, X } from 'lucide-react';
 import { useItemGroup } from '../context';
+import { stockService } from '../api';
+import { BulkActionMenu } from '../components/common';
 
 export const ItemGroupPage: React.FC = () => {
   const {
@@ -15,6 +17,7 @@ export const ItemGroupPage: React.FC = () => {
     toggleLike,
     pageSize,
     setPageSize,
+    refreshGroups,
   } = useItemGroup();
 
   const [sortField, setSortField] = useState('Created On');
@@ -56,11 +59,19 @@ export const ItemGroupPage: React.FC = () => {
           )}
         </div>
 
-        {/* Right side: Sort option */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setIsSortOpen(!isSortOpen)}
+        {/* Right side: Bulk Actions + Sort option */}
+        <div className="flex items-center gap-2">
+          <BulkActionMenu
+            selectedCount={selectedIds.length}
+            onBulkDelete={async () => {
+              await stockService.executeBulkAction('ItemGroup', 'Delete', selectedIds);
+              await refreshGroups();
+            }}
+          />
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsSortOpen(!isSortOpen)}
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-[#F4F5F7] dark:bg-[#1E1E22] text-slate-600 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-[#27272A] text-xs transition-colors"
           >
             <span>{sortField}</span>
@@ -88,6 +99,7 @@ export const ItemGroupPage: React.FC = () => {
               ))}
             </div>
           )}
+          </div>
         </div>
       </div>
 

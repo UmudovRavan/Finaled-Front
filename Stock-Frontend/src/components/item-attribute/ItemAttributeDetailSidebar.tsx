@@ -1,5 +1,6 @@
-import React from 'react';
-import { Edit3, Printer, Heart, Plus, UserPlus, Paperclip, Tag, Share2 } from 'lucide-react';
+﻿import React from 'react';
+import { Edit3, Printer, Heart } from 'lucide-react';
+import { DocumentSidebarMeta } from '../common';
 import type { ItemAttributeRecord } from '../../types';
 
 interface ItemAttributeDetailSidebarProps {
@@ -70,50 +71,8 @@ export const ItemAttributeDetailSidebar: React.FC<ItemAttributeDetailSidebarProp
       </div>
 
       {/* Action Items List */}
-      <div className="space-y-2.5 pt-2 pb-4 border-b border-slate-100 dark:border-[#27272A] text-slate-600 dark:text-zinc-300">
-        <button
-          type="button"
-          className="w-full flex items-center justify-between hover:text-slate-900 dark:hover:text-white cursor-pointer py-0.5 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <UserPlus className="w-3.5 h-3.5 text-slate-400 stroke-[1.75]" />
-            <span>Assign</span>
-          </div>
-          <Plus className="w-3.5 h-3.5 text-slate-400" />
-        </button>
-
-        <button
-          type="button"
-          className="w-full flex items-center justify-between hover:text-slate-900 dark:hover:text-white cursor-pointer py-0.5 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <Paperclip className="w-3.5 h-3.5 text-slate-400 stroke-[1.75]" />
-            <span>Attachments</span>
-          </div>
-          <Plus className="w-3.5 h-3.5 text-slate-400" />
-        </button>
-
-        <button
-          type="button"
-          className="w-full flex items-center justify-between hover:text-slate-900 dark:hover:text-white cursor-pointer py-0.5 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <Tag className="w-3.5 h-3.5 text-slate-400 stroke-[1.75]" />
-            <span>Tags</span>
-          </div>
-          <Plus className="w-3.5 h-3.5 text-slate-400" />
-        </button>
-
-        <button
-          type="button"
-          className="w-full flex items-center justify-between hover:text-slate-900 dark:hover:text-white cursor-pointer py-0.5 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <Share2 className="w-3.5 h-3.5 text-slate-400 stroke-[1.75]" />
-            <span>Share</span>
-          </div>
-          <Plus className="w-3.5 h-3.5 text-slate-400" />
-        </button>
+      <div className="pt-1 pb-4 border-b border-slate-100 dark:border-[#27272A]">
+        <DocumentSidebarMeta docType="ItemAttribute" docId={attribute.id} docName={attribute.attributeName || attribute.id} />
       </div>
 
       {/* Timestamp Audits */}
@@ -131,4 +90,3 @@ export const ItemAttributeDetailSidebar: React.FC<ItemAttributeDetailSidebarProp
     </div>
   );
 };
-

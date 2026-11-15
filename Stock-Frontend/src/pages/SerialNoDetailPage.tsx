@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Plus } from 'lucide-react';
-import { useSerialNo } from '../context';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
+import { useSerialNo, useItem, useWarehouse } from '../context';
+import { stockService } from '../api';
 import { SerialNoDetailSidebar } from '../components/serial-no/SerialNoDetailSidebar';
 import type { SerialNoRecord } from '../types';
 
 export const SerialNoDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { serialNos, updateSerialNo, toggleLike } = useSerialNo();
+  const navigate = useNavigate();
+  const { serialNos, updateSerialNo, refreshSerialNos, toggleLike } = useSerialNo();
+  const { items } = useItem();
+  const { warehouses } = useWarehouse();
 
   const decodedId = decodeURIComponent(id || '');
   const currentSerial = serialNos.find(
@@ -49,6 +53,31 @@ export const SerialNoDetailPage: React.FC = () => {
       <div className="flex flex-col lg:flex-row items-start gap-8">
         {/* Left / Main Column */}
         <div className="flex-1 w-full space-y-6">
+          <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={async () => {
+                if (!window.confirm('Are you sure you want to delete this Serial No?')) return;
+                await stockService.deleteSerialNo(currentSerial.id);
+                await refreshSerialNos();
+                navigate('/serial-no');
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 bg-white dark:bg-[#1E1E22] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete</span>
+            </button>
+          </div>
+          <datalist id="serial-items-list">
+            {items.map((it) => (
+              <option key={it.id} value={it.itemCode}>{it.itemName}</option>
+            ))}
+          </datalist>
+          <datalist id="serial-warehouses-list">
+            {warehouses.map((w) => (
+              <option key={w.id} value={w.warehouseName} />
+            ))}
+          </datalist>
           <div className="bg-white dark:bg-[#18181B] border border-slate-200/80 dark:border-[#27272A] rounded-xl p-6 shadow-xs space-y-8">
             {/* Top Details (Serial No & Item Code & Status) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
@@ -70,6 +99,7 @@ export const SerialNoDetailPage: React.FC = () => {
                 </label>
                 <input
                   type="text"
+                  list="serial-items-list"
                   value={formData.itemCode ?? ''}
                   onChange={(e) => setFormData({ ...formData, itemCode: e.target.value })}
                   className="w-full bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all"
@@ -97,6 +127,7 @@ export const SerialNoDetailPage: React.FC = () => {
                 </label>
                 <input
                   type="text"
+                  list="serial-warehouses-list"
                   value={formData.warehouse ?? ''}
                   onChange={(e) => setFormData({ ...formData, warehouse: e.target.value })}
                   placeholder="e.g. Bitmiş Ürünler - AD"

@@ -28,6 +28,7 @@ import {
   ItemAlternativeProvider,
   DeliveryTripProvider,
   QualityInspectionTemplateProvider,
+  QualityInspectionProvider,
 } from './context';
 import { AppRoutes } from './routes';
 import { IosToastContainer } from './components/IosToastContainer';
@@ -62,8 +63,10 @@ export const App: React.FC = () => {
                                                       <ItemAlternativeProvider>
                                                         <DeliveryTripProvider>
                                                           <QualityInspectionTemplateProvider>
-                                                            <AppRoutes />
-                                                            <IosToastContainer />
+                                                            <QualityInspectionProvider>
+                                                              <AppRoutes />
+                                                              <IosToastContainer />
+                                                            </QualityInspectionProvider>
                                                           </QualityInspectionTemplateProvider>
                                                         </DeliveryTripProvider>
                                                       </ItemAlternativeProvider>

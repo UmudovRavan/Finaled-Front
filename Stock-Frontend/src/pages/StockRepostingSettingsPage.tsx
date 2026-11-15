@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { stockService } from '../api';
 import {
   Heart,
   Users,
@@ -79,8 +80,38 @@ export const StockRepostingSettingsPage: React.FC = () => {
     setTimeout(() => setToastMessage(null), 2500);
   };
 
+  const [settingsDto, setSettingsDto] = useState<any>(null);
+
   useEffect(() => {
-    const handleSave = () => showToast('Stock Reposting Settings Saved');
+    stockService
+      .getStockRepostingSettings()
+      .then((dto: any) => {
+        if (!dto) return;
+        setSettingsDto(dto);
+        if (dto.itemBasedReposting !== undefined) setUseItemBasedReposting(Boolean(dto.itemBasedReposting));
+        if (dto.limitRepostingBasedOnClosingBalance !== undefined) setLimitTimeslot(Boolean(dto.limitRepostingBasedOnClosingBalance));
+        if (dto.notifyRepostingFailures !== undefined) setEnableParallelReposting(Boolean(dto.notifyRepostingFailures));
+        if (dto.notifyRole !== undefined) setNotifyRepostingErrorToRole(dto.notifyRole || '');
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const handleSave = async () => {
+      try {
+        await stockService.updateStockRepostingSettings({
+          ...(settingsDto || {}),
+          itemBasedReposting: useItemBasedReposting,
+          limitRepostingBasedOnClosingBalance: limitTimeslot,
+          notifyRepostingFailures: enableParallelReposting,
+          notifyRole: notifyRepostingErrorToRole || null,
+        });
+        showToast('Stock Reposting Settings Saved');
+      } catch (err) {
+        console.error('Failed to save stock reposting settings', err);
+        showToast('Failed to save Stock Reposting Settings');
+      }
+    };
     const handleConvert = () => {
       setUseItemBasedReposting(true);
       showToast('Converted to Item Based Reposting');
@@ -91,7 +122,13 @@ export const StockRepostingSettingsPage: React.FC = () => {
       window.removeEventListener('stock-reposting-settings-save', handleSave);
       window.removeEventListener('stock-reposting-convert', handleConvert);
     };
-  }, []);
+  }, [
+    settingsDto,
+    limitTimeslot,
+    useItemBasedReposting,
+    enableParallelReposting,
+    notifyRepostingErrorToRole,
+  ]);
 
   const handleCommentKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && commentInput.trim()) {

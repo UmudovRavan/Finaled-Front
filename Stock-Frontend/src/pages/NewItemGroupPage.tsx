@@ -109,8 +109,8 @@ export const NewItemGroupPage: React.FC = () => {
                       className="w-full bg-[#F4F5F7] dark:bg-[#1E1E22] text-slate-900 dark:text-white px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all"
                     />
                     <datalist id="parent-group-options">
-                      {groups.map((g) => (
-                        <option key={g.id} value={g.itemGroupName} />
+                      {Array.from(new Set(groups.map((g) => g.itemGroupName).filter(Boolean))).map((name) => (
+                        <option key={name} value={name} />
                       ))}
                     </datalist>
                   </div>

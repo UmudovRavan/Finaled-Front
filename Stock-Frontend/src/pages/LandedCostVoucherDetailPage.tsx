@@ -7,7 +7,8 @@ import {
   Trash2,
   ChevronsUpDown,
 } from 'lucide-react';
-import { useLandedCostVoucher } from '../context';
+import { useLandedCostVoucher, usePurchaseReceipt } from '../context';
+import { stockService } from '../api';
 import type {
   LandedCostVoucherReceipt,
   LandedCostVoucherItem,
@@ -21,7 +22,9 @@ import { LandedCostVoucherDetailSidebar } from '../components/landed-cost-vouche
 export const LandedCostVoucherDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { vouchers: allVouchers, toggleLike } = useLandedCostVoucher();
+  const { vouchers: allVouchers, refresh, toggleLike } = useLandedCostVoucher();
+  const { receipts } = usePurchaseReceipt();
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
   const entry = allVouchers.find((v) => v.id === id) || allVouchers[0];
 
@@ -166,25 +169,28 @@ export const LandedCostVoucherDetailPage: React.FC = () => {
     );
   };
 
-  const handleGetItems = () => {
-    setItems([
-      {
-        id: `lcv-it-${Date.now()}-1`,
-        itemCode: 'SKU001: T-shirt',
-        description: 'Cotton T-shirt - White',
-        qty: 10,
-        amount: 50.0,
-        applicableCharges: 0,
-      },
-      {
-        id: `lcv-it-${Date.now()}-2`,
-        itemCode: 'SKU002: Laptop',
-        description: 'ThinkPad Laptop',
-        qty: 2,
-        amount: 1800.0,
-        applicableCharges: 0,
-      },
-    ]);
+  const handleGetItems = async () => {
+    const firstPrVoucher = vouchers.find((v) => v.receiptDocument);
+    if (firstPrVoucher?.receiptDocument) {
+      const matched = receipts.find(
+        (r) => r.id === firstPrVoucher.receiptDocument || r.series === firstPrVoucher.receiptDocument
+      );
+      const pr = matched || (await stockService.getPurchaseReceiptById(firstPrVoucher.receiptDocument).catch(() => null));
+      if (pr && pr.items && pr.items.length > 0) {
+        setItems(
+          pr.items.map((it, idx) => ({
+            id: `lcv-it-${Date.now()}-${idx}`,
+            itemCode: it.itemCode,
+            description: it.itemName || it.itemCode,
+            qty: Number(it.acceptedQty || it.receivedQty || 1),
+            amount: Number(it.amount || (it.acceptedQty || it.receivedQty || 0) * it.rate || 0),
+            applicableCharges: 0,
+          }))
+        );
+        return;
+      }
+    }
+    alert('Select a valid Receipt Document in Vouchers table to fetch items.');
   };
 
   const handleAddItemRow = () => {
@@ -265,6 +271,72 @@ export const LandedCostVoucherDetailPage: React.FC = () => {
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           {/* LEFT MAIN CONTENT */}
           <div className="flex-1 min-w-0 w-full space-y-6">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={isActionLoading}
+                onClick={async () => {
+                  try {
+                    setIsActionLoading(true);
+                    const updated = await stockService.allocateLandedCostVoucher(entry.id);
+                    if (updated?.items) setItems(updated.items);
+                    await refresh();
+                  } catch (err) {
+                    console.error('Failed to allocate charges', err);
+                    alert('Failed to allocate charges');
+                  } finally {
+                    setIsActionLoading(false);
+                  }
+                }}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#2E2E33] bg-white dark:bg-[#1E1E22] text-slate-700 dark:text-zinc-200 hover:bg-slate-50 text-xs font-medium disabled:opacity-50"
+              >
+                Allocate Charges
+              </button>
+              {entry.status === 'Draft' && (
+                <>
+                  <button
+                    type="button"
+                    disabled={isActionLoading}
+                    onClick={async () => {
+                      try {
+                        setIsActionLoading(true);
+                        await stockService.updateLandedCostVoucher(entry.id, {
+                          series,
+                          company,
+                          postingDate,
+                          vouchers,
+                          items,
+                          vendorInvoices,
+                          landedCosts,
+                        });
+                        await refresh();
+                      } catch (err) {
+                        console.error('Save failed', err);
+                        alert('Failed to save Landed Cost Voucher');
+                      } finally {
+                        setIsActionLoading(false);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-black dark:bg-white text-white dark:text-black text-xs font-medium disabled:opacity-50"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isActionLoading}
+                    onClick={async () => {
+                      if (!window.confirm('Delete this Landed Cost Voucher?')) return;
+                      await stockService.deleteLandedCostVoucher(entry.id);
+                      await refresh();
+                      navigate('/landed-cost-voucher');
+                    }}
+                    className="px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-xs"
+                  >
+                    Delete
+                  </button>
+                </>
+              )}
+            </div>
             {/* Top Blue Info Banner when Draft */}
             {entry.status === 'Draft' && (
               <div className="px-4 py-2.5 rounded-lg bg-[#EBF5FF] dark:bg-sky-950/40 text-[#1E6091] dark:text-sky-300 text-xs font-normal">

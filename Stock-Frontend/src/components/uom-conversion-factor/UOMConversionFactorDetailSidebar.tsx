@@ -1,5 +1,6 @@
-import React from 'react';
-import { Printer, Heart, Plus, UserPlus, Paperclip, Tag, Share2 } from 'lucide-react';
+﻿import React from 'react';
+import { Printer, Heart } from 'lucide-react';
+import { DocumentSidebarMeta } from '../common';
 import type { UOMConversionFactorRecord } from '../../types';
 
 interface UOMConversionFactorDetailSidebarProps {
@@ -16,7 +17,7 @@ export const UOMConversionFactorDetailSidebar: React.FC<UOMConversionFactorDetai
       {/* Top Header Title & Icons (Printer, Heart) */}
       <div className="flex items-center justify-between pb-1">
         <div className="font-semibold text-slate-800 dark:text-zinc-200 text-sm tracking-tight truncate">
-          {factor.fromUOM && factor.toUOM ? `${factor.fromUOM} → ${factor.toUOM}` : factor.id}
+          {factor.fromUOM && factor.toUOM ? `${factor.fromUOM} â†’ ${factor.toUOM}` : factor.id}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <button
@@ -47,50 +48,8 @@ export const UOMConversionFactorDetailSidebar: React.FC<UOMConversionFactorDetai
       </div>
 
       {/* Action Items List */}
-      <div className="space-y-2.5 pt-1 pb-4 border-b border-slate-100 dark:border-[#27272A] text-slate-600 dark:text-zinc-300">
-        <button
-          type="button"
-          className="w-full flex items-center justify-between hover:text-slate-900 dark:hover:text-white cursor-pointer py-0.5 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <UserPlus className="w-3.5 h-3.5 text-slate-400 stroke-[1.75]" />
-            <span>Assign</span>
-          </div>
-          <Plus className="w-3.5 h-3.5 text-slate-400" />
-        </button>
-
-        <button
-          type="button"
-          className="w-full flex items-center justify-between hover:text-slate-900 dark:hover:text-white cursor-pointer py-0.5 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <Paperclip className="w-3.5 h-3.5 text-slate-400 stroke-[1.75]" />
-            <span>Attachments</span>
-          </div>
-          <Plus className="w-3.5 h-3.5 text-slate-400" />
-        </button>
-
-        <button
-          type="button"
-          className="w-full flex items-center justify-between hover:text-slate-900 dark:hover:text-white cursor-pointer py-0.5 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <Tag className="w-3.5 h-3.5 text-slate-400 stroke-[1.75]" />
-            <span>Tags</span>
-          </div>
-          <Plus className="w-3.5 h-3.5 text-slate-400" />
-        </button>
-
-        <button
-          type="button"
-          className="w-full flex items-center justify-between hover:text-slate-900 dark:hover:text-white cursor-pointer py-0.5 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <Share2 className="w-3.5 h-3.5 text-slate-400 stroke-[1.75]" />
-            <span>Share</span>
-          </div>
-          <Plus className="w-3.5 h-3.5 text-slate-400" />
-        </button>
+      <div className="pt-1 pb-4 border-b border-slate-100 dark:border-[#27272A]">
+        <DocumentSidebarMeta docType="UomConversionFactor" docId={factor.id} docName={factor.id} />
       </div>
 
       {/* Timestamp Audits */}
@@ -112,4 +71,3 @@ export const UOMConversionFactorDetailSidebar: React.FC<UOMConversionFactorDetai
     </div>
   );
 };
-

@@ -25,6 +25,7 @@ export * from './ShippingRuleContext';
 export * from './ItemAlternativeContext';
 export * from './DeliveryTripContext';
 export * from './QualityInspectionTemplateContext';
+export * from './QualityInspectionContext';
 
 
 

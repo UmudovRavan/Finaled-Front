@@ -11,13 +11,15 @@ import {
   Trash2,
 } from 'lucide-react';
 import { usePickList, useItem, useWarehouse } from '../context';
+import { stockService } from '../api';
 import type { PickListItemLocation, PickListPurpose } from '../types';
 import { PickListDetailSidebar } from '../components/pick-list/PickListDetailSidebar';
 
 export const PickListDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { pickLists, toggleLike } = usePickList();
+  const { pickLists, toggleLike, refresh } = usePickList();
+  const [isBusy, setIsBusy] = useState(false);
   const { items: rawItems } = useItem();
   const { warehouses: rawWarehouses } = useWarehouse();
 
@@ -32,9 +34,7 @@ export const PickListDetailPage: React.FC = () => {
   const [purpose, setPurpose] = useState<PickListPurpose>(
     entry?.purpose || 'Delivery'
   );
-  const [customer, setCustomer] = useState(
-    entry?.customer || 'Palmer Productions Ltd.'
-  );
+  const [customer, setCustomer] = useState(entry?.customer || '');
   const [warehouse, setWarehouse] = useState(
     entry?.warehouse || 'Bitmiş Ürünler - AD'
   );
@@ -72,7 +72,7 @@ export const PickListDetailPage: React.FC = () => {
     if (entry) {
       setCompany(entry.company || 'Avalon (Demo)');
       setPurpose(entry.purpose || 'Delivery');
-      setCustomer(entry.customer || 'Palmer Productions Ltd.');
+      setCustomer(entry.customer || '');
       setWarehouse(entry.warehouse || 'Bitmiş Ürünler - AD');
       setConsiderRejectedWarehouses(entry.considerRejectedWarehouses ?? true);
       setPickManually(entry.pickManually ?? true);
@@ -223,6 +223,88 @@ export const PickListDetailPage: React.FC = () => {
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           {/* LEFT MAIN CONTENT AREA */}
           <div className="flex-1 min-w-0 w-full">
+            <div className="flex flex-wrap items-center justify-end gap-2 mb-3">
+              {entry && entry.status === 'Draft' && (
+                <>
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={async () => {
+                      setIsBusy(true);
+                      try {
+                        const updated = await stockService.autoAllocatePickList(entry.id);
+                        if (updated?.items) setItems(updated.items);
+                        await refresh();
+                      } finally {
+                        setIsBusy(false);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#2E2E33] text-slate-700 dark:text-zinc-200 text-xs font-medium disabled:opacity-50"
+                  >
+                    Auto Allocate
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={async () => {
+                      setIsBusy(true);
+                      try {
+                        await stockService.updatePickList(entry.id, {
+                          company,
+                          purpose,
+                          customer,
+                          warehouse,
+                          considerRejectedWarehouses,
+                          pickManually,
+                          ignorePricingRule,
+                          scanMode,
+                          promptQty,
+                          groupSameItems,
+                          items,
+                        });
+                        await refresh();
+                      } finally {
+                        setIsBusy(false);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-black dark:bg-white text-white dark:text-black text-xs font-medium disabled:opacity-50"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={async () => {
+                      if (!window.confirm('Delete this Draft Pick List?')) return;
+                      await stockService.deletePickList(entry.id);
+                      await refresh();
+                      navigate('/pick-list');
+                    }}
+                    className="px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-xs font-medium"
+                  >
+                    Delete
+                  </button>
+                </>
+              )}
+              {entry && entry.status !== 'Draft' && entry.status !== 'Cancelled' && (
+                <button
+                  type="button"
+                  disabled={isBusy}
+                  onClick={async () => {
+                    setIsBusy(true);
+                    try {
+                      const dn = await stockService.makeDeliveryNoteFromPickList(entry.id);
+                      if (dn?.id) navigate(`/delivery-note/${encodeURIComponent(dn.id)}`);
+                    } finally {
+                      setIsBusy(false);
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-black dark:bg-white text-white dark:text-black text-xs font-medium disabled:opacity-50"
+                >
+                  Make Delivery Note
+                </button>
+              )}
+            </div>
             {/* Top Blue Info Banner when Draft (Screenshot 1: "Submit this document to confirm") */}
             {entry.status === 'Draft' && (
               <div className="mb-3 px-4 py-2.5 rounded-lg bg-[#EBF5FF] dark:bg-sky-950/40 text-[#1E6091] dark:text-sky-300 text-xs font-normal">

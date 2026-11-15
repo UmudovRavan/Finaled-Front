@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Plus, Download, Upload, Trash2 } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ChevronDown, ChevronUp, Plus, Download, Upload, Trash2, Wand2 } from 'lucide-react';
 import { useSerialAndBatchBundle } from '../context';
+import { stockService } from '../api';
 import { SerialAndBatchBundleDetailSidebar } from '../components/serial-and-batch-bundle/SerialAndBatchBundleDetailSidebar';
 import type { SerialAndBatchBundleRecord, SerialAndBatchBundleItem } from '../types';
 
 export const SerialAndBatchBundleDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { bundles, updateBundle, toggleLike } = useSerialAndBatchBundle();
+  const navigate = useNavigate();
+  const { bundles, updateBundle, refreshBundles, toggleLike } = useSerialAndBatchBundle();
+  const [isAutoPicking, setIsAutoPicking] = useState(false);
 
   const decodedId = decodeURIComponent(id || '');
   const currentBundle = bundles.find(
@@ -80,6 +83,49 @@ export const SerialAndBatchBundleDetailPage: React.FC = () => {
       <div className="flex flex-col lg:flex-row items-start gap-8">
         {/* Left / Main Column */}
         <div className="flex-1 w-full space-y-6">
+          <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              disabled={isAutoPicking}
+              onClick={async () => {
+                try {
+                  setIsAutoPicking(true);
+                  const updated = await stockService.autoPickSerialAndBatchBundle(
+                    currentBundle.itemCode || '',
+                    currentBundle.warehouse || '',
+                    rows.reduce((sum, r) => sum + Number(r.qty || 0), 0) || 1
+                  );
+                  if (updated) {
+                    setFormData(updated);
+                    setRows(updated.items || []);
+                  }
+                  await refreshBundles();
+                } catch (err) {
+                  console.error('Auto pick failed', err);
+                  alert('Auto Pick failed');
+                } finally {
+                  setIsAutoPicking(false);
+                }
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#2E2E33] bg-white dark:bg-[#1E1E22] text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-[#27272A] text-xs transition-colors disabled:opacity-50"
+            >
+              <Wand2 className="w-3.5 h-3.5" />
+              <span>{isAutoPicking ? 'Auto Picking...' : 'Auto Pick'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                if (!window.confirm('Are you sure you want to delete this bundle?')) return;
+                await stockService.deleteSerialAndBatchBundle(currentBundle.id);
+                await refreshBundles();
+                navigate('/serial-and-batch-bundle');
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 bg-white dark:bg-[#1E1E22] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete</span>
+            </button>
+          </div>
           {/* Top Tab Bar */}
           <div className="flex items-center gap-6 border-b border-slate-200 dark:border-[#27272A] px-1 select-none">
             <button

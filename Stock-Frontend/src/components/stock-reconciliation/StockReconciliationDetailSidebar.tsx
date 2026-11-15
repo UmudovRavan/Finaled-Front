@@ -1,9 +1,6 @@
 import React from 'react';
-import {
-  Printer,
-  Heart,
-  Plus,
-} from 'lucide-react';
+import { Printer, Heart } from 'lucide-react';
+import { DocumentSidebarMeta } from '../common';
 import type { StockReconciliationRecord } from '../../types';
 
 interface StockReconciliationDetailSidebarProps {
@@ -21,7 +18,7 @@ export const StockReconciliationDetailSidebar: React.FC<
         <div className="font-semibold text-slate-900 dark:text-white truncate pr-2">
           {entry.id}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={() => window.print()}
@@ -49,60 +46,26 @@ export const StockReconciliationDetailSidebar: React.FC<
         </div>
       </div>
 
-      {/* Action Links with + button */}
-      <div className="space-y-2.5 pb-4 border-b border-slate-100 dark:border-[#27272A] text-slate-600 dark:text-zinc-300">
-        <div className="flex items-center justify-between py-1 group hover:text-slate-900 dark:hover:text-white cursor-pointer">
-          <span className="text-slate-600 dark:text-zinc-400">Assign</span>
-          <button type="button" className="text-slate-400 hover:text-slate-700 dark:hover:text-white">
-            <Plus className="w-3.5 h-3.5 stroke-[2]" />
-          </button>
-        </div>
-
-        <div className="flex items-center justify-between py-1 group hover:text-slate-900 dark:hover:text-white cursor-pointer">
-          <span className="text-slate-600 dark:text-zinc-400">Attachments</span>
-          <button type="button" className="text-slate-400 hover:text-slate-700 dark:hover:text-white">
-            <Plus className="w-3.5 h-3.5 stroke-[2]" />
-          </button>
-        </div>
-
-        <div className="flex items-center justify-between py-1 group hover:text-slate-900 dark:hover:text-white cursor-pointer">
-          <span className="text-slate-600 dark:text-zinc-400">Tags</span>
-          <button type="button" className="text-slate-400 hover:text-slate-700 dark:hover:text-white">
-            <Plus className="w-3.5 h-3.5 stroke-[2]" />
-          </button>
-        </div>
-
-        <div className="flex items-center justify-between py-1 group hover:text-slate-900 dark:hover:text-white cursor-pointer">
-          <span className="text-slate-600 dark:text-zinc-400">Share</span>
-          <button type="button" className="text-slate-400 hover:text-slate-700 dark:hover:text-white">
-            <Plus className="w-3.5 h-3.5 stroke-[2]" />
-          </button>
-        </div>
+      {/* Attachments, Tags, Share */}
+      <div className="pt-1 pb-4 border-b border-slate-100 dark:border-[#27272A]">
+        <DocumentSidebarMeta docType="StockReconciliation" docId={entry.id} docName={entry.id} />
       </div>
 
-      {/* Audit Info: Last Edited & Created By */}
-      <div className="space-y-3 text-slate-500 dark:text-zinc-400">
+      {/* Timestamp Audits */}
+      <div className="space-y-3 pt-1 text-[11px] text-slate-500 dark:text-zinc-400">
         <div>
-          <div className="text-[11px] text-slate-400 dark:text-zinc-500">
-            Last Edited By You
-          </div>
-          <div className="text-slate-700 dark:text-zinc-200 mt-0.5">
-            1 minute ago
+          <div className="font-normal text-slate-700 dark:text-zinc-300">Last Edited By You</div>
+          <div className="text-slate-400 dark:text-zinc-500 mt-0.5">
+            3 months ago
           </div>
         </div>
-
         <div>
-          <div className="text-[11px] text-slate-400 dark:text-zinc-500">
-            Created By You
-          </div>
-          <div className="text-slate-700 dark:text-zinc-200 mt-0.5">
-            1 minute ago
+          <div className="font-normal text-slate-700 dark:text-zinc-300">Created By You</div>
+          <div className="text-slate-400 dark:text-zinc-500 mt-0.5">
+            3 months ago
           </div>
         </div>
       </div>
     </div>
   );
 };
-
-export default StockReconciliationDetailSidebar;
-

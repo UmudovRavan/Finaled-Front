@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
-import { useDeliveryTrip } from '../context';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ChevronDown, ChevronUp, Plus, Trash2, Truck, CheckCircle2 } from 'lucide-react';
+import { useDeliveryTrip, useDeliveryNote } from '../context';
+import { stockService } from '../api';
 import { DeliveryTripDetailSidebar } from '../components/delivery-trip';
 import type { DeliveryTripRecord, DeliveryStopItem } from '../types';
 
 export const DeliveryTripDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { trips, updateTrip, toggleLike } = useDeliveryTrip();
+  const navigate = useNavigate();
+  const { trips, updateTrip, refreshTrips, toggleLike } = useDeliveryTrip();
+  const { notes: deliveryNotes } = useDeliveryNote();
+  const [customers, setCustomers] = useState<{ id: string; customerName: string }[]>([]);
+  const [isDispatching, setIsDispatching] = useState(false);
+
+  useEffect(() => {
+    stockService.getCustomers().then(setCustomers).catch(() => {});
+  }, []);
 
   const decodedId = decodeURIComponent(id || '');
   const currentTrip = trips.find((t) => t.id.toLowerCase() === decodedId.toLowerCase());
@@ -103,6 +112,51 @@ export const DeliveryTripDetailPage: React.FC = () => {
       <div className="flex flex-col lg:flex-row items-start gap-8">
         {/* Main Content Area */}
         <div className="flex-1 w-full space-y-6">
+          <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              disabled={isDispatching}
+              onClick={async () => {
+                try {
+                  setIsDispatching(true);
+                  await stockService.dispatchDeliveryTrip(currentTrip.id);
+                  await refreshTrips();
+                } catch (err) {
+                  console.error('Failed to dispatch delivery trip', err);
+                  alert('Failed to dispatch delivery trip');
+                } finally {
+                  setIsDispatching(false);
+                }
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#2E2E33] bg-white dark:bg-[#1E1E22] text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-[#27272A] text-xs transition-colors disabled:opacity-50"
+            >
+              <Truck className="w-3.5 h-3.5" />
+              <span>{isDispatching ? 'Dispatching...' : 'Dispatch'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                if (!window.confirm('Are you sure you want to delete this Delivery Trip?')) return;
+                await stockService.deleteDeliveryTrip(currentTrip.id);
+                await refreshTrips();
+                navigate('/delivery-trip');
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 bg-white dark:bg-[#1E1E22] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete</span>
+            </button>
+          </div>
+          <datalist id="trip-customers-list">
+            {customers.map((c) => (
+              <option key={c.id} value={c.customerName} />
+            ))}
+          </datalist>
+          <datalist id="trip-delivery-notes-list">
+            {deliveryNotes.map((dn) => (
+              <option key={dn.id} value={dn.id} />
+            ))}
+          </datalist>
           <form onSubmit={handleSave} className="space-y-6">
             {/* Main Form Box */}
             <div className="bg-white dark:bg-[#18181B] rounded-xl border border-slate-200/80 dark:border-[#27272A] p-6 shadow-xs space-y-6">
@@ -323,6 +377,7 @@ export const DeliveryTripDetailPage: React.FC = () => {
                             <td className="py-2 px-3">
                               <input
                                 type="text"
+                                list="trip-delivery-notes-list"
                                 value={stop.deliveryNote}
                                 onChange={(e) =>
                                   handleUpdateStop(idx, 'deliveryNote', e.target.value)
@@ -332,15 +387,31 @@ export const DeliveryTripDetailPage: React.FC = () => {
                               />
                             </td>
                             <td className="py-2 px-3">
-                              <input
-                                type="text"
-                                value={stop.estimatedArrival}
-                                onChange={(e) =>
-                                  handleUpdateStop(idx, 'estimatedArrival', e.target.value)
-                                }
-                                placeholder=""
-                                className="w-full bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 text-xs px-2 py-1 rounded border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 outline-none"
-                              />
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="text"
+                                  value={stop.estimatedArrival}
+                                  onChange={(e) =>
+                                    handleUpdateStop(idx, 'estimatedArrival', e.target.value)
+                                  }
+                                  placeholder=""
+                                  className="w-full bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 text-xs px-2 py-1 rounded border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 outline-none"
+                                />
+                                {!stop.visited && stop.id && !stop.id.startsWith('stop-') && (
+                                  <button
+                                    type="button"
+                                    title="Mark Visited"
+                                    onClick={async () => {
+                                      await stockService.markDeliveryStopVisited(currentTrip.id, stop.id);
+                                      await refreshTrips();
+                                    }}
+                                    className="px-2 py-1 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-[10px] font-medium whitespace-nowrap hover:bg-emerald-100"
+                                  >
+                                    <CheckCircle2 className="w-3 h-3 inline mr-0.5" />
+                                    Visit
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         ))}

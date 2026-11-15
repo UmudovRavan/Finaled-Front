@@ -132,10 +132,13 @@ export const QualityInspectionTemplateDetailPage: React.FC = () => {
                 <label className="block text-slate-600 dark:text-zinc-300 mb-2 font-normal text-xs">
                   Quality Inspection
                 </label>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F4F5F7] dark:bg-[#202024] text-slate-700 dark:text-zinc-300 rounded-lg text-xs hover:bg-slate-200 dark:hover:bg-[#27272A] transition-colors cursor-pointer">
+                <Link
+                  to={`/quality-inspection/new?template=${encodeURIComponent(currentTemplate.templateName || currentTemplate.id)}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F4F5F7] dark:bg-[#202024] text-slate-700 dark:text-zinc-300 rounded-lg text-xs hover:bg-slate-200 dark:hover:bg-[#27272A] transition-colors cursor-pointer"
+                >
                   <span>Quality Inspection</span>
                   <Plus className="w-3.5 h-3.5 text-slate-500" />
-                </div>
+                </Link>
               </div>
 
               {/* Section: Item Quality Inspection Parameter */}

@@ -25,7 +25,7 @@ export const NewPickListForm: React.FC = () => {
   const [purpose, setPurpose] = useState<PickListPurpose>(
     'Material Transfer for Manufacture'
   );
-  const [customer, setCustomer] = useState('Palmer Productions Ltd.');
+  const [customer, setCustomer] = useState('');
   const [warehouse, setWarehouse] = useState('');
   const [considerRejectedWarehouses, setConsiderRejectedWarehouses] = useState(false);
 
@@ -154,7 +154,7 @@ export const NewPickListForm: React.FC = () => {
     if (e) e.preventDefault();
     const created = await createPickList({
       company: company || 'Avalon (Demo)',
-      customer: customer || 'Palmer Productions Ltd.',
+      customer: customer.trim(),
       series,
       purpose,
       warehouse,

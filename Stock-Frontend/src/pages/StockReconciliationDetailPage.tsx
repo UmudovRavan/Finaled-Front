@@ -10,7 +10,8 @@ import {
   Upload,
   ChevronsUpDown,
 } from 'lucide-react';
-import { useStockReconciliation, useItem } from '../context';
+import { useStockReconciliation, useItem, useWarehouse } from '../context';
+import { stockService } from '../api';
 import type {
   StockReconciliationItem,
   StockReconciliationPurpose,
@@ -20,9 +21,11 @@ import { StockReconciliationDetailSidebar } from '../components/stock-reconcilia
 export const StockReconciliationDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { reconciliations, updateStatus, toggleLike } =
+  const { reconciliations, updateStatus, refresh, toggleLike } =
     useStockReconciliation();
   const { items: rawItems } = useItem();
+  const { warehouses } = useWarehouse();
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
   const entry = reconciliations.find((r) => r.id === id) || reconciliations[0];
 
@@ -214,6 +217,85 @@ export const StockReconciliationDetailPage: React.FC = () => {
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           {/* LEFT MAIN CONTENT AREA */}
           <div className="flex-1 min-w-0 w-full space-y-6">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {entry.status === 'Draft' && (
+                <>
+                  <button
+                    type="button"
+                    disabled={isActionLoading}
+                    onClick={async () => {
+                      if (!defaultWarehouse) {
+                        alert('Please select Default Warehouse first');
+                        return;
+                      }
+                      try {
+                        setIsActionLoading(true);
+                        const fetched = await stockService.fetchWarehouseItemsForReconciliation(defaultWarehouse, company);
+                        if (Array.isArray(fetched) && fetched.length > 0) {
+                          setItems(fetched);
+                        } else {
+                          alert('No items found in this warehouse.');
+                        }
+                      } catch (err) {
+                        console.error('Fetch warehouse items failed', err);
+                        alert('Failed to fetch warehouse items');
+                      } finally {
+                        setIsActionLoading(false);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#2E2E33] bg-white dark:bg-[#1E1E22] text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-[#27272A] text-xs font-medium transition-colors disabled:opacity-50"
+                  >
+                    Fetch Warehouse Items
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isActionLoading}
+                    onClick={async () => {
+                      try {
+                        setIsActionLoading(true);
+                        await stockService.updateStockReconciliation(entry.id, {
+                          company,
+                          purpose,
+                          defaultWarehouse,
+                          postingDate,
+                          postingTime,
+                          editPostingDateTime,
+                          scanMode,
+                          items,
+                        });
+                        await refresh();
+                      } catch (err) {
+                        console.error('Save failed', err);
+                        alert('Failed to save Stock Reconciliation');
+                      } finally {
+                        setIsActionLoading(false);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-black dark:bg-white text-white dark:text-black text-xs font-medium transition-colors disabled:opacity-50"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isActionLoading}
+                    onClick={async () => {
+                      if (!window.confirm('Delete this draft Stock Reconciliation?')) return;
+                      await stockService.deleteStockReconciliation(entry.id);
+                      await refresh();
+                      navigate('/stock-reconciliation');
+                    }}
+                    className="px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 bg-white dark:bg-[#1E1E22] text-red-600 dark:text-red-400 hover:bg-red-50 text-xs transition-colors"
+                  >
+                    Delete
+                  </button>
+                </>
+              )}
+            </div>
+            <datalist id="sr-warehouses-list">
+              {warehouses.map((w) => (
+                <option key={w.id} value={w.warehouseName} />
+              ))}
+            </datalist>
             {/* Top Blue Info Banner when Draft (Screenshot 3: "Submit this document to confirm") */}
             {entry.status === 'Draft' && (
               <div className="px-4 py-2.5 rounded-lg bg-[#EBF5FF] dark:bg-sky-950/40 text-[#1E6091] dark:text-sky-300 text-xs font-normal">

@@ -76,6 +76,9 @@ import { DeliveryTripDetailPage } from '../pages/DeliveryTripDetailPage';
 import { QualityInspectionTemplatePage } from '../pages/QualityInspectionTemplatePage';
 import { NewQualityInspectionTemplatePage } from '../pages/NewQualityInspectionTemplatePage';
 import { QualityInspectionTemplateDetailPage } from '../pages/QualityInspectionTemplateDetailPage';
+import { QualityInspectionPage } from '../pages/QualityInspectionPage';
+import { NewQualityInspectionPage } from '../pages/NewQualityInspectionPage';
+import { QualityInspectionDetailPage } from '../pages/QualityInspectionDetailPage';
 import { StockReportPage } from '../pages/StockReportPage';
 import { StockLedgerReportPage } from '../pages/StockLedgerReportPage';
 import { StockBalanceReportPage } from '../pages/StockBalanceReportPage';
@@ -263,7 +266,12 @@ export const AppRoutes: React.FC = () => {
           <Route path="packing-slip/new" element={<NewPackingSlipPage />} />
           <Route path="packing-slip/:id" element={<PackingSlipDetailPage />} />
           <Route path="tools/packing-slip" element={<PackingSlipPage />} />
+          <Route path="quality-inspection" element={<QualityInspectionPage />} />
+          <Route path="tools/quality-inspection" element={<QualityInspectionPage />} />
+          <Route path="quality-inspection/new" element={<NewQualityInspectionPage />} />
+          <Route path="quality-inspection/:id" element={<QualityInspectionDetailPage />} />
           <Route path="movements" element={<StockMovementsPage />} />
+          <Route path="stock-movements" element={<StockMovementsPage />} />
 
           {/* Suppliers, Tools & Reports */}
           <Route path="suppliers" element={<SuppliersPage />} />

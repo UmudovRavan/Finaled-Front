@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import { useWarehouse } from '../context';
 import { WarehouseDetailSidebar } from '../components/warehouse/WarehouseDetailSidebar';
+import { DocumentCommentsActivity } from '../components/common';
 import type { WarehouseRecord } from '../types';
 
 export const WarehouseDetailPage: React.FC = () => {
@@ -18,11 +19,11 @@ export const WarehouseDetailPage: React.FC = () => {
   );
 
   const [formData, setFormData] = useState<Partial<WarehouseRecord>>({});
-  const [commentText, setCommentText] = useState('');
   const [isContactOpen, setIsContactOpen] = useState(true);
   const [isTransitOpen, setIsTransitOpen] = useState(true);
-  const [isActivityOpen, setIsActivityOpen] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   useEffect(() => {
     if (currentWarehouse) {
@@ -185,25 +186,131 @@ export const WarehouseDetailPage: React.FC = () => {
                 <div className="space-y-1.5">
                   <button
                     type="button"
+                    onClick={() => {
+                      setIsContactOpen(true);
+                      setIsAddressModalOpen(!isAddressModalOpen);
+                    }}
                     className="px-3 py-1.5 rounded-lg bg-[#F4F5F7] dark:bg-[#202024] hover:bg-slate-200 dark:hover:bg-[#27272A] text-slate-700 dark:text-zinc-300 font-medium text-xs transition-colors"
                   >
-                    New Address
+                    {formData.addressLine1 || formData.city ? 'Edit Address' : 'New Address'}
                   </button>
-                  <p className="text-slate-400 dark:text-zinc-500 text-xs">
-                    No address added yet.
-                  </p>
+                  {formData.addressLine1 || formData.city || formData.stateProvince || formData.pin ? (
+                    <div className="text-slate-600 dark:text-zinc-300 text-xs space-y-0.5 pt-1">
+                      {formData.addressLine1 && <p>{formData.addressLine1}</p>}
+                      {formData.addressLine2 && <p>{formData.addressLine2}</p>}
+                      <p>{[formData.city, formData.stateProvince, formData.pin].filter(Boolean).join(', ')}</p>
+                    </div>
+                  ) : (
+                    <p className="text-slate-400 dark:text-zinc-500 text-xs">
+                      No address added yet.
+                    </p>
+                  )}
+                  {isAddressModalOpen && (
+                    <div className="mt-2 p-3 rounded-lg border border-slate-200 dark:border-[#27272A] bg-[#FAFBFD] dark:bg-[#1E1E22] space-y-2">
+                      <input
+                        type="text"
+                        placeholder="Address Line 1"
+                        value={formData.addressLine1 ?? ''}
+                        onChange={(e) => setFormData({ ...formData, addressLine1: e.target.value })}
+                        className="w-full bg-white dark:bg-[#151518] text-slate-800 dark:text-zinc-200 px-2.5 py-1.5 rounded border border-slate-200 dark:border-zinc-700 text-xs outline-none"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Address Line 2"
+                        value={formData.addressLine2 ?? ''}
+                        onChange={(e) => setFormData({ ...formData, addressLine2: e.target.value })}
+                        className="w-full bg-white dark:bg-[#151518] text-slate-800 dark:text-zinc-200 px-2.5 py-1.5 rounded border border-slate-200 dark:border-zinc-700 text-xs outline-none"
+                      />
+                      <div className="grid grid-cols-3 gap-2">
+                        <input
+                          type="text"
+                          placeholder="City"
+                          value={formData.city ?? ''}
+                          onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                          className="w-full bg-white dark:bg-[#151518] text-slate-800 dark:text-zinc-200 px-2.5 py-1.5 rounded border border-slate-200 dark:border-zinc-700 text-xs outline-none"
+                        />
+                        <input
+                          type="text"
+                          placeholder="State / Province"
+                          value={formData.stateProvince ?? ''}
+                          onChange={(e) => setFormData({ ...formData, stateProvince: e.target.value })}
+                          className="w-full bg-white dark:bg-[#151518] text-slate-800 dark:text-zinc-200 px-2.5 py-1.5 rounded border border-slate-200 dark:border-zinc-700 text-xs outline-none"
+                        />
+                        <input
+                          type="text"
+                          placeholder="PIN"
+                          value={formData.pin ?? ''}
+                          onChange={(e) => setFormData({ ...formData, pin: e.target.value })}
+                          className="w-full bg-white dark:bg-[#151518] text-slate-800 dark:text-zinc-200 px-2.5 py-1.5 rounded border border-slate-200 dark:border-zinc-700 text-xs outline-none"
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await updateWarehouse(currentWarehouse.id, formData);
+                            setIsAddressModalOpen(false);
+                          }}
+                          className="px-3 py-1 rounded bg-black dark:bg-white text-white dark:text-black text-[11px] font-medium"
+                        >
+                          Save Address
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
                   <button
                     type="button"
+                    onClick={() => {
+                      setIsContactOpen(true);
+                      setIsContactModalOpen(!isContactModalOpen);
+                    }}
                     className="px-3 py-1.5 rounded-lg bg-[#F4F5F7] dark:bg-[#202024] hover:bg-slate-200 dark:hover:bg-[#27272A] text-slate-700 dark:text-zinc-300 font-medium text-xs transition-colors"
                   >
-                    New Contact
+                    {formData.phoneNo || formData.mobileNo ? 'Edit Contact' : 'New Contact'}
                   </button>
-                  <p className="text-slate-400 dark:text-zinc-500 text-xs">
-                    No contacts added yet.
-                  </p>
+                  {formData.phoneNo || formData.mobileNo ? (
+                    <div className="text-slate-600 dark:text-zinc-300 text-xs space-y-0.5 pt-1">
+                      {formData.phoneNo && <p>Phone: {formData.phoneNo}</p>}
+                      {formData.mobileNo && <p>Mobile: {formData.mobileNo}</p>}
+                    </div>
+                  ) : (
+                    <p className="text-slate-400 dark:text-zinc-500 text-xs">
+                      No contacts added yet.
+                    </p>
+                  )}
+                  {isContactModalOpen && (
+                    <div className="mt-2 p-3 rounded-lg border border-slate-200 dark:border-[#27272A] bg-[#FAFBFD] dark:bg-[#1E1E22] space-y-2">
+                      <input
+                        type="text"
+                        placeholder="Phone No"
+                        value={formData.phoneNo ?? ''}
+                        onChange={(e) => setFormData({ ...formData, phoneNo: e.target.value })}
+                        className="w-full bg-white dark:bg-[#151518] text-slate-800 dark:text-zinc-200 px-2.5 py-1.5 rounded border border-slate-200 dark:border-zinc-700 text-xs outline-none"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Mobile No"
+                        value={formData.mobileNo ?? ''}
+                        onChange={(e) => setFormData({ ...formData, mobileNo: e.target.value })}
+                        className="w-full bg-white dark:bg-[#151518] text-slate-800 dark:text-zinc-200 px-2.5 py-1.5 rounded border border-slate-200 dark:border-zinc-700 text-xs outline-none"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await updateWarehouse(currentWarehouse.id, formData);
+                            setIsContactModalOpen(false);
+                          }}
+                          className="px-3 py-1 rounded bg-black dark:bg-white text-white dark:text-black text-[11px] font-medium"
+                        >
+                          Save Contact
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -371,70 +478,7 @@ export const WarehouseDetailPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Comments Section */}
-          <div className="space-y-3 pt-2">
-            <h3 className="font-semibold text-slate-800 dark:text-zinc-200 text-sm">
-              Comments
-            </h3>
-            <div className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-medium text-xs shrink-0 select-none">
-                A
-              </div>
-              <input
-                type="text"
-                placeholder="Type a reply / comment"
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                className="flex-1 bg-white dark:bg-[#18181B] text-slate-800 dark:text-zinc-200 placeholder:text-slate-400 dark:placeholder:text-zinc-500 px-3.5 py-2 rounded-lg border border-slate-200 dark:border-zinc-800 text-xs focus:outline-none focus:border-slate-400 dark:focus:border-zinc-600 transition-all"
-              />
-            </div>
-          </div>
-
-          {/* Activity Section */}
-          <div className="space-y-4 pt-2">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-slate-800 dark:text-zinc-200 text-sm">
-                Activity
-              </h3>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-[#F4F5F7] dark:bg-[#202024] text-slate-700 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-[#27272A] text-xs font-normal transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>New Email</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsActivityOpen(!isActivityOpen)}
-                  className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors"
-                >
-                  {isActivityOpen ? (
-                    <ChevronUp className="w-4 h-4" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {isActivityOpen && (
-              <div className="relative pl-4 space-y-4 before:absolute before:left-1.5 before:top-2 before:bottom-2 before:w-px before:bg-slate-200 dark:before:bg-zinc-800 text-[11px] text-slate-600 dark:text-zinc-400">
-                <div className="relative flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-slate-400 dark:bg-zinc-600 -ml-[19px]" />
-                  <span>
-                    You last edited this · {currentWarehouse.lastEdited || 'just now'}
-                  </span>
-                </div>
-                <div className="relative flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-slate-400 dark:bg-zinc-600 -ml-[19px]" />
-                  <span>
-                    You created this · {currentWarehouse.createdBy || 'just now'}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
+          <DocumentCommentsActivity docType="Warehouse" docId={currentWarehouse.id} />
         </div>
 
         {/* Right Sidebar */}

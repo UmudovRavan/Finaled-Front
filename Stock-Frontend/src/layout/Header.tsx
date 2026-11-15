@@ -4138,7 +4138,7 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
               {isSerialNoDetail && (
                 <button
                   type="button"
-                  onClick={() => alert('View Ledgers')}
+                  onClick={() => navigate('/stock-ledger')}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#2E2E33] bg-white dark:bg-[#1E1E22] text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-[#27272A] text-xs transition-colors"
                 >
                   <span>View Ledgers</span>
@@ -4175,6 +4175,7 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
                   <div className="relative">
                     <button
                       type="button"
+                      onClick={() => navigate('/stock-balance')}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#2E2E33] bg-white dark:bg-[#1E1E22] text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-[#27272A] text-xs transition-colors"
                     >
                       <span>View</span>
@@ -4182,6 +4183,34 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
                     </button>
                   </div>
                 </>
+              )}
+
+              {isUomDetail && currentUomDetailEntry && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!window.confirm('Are you sure you want to delete this UOM?')) return;
+                    await uom.deleteUOM(currentUomDetailEntry.id);
+                    navigate('/uom');
+                  }}
+                  className="px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 bg-white dark:bg-[#1E1E22] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-normal transition-colors"
+                >
+                  Delete
+                </button>
+              )}
+
+              {isUomConversionFactorDetail && currentUcfDetailEntry && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!window.confirm('Are you sure you want to delete this UOM Conversion Factor?')) return;
+                    await uomConversionFactor.deleteConversionFactor(currentUcfDetailEntry.id);
+                    navigate('/uom-conversion-factor');
+                  }}
+                  className="px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 bg-white dark:bg-[#1E1E22] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-normal transition-colors"
+                >
+                  Delete
+                </button>
               )}
 
               {isItemDetail && currentItDetailEntry && (
@@ -4222,6 +4251,7 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
                   <div className="relative">
                     <button
                       type="button"
+                      onClick={() => navigate('/stock-balance')}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#2E2E33] bg-white dark:bg-[#1E1E22] text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-[#27272A] text-xs transition-colors"
                     >
                       <span>View</span>
@@ -4230,7 +4260,7 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
                   </div>
                   <button
                     type="button"
-                    onClick={() => navigate('/item/new')}
+                    onClick={() => navigate('/item/new', { state: { duplicateFrom: currentItDetailEntry } })}
                     className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#2E2E33] bg-white dark:bg-[#1E1E22] text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-[#27272A] text-xs font-medium transition-colors"
                   >
                     Duplicate

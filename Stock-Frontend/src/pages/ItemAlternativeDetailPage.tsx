@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Plus } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { useItemAlternative } from '../context';
+import { stockService } from '../api';
 import { ItemAlternativeDetailSidebar } from '../components/item-alternative';
 import type { ItemAlternativeRecord } from '../types';
 
 export const ItemAlternativeDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { alternatives, updateAlternative, toggleLike } = useItemAlternative();
+  const navigate = useNavigate();
+  const { alternatives, updateAlternative, refreshAlternatives, toggleLike } = useItemAlternative();
 
   const decodedId = decodeURIComponent(id || '');
   const currentAlternative = alternatives.find(
@@ -60,6 +62,21 @@ export const ItemAlternativeDetailPage: React.FC = () => {
       <div className="flex flex-col lg:flex-row items-start gap-8">
         {/* Main Content Area */}
         <div className="flex-1 w-full space-y-6">
+          <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={async () => {
+                if (!window.confirm('Are you sure you want to delete this Item Alternative?')) return;
+                await stockService.deleteItemAlternative(currentAlternative.id);
+                await refreshAlternatives();
+                navigate('/item-alternative');
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 bg-white dark:bg-[#1E1E22] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete</span>
+            </button>
+          </div>
           <form onSubmit={handleSave} className="space-y-6">
             <div className="bg-white dark:bg-[#18181B] rounded-xl border border-slate-200/80 dark:border-[#27272A] p-6 shadow-xs space-y-5">
               {/* Item Code */}

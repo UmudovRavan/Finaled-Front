@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MessageSquare, Heart, ChevronDown, X, ArrowUpDown } from 'lucide-react';
 import { useUOMConversionFactor } from '../context';
+import { BulkActionMenu } from '../components/common';
+import { stockService } from '../api';
+import { toast } from '../utils/toast';
 
 export const UOMConversionFactorPage: React.FC = () => {
   const {
+    factors,
     filteredFactors,
     filterId,
     setFilterId,
@@ -20,14 +24,37 @@ export const UOMConversionFactorPage: React.FC = () => {
     toggleLike,
     pageSize,
     setPageSize,
+    refreshFactors,
   } = useUOMConversionFactor();
 
   const [sortField, setSortField] = useState('Created On');
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [hasFilterActive, setHasFilterActive] = useState(true);
 
+  const sortedFactors = useMemo(() => {
+    const list = [...filteredFactors];
+    list.sort((a, b) => {
+      if (sortField === 'ID') return a.id.localeCompare(b.id);
+      if (sortField === 'Category') return a.category.localeCompare(b.category);
+      if (sortField === 'From') return a.fromUOM.localeCompare(b.fromUOM);
+      if (sortField === 'To') return a.toUOM.localeCompare(b.toUOM);
+      return (b.createdOn || '').localeCompare(a.createdOn || '');
+    });
+    return list.slice(0, pageSize);
+  }, [filteredFactors, sortField, pageSize]);
+
+  const handleBulkDelete = async () => {
+    try {
+      await stockService.executeBulkAction('UomConversionFactor', 'Delete', selectedIds);
+      toast.success(`Deleted ${selectedIds.length} conversion factor(s)`);
+      await refreshFactors();
+    } catch {
+      toast.error('Failed to delete selected conversion factors');
+    }
+  };
+
   const allSelected =
-    filteredFactors.length > 0 && selectedIds.length === filteredFactors.length;
+    sortedFactors.length > 0 && selectedIds.length === sortedFactors.length;
 
   return (
     <div className="space-y-3 font-sans">
@@ -100,8 +127,9 @@ export const UOMConversionFactorPage: React.FC = () => {
           )}
         </div>
 
-        {/* Right side: Sort option */}
-        <div className="relative">
+        {/* Right side: Bulk Actions + Sort option */}
+        <div className="flex items-center gap-2 relative">
+          <BulkActionMenu selectedCount={selectedIds.length} onBulkDelete={handleBulkDelete} />
           <button
             type="button"
             onClick={() => setIsSortOpen(!isSortOpen)}
@@ -167,21 +195,21 @@ export const UOMConversionFactorPage: React.FC = () => {
                 </th>
                 <th className="py-2.5 px-3 font-normal text-right text-slate-500 dark:text-zinc-400">
                   <div className="flex items-center justify-end gap-1.5">
-                    <span>{filteredFactors.length} of 235</span>
+                    <span>{sortedFactors.length} of {factors.length}</span>
                     <Heart className="w-3.5 h-3.5 text-slate-400" />
                   </div>
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-[#27272A]">
-              {filteredFactors.length === 0 ? (
+              {sortedFactors.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-8 text-center text-slate-400 dark:text-zinc-500">
                     No records found
                   </td>
                 </tr>
               ) : (
-                filteredFactors.map((factor) => {
+                sortedFactors.map((factor) => {
                   const isChecked = selectedIds.includes(factor.id);
                   return (
                     <tr
@@ -201,7 +229,9 @@ export const UOMConversionFactorPage: React.FC = () => {
                           to={`/uom-conversion-factor/${encodeURIComponent(factor.id)}`}
                           className="font-medium text-slate-900 dark:text-zinc-100 hover:underline"
                         >
-                          {factor.id}
+                          {factor.fromUOM && factor.toUOM
+                            ? `${factor.fromUOM} → ${factor.toUOM}`
+                            : factor.id}
                         </Link>
                       </td>
                       <td className="py-2.5 px-3 text-slate-700 dark:text-zinc-300">

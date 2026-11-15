@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Plus } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ChevronDown, ChevronUp, Plus, Trash2, Scissors } from 'lucide-react';
 import { useBatch } from '../context';
+import { stockService } from '../api';
 import { BatchDetailSidebar } from '../components/batch/BatchDetailSidebar';
 import type { BatchRecord } from '../types';
 
 export const BatchDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { batches, updateBatch, toggleLike } = useBatch();
+  const navigate = useNavigate();
+  const { batches, updateBatch, refreshBatches, toggleLike } = useBatch();
+  const [isSplitOpen, setIsSplitOpen] = useState(false);
+  const [splitQty, setSplitQty] = useState('1');
+  const [splitNewBatchId, setSplitNewBatchId] = useState('');
+  const [isSplitting, setIsSplitting] = useState(false);
 
   const decodedId = decodeURIComponent(id || '');
   const currentBatch = batches.find(
@@ -49,6 +55,91 @@ export const BatchDetailPage: React.FC = () => {
       <div className="flex flex-col lg:flex-row items-start gap-8">
         {/* Left / Main Column */}
         <div className="flex-1 w-full space-y-6">
+          <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setIsSplitOpen(!isSplitOpen)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#2E2E33] bg-white dark:bg-[#1E1E22] text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-[#27272A] text-xs transition-colors"
+            >
+              <Scissors className="w-3.5 h-3.5" />
+              <span>Split Batch</span>
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                if (!window.confirm('Are you sure you want to delete this Batch?')) return;
+                await stockService.deleteBatch(currentBatch.id);
+                await refreshBatches();
+                navigate('/batch');
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 bg-white dark:bg-[#1E1E22] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete</span>
+            </button>
+          </div>
+          {isSplitOpen && (
+            <div className="bg-white dark:bg-[#18181B] border border-slate-200 dark:border-[#27272A] rounded-xl p-4 shadow-xs space-y-3">
+              <div className="font-semibold text-slate-900 dark:text-white text-xs">Split Batch</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-600 dark:text-zinc-400 mb-1">Split Qty</label>
+                  <input
+                    type="number"
+                    min="0.0001"
+                    step="any"
+                    value={splitQty}
+                    onChange={(e) => setSplitQty(e.target.value)}
+                    className="w-full bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 px-3 py-1.5 rounded-lg outline-none text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 dark:text-zinc-400 mb-1">New Batch ID (optional)</label>
+                  <input
+                    type="text"
+                    value={splitNewBatchId}
+                    onChange={(e) => setSplitNewBatchId(e.target.value)}
+                    placeholder="Auto-generated if empty"
+                    className="w-full bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 px-3 py-1.5 rounded-lg outline-none text-xs"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsSplitOpen(false)}
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#2E2E33] text-xs text-slate-600 dark:text-zinc-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isSplitting}
+                  onClick={async () => {
+                    try {
+                      setIsSplitting(true);
+                      const created = await stockService.splitBatch(
+                        currentBatch.id,
+                        Number(splitQty || 0),
+                        splitNewBatchId.trim()
+                      );
+                      await refreshBatches();
+                      setIsSplitOpen(false);
+                      if (created?.id) navigate(`/batch/${encodeURIComponent(created.id)}`);
+                    } catch (err) {
+                      console.error('Failed to split batch', err);
+                      alert('Failed to split batch');
+                    } finally {
+                      setIsSplitting(false);
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-black dark:bg-white text-white dark:text-black text-xs font-medium disabled:opacity-50"
+                >
+                  {isSplitting ? 'Splitting...' : 'Confirm Split'}
+                </button>
+              </div>
+            </div>
+          )}
           <div className="bg-white dark:bg-[#18181B] border border-slate-200/80 dark:border-[#27272A] rounded-xl p-6 shadow-xs space-y-8">
             {/* Section: Batch Details */}
             <div className="space-y-4">

@@ -33,6 +33,7 @@ import {
 import { stockService } from '../api';
 import type { ItemRecord } from '../types';
 import { ItemDetailSidebar } from '../components/item/ItemDetailSidebar';
+import { DocumentCommentsActivity } from '../components/common';
 
 type DetailTabType =
   | 'details'
@@ -228,27 +229,17 @@ export const ItemDetailPage: React.FC = () => {
 
   // Connections Tab (Screenshots 1, 2, 3)
   const [isActivityHeatmapOpen, setIsActivityHeatmapOpen] = useState(true);
+  const [itemPrices, setItemPrices] = useState<Array<{ priceList?: string; rate?: number; buyingRate?: number; sellingRate?: number; currency?: string; warehouse?: string }>>([]);
 
-  // Comments & Activity
-  const [comments, setComments] = useState<
-    { id: string; author: string; text: string; time: string }[]
-  >([]);
-  const [commentInput, setCommentInput] = useState('');
-
-  const handleAddComment = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && commentInput.trim()) {
-      setComments((prev) => [
-        ...prev,
-        {
-          id: `c-${Date.now()}`,
-          author: 'Administrator',
-          text: commentInput.trim(),
-          time: 'Just now',
-        },
-      ]);
-      setCommentInput('');
-    }
-  };
+  useEffect(() => {
+    if (!foundItem?.itemCode) return;
+    stockService
+      .getItemPriceStockReport({ itemCode: foundItem.itemCode })
+      .then((rows) => {
+        if (Array.isArray(rows)) setItemPrices(rows);
+      })
+      .catch(() => {});
+  }, [foundItem?.itemCode]);
 
   useEffect(() => {
     if (!foundItem?.id) return;
@@ -1947,20 +1938,46 @@ export const ItemDetailPage: React.FC = () => {
                     </p>
                   </div>
 
-                  <div className="border border-slate-200/90 dark:border-[#27272A] rounded-xl p-12 text-center bg-white dark:bg-[#18181B] space-y-3">
-                    <div className="text-slate-500 dark:text-zinc-400 text-xs font-normal">
-                      No active item prices found.
+                  {itemPrices.length > 0 ? (
+                    <div className="border border-slate-200/90 dark:border-[#27272A] rounded-xl overflow-hidden bg-white dark:bg-[#18181B]">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-[#FAFBFD] dark:bg-[#1A1A1E] border-b border-slate-200 dark:border-[#27272A] text-slate-500 dark:text-zinc-400">
+                            <th className="py-2.5 px-3 font-medium">Price List</th>
+                            <th className="py-2.5 px-3 font-medium">Warehouse</th>
+                            <th className="py-2.5 px-3 font-medium text-right">Buying Rate</th>
+                            <th className="py-2.5 px-3 font-medium text-right">Selling Rate</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-[#27272A]">
+                          {itemPrices.map((p, idx) => (
+                            <tr key={idx}>
+                              <td className="py-2 px-3 text-slate-800 dark:text-zinc-200">{p.priceList || 'Standard'}</td>
+                              <td className="py-2 px-3 text-slate-500 dark:text-zinc-400">{p.warehouse || '-'}</td>
+                              <td className="py-2 px-3 text-right font-mono">{Number(p.buyingRate ?? p.rate ?? 0).toFixed(2)}</td>
+                              <td className="py-2 px-3 text-right font-mono">{Number(p.sellingRate ?? p.rate ?? 0).toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
-                    <div>
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F4F5F7] dark:bg-[#202024] hover:bg-[#EBEEF2] dark:hover:bg-[#27272A] text-slate-700 dark:text-zinc-300 rounded-lg text-xs font-medium transition-colors"
-                      >
-                        <Plus className="w-3.5 h-3.5 text-slate-400" />
-                        <span>Add Price</span>
-                      </button>
+                  ) : (
+                    <div className="border border-slate-200/90 dark:border-[#27272A] rounded-xl p-12 text-center bg-white dark:bg-[#18181B] space-y-3">
+                      <div className="text-slate-500 dark:text-zinc-400 text-xs font-normal">
+                        No active item prices found.
+                      </div>
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => navigate('/item-price')}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F4F5F7] dark:bg-[#202024] hover:bg-[#EBEEF2] dark:hover:bg-[#27272A] text-slate-700 dark:text-zinc-300 rounded-lg text-xs font-medium transition-colors"
+                        >
+                          <Plus className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Add Price</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
 
@@ -2265,98 +2282,9 @@ export const ItemDetailPage: React.FC = () => {
                 </div>
               )}
 
-              {/* ========================================================================= */}
-              {/* SHARED BOTTOM SECTIONS: COMMENTS & ACTIVITY (Screenshots 2, 3, 4, 5) */}
-              {/* ========================================================================= */}
-              <div className="pt-8 border-t border-slate-200 dark:border-[#27272A] space-y-6">
-                {/* Comments Section */}
-                <div className="space-y-3">
-                  <h4 className="font-semibold text-slate-900 dark:text-white">
-                    Comments
-                  </h4>
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-semibold text-xs flex items-center justify-center shrink-0">
-                      A
-                    </div>
-                    <div className="flex-1 relative">
-                      <input
-                        type="text"
-                        value={commentInput}
-                        onChange={(e) => setCommentInput(e.target.value)}
-                        onKeyDown={handleAddComment}
-                        placeholder="Type a reply / comment"
-                        className="w-full h-8 px-3 pr-8 bg-[#F4F5F7] dark:bg-[#202024] hover:bg-[#EBEEF2] dark:hover:bg-[#27272A] focus:bg-white dark:focus:bg-[#18181B] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-[#2E2E33] outline-none text-xs transition-colors"
-                      />
-                      {commentInput.trim() && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (commentInput.trim()) {
-                              setComments((p) => [
-                                ...p,
-                                {
-                                  id: `c-${Date.now()}`,
-                                  author: 'Administrator',
-                                  text: commentInput.trim(),
-                                  time: 'Just now',
-                                },
-                              ]);
-                              setCommentInput('');
-                            }
-                          }}
-                          className="absolute right-2 top-2 text-slate-400 hover:text-slate-700"
-                        >
-                          <Send className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* List of comments if any */}
-                  {comments.length > 0 && (
-                    <div className="space-y-2 pt-2">
-                      {comments.map((c) => (
-                        <div key={c.id} className="p-3 bg-[#F8F9FA] dark:bg-[#202024] rounded-lg">
-                          <div className="flex items-center justify-between font-medium text-[11px] text-slate-700 dark:text-zinc-300">
-                            <span>{c.author}</span>
-                            <span className="text-slate-400 font-normal">{c.time}</span>
-                          </div>
-                          <p className="mt-1 text-slate-800 dark:text-zinc-200">{c.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Activity Section */}
-                <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-[#27272A]">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-slate-900 dark:text-white">
-                      Activity
-                    </h4>
-                    <button
-                      type="button"
-                      className="px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-zinc-300 bg-slate-100 dark:bg-[#202024] hover:bg-slate-200 dark:hover:bg-[#27272A] rounded-lg transition-colors"
-                    >
-                      + New Email
-                    </button>
-                  </div>
-
-                  <div className="space-y-3 pl-2 border-l-2 border-slate-200 dark:border-zinc-800 text-[11.5px] text-slate-500 dark:text-zinc-400">
-                    <div className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-zinc-600 -ml-[13px]" />
-                      <span>
-                        You created this · <span className="font-medium">just now</span>
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-zinc-600 -ml-[13px]" />
-                      <span>
-                        You last edited this · <span className="font-medium">just now</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
+              {/* SHARED BOTTOM SECTIONS: COMMENTS & ACTIVITY */}
+              <div className="pt-8 border-t border-slate-200 dark:border-[#27272A]">
+                <DocumentCommentsActivity docType="Item" docId={currentItem.id} />
               </div>
 
               <datalist id="detail-item-groups-list">

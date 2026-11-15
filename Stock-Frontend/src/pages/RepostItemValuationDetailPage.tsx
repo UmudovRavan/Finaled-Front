@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Trash2, Paperclip, ChevronUp, ChevronsUpDown } from 'lucide-react';
+import { Trash2, Paperclip, ChevronUp, ChevronsUpDown, Play, Ban } from 'lucide-react';
 import { useRepostItemValuation } from '../context';
+import { stockService } from '../api';
 import { RepostItemValuationDetailSidebar } from '../components/repost-item-valuation/RepostItemValuationDetailSidebar';
 
 export const RepostItemValuationDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { valuations, toggleLike, updateStatus } = useRepostItemValuation();
+  const { valuations, toggleLike, refresh, updateStatus } = useRepostItemValuation();
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
   const entry = valuations.find((v) => v.id === id) || valuations[0] || {
     id: id || 'c3nehrpeg3',
@@ -88,6 +90,61 @@ export const RepostItemValuationDetailPage: React.FC = () => {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* MAIN LEFT COLUMN */}
           <div className="flex-1 space-y-6 min-w-0">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={isActionLoading}
+                onClick={async () => {
+                  try {
+                    setIsActionLoading(true);
+                    await stockService.executeRepostItemValuation(entry.id);
+                    await refresh();
+                  } catch (err) {
+                    console.error('Failed to execute repost', err);
+                    alert('Failed to execute Repost Item Valuation');
+                  } finally {
+                    setIsActionLoading(false);
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black dark:bg-white text-white dark:text-black text-xs font-medium disabled:opacity-50"
+              >
+                <Play className="w-3.5 h-3.5" />
+                <span>Execute Repost</span>
+              </button>
+              <button
+                type="button"
+                disabled={isActionLoading}
+                onClick={async () => {
+                  try {
+                    setIsActionLoading(true);
+                    await stockService.cancelRepostItemValuation(entry.id);
+                    await refresh();
+                  } catch (err) {
+                    console.error('Failed to cancel repost', err);
+                  } finally {
+                    setIsActionLoading(false);
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#2E2E33] text-slate-700 dark:text-zinc-200 text-xs"
+              >
+                <Ban className="w-3.5 h-3.5" />
+                <span>Cancel</span>
+              </button>
+              <button
+                type="button"
+                disabled={isActionLoading}
+                onClick={async () => {
+                  if (!window.confirm('Delete this Repost Item Valuation?')) return;
+                  await stockService.deleteRepostItemValuation(entry.id);
+                  await refresh();
+                  navigate('/repost-item-valuation');
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-xs"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete</span>
+              </button>
+            </div>
             {/* Top 2 Columns Grid (Screenshot 3) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
               {/* LEFT COLUMN */}

@@ -11,6 +11,9 @@ export const NewItemAttributePage: React.FC = () => {
   const [attributeName, setAttributeName] = useState('');
   const [disabled, setDisabled] = useState(false);
   const [numericValues, setNumericValues] = useState(false);
+  const [fromRange, setFromRange] = useState<string>('0');
+  const [toRange, setToRange] = useState<string>('0');
+  const [increment, setIncrement] = useState<string>('0');
 
   const [values, setValues] = useState<ItemAttributeValueRow[]>([]);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
@@ -40,6 +43,9 @@ export const NewItemAttributePage: React.FC = () => {
       disabled,
       status: disabled ? 'Disabled' : 'Enabled',
       numericValues,
+      fromRange: numericValues ? Number(fromRange || 0) : 0,
+      toRange: numericValues ? Number(toRange || 0) : 0,
+      increment: numericValues ? Number(increment || 0) : 0,
       values,
     });
     navigate(`/item-attribute/${encodeURIComponent(created.id)}`);
@@ -79,6 +85,47 @@ export const NewItemAttributePage: React.FC = () => {
                   </span>
                 </label>
               </div>
+
+              {numericValues && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  <div>
+                    <label className="block text-slate-700 dark:text-zinc-300 text-xs mb-1 font-normal">
+                      From Range
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={fromRange}
+                      onChange={(e) => setFromRange(e.target.value)}
+                      className="w-full bg-[#F4F5F7] dark:bg-[#1E1E22] text-slate-900 dark:text-white px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 dark:text-zinc-300 text-xs mb-1 font-normal">
+                      To Range
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={toRange}
+                      onChange={(e) => setToRange(e.target.value)}
+                      className="w-full bg-[#F4F5F7] dark:bg-[#1E1E22] text-slate-900 dark:text-white px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 dark:text-zinc-300 text-xs mb-1 font-normal">
+                      Increment
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={increment}
+                      onChange={(e) => setIncrement(e.target.value)}
+                      className="w-full bg-[#F4F5F7] dark:bg-[#1E1E22] text-slate-900 dark:text-white px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Right Column: Disabled Checkbox */}

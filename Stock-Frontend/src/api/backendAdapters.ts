@@ -40,6 +40,10 @@ import type {
   DeliveryTripRecord,
   DeliveryTripStatus,
   QualityInspectionTemplateRecord,
+  QualityInspectionRecord,
+  QualityInspectionType,
+  QualityInspectionQualityStatus,
+  QualityInspectionDocStatus,
 } from '../types';
 
 export interface PagedResult<T> {
@@ -351,13 +355,29 @@ export function mapItemGroupDtoToRecord(dto: any): ItemGroupRecord {
     itemGroupName: dto.groupName || '',
     parentItemGroup: dto.parentGroupName || '',
     isGroup: Boolean(dto.isGroup),
-    timeAgoText: 'Active',
+    timeAgoText: formatTimeAgo(dto.updatedAt || dto.createdAt),
     commentsCount: 0,
     isLiked: false,
-    defaults: Array.isArray(dto.defaults) ? dto.defaults : [],
-    taxes: Array.isArray(dto.taxes) ? dto.taxes : [],
-    createdOn: new Date().toISOString(),
-    lastUpdatedOn: new Date().toISOString(),
+    defaults: Array.isArray(dto.defaults)
+      ? dto.defaults.map((d: any, idx: number) => ({
+          id: d.id || String(idx + 1),
+          company: d.company || 'Altensor',
+          defaultWarehouse: d.defaultWarehouseName || d.defaultWarehouse || '',
+          defaultPriceList: d.defaultPriceList || '',
+        }))
+      : [],
+    taxes: Array.isArray(dto.taxes)
+      ? dto.taxes.map((t: any, idx: number) => ({
+          id: t.id || String(idx + 1),
+          itemTaxTemplate: t.itemTaxTemplate || '',
+          taxCategory: t.taxCategory || '',
+          validFrom: t.validFrom ? String(t.validFrom).slice(0, 10) : '',
+          minimumNetRate: t.minimumNetRate ?? undefined,
+          maximumNetRate: t.maximumNetRate ?? undefined,
+        }))
+      : [],
+    createdOn: dto.createdAt || new Date().toISOString(),
+    lastUpdatedOn: dto.updatedAt || dto.createdAt || new Date().toISOString(),
   };
 }
 
@@ -376,20 +396,26 @@ export function flattenItemGroupTree(nodes: any[]): ItemGroupRecord[] {
 }
 
 export function mapItemAttributeDtoToRecord(dto: any): ItemAttributeRecord {
+  const isDisabled = Boolean(dto.disabled);
   return {
     id: dto.id,
     attributeName: dto.attributeName || '',
-    status: 'Enabled',
-    disabled: false,
+    status: isDisabled ? 'Disabled' : 'Enabled',
+    disabled: isDisabled,
     numericValues: Boolean(dto.numericValues),
+    fromRange: dto.fromRange !== undefined && dto.fromRange !== null ? Number(dto.fromRange) : undefined,
+    toRange: dto.toRange !== undefined && dto.toRange !== null ? Number(dto.toRange) : undefined,
+    increment: dto.increment !== undefined && dto.increment !== null ? Number(dto.increment) : undefined,
     values: (dto.values || []).map((v: any, idx: number) => ({
       id: v.id || String(idx + 1),
       attributeValue: v.attributeValue || '',
       abbreviation: v.abbreviation || '',
     })),
-    timeAgoText: 'Active',
+    timeAgoText: formatTimeAgo(dto.updatedAt || dto.createdAt),
     commentsCount: 0,
     isLiked: false,
+    createdOn: dto.createdAt,
+    lastUpdatedOn: dto.updatedAt,
   };
 }
 
@@ -398,10 +424,19 @@ export function mapBrandDtoToRecord(dto: any): BrandRecord {
     id: dto.id,
     brandName: dto.brandName || '',
     description: dto.description || '',
-    defaults: Array.isArray(dto.defaults) ? dto.defaults : [],
-    timeAgoText: 'Active',
+    defaults: Array.isArray(dto.defaults)
+      ? dto.defaults.map((d: any, idx: number) => ({
+          id: d.id || String(idx + 1),
+          company: d.company || 'Altensor',
+          defaultWarehouse: d.defaultWarehouseName || d.defaultWarehouse || '',
+          defaultPriceList: d.defaultPriceList || '',
+        }))
+      : [],
+    timeAgoText: formatTimeAgo(dto.updatedAt || dto.createdAt),
     commentsCount: 0,
     isLiked: false,
+    createdOn: dto.createdAt,
+    lastUpdatedOn: dto.updatedAt,
   };
 }
 
@@ -416,6 +451,9 @@ export function mapUomDtoToRecord(dto: any): UOMRecord {
     status: dto.enabled === false ? 'Disabled' : 'Enabled',
     enabled: dto.enabled !== false,
     mustBeWholeNumber: Boolean(dto.mustBeWholeNumber),
+    createdOn: dto.createdAt,
+    lastEdited: dto.updatedAt,
+    createdBy: dto.createdBy,
     commentsCount: 0,
     isLiked: false,
   };
@@ -449,7 +487,8 @@ export function mapSerialNumberDtoToRecord(dto: any): SerialNoRecord {
     itemCode: dto.itemCode || dto.itemName || '',
     status: statusMap[dto.status] || 'Active',
     warehouse: dto.warehouseName || '',
-    company: 'Altensor',
+    company: dto.company || 'Altensor',
+    workOrder: dto.workOrder || '',
     warrantyExpiryDate: dto.warrantyExpiryDate ? String(dto.warrantyExpiryDate).slice(0, 10) : '',
     amcExpiryDate: dto.amcExpiryDate ? String(dto.amcExpiryDate).slice(0, 10) : '',
     createdOn: dto.purchaseDate || new Date().toISOString(),
@@ -469,6 +508,7 @@ export function mapBatchDtoToRecord(dto: any, uoms?: any[]): BatchRecord {
     manufacturingDate: dto.manufacturingDate ? String(dto.manufacturingDate).slice(0, 10) : '',
     expiryDate: dto.expiryDate ? String(dto.expiryDate).slice(0, 10) : '',
     useBatchWiseValuation: Boolean(dto.useBatchwiseValuation),
+    allowNegativeStock: Boolean(dto.allowNegativeStock),
     description: dto.description || '',
     status: dto.disabled ? 'Disabled' : isExpired ? 'Expired' : 'Active',
     commentsCount: 0,
@@ -509,7 +549,12 @@ export function mapInventoryDimensionDtoToRecord(dto: any): InventoryDimensionRe
     referenceDocument: dto.referenceDocument || '',
     applyToAllInventoryDocuments: Boolean(dto.applyToAllInventoryDocuments),
     validateNegativeStock: Boolean(dto.validateNegativeStock),
+    fetchValueFrom: dto.fetchValueFrom || '',
     mandatory: Boolean(dto.mandatoryDependsOn),
+    mandatoryDependsOn: dto.mandatoryDependsOnExpression || '',
+    createdOn: dto.createdAt,
+    lastEdited: dto.updatedAt,
+    createdBy: dto.createdBy,
     commentsCount: 0,
     isLiked: false,
   };
@@ -579,23 +624,87 @@ export function mapDeliveryTripDtoToRecord(dto: any): DeliveryTripRecord {
   return {
     id: dto.id,
     series: dto.tripNo || dto.id,
-    company: 'Altensor',
-    initialEmailNotificationSent: false,
+    company: dto.company || 'Altensor',
+    initialEmailNotificationSent: Boolean(dto.initialEmailNotificationSent),
     driver: dto.driverName || '',
     vehicle: dto.vehiclePlateNo || '',
-    driverAddress: '',
+    driverAddress: dto.driverAddress || '',
     departureTime: dto.departureTime || new Date().toISOString(),
     status: statusMap[dto.status] || 'Draft',
     deliveryStops: (dto.stops || []).map((s: any, idx: number) => ({
       id: s.id || String(idx + 1),
       customer: s.customerName || '',
+      customerId: s.customerId || undefined,
       addressName: s.address || '',
       locked: Boolean(s.locked),
+      visited: Boolean(s.visited),
       deliveryNote: s.deliveryNoteNo || '',
       estimatedArrival: s.estimatedArrival || '',
     })),
+    createdOn: dto.createdAt,
+    lastEdited: dto.updatedAt,
+    createdBy: dto.createdBy,
     commentsCount: 0,
     isLiked: false,
+  };
+}
+
+export function mapQualityInspectionDtoToRecord(dto: any): QualityInspectionRecord {
+  const typeMap: Record<string, QualityInspectionType> = {
+    Incoming: 'Incoming',
+    Outgoing: 'Outgoing',
+    InProcess: 'InProcess',
+  };
+  const docStatusMap: Record<string, QualityInspectionDocStatus> = {
+    Draft: 'Draft',
+    Submitted: 'Submitted',
+    Cancelled: 'Cancelled',
+  };
+  const qStatusMap: Record<string, QualityInspectionQualityStatus> = {
+    Accepted: 'Accepted',
+    Rejected: 'Rejected',
+  };
+  return {
+    id: dto.id,
+    inspectionNo: dto.inspectionNo || dto.id,
+    company: dto.company || 'Altensor',
+    reportDate: dto.reportDate ? String(dto.reportDate).slice(0, 10) : new Date().toISOString().slice(0, 10),
+    documentStatus: docStatusMap[dto.documentStatus] || 'Draft',
+    qualityStatus: qStatusMap[dto.qualityStatus] || 'Accepted',
+    inspectionType: typeMap[dto.inspectionType] || 'Incoming',
+    referenceType: dto.referenceType || '',
+    referenceId: dto.referenceId || undefined,
+    referenceDocumentNo: dto.referenceDocumentNo || '',
+    itemId: dto.itemId || '',
+    itemCode: dto.itemCode || '',
+    itemName: dto.itemName || '',
+    batchId: dto.batchId || undefined,
+    itemSerialNo: dto.itemSerialNo || '',
+    sampleSize: Number(dto.sampleSize || 1),
+    qualityInspectionTemplateId: dto.qualityInspectionTemplateId || undefined,
+    inspectedBy: dto.inspectedBy || '',
+    verifiedBy: dto.verifiedBy || '',
+    remarks: dto.remarks || '',
+    readings: (dto.readings || []).map((r: any, idx: number) => ({
+      id: r.id || String(idx + 1),
+      specification: r.specification || '',
+      acceptanceCriteriaValue: r.acceptanceCriteriaValue || '',
+      numeric: Boolean(r.numeric),
+      minValue: r.minValue ?? undefined,
+      maxValue: r.maxValue ?? undefined,
+      formulaBasedCriteria: Boolean(r.formulaBasedCriteria),
+      acceptanceFormula: r.acceptanceFormula || '',
+      readingValueText: r.readingValueText || '',
+      reading1: r.reading1 ?? null,
+      reading2: r.reading2 ?? null,
+      reading3: r.reading3 ?? null,
+      reading4: r.reading4 ?? null,
+      reading5: r.reading5 ?? null,
+      status: qStatusMap[r.status] || 'Accepted',
+    })),
+    createdOn: dto.createdAt,
+    lastEdited: dto.updatedAt,
+    createdBy: dto.createdBy,
   };
 }
 

@@ -926,7 +926,11 @@ export const DeliveryNoteDetailContent: React.FC<DeliveryNoteDetailContentProps>
                   <input
                     type="text"
                     readOnly
-                    value="USD Zero only."
+                    value={
+                      grandTotal <= 0
+                        ? `${note.currency || 'USD'} Zero only.`
+                        : `${note.currency || 'USD'} ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} only.`
+                    }
                     className="w-full bg-[#F3F4F6] dark:bg-[#202024] px-3 py-1.5 rounded-lg text-slate-800 dark:text-zinc-200 outline-none"
                   />
                   <p className="text-[11px] text-slate-400 dark:text-zinc-500 mt-1.5">
