@@ -87,8 +87,9 @@ export const InventoryDimensionProvider: React.FC<{ children: React.ReactNode }>
   };
 
   const updateDimension = async (id: string, updated: Partial<InventoryDimensionRecord>) => {
+    const saved = await stockService.updateInventoryDimension(id, updated);
     setDimensions((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, ...updated, lastEdited: 'just now' } : item))
+      prev.map((item) => (item.id === id ? { ...item, ...saved, lastEdited: 'just now' } : item))
     );
   };
 

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Settings, Plus, Trash2, ChevronUp } from 'lucide-react';
 import { useItemAttribute } from '../context';
 import type { ItemAttributeValueRow } from '../types';
@@ -7,33 +7,50 @@ import { ItemAttributeDetailSidebar } from '../components/item-attribute/ItemAtt
 
 export const ItemAttributeDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { attributes, updateAttribute, toggleLike } = useItemAttribute();
+  const navigate = useNavigate();
+  const { attributes, loading, updateAttribute, deleteAttribute, toggleLike } = useItemAttribute();
 
-  const decodedId = id ? decodeURIComponent(id) : 'Colour';
-  const attribute =
-    attributes.find(
-      (a) =>
-        a.id.toLowerCase() === decodedId.toLowerCase() ||
-        a.attributeName.toLowerCase() === decodedId.toLowerCase()
-    ) || {
-      id: decodedId,
-      attributeName: decodedId,
-      status: 'Enabled' as const,
-      disabled: false,
-      numericValues: false,
-      values: [],
-      timeAgoText: '3 M',
-      commentsCount: 0,
-      isLiked: false,
-    };
+  const decodedId = id ? decodeURIComponent(id) : '';
+  const attribute = attributes.find(
+    (a) =>
+      a.id.toLowerCase() === decodedId.toLowerCase() ||
+      a.attributeName.toLowerCase() === decodedId.toLowerCase()
+  );
 
-  const [attributeName, setAttributeName] = useState(attribute.attributeName);
-  const [disabled, setDisabled] = useState(attribute.disabled || attribute.status === 'Disabled');
-  const [numericValues, setNumericValues] = useState(attribute.numericValues || false);
-  const [values, setValues] = useState<ItemAttributeValueRow[]>(attribute.values || []);
+  const [attributeName, setAttributeName] = useState('');
+  const [disabled, setDisabled] = useState(false);
+  const [numericValues, setNumericValues] = useState(false);
+  const [values, setValues] = useState<ItemAttributeValueRow[]>([]);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [commentText, setCommentText] = useState('');
   const [isActivityOpen, setIsActivityOpen] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    if (attribute) {
+      setAttributeName(attribute.attributeName || '');
+      setDisabled(Boolean(attribute.disabled || attribute.status === 'Disabled'));
+      setNumericValues(Boolean(attribute.numericValues));
+      setValues(attribute.values || []);
+    }
+  }, [attribute]);
+
+  if (loading && !attribute) {
+    return (
+      <div className="p-8 text-center text-slate-500 dark:text-zinc-400 text-sm">
+        Loading Item Attribute...
+      </div>
+    );
+  }
+
+  if (!attribute) {
+    return (
+      <div className="p-8 text-center text-slate-500 dark:text-zinc-400 text-sm">
+        Item Attribute not found.
+      </div>
+    );
+  }
 
   const handleAddRow = () => {
     const newRow: ItemAttributeValueRow = {
@@ -49,15 +66,41 @@ export const ItemAttributeDetailPage: React.FC = () => {
     setSelectedRows([]);
   };
 
-  const handleSave = (e?: React.FormEvent) => {
+  const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    updateAttribute(attribute.id, {
-      attributeName,
-      disabled,
-      status: disabled ? 'Disabled' : 'Enabled',
-      numericValues,
-      values,
-    });
+    if (!attributeName.trim()) {
+      alert('Attribute Name is required');
+      return;
+    }
+    try {
+      setIsSaving(true);
+      await updateAttribute(attribute.id, {
+        attributeName: attributeName.trim(),
+        disabled,
+        status: disabled ? 'Disabled' : 'Enabled',
+        numericValues,
+        values,
+      });
+    } catch (err) {
+      console.error('Failed to update Item Attribute', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm(`"${attribute.attributeName}" atributunu silmək istədiyinizə əminsiniz?`)) {
+      return;
+    }
+    try {
+      setIsDeleting(true);
+      await deleteAttribute(attribute.id);
+      navigate('/item-attribute');
+    } catch (err) {
+      console.error('Failed to delete Item Attribute', err);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -68,6 +111,17 @@ export const ItemAttributeDetailPage: React.FC = () => {
         <div className="flex-1 w-full space-y-6">
           <form onSubmit={handleSave} className="space-y-6">
             <div className="bg-white dark:bg-[#151518] rounded-xl border border-slate-200/80 dark:border-[#27272A] p-6 shadow-xs space-y-8">
+              <div className="flex justify-end -mb-4">
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/70 text-xs font-medium transition-colors disabled:opacity-50"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{isDeleting ? 'Deleting...' : 'Delete'}</span>
+                </button>
+              </div>
               {/* Form Inputs */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                 {/* Left Column: Attribute Name + Numeric Values */}
@@ -306,7 +360,8 @@ export const ItemAttributeDetailPage: React.FC = () => {
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                className="px-5 py-2 rounded-lg bg-black hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-medium text-xs shadow-sm transition-all"
+                disabled={isSaving}
+                className="px-5 py-2 rounded-lg bg-black hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-medium text-xs shadow-sm transition-all disabled:opacity-50"
               >
                 Save
               </button>

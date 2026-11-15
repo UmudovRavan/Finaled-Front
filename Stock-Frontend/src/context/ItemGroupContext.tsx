@@ -18,6 +18,7 @@ interface ItemGroupContextType {
   setPageSize: (size: number) => void;
   addGroup: (group: Partial<ItemGroupRecord>) => Promise<ItemGroupRecord>;
   updateGroup: (id: string, group: Partial<ItemGroupRecord>) => Promise<void>;
+  deleteGroup: (id: string) => Promise<void>;
   refreshGroups: () => Promise<void>;
 }
 
@@ -87,9 +88,20 @@ export const ItemGroupProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const updateGroup = async (id: string, updated: Partial<ItemGroupRecord>): Promise<void> => {
+    const saved = await stockService.updateItemGroup(id, updated);
     setGroups((prev) =>
-      prev.map((g) => (g.id === id ? { ...g, ...updated, lastUpdatedOn: new Date().toISOString() } : g))
+      prev.map((g) =>
+        g.id.toLowerCase() === id.toLowerCase()
+          ? { ...g, ...updated, ...saved, lastUpdatedOn: new Date().toISOString() }
+          : g
+      )
     );
+  };
+
+  const deleteGroup = async (id: string): Promise<void> => {
+    await stockService.deleteItemGroup(id);
+    setGroups((prev) => prev.filter((g) => g.id.toLowerCase() !== id.toLowerCase()));
+    setSelectedIds((prev) => prev.filter((i) => i.toLowerCase() !== id.toLowerCase()));
   };
 
   return (
@@ -110,6 +122,7 @@ export const ItemGroupProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setPageSize,
         addGroup,
         updateGroup,
+        deleteGroup,
         refreshGroups: loadData,
       }}
     >

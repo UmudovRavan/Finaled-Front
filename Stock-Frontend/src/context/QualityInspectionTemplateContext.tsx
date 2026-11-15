@@ -94,8 +94,9 @@ export const QualityInspectionTemplateProvider: React.FC<{ children: React.React
     id: string,
     updated: Partial<QualityInspectionTemplateRecord>
   ) => {
+    const saved = await stockService.updateQualityInspectionTemplate(id, updated);
     setTemplates((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, ...updated, lastEdited: 'just now' } : item))
+      prev.map((item) => (item.id === id ? { ...item, ...saved, lastEdited: 'just now' } : item))
     );
   };
 

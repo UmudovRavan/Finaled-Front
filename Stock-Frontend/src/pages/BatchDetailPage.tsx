@@ -217,13 +217,13 @@ export const BatchDetailPage: React.FC = () => {
                 <div className="relative flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-slate-400 dark:bg-zinc-600 -ml-[19px]" />
                   <span>
-                    You created this · {currentBatch.createdBy || '3 months ago'}
+                    You created this · {currentBatch.createdBy || 'Active'}
                   </span>
                 </div>
                 <div className="relative flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-slate-400 dark:bg-zinc-600 -ml-[19px]" />
                   <span>
-                    You last edited this · {currentBatch.lastEdited || '3 months ago'}
+                    You last edited this · {currentBatch.lastEdited || 'Active'}
                   </span>
                 </div>
               </div>

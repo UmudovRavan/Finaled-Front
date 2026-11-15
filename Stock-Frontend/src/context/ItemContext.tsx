@@ -35,6 +35,8 @@ interface ItemContextType {
   toggleSelectAll: () => void;
   toggleLike: (id: string) => void;
   addItem: (item: Partial<ItemRecord>) => Promise<ItemRecord>;
+  updateItem: (id: string, item: Partial<ItemRecord>) => Promise<void>;
+  deleteItem: (id: string) => Promise<void>;
   refreshItems: () => Promise<void>;
 }
 
@@ -151,6 +153,22 @@ export const ItemProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return created;
   };
 
+  const updateItem = async (id: string, updated: Partial<ItemRecord>): Promise<void> => {
+    const saved = await stockService.updateItem(id, updated);
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id.toLowerCase() === id.toLowerCase()
+          ? { ...item, ...saved, timeAgoText: 'just now' }
+          : item
+      )
+    );
+  };
+
+  const deleteItem = async (id: string): Promise<void> => {
+    await stockService.deleteItem(id);
+    setItems((prev) => prev.filter((item) => item.id.toLowerCase() !== id.toLowerCase()));
+  };
+
   const refreshItems = async () => {
     await loadData();
   };
@@ -182,6 +200,8 @@ export const ItemProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toggleSelectAll,
         toggleLike,
         addItem,
+        updateItem,
+        deleteItem,
         refreshItems,
       }}
     >

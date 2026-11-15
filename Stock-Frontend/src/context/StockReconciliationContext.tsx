@@ -5,7 +5,7 @@ import type {
   StockViewMode,
   FilterRule,
 } from '../types';
-import { stockService, INITIAL_STOCK_RECONCILIATIONS } from '../api';
+import { stockService } from '../api';
 
 interface StockReconciliationQuickFiltersState {
   id: string;
@@ -46,17 +46,7 @@ interface StockReconciliationContextType {
 const StockReconciliationContext = createContext<StockReconciliationContextType | undefined>(undefined);
 
 export const StockReconciliationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [reconciliations, setReconciliations] = useState<StockReconciliationRecord[]>(() => {
-    const saved = localStorage.getItem('altensor_stock_reconciliations');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return INITIAL_STOCK_RECONCILIATIONS;
-      }
-    }
-    return INITIAL_STOCK_RECONCILIATIONS;
-  });
+  const [reconciliations, setReconciliations] = useState<StockReconciliationRecord[]>([]);
 
   const [viewMode, setViewMode] = useState<StockViewMode>('list');
   const [savedFilter, setSavedFilter] = useState<string>('All');
@@ -76,23 +66,21 @@ export const StockReconciliationProvider: React.FC<{ children: ReactNode }> = ({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    localStorage.setItem('altensor_stock_reconciliations', JSON.stringify(reconciliations));
-  }, [reconciliations]);
-
   const refresh = async () => {
     setIsRefreshing(true);
     try {
       const data = await stockService.getStockReconciliations();
-      if (data && data.length > 0) {
-        setReconciliations(data);
-      }
-    } catch {
-      // Keep local
+      setReconciliations(data);
+    } catch (err) {
+      console.error('Failed to load stock reconciliations', err);
     } finally {
-      setTimeout(() => setIsRefreshing(false), 300);
+      setIsRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const createReconciliation = async (data: Partial<StockReconciliationRecord>): Promise<StockReconciliationRecord> => {
     const created = await stockService.createStockReconciliation(data);
@@ -100,10 +88,21 @@ export const StockReconciliationProvider: React.FC<{ children: ReactNode }> = ({
     return created;
   };
 
-  const updateStatus = (id: string, status: StockReconciliationStatus) => {
-    setReconciliations((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, status } : item))
-    );
+  const updateStatus = async (id: string, status: StockReconciliationStatus) => {
+    try {
+      const updated =
+        status === 'Submitted'
+          ? await stockService.submitStockReconciliation(id)
+          : status === 'Cancelled'
+          ? await stockService.cancelStockReconciliation(id)
+          : null;
+      if (updated) {
+        setReconciliations((prev) => prev.map((item) => (item.id === id ? updated : item)));
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to update stock reconciliation status', err);
+    }
   };
 
   const deleteReconciliations = (ids: string[]) => {

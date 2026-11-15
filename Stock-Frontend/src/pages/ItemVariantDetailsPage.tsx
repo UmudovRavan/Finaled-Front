@@ -1,4 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { stockService } from '../api/stockService';
+import { useItem } from '../context/ItemContext';
 
 interface ItemVariantDetailRow {
   id: string;
@@ -13,113 +15,9 @@ interface ItemVariantDetailRow {
   sales: number;
 }
 
-const TEMPLATE_ITEMS = [
-  'SKU001: T-shirt',
-  'SKU002: Laptop',
-  'SKU004: Smartphone',
-  'SKU005: Sneakers',
-];
-
-const INITIAL_VARIANT_DETAILS: ItemVariantDetailRow[] = [
-  {
-    id: 'ivd-1',
-    templateItem: 'SKU001: T-shirt',
-    variantName: 'SKU001-RED-M',
-    itemName: 'T-shirt - Red / M',
-    attributes: 'Colour: Red, Size: M',
-    currentStock: 45.0,
-    buyingPrice: 12.0,
-    sellingPrice: 25.0,
-    openOrders: 5.0,
-    sales: 32.0,
-  },
-  {
-    id: 'ivd-2',
-    templateItem: 'SKU001: T-shirt',
-    variantName: 'SKU001-RED-L',
-    itemName: 'T-shirt - Red / L',
-    attributes: 'Colour: Red, Size: L',
-    currentStock: 30.0,
-    buyingPrice: 12.0,
-    sellingPrice: 25.0,
-    openOrders: 0.0,
-    sales: 21.0,
-  },
-  {
-    id: 'ivd-3',
-    templateItem: 'SKU001: T-shirt',
-    variantName: 'SKU001-BLU-M',
-    itemName: 'T-shirt - Blue / M',
-    attributes: 'Colour: Blue, Size: M',
-    currentStock: 60.0,
-    buyingPrice: 12.0,
-    sellingPrice: 25.0,
-    openOrders: 10.0,
-    sales: 48.0,
-  },
-  {
-    id: 'ivd-4',
-    templateItem: 'SKU002: Laptop',
-    variantName: 'SKU002-16GB-512',
-    itemName: 'Laptop - 16GB / 512GB SSD',
-    attributes: 'RAM: 16GB, Storage: 512GB',
-    currentStock: 14.0,
-    buyingPrice: 850.0,
-    sellingPrice: 1199.0,
-    openOrders: 3.0,
-    sales: 19.0,
-  },
-  {
-    id: 'ivd-5',
-    templateItem: 'SKU002: Laptop',
-    variantName: 'SKU002-32GB-1TB',
-    itemName: 'Laptop - 32GB / 1TB SSD',
-    attributes: 'RAM: 32GB, Storage: 1TB',
-    currentStock: 8.0,
-    buyingPrice: 1120.0,
-    sellingPrice: 1599.0,
-    openOrders: 2.0,
-    sales: 11.0,
-  },
-  {
-    id: 'ivd-6',
-    templateItem: 'SKU004: Smartphone',
-    variantName: 'SKU004-BLK-128',
-    itemName: 'Smartphone - Black / 128GB',
-    attributes: 'Colour: Black, Storage: 128GB',
-    currentStock: 25.0,
-    buyingPrice: 520.0,
-    sellingPrice: 749.0,
-    openOrders: 4.0,
-    sales: 28.0,
-  },
-  {
-    id: 'ivd-7',
-    templateItem: 'SKU005: Sneakers',
-    variantName: 'SKU005-WHT-42',
-    itemName: 'Sneakers - White / 42',
-    attributes: 'Colour: White, Size: 42',
-    currentStock: 18.0,
-    buyingPrice: 45.0,
-    sellingPrice: 89.0,
-    openOrders: 0.0,
-    sales: 15.0,
-  },
-  {
-    id: 'ivd-8',
-    templateItem: 'SKU005: Sneakers',
-    variantName: 'SKU005-BLK-43',
-    itemName: 'Sneakers - Black / 43',
-    attributes: 'Colour: Black, Size: 43',
-    currentStock: 22.0,
-    buyingPrice: 45.0,
-    sellingPrice: 89.0,
-    openOrders: 2.0,
-    sales: 20.0,
-  },
-];
-
 export const ItemVariantDetailsPage: React.FC = () => {
+  const { items } = useItem();
+  const [rows, setRows] = useState<ItemVariantDetailRow[]>([]);
   const [itemFilter, setItemFilter] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -137,10 +35,57 @@ export const ItemVariantDetailsPage: React.FC = () => {
 
   const hasItem = itemFilter.trim().length > 0;
 
+  const templateItems = useMemo(() => {
+    const templates = items.filter((i) => i.hasVariants);
+    const source = templates.length > 0 ? templates : items;
+    return source.map((i) => ({
+      id: i.id,
+      label: i.itemCode ? `${i.itemCode}: ${i.itemName}` : i.itemName,
+    }));
+  }, [items]);
+
+  const fetchVariants = useCallback(async () => {
+    if (!hasItem) {
+      setRows([]);
+      return;
+    }
+    const q = itemFilter.trim().toLowerCase();
+    const matched = templateItems.find(
+      (t) => t.label.toLowerCase() === q || t.label.toLowerCase().includes(q)
+    );
+    if (!matched) {
+      setRows([]);
+      return;
+    }
+    try {
+      const data = await stockService.getItemVariantDetailsReport(matched.id);
+      setRows(
+        data.map((r: any, idx: number) => ({
+          id: r.variantItemId || r.id || `ivd-${idx}`,
+          templateItem: matched.label,
+          variantName: r.variantCode || r.itemCode || '',
+          itemName: r.variantName || r.itemName || '',
+          attributes: r.attributes || '',
+          currentStock: Number(r.currentStock ?? r.actualQty ?? 0),
+          buyingPrice: Number(r.buyingPrice ?? r.buyingRate ?? 0),
+          sellingPrice: Number(r.sellingPrice ?? r.sellingRate ?? 0),
+          openOrders: Number(r.openOrders ?? 0),
+          sales: Number(r.sales ?? 0),
+        }))
+      );
+    } catch (err) {
+      console.error('Failed to fetch item variant details:', err);
+    }
+  }, [hasItem, itemFilter, templateItems]);
+
+  useEffect(() => {
+    fetchVariants();
+  }, [fetchVariants]);
+
   const filteredData = useMemo(() => {
     if (!hasItem) return [];
 
-    return INITIAL_VARIANT_DETAILS.filter((row) => {
+    return rows.filter((row) => {
       const q = itemFilter.trim().toLowerCase();
       if (
         !row.templateItem.toLowerCase().includes(q) &&
@@ -161,7 +106,7 @@ export const ItemVariantDetailsPage: React.FC = () => {
 
       return true;
     });
-  }, [itemFilter, hasItem, colFilters]);
+  }, [rows, itemFilter, hasItem, colFilters]);
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] flex flex-col justify-between bg-white dark:bg-[#121214] text-slate-800 dark:text-zinc-200">
@@ -185,19 +130,19 @@ export const ItemVariantDetailsPage: React.FC = () => {
 
             {showDropdown && (
               <div className="absolute left-0 top-9 z-40 w-52 bg-white dark:bg-[#1E1E22] border border-slate-200 dark:border-[#2E2E33] rounded-lg shadow-lg py-1 text-xs">
-                {TEMPLATE_ITEMS.filter((t) =>
-                  t.toLowerCase().includes(itemFilter.toLowerCase())
+                {templateItems.filter((t) =>
+                  t.label.toLowerCase().includes(itemFilter.toLowerCase())
                 ).map((t) => (
                   <button
-                    key={t}
+                    key={t.id}
                     type="button"
                     onMouseDown={() => {
-                      setItemFilter(t);
+                      setItemFilter(t.label);
                       setShowDropdown(false);
                     }}
                     className="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-[#27272A] text-slate-800 dark:text-zinc-200 transition-colors"
                   >
-                    {t}
+                    {t.label}
                   </button>
                 ))}
               </div>

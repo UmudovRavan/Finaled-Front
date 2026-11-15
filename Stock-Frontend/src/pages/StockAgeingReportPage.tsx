@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
+import { stockService } from '../api/stockService';
 
 interface StockAgeingRow {
   id: string;
@@ -23,199 +24,8 @@ interface StockAgeingRow {
   uom: string;
 }
 
-const INITIAL_AGEING_ROWS: StockAgeingRow[] = [
-  {
-    id: 'row-1',
-    itemCode: 'SKU010: Camera',
-    itemName: 'Camera',
-    description: '',
-    itemGroup: 'Demo Item Group',
-    brand: '',
-    availableQty: 28.0,
-    averageRate: 700.29,
-    age0_30: 0.0,
-    val0_30: 0.0,
-    age31_60: 0.0,
-    val31_60: 0.0,
-    age61_90: 0.0,
-    val61_90: 0.0,
-    age91_above: 28.0,
-    val91_above: 14000.0,
-    earliest: 311,
-    latest: 93,
-    uom: 'Nos',
-  },
-  {
-    id: 'row-2',
-    itemCode: 'SKU009: Headphones',
-    itemName: 'Headphones',
-    description: '',
-    itemGroup: 'Demo Item Group',
-    brand: '',
-    availableQty: 36.0,
-    averageRate: 511.0,
-    age0_30: 0.0,
-    val0_30: 0.0,
-    age31_60: 0.0,
-    val31_60: 0.0,
-    age61_90: 0.0,
-    val61_90: 0.0,
-    age91_above: 36.0,
-    val91_above: 25200.0,
-    earliest: 291,
-    latest: 93,
-    uom: 'Nos',
-  },
-  {
-    id: 'row-3',
-    itemCode: 'SKU007: Television',
-    itemName: 'Television',
-    description: '',
-    itemGroup: 'Demo Item Group',
-    brand: '',
-    availableQty: 90.0,
-    averageRate: 462.89,
-    age0_30: 0.0,
-    val0_30: 0.0,
-    age31_60: 0.0,
-    val31_60: 0.0,
-    age61_90: 0.0,
-    val61_90: 0.0,
-    age91_above: 90.0,
-    val91_above: 33750.0,
-    earliest: 304,
-    latest: 161,
-    uom: 'Nos',
-  },
-  {
-    id: 'row-4',
-    itemCode: 'SKU006: Coffee Mug',
-    itemName: 'Coffee Mug',
-    description: '',
-    itemGroup: 'Demo Item Group',
-    brand: '',
-    availableQty: 150.0,
-    averageRate: 406.0,
-    age0_30: 0.0,
-    val0_30: 0.0,
-    age31_60: 0.0,
-    val31_60: 0.0,
-    age61_90: 0.0,
-    val61_90: 0.0,
-    age91_above: 150.0,
-    val91_above: 63000.0,
-    earliest: 308,
-    latest: 161,
-    uom: 'Nos',
-  },
-  {
-    id: 'row-5',
-    itemCode: 'SKU008: Backpack',
-    itemName: 'Backpack',
-    description: '',
-    itemGroup: 'Demo Item Group',
-    brand: '',
-    availableQty: 101.0,
-    averageRate: 339.79,
-    age0_30: 0.0,
-    val0_30: 0.0,
-    age31_60: 0.0,
-    val31_60: 0.0,
-    age61_90: 0.0,
-    val61_90: 0.0,
-    age91_above: 101.0,
-    val91_above: 33633.0,
-    earliest: 299,
-    latest: 93,
-    uom: 'Nos',
-  },
-  {
-    id: 'row-6',
-    itemCode: 'SKU005: Sneakers',
-    itemName: 'Sneakers',
-    description: '',
-    itemGroup: 'Demo Item Group',
-    brand: '',
-    availableQty: 32.0,
-    averageRate: 296.0,
-    age0_30: 0.0,
-    val0_30: 0.0,
-    age31_60: 0.0,
-    val31_60: 0.0,
-    age61_90: 0.0,
-    val61_90: 0.0,
-    age91_above: 32.0,
-    val91_above: 7104.0,
-    earliest: 296,
-    latest: 296,
-    uom: 'Nos',
-  },
-  {
-    id: 'row-7',
-    itemCode: 'SKU003: Book',
-    itemName: 'Book',
-    description: '',
-    itemGroup: 'Demo Item Group',
-    brand: '',
-    availableQty: -100.0,
-    averageRate: 161.0,
-    age0_30: 0.0,
-    val0_30: 0.0,
-    age31_60: 0.0,
-    val31_60: 0.0,
-    age61_90: 0.0,
-    val61_90: 0.0,
-    age91_above: -100.0,
-    val91_above: -52300.0,
-    earliest: 161,
-    latest: 161,
-    uom: 'Nos',
-  },
-  {
-    id: 'row-8',
-    itemCode: 'SKU004: Smartphone',
-    itemName: 'Smartphone',
-    description: '',
-    itemGroup: 'Demo Item Group',
-    brand: '',
-    availableQty: -20.0,
-    averageRate: 97.0,
-    age0_30: 0.0,
-    val0_30: 0.0,
-    age31_60: 0.0,
-    val31_60: 0.0,
-    age61_90: 0.0,
-    val61_90: 0.0,
-    age91_above: -20.0,
-    val91_above: -14500.0,
-    earliest: 97,
-    latest: 97,
-    uom: 'Nos',
-  },
-  {
-    id: 'row-9',
-    itemCode: 'SKU002: Laptop',
-    itemName: 'Laptop',
-    description: '',
-    itemGroup: 'Demo Item Group',
-    brand: '',
-    availableQty: 10.0,
-    averageRate: 10.0,
-    age0_30: 10.0,
-    val0_30: 500.0,
-    age31_60: 0.0,
-    val31_60: 0.0,
-    age61_90: 0.0,
-    val61_90: 0.0,
-    age91_above: 0.0,
-    val91_above: 0.0,
-    earliest: 10,
-    latest: 10,
-    uom: 'Nos',
-  },
-];
-
 export const StockAgeingReportPage: React.FC = () => {
+  const [rows, setRows] = useState<StockAgeingRow[]>([]);
   const [company, setCompany] = useState('Avalon (Demo)');
   const [toDate, setToDate] = useState('11-11-2026');
   const [warehouseType, setWarehouseType] = useState('');
@@ -234,13 +44,53 @@ export const StockAgeingReportPage: React.FC = () => {
     setColFilters((prev) => ({ ...prev, [colKey]: val }));
   };
 
+  const fetchReport = useCallback(async () => {
+    const start = performance.now();
+    try {
+      const data = await stockService.getStockAgeingReport({
+        showWarehouseWise,
+      });
+      setRows(
+        data.map((r: any, idx: number) => ({
+          id: `${r.itemId || idx}`,
+          itemCode: r.itemCode ? `${r.itemCode}${r.itemName ? ': ' + r.itemName : ''}` : r.itemName || '',
+          itemName: r.itemName || '',
+          description: r.description || '',
+          itemGroup: r.itemGroupName || '',
+          brand: r.brandName || '',
+          availableQty: Number(r.availableQty || 0),
+          averageRate: Number(r.averageAge ?? r.averageRate ?? 0),
+          age0_30: Number(r.age0To30Qty ?? r.age0_30 ?? 0),
+          val0_30: Number(r.age0To30Value ?? r.val0_30 ?? 0),
+          age31_60: Number(r.age31To60Qty ?? r.age31_60 ?? 0),
+          val31_60: Number(r.age31To60Value ?? r.val31_60 ?? 0),
+          age61_90: Number(r.age61To90Qty ?? r.age61_90 ?? 0),
+          val61_90: Number(r.age61To90Value ?? r.val61_90 ?? 0),
+          age91_above: Number(r.age91PlusQty ?? r.age91_above ?? 0),
+          val91_above: Number(r.age91PlusValue ?? r.val91_above ?? 0),
+          earliest: Number(r.earliest ?? 0),
+          latest: Number(r.latest ?? 0),
+          uom: r.stockUomName || r.uom || 'Nos',
+        }))
+      );
+    } catch (err) {
+      console.error('Failed to fetch stock ageing report:', err);
+    } finally {
+      setExecutionTime(((performance.now() - start) / 1000).toFixed(6));
+    }
+  }, [showWarehouseWise]);
+
+  useEffect(() => {
+    fetchReport();
+  }, [fetchReport]);
+
   const handleGenerateReport = () => {
     setShowToast(true);
-    setExecutionTime((Math.random() * 0.01 + 0.01).toFixed(6));
+    fetchReport();
   };
 
   const filteredRows = useMemo(() => {
-    return INITIAL_AGEING_ROWS.filter((row) => {
+    return rows.filter((row) => {
       if (item && !row.itemCode.toLowerCase().includes(item.toLowerCase()) && !row.itemName.toLowerCase().includes(item.toLowerCase())) return false;
       if (brand && !row.brand.toLowerCase().includes(brand.toLowerCase())) return false;
 
@@ -251,7 +101,7 @@ export const StockAgeingReportPage: React.FC = () => {
       }
       return true;
     });
-  }, [item, brand, colFilters]);
+  }, [rows, item, brand, colFilters]);
 
   const formatQty = (val: number) => {
     const isNeg = val < 0;
@@ -262,17 +112,14 @@ export const StockAgeingReportPage: React.FC = () => {
     return isNeg ? `-${abs}` : abs;
   };
 
-  const chartItems = [
-    { label: 'SKU010', value: 700.29 },
-    { label: 'SKU009', value: 511.0 },
-    { label: 'SKU007', value: 462.89 },
-    { label: 'SKU006', value: 406.0 },
-    { label: 'SKU008', value: 339.79 },
-    { label: 'SKU005', value: 296.0 },
-    { label: 'SKU003', value: 161.0 },
-    { label: 'SKU004', value: 97.0 },
-    { label: 'SKU002', value: 10.0 },
-  ];
+  const chartItems = useMemo(
+    () =>
+      filteredRows.slice(0, 9).map((r) => ({
+        label: r.itemCode.split(':')[0] || r.itemCode,
+        value: r.averageRate,
+      })),
+    [filteredRows]
+  );
 
   return (
     <div className="font-sans text-xs pb-16 space-y-4 relative">

@@ -24,6 +24,7 @@ interface UOMConversionFactorContextType {
   setPageSize: (size: number) => void;
   addConversionFactor: (factor: Partial<UOMConversionFactorRecord>) => Promise<UOMConversionFactorRecord>;
   updateConversionFactor: (id: string, updated: Partial<UOMConversionFactorRecord>) => Promise<void>;
+  deleteConversionFactor: (id: string) => Promise<void>;
   refreshFactors: () => Promise<void>;
 }
 
@@ -110,13 +111,20 @@ export const UOMConversionFactorProvider: React.FC<{ children: React.ReactNode }
     id: string,
     updated: Partial<UOMConversionFactorRecord>
   ): Promise<void> => {
+    const saved = await stockService.updateUOMConversionFactor(id, updated);
     setFactors((prev) =>
       prev.map((f) =>
         f.id.toLowerCase() === id.toLowerCase()
-          ? { ...f, ...updated, lastEdited: 'just now' }
+          ? { ...f, ...updated, ...saved, lastEdited: 'just now' }
           : f
       )
     );
+  };
+
+  const deleteConversionFactor = async (id: string): Promise<void> => {
+    await stockService.deleteUOMConversionFactor(id);
+    setFactors((prev) => prev.filter((f) => f.id.toLowerCase() !== id.toLowerCase()));
+    setSelectedIds((prev) => prev.filter((i) => i.toLowerCase() !== id.toLowerCase()));
   };
 
   return (
@@ -143,6 +151,7 @@ export const UOMConversionFactorProvider: React.FC<{ children: React.ReactNode }
         setPageSize,
         addConversionFactor,
         updateConversionFactor,
+        deleteConversionFactor,
         refreshFactors: loadData,
       }}
     >

@@ -106,6 +106,7 @@ export const ItemAlternativeProvider: React.FC<{ children: React.ReactNode }> = 
   };
 
   const deleteAlternative = async (id: string) => {
+    await stockService.deleteItemAlternative(id);
     setAlternatives((prev) => prev.filter((item) => item.id !== id));
   };
 

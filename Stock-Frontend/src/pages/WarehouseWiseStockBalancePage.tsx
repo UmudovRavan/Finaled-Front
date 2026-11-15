@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { stockService } from '../api/stockService';
 
 interface WarehouseStockNode {
   id: string;
@@ -10,49 +11,58 @@ interface WarehouseStockNode {
   children?: WarehouseStockNode[];
 }
 
-const INITIAL_WAREHOUSE_TREE: WarehouseStockNode[] = [
-  {
-    id: 'wh-1',
-    name: 'Tüm Depolar - AD',
-    stockBalance: 99637.0,
-    level: 0,
-    isGroup: true,
-    children: [
-      {
-        id: 'wh-2',
-        name: 'Mağazalar - AD',
-        stockBalance: -107300.0,
-        level: 1,
-      },
-      {
-        id: 'wh-3',
-        name: 'Devam Eden İşler - AD',
-        stockBalance: 113444.0,
-        level: 1,
-      },
-      {
-        id: 'wh-4',
-        name: 'Bitmiş Ürünler - AD',
-        stockBalance: 53200.0,
-        level: 1,
-      },
-      {
-        id: 'wh-5',
-        name: 'Taşıma Halindeki Ürünler - AD',
-        stockBalance: 40293.0,
-        level: 1,
-      },
-    ],
-  },
-];
+const mapWarehouseTree = (items: any[]): WarehouseStockNode[] => {
+  if (!Array.isArray(items) || items.length === 0) return [];
+  const hasNested = items.some((x) => Array.isArray(x.children) && x.children.length > 0);
+  if (hasNested) {
+    const mapNode = (x: any, level = 0): WarehouseStockNode => ({
+      id: x.id || x.warehouseId || `wh-${level}-${Math.random()}`,
+      name: x.warehouseName || x.name || '',
+      stockBalance: Number(x.stockBalance ?? x.balanceValue ?? x.balanceQty ?? 0),
+      level,
+      isGroup: Boolean(x.isGroup || (x.children && x.children.length > 0)),
+      children: Array.isArray(x.children)
+        ? x.children.map((c: any) => mapNode(c, level + 1))
+        : undefined,
+    });
+    return items.map((x) => mapNode(x, 0));
+  }
+  return items.map((x, idx) => ({
+    id: x.warehouseId || x.id || `wh-${idx}`,
+    name: x.warehouseName || x.name || '',
+    stockBalance: Number(x.stockBalance ?? x.balanceValue ?? x.balanceQty ?? 0),
+    level: Number(x.level ?? 0),
+    isGroup: Boolean(x.isGroup),
+  }));
+};
 
 export const WarehouseWiseStockBalancePage: React.FC = () => {
   const [company] = useState('Avalon (Demo)');
   const [showDisabledWarehouses, setShowDisabledWarehouses] = useState(false);
-  const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({
-    'wh-1': true,
-  });
+  const [treeData, setTreeData] = useState<WarehouseStockNode[]>([]);
+  const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
   const [levelInput, setLevelInput] = useState('2');
+
+  const fetchTree = useCallback(async () => {
+    try {
+      const data = await stockService.getWarehouseWiseBalanceReport({
+        showDisabledWarehouses,
+      });
+      const mapped = mapWarehouseTree(data);
+      setTreeData(mapped);
+      const initialExp: Record<string, boolean> = {};
+      mapped.forEach((n) => {
+        if (n.isGroup) initialExp[n.id] = true;
+      });
+      setExpandedNodes(initialExp);
+    } catch (err) {
+      console.error('Failed to load warehouse wise stock balance:', err);
+    }
+  }, [showDisabledWarehouses]);
+
+  useEffect(() => {
+    fetchTree();
+  }, [fetchTree]);
 
   // Inline column filter inputs
   const [warehouseSearch, setWarehouseSearch] = useState('');
@@ -77,7 +87,7 @@ export const WarehouseWiseStockBalancePage: React.FC = () => {
         }
       }
     };
-    INITIAL_WAREHOUSE_TREE.forEach(traverse);
+    treeData.forEach(traverse);
     setExpandedNodes(newExpanded);
   };
 
@@ -95,7 +105,7 @@ export const WarehouseWiseStockBalancePage: React.FC = () => {
           if (node.children) node.children.forEach(traverse);
         }
       };
-      INITIAL_WAREHOUSE_TREE.forEach(traverse);
+      treeData.forEach(traverse);
       setExpandedNodes(newExpanded);
     } else {
       // Collapse all
@@ -106,7 +116,7 @@ export const WarehouseWiseStockBalancePage: React.FC = () => {
           if (node.children) node.children.forEach(traverse);
         }
       };
-      INITIAL_WAREHOUSE_TREE.forEach(traverse);
+      treeData.forEach(traverse);
       setExpandedNodes(newExpanded);
     }
   };
@@ -136,9 +146,9 @@ export const WarehouseWiseStockBalancePage: React.FC = () => {
       }
     };
 
-    INITIAL_WAREHOUSE_TREE.forEach((root) => traverse(root, true));
+    treeData.forEach((root) => traverse(root, true));
     return rows;
-  }, [expandedNodes, warehouseSearch, balanceSearch]);
+  }, [treeData, expandedNodes, warehouseSearch, balanceSearch]);
 
   const formatNumber = (num: number) => {
     return num.toLocaleString('en-US', {

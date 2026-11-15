@@ -5,7 +5,7 @@ import type {
   StockViewMode,
   FilterRule,
 } from '../types';
-import { stockService, INITIAL_MATERIAL_REQUESTS } from '../api';
+import { stockService } from '../api';
 
 interface MaterialRequestQuickFiltersState {
   id: string;
@@ -52,17 +52,7 @@ interface MaterialRequestContextType {
 const MaterialRequestContext = createContext<MaterialRequestContextType | undefined>(undefined);
 
 export const MaterialRequestProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [requests, setRequests] = useState<MaterialRequestRecord[]>(() => {
-    const saved = localStorage.getItem('altensor_material_requests');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return INITIAL_MATERIAL_REQUESTS;
-      }
-    }
-    return INITIAL_MATERIAL_REQUESTS;
-  });
+  const [requests, setRequests] = useState<MaterialRequestRecord[]>([]);
 
   const [viewMode, setViewMode] = useState<StockViewMode>('list');
   const [savedFilter, setSavedFilter] = useState<string>('All');
@@ -86,23 +76,21 @@ export const MaterialRequestProvider: React.FC<{ children: ReactNode }> = ({ chi
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    localStorage.setItem('altensor_material_requests', JSON.stringify(requests));
-  }, [requests]);
-
   const refresh = async () => {
     setIsRefreshing(true);
     try {
       const data = await stockService.getMaterialRequests();
-      if (data && data.length > 0) {
-        setRequests(data);
-      }
-    } catch {
-      // Keep existing data
+      setRequests(data);
+    } catch (err) {
+      console.error('Failed to load material requests', err);
     } finally {
-      setTimeout(() => setIsRefreshing(false), 400);
+      setIsRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) =>
@@ -130,18 +118,21 @@ export const MaterialRequestProvider: React.FC<{ children: ReactNode }> = ({ chi
     return created;
   };
 
-  const updateStatus = (id: string, status: MaterialRequestStatus) => {
-    setRequests((prev) =>
-      prev.map((e) =>
-        e.id === id
-          ? {
-              ...e,
-              status,
-              lastUpdatedOn: new Date().toISOString(),
-            }
-          : e
-      )
-    );
+  const updateStatus = async (id: string, status: MaterialRequestStatus) => {
+    try {
+      const updated =
+        status === 'Submitted' || status === 'Pending'
+          ? await stockService.submitMaterialRequest(id)
+          : status === 'Cancelled'
+          ? await stockService.cancelMaterialRequest(id)
+          : null;
+      if (updated) {
+        setRequests((prev) => prev.map((e) => (e.id === id ? updated : e)));
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to update material request status', err);
+    }
   };
 
   const deleteRequests = (ids: string[]) => {

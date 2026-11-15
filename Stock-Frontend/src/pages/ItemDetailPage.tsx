@@ -23,7 +23,14 @@ import {
   Send,
   ExternalLink,
 } from 'lucide-react';
-import { useItem } from '../context';
+import {
+  useItem,
+  useItemGroup,
+  useUOM,
+  useQualityInspectionTemplate,
+  useBrand,
+} from '../context';
+import { stockService } from '../api';
 import type { ItemRecord } from '../types';
 import { ItemDetailSidebar } from '../components/item/ItemDetailSidebar';
 
@@ -95,7 +102,11 @@ export const ItemDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const { items, toggleLike } = useItem();
+  const { items, updateItem, toggleLike } = useItem();
+  const { groups: itemGroups } = useItemGroup();
+  const { uoms } = useUOM();
+  const { templates: qiTemplates } = useQualityInspectionTemplate();
+  const { brands } = useBrand();
 
   const foundItem = items.find((i) => i.id === id || i.itemCode === id);
   const currentItem: ItemRecord = foundItem || {
@@ -239,9 +250,182 @@ export const ItemDetailPage: React.FC = () => {
     }
   };
 
-  const handleSave = (e?: React.FormEvent) => {
+  useEffect(() => {
+    if (!foundItem?.id) return;
+    let cancelled = false;
+    stockService
+      .getItemById(foundItem.id)
+      .then((full) => {
+        if (cancelled || !full) return;
+        setItemName(full.itemName || '');
+        setItemGroup(full.itemGroup || 'Products');
+        setDefaultUom(full.uom || 'Nos');
+        setDisabled(full.status === 'Disabled');
+        setMaintainStock(full.maintainStock ?? true);
+        setIsFixedAsset(full.isFixedAsset ?? false);
+        setAllowSales(full.allowSales !== false);
+        setAllowPurchase(full.allowPurchase !== false);
+        setAllowAlternativeItem(Boolean(full.allowAlternativeItem));
+        setIsCustomerProvidedItem(Boolean(full.isCustomerProvidedItem));
+        setHasVariants(Boolean(full.hasVariants));
+        setOverDeliveryAllowance(Number(full.overDeliveryAllowance || 0).toFixed(3));
+        setBrand(full.brand || '');
+        setDescriptionText(full.description || '');
+        if (Array.isArray(full.itemDefaults)) {
+          setItemDefaults(
+            full.itemDefaults.map((d: any, idx: number) => ({
+              id: d.id || `def-${idx}`,
+              company: 'Avalon (Demo)',
+              defaultWarehouse: d.defaultWarehouse || d.defaultWarehouseId || '',
+              defaultPriceList: d.defaultPriceListId || '',
+            }))
+          );
+        }
+        if (Array.isArray(full.uomConversions) && full.uomConversions.length > 0) {
+          setUomRows(
+            full.uomConversions.map((u: any, idx: number) => ({
+              id: u.id || `uom-${idx}`,
+              uom: u.uomName || '',
+              conversionFactor: Number(u.conversionFactor || 1),
+            }))
+          );
+        }
+        if (Array.isArray(full.taxes)) {
+          setTaxRows(
+            full.taxes.map((t: any, idx: number) => ({
+              id: t.id || `tax-${idx}`,
+              itemTaxTemplate: t.taxTemplateName || '',
+              taxCategory: t.taxCategory || '',
+              validFrom: t.validFrom ? String(t.validFrom).slice(0, 10) : '',
+              minNetRate: String(t.minimumNetRate ?? '0.00'),
+              maxNetRate: String(t.maximumNetRate ?? '0'),
+            }))
+          );
+        }
+        setValuationMethod(full.valuationMethod || '');
+        setValuationRate(Number(full.valuationRate || 0).toFixed(2));
+        if (full.endOfLife) setEndOfLife(full.endOfLife);
+        setWarrantyPeriod(full.warrantyPeriodDays ? String(full.warrantyPeriodDays) : '');
+        setDefaultMaterialRequestType(full.defaultMaterialRequestType || 'Purchase');
+        setWeightPerUnit(Number(full.weightPerUnit || 0).toFixed(3));
+        setWeightUom(full.weightUom || '');
+        setAllowNegativeStock(Boolean(full.allowNegativeStock));
+        if (Array.isArray(full.barcodes)) {
+          setBarcodes(
+            full.barcodes.map((b: any, idx: number) => ({
+              id: b.id || `bc-${idx}`,
+              barcode: b.barcode || '',
+              barcodeType: b.barcodeType || '',
+              uom: b.uom || '',
+            }))
+          );
+        }
+        if (Array.isArray(full.reorderLevels)) {
+          setReorderRows(
+            full.reorderLevels.map((r: any, idx: number) => ({
+              id: r.id || `ro-${idx}`,
+              requestFor: r.warehouseName || '',
+              warehouse: r.warehouseName || '',
+              reorderLevel: Number(r.warehouseReorderLevel || 0),
+              reorderQty: Number(r.warehouseReorderQty || 0),
+              materialRequestType: r.materialRequestType || 'Purchase',
+            }))
+          );
+        }
+        setHasBatchNo(Boolean(full.hasBatchNo));
+        setHasSerialNo(Boolean(full.hasSerialNo));
+        setDefaultPurchaseUom(full.purchaseUom || '');
+        setMinimumOrderQty(Number(full.minOrderQty || 0).toFixed(3));
+        setSafetyStock(Number(full.safetyStock || 0).toFixed(3));
+        setLeadTimeInDays(String(full.leadTimeDays || 0));
+        setLastPurchaseRate(String(full.lastPurchaseRate || 0));
+        if (Array.isArray(full.suppliers)) {
+          setItemSuppliers(
+            full.suppliers.map((s: any, idx: number) => ({
+              id: s.id || `sup-${idx}`,
+              supplier: s.supplierName || '',
+              supplierPartNumber: s.supplierPartNo || '',
+            }))
+          );
+        }
+        setDefaultSalesUom(full.salesUom || '');
+        setGrantCommission(full.grantCommission !== false);
+        setMaxDiscount(Number(full.maxDiscountPercent || 0).toFixed(3));
+        if (Array.isArray(full.customerDetails)) {
+          setCustomerItems(
+            full.customerDetails.map((c: any, idx: number) => ({
+              id: c.id || `cust-${idx}`,
+              customerName: c.customerName || '',
+              customerGroup: c.customerGroup || '',
+              refCode: c.refCode || '',
+            }))
+          );
+        }
+        setIncludeItemInManufacturing(full.includeItemInManufacturing !== false);
+        setIsSubcontractedItem(Boolean(full.isSubcontractedItem));
+        setInspectionRequiredBeforePurchase(Boolean(full.inspectionRequiredBeforePurchase));
+        setInspectionRequiredBeforeDelivery(Boolean(full.inspectionRequiredBeforeDelivery));
+        setQualityInspectionTemplate(full.qualityInspectionTemplate || '');
+      })
+      .catch((err) => console.error('Failed to fetch full item details', err));
+    return () => {
+      cancelled = true;
+    };
+  }, [foundItem?.id]);
+
+  const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    alert('Item updated successfully');
+    try {
+      await updateItem(currentItem.id, {
+        itemCode: currentItem.itemCode,
+        itemName: itemName.trim() || currentItem.itemCode,
+        itemGroup: itemGroup.trim() || 'Products',
+        uom: defaultUom.trim() || 'Nos',
+        status: disabled ? 'Disabled' : 'Enabled',
+        maintainStock,
+        isFixedAsset,
+        allowSales,
+        allowPurchase,
+        allowAlternativeItem,
+        isCustomerProvidedItem,
+        hasVariants,
+        overDeliveryAllowance: Number(overDeliveryAllowance || 0),
+        brand: brand.trim(),
+        description: descriptionText,
+        itemDefaults,
+        uomConversions: uomRows,
+        taxes: taxRows,
+        valuationMethod: valuationMethod || 'FIFO',
+        valuationRate: Number(valuationRate || 0),
+        endOfLife,
+        warrantyPeriodDays: Number(warrantyPeriod || 0),
+        defaultMaterialRequestType,
+        weightPerUnit: Number(weightPerUnit || 0),
+        weightUom: weightUom.trim(),
+        allowNegativeStock,
+        barcodes,
+        reorderLevels: reorderRows,
+        hasBatchNo,
+        hasSerialNo,
+        purchaseUom: defaultPurchaseUom.trim(),
+        minOrderQty: Number(minimumOrderQty || 0),
+        safetyStock: Number(safetyStock || 0),
+        leadTimeDays: Number(leadTimeInDays || 0),
+        lastPurchaseRate: Number(lastPurchaseRate || 0),
+        suppliers: itemSuppliers,
+        salesUom: defaultSalesUom.trim(),
+        maxDiscountPercent: Number(maxDiscount || 0),
+        grantCommission,
+        customerDetails: customerItems,
+        includeItemInManufacturing,
+        isSubcontractedItem,
+        inspectionRequiredBeforePurchase,
+        inspectionRequiredBeforeDelivery,
+        qualityInspectionTemplate: qualityInspectionTemplate.trim(),
+      });
+    } catch (err) {
+      console.error('Failed to update item', err);
+    }
   };
 
   const tabs: { id: DetailTabType; label: string; hash: string }[] = [
@@ -317,6 +501,7 @@ export const ItemDetailPage: React.FC = () => {
                         </label>
                         <input
                           type="text"
+                          list="detail-item-groups-list"
                           value={itemGroup}
                           onChange={(e) => setItemGroup(e.target.value)}
                           className="w-full h-8 px-3 bg-[#F4F5F7] dark:bg-[#202024] hover:bg-[#EBEEF2] dark:hover:bg-[#27272A] focus:bg-white dark:focus:bg-[#18181B] text-slate-900 dark:text-white rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-[#2E2E33] outline-none text-xs transition-colors"
@@ -329,6 +514,7 @@ export const ItemDetailPage: React.FC = () => {
                         </label>
                         <input
                           type="text"
+                          list="detail-item-uoms-list"
                           value={defaultUom}
                           onChange={(e) => setDefaultUom(e.target.value)}
                           className="w-full h-8 px-3 bg-[#F4F5F7] dark:bg-[#202024] hover:bg-[#EBEEF2] dark:hover:bg-[#27272A] focus:bg-white dark:focus:bg-[#18181B] text-slate-900 dark:text-white rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-[#2E2E33] outline-none text-xs transition-colors"
@@ -1730,12 +1916,18 @@ export const ItemDetailPage: React.FC = () => {
                       <label className="block text-slate-700 dark:text-zinc-300 font-medium mb-1.5">
                         Quality Inspection Template
                       </label>
-                      <input
-                        type="text"
+                      <select
                         value={qualityInspectionTemplate}
                         onChange={(e) => setQualityInspectionTemplate(e.target.value)}
-                        className="w-full h-8 px-3 bg-[#F4F5F7] dark:bg-[#202024] hover:bg-[#EBEEF2] dark:hover:bg-[#27272A] focus:bg-white dark:focus:bg-[#18181B] text-slate-900 dark:text-white rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-[#2E2E33] outline-none text-xs transition-colors"
-                      />
+                        className="w-full h-8 px-3 bg-[#F4F5F7] dark:bg-[#202024] hover:bg-[#EBEEF2] dark:hover:bg-[#27272A] focus:bg-white dark:focus:bg-[#18181B] text-slate-900 dark:text-white rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-[#2E2E33] outline-none text-xs transition-colors cursor-pointer"
+                      >
+                        <option value="">-- Select Quality Inspection Template --</option>
+                        {qiTemplates.map((t) => (
+                          <option key={t.id} value={t.templateName}>
+                            {t.templateName}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </div>
@@ -2154,21 +2346,39 @@ export const ItemDetailPage: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-zinc-600 -ml-[13px]" />
                       <span>
-                        You created this · <span className="font-medium">10 hours ago</span>
+                        You created this · <span className="font-medium">just now</span>
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-zinc-600 -ml-[13px]" />
                       <span>
-                        You last edited this · <span className="font-medium">10 hours ago</span>
+                        You last edited this · <span className="font-medium">just now</span>
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
 
+              <datalist id="detail-item-groups-list">
+                {itemGroups.map((g) => (
+                  <option key={g.id} value={g.itemGroupName} />
+                ))}
+              </datalist>
+              <datalist id="detail-item-uoms-list">
+                {uoms.map((u) => (
+                  <option key={u.id} value={u.uomName} />
+                ))}
+              </datalist>
+              <datalist id="detail-item-brands-list">
+                {brands.map((b) => (
+                  <option key={b.id} value={b.brandName} />
+                ))}
+              </datalist>
+
               {/* Hidden submit trigger */}
-              <button type="submit" className="hidden" aria-hidden="true" />
+              <button type="submit" className="hidden" aria-hidden="true">
+                Save
+              </button>
             </form>
           </div>
 

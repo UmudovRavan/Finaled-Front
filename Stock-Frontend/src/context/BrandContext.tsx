@@ -18,6 +18,7 @@ interface BrandContextType {
   setPageSize: (size: number) => void;
   addBrand: (brand: Partial<BrandRecord>) => Promise<BrandRecord>;
   updateBrand: (id: string, brand: Partial<BrandRecord>) => Promise<void>;
+  deleteBrand: (id: string) => Promise<void>;
   refreshBrands: () => Promise<void>;
 }
 
@@ -87,9 +88,20 @@ export const BrandProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateBrand = async (id: string, updated: Partial<BrandRecord>): Promise<void> => {
+    const saved = await stockService.updateBrand(id, updated);
     setBrands((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, ...updated, lastUpdatedOn: new Date().toISOString() } : b))
+      prev.map((b) =>
+        b.id.toLowerCase() === id.toLowerCase()
+          ? { ...b, ...updated, ...saved, lastUpdatedOn: new Date().toISOString() }
+          : b
+      )
     );
+  };
+
+  const deleteBrand = async (id: string): Promise<void> => {
+    await stockService.deleteBrand(id);
+    setBrands((prev) => prev.filter((b) => b.id.toLowerCase() !== id.toLowerCase()));
+    setSelectedIds((prev) => prev.filter((i) => i.toLowerCase() !== id.toLowerCase()));
   };
 
   return (
@@ -110,6 +122,7 @@ export const BrandProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setPageSize,
         addBrand,
         updateBrand,
+        deleteBrand,
         refreshBrands: loadData,
       }}
     >

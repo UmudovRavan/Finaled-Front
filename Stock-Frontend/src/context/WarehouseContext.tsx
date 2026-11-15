@@ -20,6 +20,7 @@ interface WarehouseContextType {
   setPageSize: (size: number) => void;
   addWarehouse: (wh: Partial<WarehouseRecord>) => Promise<WarehouseRecord>;
   updateWarehouse: (id: string, wh: Partial<WarehouseRecord>) => Promise<void>;
+  deleteWarehouse: (id: string) => Promise<void>;
   disableWarehouse: (id: string) => Promise<void>;
   convertToGroup: (id: string) => Promise<void>;
   refreshWarehouses: () => Promise<void>;
@@ -96,38 +97,46 @@ export const WarehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const updateWarehouse = async (id: string, updated: Partial<WarehouseRecord>): Promise<void> => {
+    const saved = await stockService.updateWarehouseRecord(id, updated);
     setWarehouses((prev) =>
       prev.map((w) =>
         w.id.toLowerCase() === id.toLowerCase()
-          ? { ...w, ...updated, lastEdited: 'just now' }
+          ? { ...w, ...saved, lastEdited: 'just now' }
           : w
       )
     );
   };
 
+  const deleteWarehouse = async (id: string): Promise<void> => {
+    await stockService.deleteWarehouseRecord(id);
+    setWarehouses((prev) => prev.filter((w) => w.id.toLowerCase() !== id.toLowerCase()));
+  };
+
   const disableWarehouse = async (id: string): Promise<void> => {
+    const current = warehouses.find((w) => w.id.toLowerCase() === id.toLowerCase());
+    if (!current) return;
+    const nextStatus = current.status === 'Enabled' ? 'Disabled' : 'Enabled';
+    const saved = await stockService.updateWarehouseRecord(id, { ...current, status: nextStatus });
     setWarehouses((prev) =>
       prev.map((w) =>
         w.id.toLowerCase() === id.toLowerCase()
-          ? {
-              ...w,
-              status: w.status === 'Enabled' ? 'Disabled' : 'Enabled',
-              lastEdited: 'just now',
-            }
+          ? { ...w, ...saved, lastEdited: 'just now' }
           : w
       )
     );
   };
 
   const convertToGroup = async (id: string): Promise<void> => {
+    const current = warehouses.find((w) => w.id.toLowerCase() === id.toLowerCase());
+    if (!current) return;
+    const saved = await stockService.updateWarehouseRecord(id, {
+      ...current,
+      isGroupWarehouse: !current.isGroupWarehouse,
+    });
     setWarehouses((prev) =>
       prev.map((w) =>
         w.id.toLowerCase() === id.toLowerCase()
-          ? {
-              ...w,
-              isGroupWarehouse: !w.isGroupWarehouse,
-              lastEdited: 'just now',
-            }
+          ? { ...w, ...saved, lastEdited: 'just now' }
           : w
       )
     );
@@ -153,6 +162,7 @@ export const WarehouseProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setPageSize,
         addWarehouse,
         updateWarehouse,
+        deleteWarehouse,
         disableWarehouse,
         convertToGroup,
         refreshWarehouses: loadData,

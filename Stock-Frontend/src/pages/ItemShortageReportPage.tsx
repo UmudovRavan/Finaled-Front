@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { stockService } from '../api/stockService';
 
 interface ItemShortageRow {
   id: string;
@@ -16,101 +17,40 @@ interface ItemShortageRow {
   description: string;
 }
 
-const INITIAL_SHORTAGE_DATA: ItemShortageRow[] = [
-  {
-    id: 'row-1',
-    warehouse: 'Mağazalar - AD',
-    item: 'SKU006: Coffee Mug',
-    sku: 'SKU006',
-    actualQty: -100.0,
-    orderedQty: 0.0,
-    plannedQty: 0.0,
-    reservedQty: 0.0,
-    reservedQtyForProd: 0.0,
-    projectedQty: -100.0,
-    company: 'Avalon (Demo)',
-    itemName: 'Coffee Mug',
-    description: '',
-  },
-  {
-    id: 'row-2',
-    warehouse: 'Mağazalar - AD',
-    item: 'SKU007: Television',
-    sku: 'SKU007',
-    actualQty: -100.0,
-    orderedQty: 0.0,
-    plannedQty: 0.0,
-    reservedQty: 0.0,
-    reservedQtyForProd: 0.0,
-    projectedQty: -100.0,
-    company: 'Avalon (Demo)',
-    itemName: 'Television',
-    description: '',
-  },
-  {
-    id: 'row-3',
-    warehouse: 'Devam Eden İşler - AD',
-    item: 'SKU010: Camera',
-    sku: 'SKU010',
-    actualQty: -50.0,
-    orderedQty: 0.0,
-    plannedQty: 0.0,
-    reservedQty: 0.0,
-    reservedQtyForProd: 0.0,
-    projectedQty: -50.0,
-    company: 'Avalon (Demo)',
-    itemName: 'Camera',
-    description: '',
-  },
-  {
-    id: 'row-4',
-    warehouse: 'Devam Eden İşler - AD',
-    item: 'SKU009: Headphones',
-    sku: 'SKU009',
-    actualQty: -40.0,
-    orderedQty: 0.0,
-    plannedQty: 0.0,
-    reservedQty: 0.0,
-    reservedQtyForProd: 0.0,
-    projectedQty: -40.0,
-    company: 'Avalon (Demo)',
-    itemName: 'Headphones',
-    description: '',
-  },
-  {
-    id: 'row-5',
-    warehouse: 'Devam Eden İşler - AD',
-    item: 'SKU008: Backpack',
-    sku: 'SKU008',
-    actualQty: -20.0,
-    orderedQty: 0.0,
-    plannedQty: 0.0,
-    reservedQty: 0.0,
-    reservedQtyForProd: 0.0,
-    projectedQty: -20.0,
-    company: 'Avalon (Demo)',
-    itemName: 'Backpack',
-    description: '',
-  },
-  {
-    id: 'row-6',
-    warehouse: 'Devam Eden İşler - AD',
-    item: 'SKU002: Laptop',
-    sku: 'SKU002',
-    actualQty: -5.0,
-    orderedQty: 0.0,
-    plannedQty: 0.0,
-    reservedQty: 0.0,
-    reservedQtyForProd: 0.0,
-    projectedQty: -5.0,
-    company: 'Avalon (Demo)',
-    itemName: 'Laptop',
-    description: '',
-  },
-];
-
 export const ItemShortageReportPage: React.FC = () => {
+  const [rows, setRows] = useState<ItemShortageRow[]>([]);
   const [company] = useState('Avalon (Demo)');
+
+  const fetchReport = useCallback(async () => {
+    try {
+      const data = await stockService.getProjectedQtyReport();
+      setRows(
+        data
+          .filter((r: any) => Number(r.projectedQty || 0) < 0 || Number(r.actualQty || 0) < 0 || Number(r.shortageQty || 0) > 0)
+          .map((r: any, idx: number) => ({
+            id: `${r.itemId || idx}-${r.warehouseId || idx}`,
+            warehouse: r.warehouseName || '',
+            item: r.itemCode ? `${r.itemCode}${r.itemName ? ': ' + r.itemName : ''}` : r.itemName || '',
+            sku: r.itemCode || '',
+            actualQty: Number(r.actualQty || 0),
+            orderedQty: Number(r.orderedQty || 0),
+            plannedQty: Number(r.plannedQty || 0),
+            reservedQty: Number(r.reservedQty || 0),
+            reservedQtyForProd: Number(r.reservedQtyForProduction || 0),
+            projectedQty: Number(r.projectedQty || 0),
+            company: 'Avalon (Demo)',
+            itemName: r.itemName || '',
+            description: r.description || '',
+          }))
+      );
+    } catch (err) {
+      console.error('Failed to fetch item shortage report:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchReport();
+  }, [fetchReport]);
   const [warehouseFilter, setWarehouseFilter] = useState('');
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
 
@@ -137,7 +77,7 @@ export const ItemShortageReportPage: React.FC = () => {
   };
 
   const filteredData = useMemo(() => {
-    return INITIAL_SHORTAGE_DATA.filter((row) => {
+    return rows.filter((row) => {
       if (warehouseFilter && !row.warehouse.toLowerCase().includes(warehouseFilter.toLowerCase())) {
         return false;
       }
@@ -179,7 +119,7 @@ export const ItemShortageReportPage: React.FC = () => {
       }
       return true;
     });
-  }, [warehouseFilter, columnFilters]);
+  }, [rows, warehouseFilter, columnFilters]);
 
   const formatQty = (val: number) => {
     if (val < 0) {

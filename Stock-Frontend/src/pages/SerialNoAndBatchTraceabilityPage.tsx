@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { ChevronsUpDown } from 'lucide-react';
+import { stockService } from '../api/stockService';
 
 interface TraceabilityRow {
   id: string;
@@ -16,99 +17,47 @@ interface TraceabilityRow {
   party: string;
 }
 
-const INITIAL_TRACEABILITY_DATA: TraceabilityRow[] = [
-  {
-    id: 'trace-1',
-    voucherType: 'Purchase Receipt',
-    voucherNo: 'MAT-PRE-2026-00001',
-    date: '11-10-2026',
-    itemCode: 'SKU002: Laptop',
-    itemName: 'Laptop',
-    serialNo: 'SN-2026-001',
-    batchNo: 'BATCH-2026-001',
-    qty: 1.0,
-    sourceWarehouse: '-',
-    targetWarehouse: 'Devam Eden İşler - AD',
-    party: 'Apex Global Suppliers Ltd.',
-  },
-  {
-    id: 'trace-2',
-    voucherType: 'Stock Entry',
-    voucherNo: 'MAT-STE-2026-00002',
-    date: '25-10-2026',
-    itemCode: 'SKU002: Laptop',
-    itemName: 'Laptop',
-    serialNo: 'SN-2026-001',
-    batchNo: 'BATCH-2026-001',
-    qty: 1.0,
-    sourceWarehouse: 'Devam Eden İşler - AD',
-    targetWarehouse: 'Bitmiş Ürünler - AD',
-    party: 'Internal Transfer',
-  },
-  {
-    id: 'trace-3',
-    voucherType: 'Delivery Note',
-    voucherNo: 'MAT-DN-2026-00001',
-    date: '02-11-2026',
-    itemCode: 'SKU002: Laptop',
-    itemName: 'Laptop',
-    serialNo: 'SN-2026-001',
-    batchNo: 'BATCH-2026-001',
-    qty: 1.0,
-    sourceWarehouse: 'Bitmiş Ürünler - AD',
-    targetWarehouse: '-',
-    party: 'Acme Corporation',
-  },
-  {
-    id: 'trace-4',
-    voucherType: 'Purchase Receipt',
-    voucherNo: 'MAT-PRE-2026-00002',
-    date: '15-10-2026',
-    itemCode: 'SKU010: Camera',
-    itemName: 'Camera',
-    serialNo: 'SN-2026-002',
-    batchNo: 'BATCH-2026-002',
-    qty: 1.0,
-    sourceWarehouse: '-',
-    targetWarehouse: 'Mağazalar - AD',
-    party: 'Sony Global Logistics',
-  },
-  {
-    id: 'trace-5',
-    voucherType: 'Stock Entry',
-    voucherNo: 'MAT-STE-2026-00004',
-    date: '28-10-2026',
-    itemCode: 'SKU010: Camera',
-    itemName: 'Camera',
-    serialNo: 'SN-2026-002',
-    batchNo: 'BATCH-2026-002',
-    qty: 1.0,
-    sourceWarehouse: 'Mağazalar - AD',
-    targetWarehouse: 'Devam Eden İşler - AD',
-    party: 'Quality Repack',
-  },
-  {
-    id: 'trace-6',
-    voucherType: 'Delivery Note',
-    voucherNo: 'MAT-DN-2026-00003',
-    date: '05-11-2026',
-    itemCode: 'SKU010: Camera',
-    itemName: 'Camera',
-    serialNo: 'SN-2026-002',
-    batchNo: 'BATCH-2026-002',
-    qty: 1.0,
-    sourceWarehouse: 'Devam Eden İşler - AD',
-    targetWarehouse: '-',
-    party: 'Baku Media Center',
-  },
-];
-
 export const SerialNoAndBatchTraceabilityPage: React.FC = () => {
+  const [rows, setRows] = useState<TraceabilityRow[]>([]);
   // Top filter inputs matching Image 4
   const [itemCodeFilter, setItemCodeFilter] = useState('');
   const [batchNoFilter, setBatchNoFilter] = useState('');
   const [serialNoFilter, setSerialNoFilter] = useState('');
   const [direction, setDirection] = useState<'Backward' | 'Forward'>('Backward');
+
+  const fetchTraceability = useCallback(async () => {
+    try {
+      const data = await stockService.getStockLedgerReport();
+      setRows(
+        data
+          .filter((r: any) => r.serialNo || r.batchNo || r.voucherNo)
+          .map((r: any, idx: number) => {
+            const inQ = Number(r.inQty || 0);
+            const outQ = Number(r.outQty || 0);
+            return {
+              id: r.id || `trace-${idx}`,
+              voucherType: r.voucherType || '',
+              voucherNo: r.voucherNo || '',
+              date: r.postingDate ? String(r.postingDate).slice(0, 10) : '',
+              itemCode: r.itemCode ? `${r.itemCode}${r.itemName ? ': ' + r.itemName : ''}` : r.itemName || '',
+              itemName: r.itemName || '',
+              serialNo: r.serialNo || '-',
+              batchNo: r.batchNo || '-',
+              qty: Math.abs(inQ > 0 ? inQ : outQ),
+              sourceWarehouse: outQ > 0 ? r.warehouseName || '-' : '-',
+              targetWarehouse: inQ > 0 ? r.warehouseName || '-' : '-',
+              party: r.project || '-',
+            };
+          })
+      );
+    } catch (err) {
+      console.error('Failed to fetch serial & batch traceability:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTraceability();
+  }, [fetchTraceability]);
 
   // Inline column filter inputs
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({
@@ -132,7 +81,7 @@ export const SerialNoAndBatchTraceabilityPage: React.FC = () => {
   };
 
   const filteredData = useMemo(() => {
-    let list = [...INITIAL_TRACEABILITY_DATA];
+    let list = [...rows];
 
     if (direction === 'Backward') {
       // In backward traceability, items are ordered from latest voucher to origin
@@ -219,7 +168,7 @@ export const SerialNoAndBatchTraceabilityPage: React.FC = () => {
 
       return true;
     });
-  }, [direction, itemCodeFilter, batchNoFilter, serialNoFilter, columnFilters]);
+  }, [rows, direction, itemCodeFilter, batchNoFilter, serialNoFilter, columnFilters]);
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#121214] text-slate-800 dark:text-zinc-200">

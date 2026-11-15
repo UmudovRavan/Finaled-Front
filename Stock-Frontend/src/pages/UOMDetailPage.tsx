@@ -57,6 +57,18 @@ export const UOMDetailPage: React.FC = () => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-slate-600 dark:text-zinc-400 mb-1.5 font-normal">
+                    UOM Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.uomName ?? ''}
+                    onChange={(e) => setFormData({ ...formData, uomName: e.target.value })}
+                    className="w-full bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-600 dark:text-zinc-400 mb-1.5 font-normal">
                     Symbol
                   </label>
                   <input
@@ -105,7 +117,7 @@ export const UOMDetailPage: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={formData.category ?? 'Electric Current'}
+                    value={formData.category ?? ''}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     className="w-full bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all"
                   />

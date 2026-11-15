@@ -140,7 +140,7 @@ export const NewWarehousePage: React.FC = () => {
                 />
                 <datalist id="parent-warehouses">
                   {warehouses.map((w) => (
-                    <option key={w.id} value={w.id} />
+                    <option key={w.id} value={w.warehouseName} />
                   ))}
                 </datalist>
               </div>
@@ -268,6 +268,7 @@ export const NewWarehousePage: React.FC = () => {
                   </label>
                   <input
                     type="text"
+                    autoComplete="off"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     className="w-full bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all"
@@ -335,10 +336,17 @@ export const NewWarehousePage: React.FC = () => {
                 </label>
                 <input
                   type="text"
+                  autoComplete="off"
+                  list="in-transit-warehouses"
                   value={defaultInTransitWarehouse}
                   onChange={(e) => setDefaultInTransitWarehouse(e.target.value)}
                   className="w-full bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all"
                 />
+                <datalist id="in-transit-warehouses">
+                  {warehouses.map((w) => (
+                    <option key={w.id} value={w.warehouseName} />
+                  ))}
+                </datalist>
               </div>
             </div>
           )}

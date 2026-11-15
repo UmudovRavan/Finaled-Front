@@ -105,8 +105,10 @@ export const DeliveryTripProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const updateTrip = async (id: string, updated: Partial<DeliveryTripRecord>) => {
+    const existing = trips.find((item) => item.id === id) || {};
+    const saved = await stockService.updateDeliveryTrip(id, { ...existing, ...updated });
     setTrips((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, ...updated, lastEdited: 'just now' } : item))
+      prev.map((item) => (item.id === id ? { ...saved, lastEdited: 'just now' } : item))
     );
   };
 

@@ -12,9 +12,11 @@ interface AuthContextType {
   modules: string[];
   tenantSlug?: string;
   hasModule: (moduleCode: string) => boolean;
+  hasPermission: (permissionCode: string) => boolean;
   hasRole: (roleName: string) => boolean;
   login: (tokenOrResponse: TokenResponse | string) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
+  refreshToken: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,7 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     authChecked: boolean;
   }>(() => {
     try {
-      // 1. Read token & refreshToken from URL query string if present (SSO transfer from Desktop)
+      // 1. Read token & refreshToken from URL query string if present (SSO transfer from Desktop/Info)
       const urlParams = new URLSearchParams(window.location.search);
       const urlToken = urlParams.get('token') || urlParams.get('accessToken');
       const urlRefreshToken = urlParams.get('refreshToken');
@@ -55,31 +57,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         activeToken = authService.getAccessToken();
       }
 
-      if (activeToken) {
-        if (!isTokenExpired(activeToken)) {
-          const user = parseJwtToken(activeToken);
+      // 2. Strict token validation
+      if (activeToken && !isTokenExpired(activeToken, 0)) {
+        const parsedUser = parseJwtToken(activeToken);
+        if (parsedUser) {
           return {
-            user,
+            user: parsedUser,
             isAuthenticated: true,
             authChecked: true,
           };
-        } else {
-          // Token expired
-          authService.clearTokens();
         }
       }
 
-      // Fallback for development if needed or unauthenticated state
+      // If access token is expired but refreshToken exists, trigger silent refresh
+      if (activeToken && isTokenExpired(activeToken, 0) && authService.getRefreshToken()) {
+        return {
+          user: parseJwtToken(activeToken),
+          isAuthenticated: false,
+          authChecked: false,
+        };
+      }
+
+      if (activeToken) {
+        authService.clearTokens();
+      }
+
       return {
-        user: {
-          name: 'Admin User',
-          fullName: 'Admin User',
-          email: 'admin@altensor.com',
-          roles: ['Admin', 'Manager'],
-          modules: ['stock', 'crm', 'tms', 'accounting'],
-          tenantSlug: 'default',
-        },
-        isAuthenticated: true,
+        user: null,
+        isAuthenticated: false,
         authChecked: true,
       };
     } catch (e) {
@@ -92,54 +97,177 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   });
 
+  // Handle silent token refresh on initial load if access token is expired but refresh token exists
+  useEffect(() => {
+    if (!authState.authChecked) {
+      authService
+        .refreshToken()
+        .then((tokens) => {
+          const parsed = parseJwtToken(tokens.accessToken);
+          setAuthState({
+            user: parsed,
+            isAuthenticated: !!parsed,
+            authChecked: true,
+          });
+        })
+        .catch(() => {
+          authService.clearTokens();
+          setAuthState({
+            user: null,
+            isAuthenticated: false,
+            authChecked: true,
+          });
+        });
+    }
+  }, [authState.authChecked]);
+
+  // Listen to storage events across tabs and in-app auth-token-changed events
+  useEffect(() => {
+    const syncAuthState = () => {
+      const newToken = authService.getAccessToken();
+      if (newToken && !isTokenExpired(newToken, 0)) {
+        const parsed = parseJwtToken(newToken);
+        setAuthState({
+          user: parsed,
+          isAuthenticated: true,
+          authChecked: true,
+        });
+      } else if (!authService.getRefreshToken()) {
+        setAuthState({
+          user: null,
+          isAuthenticated: false,
+          authChecked: true,
+        });
+      }
+    };
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'accessToken' || e.key === 'authToken' || e.key === 'token') {
+        syncAuthState();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('auth-token-changed', syncAuthState);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('auth-token-changed', syncAuthState);
+    };
+  }, []);
+
+  // Proactive background auto-refresh: Check every 30 seconds if token expires within 90s
+  useEffect(() => {
+    if (!authState.isAuthenticated) return;
+
+    const checkAndRefreshToken = async () => {
+      const token = authService.getAccessToken();
+      const refreshTokenVal = authService.getRefreshToken();
+      if (!token || !refreshTokenVal) return;
+
+      if (isTokenExpired(token, 90)) {
+        try {
+          const res = await authService.refreshToken();
+          const parsed = parseJwtToken(res.accessToken);
+          if (parsed) {
+            setAuthState({
+              user: parsed,
+              isAuthenticated: true,
+              authChecked: true,
+            });
+          }
+        } catch (err) {
+          console.warn('[AuthContext] Background token refresh warning:', err);
+        }
+      }
+    };
+
+    const intervalId = setInterval(checkAndRefreshToken, 30000);
+    return () => clearInterval(intervalId);
+  }, [authState.isAuthenticated]);
+
   const roles = authState.user?.roles || [];
   const permissions = authState.user?.permissions || [];
   const modules = authState.user?.modules || [];
   const tenantSlug = authState.user?.tenantSlug || authService.getLastTenantSlug() || undefined;
 
   const hasModule = useCallback(
-    (moduleCode: string) => {
-      const lower = moduleCode.toLowerCase();
-      return (
-        roles.map((r) => r.toLowerCase()).includes('admin') ||
-        roles.map((r) => r.toLowerCase()).includes('superadmin') ||
-        modules.some((m) => m.toLowerCase() === lower || m.toLowerCase() === 'all')
-      );
+    (moduleCode: string): boolean => {
+      if (!modules || modules.length === 0) return false;
+      const lower = String(moduleCode).trim().toLowerCase();
+      return modules.some((m) => String(m).trim().toLowerCase() === lower || String(m).trim().toLowerCase() === 'all');
     },
-    [roles, modules]
+    [modules]
+  );
+
+  const hasPermission = useCallback(
+    (permissionCode: string): boolean => {
+      if (!permissions || permissions.length === 0) return false;
+      const lower = String(permissionCode).trim().toLowerCase();
+      return permissions.some((p) => String(p).trim().toLowerCase() === lower);
+    },
+    [permissions]
   );
 
   const hasRole = useCallback(
-    (roleName: string) => {
-      const lower = roleName.toLowerCase();
-      return roles.some((r) => r.toLowerCase() === lower || r.toLowerCase() === 'admin');
+    (roleName: string): boolean => {
+      if (!roles || roles.length === 0) return false;
+      const target = String(roleName).trim().toLowerCase();
+      return roles.some((r) => {
+        const cur = String(r).trim().toLowerCase();
+        if (cur === target) return true;
+        if (target === 'admin' && cur.includes('admin')) return true;
+        if (target === 'manager' && cur.includes('manager')) return true;
+        return false;
+      });
     },
     [roles]
   );
 
-  const login = (tokenOrResponse: TokenResponse | string) => {
+  const login = useCallback((tokenOrResponse: TokenResponse | string) => {
     const token = typeof tokenOrResponse === 'string' ? tokenOrResponse : tokenOrResponse.accessToken;
-    const refreshToken = typeof tokenOrResponse === 'object' ? tokenOrResponse.refreshToken : undefined;
-    authService.setTokens(token, refreshToken);
-    const user = parseJwtToken(token);
+    const refreshTokenVal = typeof tokenOrResponse === 'object' ? tokenOrResponse.refreshToken : undefined;
+    authService.setTokens(token, refreshTokenVal);
+    const parsedUser = parseJwtToken(token);
+    if (parsedUser?.tenantSlug) {
+      authService.setLastTenantSlug(parsedUser.tenantSlug);
+    }
     setAuthState({
-      user,
+      user: parsedUser,
       isAuthenticated: true,
       authChecked: true,
     });
-  };
+  }, []);
 
-  const logout = () => {
-    authService.clearTokens();
-    setAuthState({
-      user: null,
-      isAuthenticated: false,
-      authChecked: true,
-    });
-    // Redirect to Desktop or Info portal login
-    const infoUrl = import.meta.env.VITE_INFO_WEB_URL || 'http://localhost:5173';
-    window.location.href = `${infoUrl}/login`;
-  };
+  const logout = useCallback(async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+      authService.clearTokens();
+    } finally {
+      setAuthState({
+        user: null,
+        isAuthenticated: false,
+        authChecked: true,
+      });
+    }
+  }, []);
+
+  const refreshToken = useCallback(async () => {
+    try {
+      const data = await authService.refreshToken();
+      const parsedUser = parseJwtToken(data.accessToken);
+      setAuthState({
+        user: parsedUser,
+        isAuthenticated: true,
+        authChecked: true,
+      });
+    } catch (error) {
+      console.error('Token refresh error:', error);
+      await logout();
+      throw error;
+    }
+  }, [logout]);
 
   return (
     <AuthContext.Provider
@@ -152,9 +280,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         modules,
         tenantSlug,
         hasModule,
+        hasPermission,
         hasRole,
         login,
         logout,
+        refreshToken,
       }}
     >
       {children}
@@ -169,4 +299,3 @@ export const useAuth = () => {
   }
   return context;
 };
-

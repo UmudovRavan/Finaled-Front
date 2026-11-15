@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Filter,
   ChevronDown,
@@ -6,13 +6,23 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { StockKpiCard } from '../components/StockKpiCard';
 import { ChartOptionsMenu } from '../components/ChartOptionsMenu';
+import { stockService } from '../api/stockService';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
 
   // Sync state
-  const [lastSynced, setLastSynced] = useState('24 minutes ago');
+  const [lastSynced, setLastSynced] = useState('just now');
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const [kpiStats, setKpiStats] = useState({
+    totalActiveItems: 0,
+    totalWarehouses: 0,
+    totalStockValue: 0,
+  });
+  const [warehouseBars, setWarehouseBars] = useState<{ name: string; value: number; height: number }[]>([]);
+  const [oldestItems, setOldestItems] = useState<{ sku: string; label: string; value: number; height: number }[]>([]);
+  const [shortageItems, setShortageItems] = useState<{ sku: string; value: number; depth: number }[]>([]);
 
   // Time range & frequency states for trends
   const [prRange, setPrRange] = useState('Last Year');
@@ -55,12 +65,60 @@ export const DashboardPage: React.FC = () => {
   const frequencyOptions = ['Yearly', 'Quarterly', 'Monthly', 'Weekly', 'Daily'];
   const rangeOptions = ['Last Year', 'Last 6 Months', 'This Year', 'All Time'];
 
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
+  const loadDashboard = useCallback(async () => {
+    try {
+      const [stats, whData, ageingData, projectedData] = await Promise.all([
+        stockService.getStats().catch(() => null),
+        stockService.getWarehouseWiseBalanceReport().catch(() => []),
+        stockService.getStockAgeingReport().catch(() => []),
+        stockService.getProjectedQtyReport().catch(() => []),
+      ]);
+
+      setKpiStats({
+        totalActiveItems: Number(stats?.totalProducts || 0),
+        totalWarehouses: Number(stats?.totalWarehouses || 0),
+        totalStockValue: Number(stats?.totalInventoryValue || 0),
+      });
+
+      const whList = (Array.isArray(whData) ? whData : []).slice(0, 6).map((w: any) => {
+        const valK = Math.round(Number(w.stockBalance ?? w.balanceValue ?? 0) / 1000);
+        return { name: w.warehouseName || w.name || '', value: valK };
+      });
+      const maxWh = Math.max(1, ...whList.map((w) => Math.abs(w.value)));
+      setWarehouseBars(whList.map((w) => ({ ...w, height: Math.min(100, Math.round((Math.abs(w.value) / maxWh) * 90)) })));
+
+      const ageList = (Array.isArray(ageingData) ? ageingData : []).slice(0, 8).map((a: any) => {
+        const code = a.itemCode || a.itemName || '';
+        const val = Number(a.averageAge ?? a.averageRate ?? 0);
+        return { sku: code, label: code.slice(0, 5), value: val };
+      });
+      const maxAge = Math.max(1, ...ageList.map((a) => a.value));
+      setOldestItems(ageList.map((a) => ({ ...a, height: Math.min(100, Math.round((a.value / maxAge) * 90)) })));
+
+      const shortList = (Array.isArray(projectedData) ? projectedData : [])
+        .filter((p: any) => Number(p.projectedQty || 0) < 0 || Number(p.shortageQty || 0) > 0)
+        .slice(0, 6)
+        .map((p: any) => {
+          const val = Number(p.projectedQty || 0) < 0 ? Number(p.projectedQty) : -Number(p.shortageQty || 0);
+          return { sku: p.itemCode || p.itemName || '', value: val };
+        });
+      const maxShort = Math.max(1, ...shortList.map((s) => Math.abs(s.value)));
+      setShortageItems(shortList.map((s) => ({ ...s, depth: Math.min(100, Math.round((Math.abs(s.value) / maxShort) * 100)) })));
+
       setLastSynced('just now');
-    }, 500);
+    } catch (err) {
+      console.error('Failed to load dashboard:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await loadDashboard();
+    setIsRefreshing(false);
   };
 
   const handleExport = (chartName: string, dataRows: string) => {
@@ -74,42 +132,20 @@ export const DashboardPage: React.FC = () => {
     document.body.removeChild(link);
   };
 
-  // Data for Warehouse wise Stock Value (Image 1)
-  const warehouseBars = [
-    { name: 'Devam Eden İşler - AD', value: 175, height: 87.5 },
-    { name: 'Bitmiş Ürünler - AD', value: 50, height: 25 },
-    { name: 'Taşıma Halindeki Ürünl ...', value: 40, height: 20 },
-    { name: 'Mağazalar - AD', value: 38, height: 19 },
-  ];
   const whYAxis = ['200 K', '150 K', '100 K', '50 K', '0'];
 
   // Trend months for Purchase & Delivery (Image 2)
   const trendMonths = ['Nov 2025', 'Jan 2026', 'Mar 2026', 'May 2026', 'Jul 2026', 'Sep 2026', 'Nov 2026'];
   const trendYAxis = ['5', '4', '3', '2', '1', '0'];
 
-  // Oldest Items (Image 2 - Blue bars descending)
-  const oldestItems = [
-    { sku: 'SKU-001', label: 'SK ...', value: 690, height: 86.25 },
-    { sku: 'SKU-002', label: 'SK ...', value: 500, height: 62.5 },
-    { sku: 'SKU-003', label: 'SK ..', value: 460, height: 57.5 },
-    { sku: 'SKU-004', label: 'SK ...', value: 400, height: 50 },
-    { sku: 'SKU-005', label: 'SK ...', value: 330, height: 41.25 },
-    { sku: 'SKU-006', label: 'SK ...', value: 290, height: 36.25 },
-    { sku: 'SKU-007', label: 'SK ..', value: 140, height: 17.5 },
-    { sku: 'SKU-008', label: 'SK ...', value: 85, height: 10.6 },
-  ];
   const oldestYAxis = ['800.00', '600.00', '400.00', '200.00', '0'];
 
-  // Item Shortage Summary (Image 2 - Pink hanging bars downwards from 0)
-  const shortageItems = [
-    { sku: 'SKU006', value: -100, depth: 100 },
-    { sku: 'SKU007', value: -100, depth: 100 },
-    { sku: 'SKU010', value: -50, depth: 50 },
-    { sku: 'SKU009', value: -40, depth: 40 },
-    { sku: 'SKU008', value: -20, depth: 20 },
-    { sku: 'SKU002', value: -15, depth: 15 },
-  ];
   const shortageYAxis = ['0', '-25', '-50', '-75', '-100.00'];
+
+  const formattedStockValue =
+    kpiStats.totalStockValue >= 1000
+      ? `${(kpiStats.totalStockValue / 1000).toFixed(3)} K`
+      : kpiStats.totalStockValue.toFixed(2);
 
   return (
     <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-200">
@@ -117,20 +153,20 @@ export const DashboardPage: React.FC = () => {
       <section className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4">
         <StockKpiCard
           title="Total Active Items"
-          value="10"
-          subtitle="0 % since last month"
+          value={String(kpiStats.totalActiveItems)}
+          subtitle="Active catalog items"
           onViewDetails={() => navigate('/products')}
         />
         <StockKpiCard
           title="Total Warehouses"
-          value="5"
-          subtitle="0 % since last month"
+          value={String(kpiStats.totalWarehouses)}
+          subtitle="Active warehouses"
           onViewDetails={() => navigate('/warehouses')}
         />
         <StockKpiCard
           title="Total Stock Value"
-          value="95.390 K"
-          subtitle="0 % since yesterday"
+          value={formattedStockValue}
+          subtitle="Live from backend"
           onViewDetails={() => navigate('/products')}
         />
       </section>

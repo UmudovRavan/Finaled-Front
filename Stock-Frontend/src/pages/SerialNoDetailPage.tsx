@@ -218,13 +218,13 @@ export const SerialNoDetailPage: React.FC = () => {
                 <div className="relative flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-slate-400 dark:bg-zinc-600 -ml-[19px]" />
                   <span>
-                    You created this · {currentSerial.createdBy || '10 hours ago'}
+                    You created this · {currentSerial.createdBy || 'Active'}
                   </span>
                 </div>
                 <div className="relative flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-slate-400 dark:bg-zinc-600 -ml-[19px]" />
                   <span>
-                    You last edited this · {currentSerial.lastEdited || '10 hours ago'}
+                    You last edited this · {currentSerial.lastEdited || 'Active'}
                   </span>
                 </div>
               </div>

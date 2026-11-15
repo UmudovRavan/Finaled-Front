@@ -5,7 +5,7 @@ import type {
   StockViewMode,
   FilterRule,
 } from '../types';
-import { stockService, INITIAL_PICK_LISTS } from '../api';
+import { stockService } from '../api';
 
 interface PickListQuickFiltersState {
   id: string;
@@ -50,17 +50,7 @@ interface PickListContextType {
 const PickListContext = createContext<PickListContextType | undefined>(undefined);
 
 export const PickListProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [pickLists, setPickLists] = useState<PickListRecord[]>(() => {
-    const saved = localStorage.getItem('altensor_pick_lists');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return INITIAL_PICK_LISTS;
-      }
-    }
-    return INITIAL_PICK_LISTS;
-  });
+  const [pickLists, setPickLists] = useState<PickListRecord[]>([]);
 
   const [viewMode, setViewMode] = useState<StockViewMode>('list');
   const [savedFilter, setSavedFilter] = useState<string>('All');
@@ -82,23 +72,21 @@ export const PickListProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    localStorage.setItem('altensor_pick_lists', JSON.stringify(pickLists));
-  }, [pickLists]);
-
   const refresh = async () => {
     setIsRefreshing(true);
     try {
       const data = await stockService.getPickLists();
-      if (data && data.length > 0) {
-        setPickLists(data);
-      }
-    } catch {
-      // Keep existing data
+      setPickLists(data);
+    } catch (err) {
+      console.error('Failed to load pick lists', err);
     } finally {
-      setTimeout(() => setIsRefreshing(false), 400);
+      setIsRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) =>
@@ -126,18 +114,21 @@ export const PickListProvider: React.FC<{ children: ReactNode }> = ({ children }
     return created;
   };
 
-  const updateStatus = (id: string, status: PickListStatus) => {
-    setPickLists((prev) =>
-      prev.map((e) =>
-        e.id === id
-          ? {
-              ...e,
-              status,
-              lastUpdatedOn: new Date().toISOString(),
-            }
-          : e
-      )
-    );
+  const updateStatus = async (id: string, status: PickListStatus) => {
+    try {
+      const updated =
+        status === 'Open' || status === 'Completed'
+          ? await stockService.submitPickList(id)
+          : status === 'Cancelled'
+          ? await stockService.cancelPickList(id)
+          : null;
+      if (updated) {
+        setPickLists((prev) => prev.map((e) => (e.id === id ? updated : e)));
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to update pick list status', err);
+    }
   };
 
   const deletePickLists = (ids: string[]) => {

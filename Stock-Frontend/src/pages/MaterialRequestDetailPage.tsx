@@ -24,8 +24,7 @@ import {
   Outdent,
   Quote,
 } from 'lucide-react';
-import { useMaterialRequest } from '../context';
-import { INITIAL_PRODUCTS, INITIAL_WAREHOUSES } from '../api';
+import { useMaterialRequest, useItem, useWarehouse } from '../context';
 import type { MaterialRequestItem, MaterialRequestPurpose } from '../types';
 import { MaterialRequestDetailSidebar } from '../components/material-request/MaterialRequestDetailSidebar';
 
@@ -41,8 +40,10 @@ export const MaterialRequestDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { requests, toggleLike } = useMaterialRequest();
-  const products = INITIAL_PRODUCTS;
-  const warehouses = INITIAL_WAREHOUSES;
+  const { items: rawItems } = useItem();
+  const { warehouses: rawWarehouses } = useWarehouse();
+  const products = rawItems.map((i) => ({ id: i.id, sku: i.itemCode, name: i.itemName }));
+  const warehouses = rawWarehouses.map((w) => ({ id: w.id, name: w.warehouseName }));
 
   const entry = requests.find((e) => e.id === id);
 

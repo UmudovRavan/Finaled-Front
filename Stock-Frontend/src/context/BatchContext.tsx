@@ -104,8 +104,10 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateBatch = async (id: string, updated: Partial<BatchRecord>) => {
+    const existing = batches.find((item) => item.id === id) || {};
+    const saved = await stockService.updateBatch(id, { ...existing, ...updated });
     setBatches((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, ...updated, lastEdited: 'just now' } : item))
+      prev.map((item) => (item.id === id ? { ...saved, lastEdited: 'just now' } : item))
     );
   };
 

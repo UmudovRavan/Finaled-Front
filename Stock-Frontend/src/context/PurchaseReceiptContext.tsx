@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import type { PurchaseReceiptRecord, PurchaseReceiptStatus, StockViewMode, FilterRule } from '../types';
-import { stockService, INITIAL_PURCHASE_RECEIPTS } from '../api';
+import { stockService } from '../api';
 
 interface QuickFilters {
   id: string;
@@ -46,17 +46,7 @@ interface PurchaseReceiptContextType {
 const PurchaseReceiptContext = createContext<PurchaseReceiptContextType | undefined>(undefined);
 
 export const PurchaseReceiptProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [receipts, setReceipts] = useState<PurchaseReceiptRecord[]>(() => {
-    const saved = localStorage.getItem('altensor_purchase_receipts');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return INITIAL_PURCHASE_RECEIPTS;
-      }
-    }
-    return INITIAL_PURCHASE_RECEIPTS;
-  });
+  const [receipts, setReceipts] = useState<PurchaseReceiptRecord[]>([]);
 
   const [viewMode, setViewMode] = useState<StockViewMode>('list');
   const [savedFilter, setSavedFilter] = useState<string>('All');
@@ -79,23 +69,21 @@ export const PurchaseReceiptProvider: React.FC<{ children: ReactNode }> = ({ chi
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    localStorage.setItem('altensor_purchase_receipts', JSON.stringify(receipts));
-  }, [receipts]);
-
   const refresh = async () => {
     setIsRefreshing(true);
     try {
       const data = await stockService.getPurchaseReceipts();
-      if (data && data.length > 0) {
-        setReceipts(data);
-      }
-    } catch {
-      // Keep existing data
+      setReceipts(data);
+    } catch (err) {
+      console.error('Failed to load purchase receipts', err);
     } finally {
-      setTimeout(() => setIsRefreshing(false), 400);
+      setIsRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) =>
@@ -123,19 +111,21 @@ export const PurchaseReceiptProvider: React.FC<{ children: ReactNode }> = ({ chi
     return created;
   };
 
-  const updateStatus = (id: string, status: PurchaseReceiptStatus) => {
-    setReceipts((prev) =>
-      prev.map((e) =>
-        e.id === id
-          ? {
-              ...e,
-              status,
-              perAmountBilled: status === 'Completed' ? 100 : e.perAmountBilled,
-              lastUpdatedOn: new Date().toISOString(),
-            }
-          : e
-      )
-    );
+  const updateStatus = async (id: string, status: PurchaseReceiptStatus) => {
+    try {
+      const updated =
+        status === 'To Bill' || status === 'Completed'
+          ? await stockService.submitPurchaseReceipt(id)
+          : status === 'Cancelled'
+          ? await stockService.cancelPurchaseReceipt(id)
+          : null;
+      if (updated) {
+        setReceipts((prev) => prev.map((e) => (e.id === id ? updated : e)));
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to update purchase receipt status', err);
+    }
   };
 
   const deleteReceipts = (ids: string[]) => {

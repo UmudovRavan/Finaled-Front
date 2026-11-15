@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Table } from 'lucide-react';
+import { stockService } from '../api/stockService';
 
 interface RequestedTransferRow {
   id: string;
@@ -16,80 +17,8 @@ interface RequestedTransferRow {
   company: string;
 }
 
-const INITIAL_TRANSFER_REQUESTS: RequestedTransferRow[] = [
-  {
-    id: 'rit-1',
-    materialRequest: 'MAT-MR-2026-00001',
-    date: '05-11-2026',
-    requiredBy: '15-11-2026',
-    itemCode: 'SKU002: Laptop',
-    itemName: 'Laptop',
-    description: 'Branch transfer request for retail store',
-    warehouse: 'Mağazalar - AD',
-    qty: 20.0,
-    transferredQty: 5.0,
-    qtyToTransfer: 15.0,
-    company: 'Avalon (Demo)',
-  },
-  {
-    id: 'rit-2',
-    materialRequest: 'MAT-MR-2026-00002',
-    date: '08-11-2026',
-    requiredBy: '18-11-2026',
-    itemCode: 'SKU006: Coffee Mug',
-    itemName: 'Coffee Mug',
-    description: 'Restock main showroom display',
-    warehouse: 'Mağazalar - AD',
-    qty: 100.0,
-    transferredQty: 40.0,
-    qtyToTransfer: 60.0,
-    company: 'Avalon (Demo)',
-  },
-  {
-    id: 'rit-3',
-    materialRequest: 'MAT-MR-2026-00003',
-    date: '10-11-2026',
-    requiredBy: '20-11-2026',
-    itemCode: 'SKU010: Camera',
-    itemName: 'Camera',
-    description: 'Studio stock transfer',
-    warehouse: 'Bitmiş Ürünler - AD',
-    qty: 15.0,
-    transferredQty: 0.0,
-    qtyToTransfer: 15.0,
-    company: 'Avalon (Demo)',
-  },
-  {
-    id: 'rit-4',
-    materialRequest: 'MAT-MR-2026-00004',
-    date: '12-11-2026',
-    requiredBy: '22-11-2026',
-    itemCode: 'SKU004: Smartphone',
-    itemName: 'Smartphone',
-    description: 'Urgent order fulfillment transfer',
-    warehouse: 'Mağazalar - AD',
-    qty: 30.0,
-    transferredQty: 10.0,
-    qtyToTransfer: 20.0,
-    company: 'Avalon (Demo)',
-  },
-  {
-    id: 'rit-5',
-    materialRequest: 'MAT-MR-2026-00005',
-    date: '13-11-2026',
-    requiredBy: '25-11-2026',
-    itemCode: 'SKU009: Headphones',
-    itemName: 'Headphones',
-    description: 'Audio department replenishment',
-    warehouse: 'Devam Eden İşler - AD',
-    qty: 40.0,
-    transferredQty: 15.0,
-    qtyToTransfer: 25.0,
-    company: 'Avalon (Demo)',
-  },
-];
-
 export const RequestedItemsToBeTransferredReportPage: React.FC = () => {
+  const [rows, setRows] = useState<RequestedTransferRow[]>([]);
   const [colFilters, setColFilters] = useState({
     materialRequest: '',
     date: '',
@@ -101,8 +30,46 @@ export const RequestedItemsToBeTransferredReportPage: React.FC = () => {
     company: '',
   });
 
+  const fetchReport = useCallback(async () => {
+    try {
+      const mrs = await stockService.getMaterialRequests();
+      const flattened: RequestedTransferRow[] = [];
+      for (const mr of mrs) {
+        const purpose = String(mr.purpose || '').toLowerCase();
+        if (!purpose.includes('transfer')) continue;
+        if (mr.status === 'Cancelled') continue;
+        for (const it of mr.items || []) {
+          const qty = Number(it.qty || 0);
+          const transferredQty = Number((it as any).orderedQty || 0);
+          const qtyToTransfer = Math.max(0, qty - transferredQty);
+          flattened.push({
+            id: `${mr.id}-${it.id || it.itemCode}`,
+            materialRequest: mr.series || mr.id,
+            date: mr.transactionDate ? String(mr.transactionDate).slice(0, 10) : '',
+            requiredBy: it.requiredBy || mr.requiredBy || '',
+            itemCode: it.itemCode ? `${it.itemCode}${it.itemName ? ': ' + it.itemName : ''}` : it.itemName || '',
+            itemName: it.itemName || '',
+            description: '',
+            warehouse: it.warehouse || mr.setWarehouse || '',
+            qty,
+            transferredQty,
+            qtyToTransfer,
+            company: 'Avalon (Demo)',
+          });
+        }
+      }
+      setRows(flattened);
+    } catch (err) {
+      console.error('Failed to fetch requested items to be transferred:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchReport();
+  }, [fetchReport]);
+
   const filteredData = useMemo(() => {
-    return INITIAL_TRANSFER_REQUESTS.filter((row) => {
+    return rows.filter((row) => {
       if (
         colFilters.materialRequest &&
         !row.materialRequest.toLowerCase().includes(colFilters.materialRequest.toLowerCase())
@@ -119,7 +86,7 @@ export const RequestedItemsToBeTransferredReportPage: React.FC = () => {
 
       return true;
     });
-  }, [colFilters]);
+  }, [rows, colFilters]);
 
   const totals = useMemo(() => {
     return filteredData.reduce(

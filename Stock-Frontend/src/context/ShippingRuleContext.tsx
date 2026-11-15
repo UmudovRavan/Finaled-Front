@@ -98,8 +98,9 @@ export const ShippingRuleProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const updateShippingRule = async (id: string, updated: Partial<ShippingRuleRecord>) => {
+    const saved = await stockService.updateShippingRule(id, updated);
     setShippingRules((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, ...updated, lastEdited: 'just now' } : item))
+      prev.map((item) => (item.id === id ? { ...item, ...saved, lastEdited: 'just now' } : item))
     );
   };
 

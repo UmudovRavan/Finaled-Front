@@ -18,6 +18,7 @@ interface ItemAttributeContextType {
   setPageSize: (size: number) => void;
   addAttribute: (attr: Partial<ItemAttributeRecord>) => Promise<ItemAttributeRecord>;
   updateAttribute: (id: string, attr: Partial<ItemAttributeRecord>) => Promise<void>;
+  deleteAttribute: (id: string) => Promise<void>;
   refreshAttributes: () => Promise<void>;
 }
 
@@ -87,9 +88,20 @@ export const ItemAttributeProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const updateAttribute = async (id: string, updated: Partial<ItemAttributeRecord>): Promise<void> => {
+    const saved = await stockService.updateItemAttribute(id, updated);
     setAttributes((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, ...updated, lastUpdatedOn: new Date().toISOString() } : a))
+      prev.map((a) =>
+        a.id.toLowerCase() === id.toLowerCase()
+          ? { ...a, ...updated, ...saved, lastUpdatedOn: new Date().toISOString() }
+          : a
+      )
     );
+  };
+
+  const deleteAttribute = async (id: string): Promise<void> => {
+    await stockService.deleteItemAttribute(id);
+    setAttributes((prev) => prev.filter((a) => a.id.toLowerCase() !== id.toLowerCase()));
+    setSelectedIds((prev) => prev.filter((i) => i.toLowerCase() !== id.toLowerCase()));
   };
 
   return (
@@ -110,6 +122,7 @@ export const ItemAttributeProvider: React.FC<{ children: React.ReactNode }> = ({
         setPageSize,
         addAttribute,
         updateAttribute,
+        deleteAttribute,
         refreshAttributes: loadData,
       }}
     >

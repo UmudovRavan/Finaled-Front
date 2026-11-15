@@ -283,6 +283,7 @@ export const NewRepostItemValuationForm: React.FC = () => {
           </div>
         </div>
       </div>
+      <button type="submit" className="hidden">Save</button>
     </form>
   );
 };

@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { stockService } from '../api/stockService';
 
 interface StockBalanceRow {
   id: string;
@@ -21,277 +22,9 @@ interface StockBalanceRow {
   company: string;
 }
 
-const INITIAL_BALANCE_ROWS: StockBalanceRow[] = [
-  {
-    id: 'row-1',
-    item: 'SKU010: Camera',
-    itemName: 'Camera',
-    itemGroup: 'Demo Item Group',
-    warehouse: 'Mağazalar - AD',
-    stockUom: 'Nos',
-    balanceQty: 78.0,
-    balanceValue: 39000.0,
-    openingQty: 78.0,
-    openingValue: 39000.0,
-    inQty: 0.0,
-    inValue: 0.0,
-    outQty: 0.0,
-    outValue: 0.0,
-    valuationRate: 500.0,
-    reservedQty: 0.0,
-    company: 'Avalon (Demo)',
-  },
-  {
-    id: 'row-2',
-    item: 'SKU006: Coffee Mug',
-    itemName: 'Coffee Mug',
-    itemGroup: 'Demo Item Group',
-    warehouse: 'Devam Eden İşler - AD',
-    stockUom: 'Nos',
-    balanceQty: 250.0,
-    balanceValue: 105000.0,
-    openingQty: 250.0,
-    openingValue: 105000.0,
-    inQty: 0.0,
-    inValue: 0.0,
-    outQty: 0.0,
-    outValue: 0.0,
-    valuationRate: 420.0,
-    reservedQty: 0.0,
-    company: 'Avalon (Demo)',
-  },
-  {
-    id: 'row-3',
-    item: 'SKU007: Television',
-    itemName: 'Television',
-    itemGroup: 'Demo Item Group',
-    warehouse: 'Devam Eden İşler - AD',
-    stockUom: 'Nos',
-    balanceQty: 190.0,
-    balanceValue: 71250.0,
-    openingQty: 190.0,
-    openingValue: 71250.0,
-    inQty: 0.0,
-    inValue: 0.0,
-    outQty: 0.0,
-    outValue: 0.0,
-    valuationRate: 375.0,
-    reservedQty: 0.0,
-    company: 'Avalon (Demo)',
-  },
-  {
-    id: 'row-4',
-    item: 'SKU008: Backpack',
-    itemName: 'Backpack',
-    itemGroup: 'Demo Item Group',
-    warehouse: 'Taşıma Hali... - AD',
-    stockUom: 'Nos',
-    balanceQty: 121.0,
-    balanceValue: 40293.0,
-    openingQty: 121.0,
-    openingValue: 40293.0,
-    inQty: 0.0,
-    inValue: 0.0,
-    outQty: 0.0,
-    outValue: 0.0,
-    valuationRate: 333.0,
-    reservedQty: 0.0,
-    company: 'Avalon (Demo)',
-  },
-  {
-    id: 'row-5',
-    item: 'SKU005: Sneakers',
-    itemName: 'Sneakers',
-    itemGroup: 'Demo Item Group',
-    warehouse: 'Devam Eden İşler - AD',
-    stockUom: 'Nos',
-    balanceQty: 32.0,
-    balanceValue: 7104.0,
-    openingQty: 32.0,
-    openingValue: 7104.0,
-    inQty: 0.0,
-    inValue: 0.0,
-    outQty: 0.0,
-    outValue: 0.0,
-    valuationRate: 222.0,
-    reservedQty: 0.0,
-    company: 'Avalon (Demo)',
-  },
-  {
-    id: 'row-6',
-    item: 'SKU009: Headphones',
-    itemName: 'Headphones',
-    itemGroup: 'Demo Item Group',
-    warehouse: 'Bitmiş Ürünler - AD',
-    stockUom: 'Nos',
-    balanceQty: 76.0,
-    balanceValue: 53200.0,
-    openingQty: 76.0,
-    openingValue: 53200.0,
-    inQty: 0.0,
-    inValue: 0.0,
-    outQty: 0.0,
-    outValue: 0.0,
-    valuationRate: 700.0,
-    reservedQty: 0.0,
-    company: 'Avalon (Demo)',
-  },
-  {
-    id: 'row-7',
-    item: 'SKU003: Book',
-    itemName: 'Book',
-    itemGroup: 'Demo Item Group',
-    warehouse: 'Mağazalar - AD',
-    stockUom: 'Nos',
-    balanceQty: -100.0,
-    balanceValue: -52300.0,
-    openingQty: -100.0,
-    openingValue: -52300.0,
-    inQty: 0.0,
-    inValue: 0.0,
-    outQty: 0.0,
-    outValue: 0.0,
-    valuationRate: 523.0,
-    reservedQty: 0.0,
-    company: 'Avalon (Demo)',
-  },
-  {
-    id: 'row-8',
-    item: 'SKU006: Coffee Mug',
-    itemName: 'Coffee Mug',
-    itemGroup: 'Demo Item Group',
-    warehouse: 'Mağazalar - AD',
-    stockUom: 'Nos',
-    balanceQty: -100.0,
-    balanceValue: -42000.0,
-    openingQty: -100.0,
-    openingValue: -42000.0,
-    inQty: 0.0,
-    inValue: 0.0,
-    outQty: 0.0,
-    outValue: 0.0,
-    valuationRate: 420.0,
-    reservedQty: 0.0,
-    company: 'Avalon (Demo)',
-  },
-  {
-    id: 'row-9',
-    item: 'SKU007: Television',
-    itemName: 'Television',
-    itemGroup: 'Demo Item Group',
-    warehouse: 'Mağazalar - AD',
-    stockUom: 'Nos',
-    balanceQty: -100.0,
-    balanceValue: -37500.0,
-    openingQty: -100.0,
-    openingValue: -37500.0,
-    inQty: 0.0,
-    inValue: 0.0,
-    outQty: 0.0,
-    outValue: 0.0,
-    valuationRate: 375.0,
-    reservedQty: 0.0,
-    company: 'Avalon (Demo)',
-  },
-  {
-    id: 'row-10',
-    item: 'SKU004: Smartphone',
-    itemName: 'Smartphone',
-    itemGroup: 'Demo Item Group',
-    warehouse: 'Mağazalar - AD',
-    stockUom: 'Nos',
-    balanceQty: -20.0,
-    balanceValue: -14500.0,
-    openingQty: -20.0,
-    openingValue: -14500.0,
-    inQty: 0.0,
-    inValue: 0.0,
-    outQty: 0.0,
-    outValue: 0.0,
-    valuationRate: 725.0,
-    reservedQty: 0.0,
-    company: 'Avalon (Demo)',
-  },
-  {
-    id: 'row-11',
-    item: 'SKU008: Backpack',
-    itemName: 'Backpack',
-    itemGroup: 'Demo Item Group',
-    warehouse: 'Devam Eden İşler - AD',
-    stockUom: 'Nos',
-    balanceQty: -20.0,
-    balanceValue: -6660.0,
-    openingQty: -20.0,
-    openingValue: -6660.0,
-    inQty: 0.0,
-    inValue: 0.0,
-    outQty: 0.0,
-    outValue: 0.0,
-    valuationRate: 333.0,
-    reservedQty: 0.0,
-    company: 'Avalon (Demo)',
-  },
-  {
-    id: 'row-12',
-    item: 'SKU009: Headphones',
-    itemName: 'Headphones',
-    itemGroup: 'Demo Item Group',
-    warehouse: 'Devam Eden İşler - AD',
-    stockUom: 'Nos',
-    balanceQty: -40.0,
-    balanceValue: -28000.0,
-    openingQty: -40.0,
-    openingValue: -28000.0,
-    inQty: 0.0,
-    inValue: 0.0,
-    outQty: 0.0,
-    outValue: 0.0,
-    valuationRate: 700.0,
-    reservedQty: 0.0,
-    company: 'Avalon (Demo)',
-  },
-  {
-    id: 'row-13',
-    item: 'SKU010: Camera',
-    itemName: 'Camera',
-    itemGroup: 'Demo Item Group',
-    warehouse: 'Devam Eden İşler - AD',
-    stockUom: 'Nos',
-    balanceQty: -50.0,
-    balanceValue: -25000.0,
-    openingQty: -50.0,
-    openingValue: -25000.0,
-    inQty: 0.0,
-    inValue: 0.0,
-    outQty: 0.0,
-    outValue: 0.0,
-    valuationRate: 500.0,
-    reservedQty: 0.0,
-    company: 'Avalon (Demo)',
-  },
-  {
-    id: 'row-14',
-    item: 'SKU002: Laptop',
-    itemName: 'Laptop',
-    itemGroup: 'Demo Item Group',
-    warehouse: 'Devam Eden İşler - AD',
-    stockUom: 'Nos',
-    balanceQty: 10.0,
-    balanceValue: 500.0,
-    openingQty: 0.0,
-    openingValue: 0.0,
-    inQty: 10.0,
-    inValue: 500.0,
-    outQty: 0.0,
-    outValue: 0.0,
-    valuationRate: 50.0,
-    reservedQty: 0.0,
-    company: 'Avalon (Demo)',
-  },
-];
-
 export const StockBalanceReportPage: React.FC = () => {
   const navigate = useNavigate();
+  const [rows, setRows] = useState<StockBalanceRow[]>([]);
 
   // Top Filter state (matching Image 1)
   const [company, setCompany] = useState('Avalon (Demo)');
@@ -322,17 +55,54 @@ export const StockBalanceReportPage: React.FC = () => {
     setColFilters((prev) => ({ ...prev, [colKey]: val }));
   };
 
-  const handleRebuild = () => {
+  const fetchReport = useCallback(async () => {
     setIsRebuilding(true);
-    setTimeout(() => {
+    const start = performance.now();
+    try {
+      const data = await stockService.getStockBalanceReport({
+        includeZeroStock,
+        ignoreClosingBalance,
+      });
+      setRows(
+        data.map((r, idx) => ({
+          id: `${r.itemId || idx}-${r.warehouseId || idx}`,
+          item: r.itemCode ? `${r.itemCode}${r.itemName ? ': ' + r.itemName : ''}` : r.itemName || '',
+          itemName: r.itemName || '',
+          itemGroup: r.itemGroupName || '',
+          warehouse: r.warehouseName || '',
+          stockUom: r.stockUomName || 'Nos',
+          balanceQty: Number(r.balanceQty || 0),
+          balanceValue: Number(r.balanceValue || 0),
+          openingQty: Number(r.openingQty || 0),
+          openingValue: Number(r.openingValue || 0),
+          inQty: Number(r.inQty || 0),
+          inValue: Number(r.inValue || 0),
+          outQty: Number(r.outQty || 0),
+          outValue: Number(r.outValue || 0),
+          valuationRate: Number(r.valuationRate || 0),
+          reservedQty: Number(r.reservedQty || 0),
+          company: 'Avalon (Demo)',
+        }))
+      );
+    } catch (err) {
+      console.error('Failed to fetch stock balance report:', err);
+    } finally {
+      setExecutionTime(((performance.now() - start) / 1000).toFixed(6));
       setIsRebuilding(false);
-      setExecutionTime((Math.random() * 0.03 + 0.04).toFixed(6));
-    }, 500);
+    }
+  }, [includeZeroStock, ignoreClosingBalance]);
+
+  useEffect(() => {
+    fetchReport();
+  }, [fetchReport]);
+
+  const handleRebuild = () => {
+    fetchReport();
   };
 
   // Filtered rows
   const filteredRows = useMemo(() => {
-    return INITIAL_BALANCE_ROWS.filter((row) => {
+    return rows.filter((row) => {
       // Global row filters
       if (company && !row.company.toLowerCase().includes(company.toLowerCase())) {
         return false;
@@ -364,7 +134,7 @@ export const StockBalanceReportPage: React.FC = () => {
 
       return true;
     });
-  }, [company, warehouse, itemFilter, itemGroup, colFilters]);
+  }, [rows, company, warehouse, itemFilter, itemGroup, colFilters]);
 
   // Totals calculation
   const totals = useMemo(() => {

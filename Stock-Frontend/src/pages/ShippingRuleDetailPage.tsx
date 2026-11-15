@@ -388,13 +388,13 @@ export const ShippingRuleDetailPage: React.FC = () => {
                 <div className="relative flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-slate-400 dark:bg-zinc-600 -ml-[19px]" />
                   <span>
-                    You created this · {currentShippingRule.createdOn || 'yesterday'}
+                    You created this · {currentShippingRule.createdOn || 'just now'}
                   </span>
                 </div>
                 <div className="relative flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-slate-400 dark:bg-zinc-600 -ml-[19px]" />
                   <span>
-                    You last edited this · {currentShippingRule.lastEdited || 'yesterday'}
+                    You last edited this · {currentShippingRule.lastEdited || 'just now'}
                   </span>
                 </div>
               </div>

@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { stockService } from '../api/stockService';
 
 interface ItemPriceStockRow {
   id: string;
@@ -13,274 +14,43 @@ interface ItemPriceStockRow {
   sellingRate: number;
 }
 
-const INITIAL_PRICE_STOCK_ROWS: ItemPriceStockRow[] = [
-  // Buying price rows (Image 4)
-  {
-    id: '1',
-    itemCode: 'SKU001: T-shirt',
-    itemName: 'T-shirt',
-    brand: '',
-    warehouse: 'Devam Eden İşler - AD',
-    stockAvailable: -25.0,
-    buyingPriceList: 'Standard Buying',
-    buyingRate: 400.0,
-    sellingPriceList: '',
-    sellingRate: 0.0,
-  },
-  {
-    id: '2',
-    itemCode: 'SKU002: Laptop',
-    itemName: 'Laptop',
-    brand: '',
-    warehouse: 'Bitmiş Ürünler - AD',
-    stockAvailable: 0.0,
-    buyingPriceList: 'Standard Buying',
-    buyingRate: 300.0,
-    sellingPriceList: '',
-    sellingRate: 0.0,
-  },
-  {
-    id: '3',
-    itemCode: 'SKU002: Laptop',
-    itemName: 'Laptop',
-    brand: '',
-    warehouse: 'Devam Eden İşler - AD',
-    stockAvailable: -5.0,
-    buyingPriceList: 'Standard Buying',
-    buyingRate: 300.0,
-    sellingPriceList: '',
-    sellingRate: 0.0,
-  },
-  {
-    id: '4',
-    itemCode: 'SKU003: Book',
-    itemName: 'Book',
-    brand: '',
-    warehouse: 'Mağazalar - AD',
-    stockAvailable: -100.0,
-    buyingPriceList: 'Standard Buying',
-    buyingRate: 523.0,
-    sellingPriceList: '',
-    sellingRate: 0.0,
-  },
-  {
-    id: '5',
-    itemCode: 'SKU004: Smartphone',
-    itemName: 'Smartphone',
-    brand: '',
-    warehouse: 'Mağazalar - AD',
-    stockAvailable: -20.0,
-    buyingPriceList: 'Standard Buying',
-    buyingRate: 725.0,
-    sellingPriceList: '',
-    sellingRate: 0.0,
-  },
-  {
-    id: '6',
-    itemCode: 'SKU005: Sneakers',
-    itemName: 'Sneakers',
-    brand: '',
-    warehouse: 'Devam Eden İşler - AD',
-    stockAvailable: 32.0,
-    buyingPriceList: 'Standard Buying',
-    buyingRate: 222.0,
-    sellingPriceList: '',
-    sellingRate: 0.0,
-  },
-  {
-    id: '7',
-    itemCode: 'SKU006: Coffee Mug',
-    itemName: 'Coffee Mug',
-    brand: '',
-    warehouse: 'Devam Eden İşler - AD',
-    stockAvailable: 250.0,
-    buyingPriceList: 'Standard Buying',
-    buyingRate: 420.0,
-    sellingPriceList: '',
-    sellingRate: 0.0,
-  },
-  {
-    id: '8',
-    itemCode: 'SKU006: Coffee Mug',
-    itemName: 'Coffee Mug',
-    brand: '',
-    warehouse: 'Mağazalar - AD',
-    stockAvailable: -100.0,
-    buyingPriceList: 'Standard Buying',
-    buyingRate: 420.0,
-    sellingPriceList: '',
-    sellingRate: 0.0,
-  },
-  {
-    id: '9',
-    itemCode: 'SKU007: Television',
-    itemName: 'Television',
-    brand: '',
-    warehouse: 'Devam Eden İşler - AD',
-    stockAvailable: 190.0,
-    buyingPriceList: 'Standard Buying',
-    buyingRate: 375.0,
-    sellingPriceList: '',
-    sellingRate: 0.0,
-  },
-  {
-    id: '10',
-    itemCode: 'SKU007: Television',
-    itemName: 'Television',
-    brand: '',
-    warehouse: 'Mağazalar - AD',
-    stockAvailable: -100.0,
-    buyingPriceList: 'Standard Buying',
-    buyingRate: 375.0,
-    sellingPriceList: '',
-    sellingRate: 0.0,
-  },
-  {
-    id: '11',
-    itemCode: 'SKU008: Backpack',
-    itemName: 'Backpack',
-    brand: '',
-    warehouse: 'Devam Eden İşler - AD',
-    stockAvailable: -20.0,
-    buyingPriceList: 'Standard Buying',
-    buyingRate: 333.0,
-    sellingPriceList: '',
-    sellingRate: 0.0,
-  },
-  {
-    id: '12',
-    itemCode: 'SKU008: Backpack',
-    itemName: 'Backpack',
-    brand: '',
-    warehouse: 'Taşıma Halindeki Mallar - AD',
-    stockAvailable: 121.0,
-    buyingPriceList: 'Standard Buying',
-    buyingRate: 333.0,
-    sellingPriceList: '',
-    sellingRate: 0.0,
-  },
-  {
-    id: '13',
-    itemCode: 'SKU009: Headphones',
-    itemName: 'Headphones',
-    brand: '',
-    warehouse: 'Bitmiş Ürünler - AD',
-    stockAvailable: 76.0,
-    buyingPriceList: 'Standard Buying',
-    buyingRate: 700.0,
-    sellingPriceList: '',
-    sellingRate: 0.0,
-  },
-  {
-    id: '14',
-    itemCode: 'SKU009: Headphones',
-    itemName: 'Headphones',
-    brand: '',
-    warehouse: 'Devam Eden İşler - AD',
-    stockAvailable: -40.0,
-    buyingPriceList: 'Standard Buying',
-    buyingRate: 700.0,
-    sellingPriceList: '',
-    sellingRate: 0.0,
-  },
-  {
-    id: '15',
-    itemCode: 'SKU010: Camera',
-    itemName: 'Camera',
-    brand: '',
-    warehouse: 'Devam Eden İşler - AD',
-    stockAvailable: -50.0,
-    buyingPriceList: 'Standard Buying',
-    buyingRate: 500.0,
-    sellingPriceList: '',
-    sellingRate: 0.0,
-  },
-
-  // Selling price rows (Image 5)
-  {
-    id: '17',
-    itemCode: 'SKU004: Smartphone',
-    itemName: 'Smartphone',
-    brand: '',
-    warehouse: 'Mağazalar - AD',
-    stockAvailable: -20.0,
-    buyingPriceList: '',
-    buyingRate: 0.0,
-    sellingPriceList: 'Standard Selling',
-    sellingRate: 1000.0,
-  },
-  {
-    id: '18',
-    itemCode: 'SKU002: Laptop',
-    itemName: 'Laptop',
-    brand: '',
-    warehouse: 'Bitmiş Ürünler - AD',
-    stockAvailable: 0.0,
-    buyingPriceList: '',
-    buyingRate: 0.0,
-    sellingPriceList: 'Standard Selling',
-    sellingRate: 800.0,
-  },
-  {
-    id: '19',
-    itemCode: 'SKU002: Laptop',
-    itemName: 'Laptop',
-    brand: '',
-    warehouse: 'Devam Eden İşler - AD',
-    stockAvailable: -5.0,
-    buyingPriceList: '',
-    buyingRate: 0.0,
-    sellingPriceList: 'Standard Selling',
-    sellingRate: 800.0,
-  },
-  {
-    id: '20',
-    itemCode: 'SKU001: T-shirt',
-    itemName: 'T-shirt',
-    brand: '',
-    warehouse: 'Devam Eden İşler - AD',
-    stockAvailable: -25.0,
-    buyingPriceList: '',
-    buyingRate: 0.0,
-    sellingPriceList: 'Standard Selling',
-    sellingRate: 800.0,
-  },
-  {
-    id: '21',
-    itemCode: 'SKU007: Television',
-    itemName: 'Television',
-    brand: '',
-    warehouse: 'Devam Eden İşler - AD',
-    stockAvailable: 190.0,
-    buyingPriceList: '',
-    buyingRate: 0.0,
-    sellingPriceList: 'Standard Selling',
-    sellingRate: 900.0,
-  },
-  {
-    id: '22',
-    itemCode: 'SKU007: Television',
-    itemName: 'Television',
-    brand: '',
-    warehouse: 'Mağazalar - AD',
-    stockAvailable: -100.0,
-    buyingPriceList: '',
-    buyingRate: 0.0,
-    sellingPriceList: 'Standard Selling',
-    sellingRate: 900.0,
-  },
-];
-
 export const ItemPriceStockReportPage: React.FC = () => {
+  const [rows, setRows] = useState<ItemPriceStockRow[]>([]);
   const [topItemFilter, setTopItemFilter] = useState('');
   const [colFilters, setColFilters] = useState<Record<string, string>>({});
+
+  const fetchReport = useCallback(async () => {
+    try {
+      const data = await stockService.getItemPriceStockReport();
+      setRows(
+        data.map((r: any, idx: number) => ({
+          id: `${r.itemId || idx}-${r.warehouseId || idx}`,
+          itemCode: r.itemCode ? `${r.itemCode}${r.itemName ? ': ' + r.itemName : ''}` : r.itemName || '',
+          itemName: r.itemName || '',
+          brand: r.brandName || '',
+          warehouse: r.warehouseName || '',
+          stockAvailable: Number(r.stockAvailable ?? r.availableQty ?? 0),
+          buyingPriceList: r.buyingPriceList || '',
+          buyingRate: Number(r.buyingRate || 0),
+          sellingPriceList: r.sellingPriceList || '',
+          sellingRate: Number(r.sellingRate || 0),
+        }))
+      );
+    } catch (err) {
+      console.error('Failed to fetch item price stock report:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchReport();
+  }, [fetchReport]);
 
   const handleColFilterChange = (colKey: string, val: string) => {
     setColFilters((prev) => ({ ...prev, [colKey]: val }));
   };
 
   const filteredRows = useMemo(() => {
-    return INITIAL_PRICE_STOCK_ROWS.filter((row) => {
+    return rows.filter((row) => {
       if (topItemFilter) {
         const q = topItemFilter.toLowerCase();
         if (!row.itemCode.toLowerCase().includes(q) && !row.itemName.toLowerCase().includes(q)) {
@@ -296,7 +66,7 @@ export const ItemPriceStockReportPage: React.FC = () => {
 
       return true;
     });
-  }, [topItemFilter, colFilters]);
+  }, [rows, topItemFilter, colFilters]);
 
   const formatQty = (val: number) => {
     const isNeg = val < 0;

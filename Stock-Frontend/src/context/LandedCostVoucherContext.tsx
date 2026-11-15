@@ -5,7 +5,7 @@ import type {
   StockViewMode,
   FilterRule,
 } from '../types';
-import { stockService, INITIAL_LANDED_COST_VOUCHERS } from '../api';
+import { stockService } from '../api';
 
 interface LandedCostVoucherQuickFiltersState {
   id: string;
@@ -45,21 +45,7 @@ interface LandedCostVoucherContextType {
 const LandedCostVoucherContext = createContext<LandedCostVoucherContextType | undefined>(undefined);
 
 export const LandedCostVoucherProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [vouchers, setVouchers] = useState<LandedCostVoucherRecord[]>(() => {
-    const saved = localStorage.getItem('altensor_landed_cost_vouchers');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.length > 0 && parsed[0].items?.[0]?.itemCode === 'SKU010') {
-          return parsed;
-        }
-        return INITIAL_LANDED_COST_VOUCHERS;
-      } catch {
-        return INITIAL_LANDED_COST_VOUCHERS;
-      }
-    }
-    return INITIAL_LANDED_COST_VOUCHERS;
-  });
+  const [vouchers, setVouchers] = useState<LandedCostVoucherRecord[]>([]);
 
   const [viewMode, setViewMode] = useState<StockViewMode>('list');
   const [savedFilter, setSavedFilter] = useState<string>('All');
@@ -79,35 +65,21 @@ export const LandedCostVoucherProvider: React.FC<{ children: ReactNode }> = ({ c
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Sync with LocalStorage
-  useEffect(() => {
-    localStorage.setItem('altensor_landed_cost_vouchers', JSON.stringify(vouchers));
-  }, [vouchers]);
-
-  // Load from API on mount
-  useEffect(() => {
-    let isMounted = true;
-    stockService.getLandedCostVouchers().then((data) => {
-      if (isMounted && data && data.length > 0) {
-        setVouchers((prev) => (prev.length > 0 ? prev : data));
-      }
-    });
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
   const refresh = async () => {
     setIsRefreshing(true);
     try {
       const data = await stockService.getLandedCostVouchers();
-      if (data && data.length > 0) {
-        setVouchers(data);
-      }
+      setVouchers(data);
+    } catch (err) {
+      console.error('Failed to load landed cost vouchers', err);
     } finally {
-      setTimeout(() => setIsRefreshing(false), 400);
+      setIsRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const createVoucher = async (data: Partial<LandedCostVoucherRecord>) => {
     const created = await stockService.createLandedCostVoucher(data);
@@ -115,10 +87,21 @@ export const LandedCostVoucherProvider: React.FC<{ children: ReactNode }> = ({ c
     return created;
   };
 
-  const updateStatus = (id: string, status: LandedCostVoucherStatus) => {
-    setVouchers((prev) =>
-      prev.map((v) => (v.id === id ? { ...v, status, lastUpdatedOn: new Date().toISOString() } : v))
-    );
+  const updateStatus = async (id: string, status: LandedCostVoucherStatus) => {
+    try {
+      const updated =
+        status === 'Submitted'
+          ? await stockService.submitLandedCostVoucher(id)
+          : status === 'Cancelled'
+          ? await stockService.cancelLandedCostVoucher(id)
+          : null;
+      if (updated) {
+        setVouchers((prev) => prev.map((v) => (v.id === id ? updated : v)));
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to update landed cost voucher status', err);
+    }
   };
 
   const deleteVouchers = (ids: string[]) => {

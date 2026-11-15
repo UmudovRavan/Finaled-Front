@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { stockService } from '../api/stockService';
 
 interface StockAnalyticsRow {
   id: string;
@@ -9,24 +10,6 @@ interface StockAnalyticsRow {
   uom: string;
   nov2026: number;
 }
-
-const SAMPLE_ANALYTICS_ROWS: StockAnalyticsRow[] = [
-  { id: '1', item: '12ala: ala', itemName: 'ala', itemGroup: 'Products', brand: '', uom: 'Nos', nov2026: 0.0 },
-  { id: '2', item: 'adad', itemName: 'adad', itemGroup: 'Products', brand: '', uom: 'Nos', nov2026: 0.0 },
-  { id: '3', item: 'asas: daads', itemName: 'daads', itemGroup: 'Consumable', brand: '', uom: 'Nos', nov2026: 0.0 },
-  { id: '4', item: 'asdf: asdasd', itemName: 'asdasd', itemGroup: 'Raw Material', brand: '', uom: 'Nos', nov2026: 0.0 },
-  { id: '5', item: 'dsfg: adsfd', itemName: 'adsfd', itemGroup: 'Demo Item Group', brand: '', uom: 'Nos', nov2026: 0.0 },
-  { id: '6', item: 'SKU001: T-shirt', itemName: 'T-shirt', itemGroup: 'Demo Item Group', brand: '', uom: 'Nos', nov2026: 0.0 },
-  { id: '7', item: 'SKU002: Laptop', itemName: 'Laptop', itemGroup: 'Demo Item Group', brand: '', uom: 'Nos', nov2026: 500.0 },
-  { id: '8', item: 'SKU003: Book', itemName: 'Book', itemGroup: 'Demo Item Group', brand: '', uom: 'Nos', nov2026: 0.0 },
-  { id: '9', item: 'SKU004: Smartphone', itemName: 'Smartphone', itemGroup: 'Demo Item Group', brand: '', uom: 'Nos', nov2026: 0.0 },
-  { id: '10', item: 'SKU005: Sneakers', itemName: 'Sneakers', itemGroup: 'Demo Item Group', brand: '', uom: 'Nos', nov2026: 0.0 },
-  { id: '11', item: 'SKU006: Coffee Mug', itemName: 'Coffee Mug', itemGroup: 'Demo Item Group', brand: '', uom: 'Nos', nov2026: 0.0 },
-  { id: '12', item: 'SKU007: Television', itemName: 'Television', itemGroup: 'Demo Item Group', brand: '', uom: 'Nos', nov2026: 0.0 },
-  { id: '13', item: 'SKU008: Backpack', itemName: 'Backpack', itemGroup: 'Demo Item Group', brand: '', uom: 'Nos', nov2026: 0.0 },
-  { id: '14', item: 'SKU009: Headphones', itemName: 'Headphones', itemGroup: 'Demo Item Group', brand: '', uom: 'Nos', nov2026: 0.0 },
-  { id: '15', item: 'SKU010: Camera', itemName: 'Camera', itemGroup: 'Demo Item Group', brand: '', uom: 'Nos', nov2026: 0.0 },
-];
 
 export const StockAnalyticsReportPage: React.FC = () => {
   // Top Filter state (Image 3: initially empty date range)
@@ -41,33 +24,73 @@ export const StockAnalyticsReportPage: React.FC = () => {
   const [toDate, setToDate] = useState('');
   const [range, setRange] = useState('Monthly');
 
-  // Checkboxes
-  const [selectedIds, setSelectedIds] = useState<string[]>(['1']); // Image 4 & 5 has row 1 checked
+  // Data & Checkboxes
+  const [rows, setRows] = useState<StockAnalyticsRow[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [colFilters, setColFilters] = useState<Record<string, string>>({});
-  const [executionTime, setExecutionTime] = useState('0.059848');
+  const [executionTime, setExecutionTime] = useState('0.000000');
 
   // Does it have a valid date range?
   const hasDateRange = Boolean(fromDate.trim() && toDate.trim());
 
+  const fetchReport = useCallback(async () => {
+    const start = performance.now();
+    try {
+      const data = await stockService.getStockAnalyticsReport({
+        valueOrQty,
+        range,
+      });
+      setRows(
+        data.map((r: any, idx: number) => ({
+          id: r.itemId || r.id || `row-${idx}`,
+          item: r.itemCode ? `${r.itemCode}${r.itemName ? ': ' + r.itemName : ''}` : r.itemName || '',
+          itemName: r.itemName || '',
+          itemGroup: r.itemGroupName || r.itemGroup || '',
+          brand: r.brandName || r.brand || '',
+          uom: r.stockUomName || r.uom || 'Nos',
+          nov2026: Number(
+            r.totalValue ??
+              r.totalQty ??
+              r.value ??
+              r.qty ??
+              (Array.isArray(r.buckets)
+                ? r.buckets.reduce((s: number, b: any) => s + Number(b.value ?? b.qty ?? 0), 0)
+                : 0)
+          ),
+        }))
+      );
+    } catch (err) {
+      console.error('Failed to fetch stock analytics report:', err);
+    } finally {
+      setExecutionTime(((performance.now() - start) / 1000).toFixed(6));
+    }
+  }, [valueOrQty, range]);
+
+  useEffect(() => {
+    if (hasDateRange) {
+      fetchReport();
+    }
+  }, [hasDateRange, fetchReport]);
+
   const handleApplySampleRange = () => {
     setFromDate('13-11-2026');
     setToDate('27-11-2026');
-    setExecutionTime('0.061402');
   };
 
   const handleGenerateReport = () => {
     if (!fromDate.trim() || !toDate.trim()) {
       setFromDate('13-11-2026');
       setToDate('27-11-2026');
+    } else {
+      fetchReport();
     }
-    setExecutionTime((Math.random() * 0.02 + 0.05).toFixed(6));
   };
 
   const handleToggleSelectAll = () => {
-    if (selectedIds.length === SAMPLE_ANALYTICS_ROWS.length) {
+    if (selectedIds.length === rows.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(SAMPLE_ANALYTICS_ROWS.map((r) => r.id));
+      setSelectedIds(rows.map((r) => r.id));
     }
   };
 
@@ -82,7 +105,7 @@ export const StockAnalyticsReportPage: React.FC = () => {
   };
 
   const filteredRows = useMemo(() => {
-    return SAMPLE_ANALYTICS_ROWS.filter((row) => {
+    return rows.filter((row) => {
       if (itemGroup && !row.itemGroup.toLowerCase().includes(itemGroup.toLowerCase())) return false;
       if (item && !row.item.toLowerCase().includes(item.toLowerCase()) && !row.itemName.toLowerCase().includes(item.toLowerCase())) return false;
       if (brand && !row.brand.toLowerCase().includes(brand.toLowerCase())) return false;
@@ -95,7 +118,7 @@ export const StockAnalyticsReportPage: React.FC = () => {
 
       return true;
     });
-  }, [itemGroup, item, brand, colFilters]);
+  }, [rows, itemGroup, item, brand, colFilters]);
 
   const totalNov = useMemo(() => {
     return filteredRows.reduce((sum, r) => sum + r.nov2026, 0);
@@ -286,7 +309,7 @@ export const StockAnalyticsReportPage: React.FC = () => {
                     <th className="px-3 py-2 w-10 text-center border-r border-slate-200/60 dark:border-[#27272A]/60">
                       <input
                         type="checkbox"
-                        checked={selectedIds.length === SAMPLE_ANALYTICS_ROWS.length}
+                        checked={rows.length > 0 && selectedIds.length === rows.length}
                         onChange={handleToggleSelectAll}
                         className="rounded border-slate-300 dark:border-zinc-600 text-black focus:ring-0 w-3.5 h-3.5 cursor-pointer"
                       />

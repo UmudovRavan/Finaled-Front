@@ -1830,7 +1830,7 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
             </Link>
             <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
             <span className="text-slate-900 dark:text-white font-semibold truncate max-w-[260px]">
-              {currentWarehouseDetailEntry?.id || warehouseDetailId || 'Taşıma Halindeki Ürünler - AD'}
+              {currentWarehouseDetailEntry?.warehouseName || warehouseDetailId || 'Warehouse'}
             </span>
             <span className="bg-[#E0F2FE] dark:bg-sky-950/60 text-[#0284C7] dark:text-[#38BDF8] text-[11px] font-medium px-2 py-0.5 rounded-full ml-1">
               {currentWarehouseDetailEntry?.status || 'Enabled'}
@@ -1873,7 +1873,7 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
             </Link>
             <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
             <span className="text-slate-900 dark:text-white font-semibold truncate max-w-[260px]">
-              {currentUomDetailEntry?.id || uomDetailId || 'Abampere'}
+              {currentUomDetailEntry?.uomName || uomDetailId || 'UOM'}
             </span>
             <span className="bg-[#E0F2FE] dark:bg-sky-950/60 text-[#0284C7] dark:text-[#38BDF8] text-[11px] font-medium px-2 py-0.5 rounded-full ml-1">
               {currentUomDetailEntry?.status || 'Enabled'}
@@ -1916,7 +1916,9 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
             </Link>
             <span className="text-slate-300 dark:text-[#3F3F46]">/</span>
             <span className="text-slate-900 dark:text-white font-semibold truncate max-w-[260px]">
-              {currentUcfDetailEntry?.id || uomConversionFactorDetailId || 'MAT-UOM-CNV-00235'}
+              {currentUcfDetailEntry && currentUcfDetailEntry.fromUOM && currentUcfDetailEntry.toUOM
+                ? `${currentUcfDetailEntry.fromUOM} → ${currentUcfDetailEntry.toUOM}`
+                : uomConversionFactorDetailId || 'UOM Conversion Factor'}
             </span>
           </>
         ) : isNewUomConversionFactor ? (
@@ -4077,9 +4079,13 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
 
             <button
               type="button"
-              onClick={() => {
-                const saveButtons = Array.from(document.querySelectorAll('button'));
-                const saveBtn = saveButtons.find(b => b.textContent?.trim() === 'Save');
+              onClick={(e) => {
+                const currentBtn = e.currentTarget;
+                const scope = document.querySelector('main') || document;
+                const saveButtons = Array.from(scope.querySelectorAll('button'));
+                const saveBtn = saveButtons.find(
+                  (b) => b !== currentBtn && b.textContent?.trim() === 'Save'
+                );
                 if (saveBtn) saveBtn.click();
               }}
               className="bg-black hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-medium px-4 py-1.5 rounded-lg text-xs shadow-sm transition-all"
@@ -4155,6 +4161,17 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
                   >
                     Convert to Group
                   </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!window.confirm('Are you sure you want to delete this warehouse?')) return;
+                      await warehouse.deleteWarehouse(currentWarehouseDetailEntry.id);
+                      navigate('/warehouse');
+                    }}
+                    className="px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 bg-white dark:bg-[#1E1E22] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-normal transition-colors"
+                  >
+                    Delete
+                  </button>
                   <div className="relative">
                     <button
                       type="button"
@@ -4165,6 +4182,20 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
                     </button>
                   </div>
                 </>
+              )}
+
+              {isItemDetail && currentItDetailEntry && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!window.confirm('Are you sure you want to delete this item?')) return;
+                    await item.deleteItem(currentItDetailEntry.id);
+                    navigate('/item');
+                  }}
+                  className="px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900/50 bg-white dark:bg-[#1E1E22] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-normal transition-colors"
+                >
+                  Delete
+                </button>
               )}
 
               {isItemGroupDetail && (
@@ -4284,7 +4315,7 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
                 >
                   <span>Get Items</span>
                 </button>
-              ) : (
+              ) : isUomDetail || isUomConversionFactorDetail || isItemGroupDetail || isBrandDetail || isItemAttributeDetail || isWarehouseDetail || isInventoryDimensionDetail || isShippingRuleDetail || isQualityInspectionTemplateDetail || isItemDetail || isSerialNoDetail || isBatchDetail || isSabbDetail || isItemAlternativeDetail || isDeliveryTripDetail ? null : (
                 <div className="relative" ref={detailGetItemsRef}>
                   <button
                     type="button"
@@ -4315,8 +4346,8 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
                 </div>
               )}
 
-              {/* Preview ↕ (hidden on Material Request, Pick List, and Stock Reconciliation Detail) */}
-              {!isMaterialRequestDetail && !isPickListDetail && !isStockReconciliationDetail && !isSerialNoDetail && !isBatchDetail && !isSabbDetail && !isInventoryDimensionDetail && !isShippingRuleDetail && !isItemAlternativeDetail && !isDeliveryTripDetail && !isQualityInspectionTemplateDetail && (
+              {/* Preview ↕ (hidden on Material Request, Pick List, Stock Reconciliation, and Setup Detail pages) */}
+              {!isMaterialRequestDetail && !isPickListDetail && !isStockReconciliationDetail && !isItemDetail && !isItemGroupDetail && !isBrandDetail && !isItemAttributeDetail && !isUomDetail && !isUomConversionFactorDetail && !isWarehouseDetail && !isSerialNoDetail && !isBatchDetail && !isSabbDetail && !isInventoryDimensionDetail && !isShippingRuleDetail && !isItemAlternativeDetail && !isDeliveryTripDetail && !isQualityInspectionTemplateDetail && (
                 <div className="relative" ref={detailPreviewRef}>
                   <button
                     type="button"
@@ -4580,6 +4611,14 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
                   >
                     Submit
                   </button>
+                ) : currentPrDetailEntry.status === 'Cancelled' ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="border border-slate-200 dark:border-[#2E2E33] bg-slate-100 dark:bg-[#202024] text-slate-400 dark:text-zinc-500 font-medium px-4 py-1.5 rounded-lg text-xs cursor-not-allowed transition-all"
+                  >
+                    Cancelled
+                  </button>
                 ) : (
                   <button
                     type="button"
@@ -4597,6 +4636,14 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
                     className="bg-black hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-medium px-4 py-1.5 rounded-lg text-xs shadow-sm transition-all"
                   >
                     Submit
+                  </button>
+                ) : currentDnDetailEntry.status === 'Cancelled' ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="border border-slate-200 dark:border-[#2E2E33] bg-slate-100 dark:bg-[#202024] text-slate-400 dark:text-zinc-500 font-medium px-4 py-1.5 rounded-lg text-xs cursor-not-allowed transition-all"
+                  >
+                    Cancelled
                   </button>
                 ) : (
                   <button
@@ -4616,6 +4663,14 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
                   >
                     Submit
                   </button>
+                ) : currentMrDetailEntry.status === 'Cancelled' ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="border border-slate-200 dark:border-[#2E2E33] bg-slate-100 dark:bg-[#202024] text-slate-400 dark:text-zinc-500 font-medium px-4 py-1.5 rounded-lg text-xs cursor-not-allowed transition-all"
+                  >
+                    Cancelled
+                  </button>
                 ) : (
                   <button
                     type="button"
@@ -4633,6 +4688,14 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
                     className="bg-black hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-medium px-4 py-1.5 rounded-lg text-xs shadow-sm transition-all"
                   >
                     Submit
+                  </button>
+                ) : currentPlDetailEntry.status === 'Cancelled' ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="border border-slate-200 dark:border-[#2E2E33] bg-slate-100 dark:bg-[#202024] text-slate-400 dark:text-zinc-500 font-medium px-4 py-1.5 rounded-lg text-xs cursor-not-allowed transition-all"
+                  >
+                    Cancelled
                   </button>
                 ) : (
                   <button
@@ -4652,6 +4715,14 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
                   >
                     Submit
                   </button>
+                ) : currentSrDetailEntry.status === 'Cancelled' ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="border border-slate-200 dark:border-[#2E2E33] bg-slate-100 dark:bg-[#202024] text-slate-400 dark:text-zinc-500 font-medium px-4 py-1.5 rounded-lg text-xs cursor-not-allowed transition-all"
+                  >
+                    Cancelled
+                  </button>
                 ) : (
                   <button
                     type="button"
@@ -4669,6 +4740,14 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
                     className="bg-black hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-medium px-4 py-1.5 rounded-lg text-xs shadow-sm transition-all"
                   >
                     Submit
+                  </button>
+                ) : currentLcvDetailEntry.status === 'Cancelled' ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="border border-slate-200 dark:border-[#2E2E33] bg-slate-100 dark:bg-[#202024] text-slate-400 dark:text-zinc-500 font-medium px-4 py-1.5 rounded-lg text-xs cursor-not-allowed transition-all"
+                  >
+                    Cancelled
                   </button>
                 ) : (
                   <button
@@ -4700,9 +4779,13 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
               ) : isItemDetail || isItemGroupDetail || isItemAttributeDetail || isBrandDetail || isWarehouseDetail || isUomDetail || isUomConversionFactorDetail || isSerialNoDetail || isBatchDetail || isSabbDetail || isInventoryDimensionDetail || isShippingRuleDetail || isItemAlternativeDetail || isDeliveryTripDetail || isQualityInspectionTemplateDetail ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    const saveButtons = Array.from(document.querySelectorAll('button'));
-                    const saveBtn = saveButtons.find(b => b.textContent?.trim() === 'Save');
+                  onClick={(e) => {
+                    const currentBtn = e.currentTarget;
+                    const scope = document.querySelector('main') || document;
+                    const saveButtons = Array.from(scope.querySelectorAll('button'));
+                    const saveBtn = saveButtons.find(
+                      (b) => b !== currentBtn && b.textContent?.trim() === 'Save'
+                    );
                     if (saveBtn) saveBtn.click();
                   }}
                   className="bg-black hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-medium px-4 py-1.5 rounded-lg text-xs shadow-sm transition-all"
@@ -4717,6 +4800,14 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
                     className="bg-black hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-medium px-4 py-1.5 rounded-lg text-xs shadow-sm transition-all"
                   >
                     Submit
+                  </button>
+                ) : currentPacDetailEntry.status === 'Cancelled' ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="border border-slate-200 dark:border-[#2E2E33] bg-slate-100 dark:bg-[#202024] text-slate-400 dark:text-zinc-500 font-medium px-4 py-1.5 rounded-lg text-xs cursor-not-allowed transition-all"
+                  >
+                    Cancelled
                   </button>
                 ) : (
                   <button
@@ -4735,6 +4826,14 @@ export const Header: React.FC<HeaderProps> = ({ onPageOptions }) => {
                     className="bg-black hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-medium px-4 py-1.5 rounded-lg text-xs shadow-sm transition-all"
                   >
                     Submit
+                  </button>
+                ) : currentDetailEntry.status === 'Cancelled' ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="border border-slate-200 dark:border-[#2E2E33] bg-slate-100 dark:bg-[#202024] text-slate-400 dark:text-zinc-500 font-medium px-4 py-1.5 rounded-lg text-xs cursor-not-allowed transition-all"
+                  >
+                    Cancelled
                   </button>
                 ) : (
                   <button

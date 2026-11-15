@@ -20,6 +20,7 @@ interface UOMContextType {
   setPageSize: (size: number) => void;
   addUOM: (uom: Partial<UOMRecord>) => Promise<UOMRecord>;
   updateUOM: (id: string, updated: Partial<UOMRecord>) => Promise<void>;
+  deleteUOM: (id: string) => Promise<void>;
   refreshUOMs: () => Promise<void>;
 }
 
@@ -94,13 +95,20 @@ export const UOMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateUOM = async (id: string, updated: Partial<UOMRecord>): Promise<void> => {
+    const saved = await stockService.updateUOMRecord(id, updated);
     setUoms((prev) =>
       prev.map((u) =>
         u.id.toLowerCase() === id.toLowerCase()
-          ? { ...u, ...updated, lastEdited: 'just now' }
+          ? { ...u, ...updated, ...saved, lastEdited: 'just now' }
           : u
       )
     );
+  };
+
+  const deleteUOM = async (id: string): Promise<void> => {
+    await stockService.deleteUOMRecord(id);
+    setUoms((prev) => prev.filter((u) => u.id.toLowerCase() !== id.toLowerCase()));
+    setSelectedIds((prev) => prev.filter((i) => i.toLowerCase() !== id.toLowerCase()));
   };
 
   return (
@@ -123,6 +131,7 @@ export const UOMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setPageSize,
         addUOM,
         updateUOM,
+        deleteUOM,
         refreshUOMs: loadData,
       }}
     >

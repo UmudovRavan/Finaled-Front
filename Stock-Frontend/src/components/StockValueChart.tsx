@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Filter,
   MoreHorizontal,
@@ -8,6 +8,7 @@ import {
   Download,
   Check,
 } from 'lucide-react';
+import { stockService } from '../api/stockService';
 
 interface StockValueChartProps {
   onRefresh?: () => void;
@@ -18,11 +19,29 @@ export const StockValueChart: React.FC<StockValueChartProps> = ({ onRefresh }) =
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [chartTitle, setChartTitle] = useState('Stock Value by Item Group');
-  const [itemGroupName, setItemGroupName] = useState('Demo Item Group');
-  const [stockValue, setStockValue] = useState(95.39);
-  const [lastSynced, setLastSynced] = useState('14 minutes ago');
+  const [itemGroupName, setItemGroupName] = useState('All Item Groups');
+  const [stockValue, setStockValue] = useState(0);
+  const [lastSynced, setLastSynced] = useState('just now');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'central' | 'regional'>('all');
+
+  const loadChartData = useCallback(async () => {
+    try {
+      const home = await stockService.getWorkspaceHome();
+      const totalVal = Number(home?.totalStockValue || 0);
+      setStockValue(Number((totalVal / 1000).toFixed(2)));
+      if (Array.isArray(home?.stockValueByItemGroup) && home.stockValueByItemGroup.length > 0) {
+        setItemGroupName(home.stockValueByItemGroup[0].label || home.stockValueByItemGroup[0].name || 'All Item Groups');
+      }
+      setLastSynced('just now');
+    } catch (err) {
+      console.error('Failed to load stock value chart:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadChartData();
+  }, [loadChartData]);
 
   const menuRef = useRef<HTMLDivElement>(null);
   const filterRef = useRef<HTMLDivElement>(null);
@@ -40,22 +59,19 @@ export const StockValueChart: React.FC<StockValueChartProps> = ({ onRefresh }) =
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsRefreshing(true);
     setIsMenuOpen(false);
-    setTimeout(() => {
-      setIsRefreshing(false);
-      setLastSynced('just now');
-      if (onRefresh) onRefresh();
-    }, 600);
+    await loadChartData();
+    setIsRefreshing(false);
+    if (onRefresh) onRefresh();
   };
 
   const handleReset = () => {
     setChartTitle('Stock Value by Item Group');
-    setItemGroupName('Demo Item Group');
-    setStockValue(95.39);
     setActiveFilter('all');
     setIsMenuOpen(false);
+    loadChartData();
   };
 
   const handleExport = () => {

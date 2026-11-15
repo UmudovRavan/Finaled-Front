@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Table } from 'lucide-react';
+import { stockService } from '../api/stockService';
 
 interface BatchExpiryRow {
   id: string;
@@ -14,70 +15,8 @@ interface BatchExpiryRow {
   warehouse: string;
 }
 
-const INITIAL_EXPIRY_DATA: BatchExpiryRow[] = [
-  {
-    id: 'be-1',
-    item: 'SKU006: Coffee Mug',
-    itemName: 'Coffee Mug',
-    description: 'Thermal coated ceramic batch',
-    batch: 'BATCH-2026-003',
-    manufacturingDate: '15-01-2026',
-    expiryDate: '20-12-2026',
-    expiryInDays: 36,
-    availableQty: 120.0,
-    warehouse: 'Bitmiş Ürünler - AD',
-  },
-  {
-    id: 'be-2',
-    item: 'SKU004: Smartphone',
-    itemName: 'Smartphone',
-    description: 'Lithium-ion battery warranty batch',
-    batch: 'BATCH-2026-002',
-    manufacturingDate: '10-03-2026',
-    expiryDate: '30-11-2026',
-    expiryInDays: 16,
-    availableQty: 23.0,
-    warehouse: 'Mağazalar - AD',
-  },
-  {
-    id: 'be-3',
-    item: 'SKU002: Laptop',
-    itemName: 'Laptop',
-    description: 'Enterprise workstation batch',
-    batch: 'BATCH-2026-001',
-    manufacturingDate: '05-02-2026',
-    expiryDate: '05-02-2027',
-    expiryInDays: 83,
-    availableQty: 20.0,
-    warehouse: 'Devam Eden İşler - AD',
-  },
-  {
-    id: 'be-4',
-    item: 'SKU009: Headphones',
-    itemName: 'Headphones',
-    description: 'Acoustic foam earpad shelf-life batch',
-    batch: 'BATCH-2025-089',
-    manufacturingDate: '01-11-2025',
-    expiryDate: '01-11-2026',
-    expiryInDays: -13,
-    availableQty: 24.0,
-    warehouse: 'Bitmiş Ürünler - AD',
-  },
-  {
-    id: 'be-5',
-    item: 'SKU010: Camera',
-    itemName: 'Camera',
-    description: 'Optical sensor calibration batch',
-    batch: 'BATCH-2026-005',
-    manufacturingDate: '20-05-2026',
-    expiryDate: '20-05-2027',
-    expiryInDays: 187,
-    availableQty: 18.0,
-    warehouse: 'Mağazalar - AD',
-  },
-];
-
 export const BatchItemExpiryStatusReportPage: React.FC = () => {
+  const [rows, setRows] = useState<BatchExpiryRow[]>([]);
   const [fromDate, setFromDate] = useState('01-01-2026');
   const [toDate, setToDate] = useState('14-11-2026');
   const [itemFilter, setItemFilter] = useState('');
@@ -93,8 +32,34 @@ export const BatchItemExpiryStatusReportPage: React.FC = () => {
     warehouse: '',
   });
 
+  const fetchReport = useCallback(async () => {
+    try {
+      const data = await stockService.getBatchExpiryStatusReport();
+      setRows(
+        data.map((r: any, idx: number) => ({
+          id: r.batchId || r.id || `be-${idx}`,
+          item: r.itemCode ? `${r.itemCode}${r.itemName ? ': ' + r.itemName : ''}` : r.itemName || '',
+          itemName: r.itemName || '',
+          description: r.description || '',
+          batch: r.batchNo || '',
+          manufacturingDate: r.manufacturingDate ? String(r.manufacturingDate).slice(0, 10) : '',
+          expiryDate: r.expiryDate ? String(r.expiryDate).slice(0, 10) : '',
+          expiryInDays: Number(r.expiryInDays ?? 0),
+          availableQty: Number(r.availableQty ?? r.balanceQty ?? 0),
+          warehouse: r.warehouseName || '',
+        }))
+      );
+    } catch (err) {
+      console.error('Failed to fetch batch expiry status:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchReport();
+  }, [fetchReport]);
+
   const filteredData = useMemo(() => {
-    return INITIAL_EXPIRY_DATA.filter((row) => {
+    return rows.filter((row) => {
       if (
         itemFilter &&
         !row.item.toLowerCase().includes(itemFilter.toLowerCase()) &&
@@ -113,7 +78,7 @@ export const BatchItemExpiryStatusReportPage: React.FC = () => {
 
       return true;
     });
-  }, [itemFilter, colFilters]);
+  }, [rows, itemFilter, colFilters]);
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] flex flex-col justify-between bg-white dark:bg-[#121214] text-slate-800 dark:text-zinc-200">

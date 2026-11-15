@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { stockService } from '../api';
 import {
   Info,
   Heart,
@@ -277,14 +278,95 @@ export const SettingsPage: React.FC = () => {
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [activityExpanded, setActivityExpanded] = useState(false);
 
+  const settingsIdRef = useRef<string | undefined>(undefined);
+
   useEffect(() => {
-    const handleSave = () => {
-      setSaveToast('Saved');
-      setTimeout(() => setSaveToast(null), 2500);
+    stockService
+      .getStockSettings()
+      .then((dto) => {
+        if (!dto) return;
+        settingsIdRef.current = dto.id;
+        setItemNamingBy(dto.itemNamingBy === 'NamingSeries' ? 'Naming Series' : 'Item Code');
+        setDefaultValuationMethod(
+          dto.defaultValuationMethod === 'MovingAverage'
+            ? 'Moving Average'
+            : dto.defaultValuationMethod || 'FIFO'
+        );
+        setAutoInsertItemPrice(Boolean(dto.autoInsertPriceListRateIfMissing));
+        setAllowEditUomSales(Boolean(dto.allowEditStockUomQtyForSalesDocuments));
+        setAllowEditUomPurchase(Boolean(dto.allowEditStockUomQtyForPurchaseDocuments));
+        setAllowNegativeStock(Boolean(dto.allowNegativeStock));
+        setOverDeliveryAllowance(String(dto.overDeliveryReceiptAllowancePercent ?? '0.000'));
+        setShowBarcodeField(Boolean(dto.showBarcodeFieldInStockTransactions));
+        setConvertItemDescToHtml(Boolean(dto.convertItemDescriptionToCleanHtml));
+        setUseSerialBatchFields(Boolean(dto.useSerialBatchFields));
+        setAutoCreateBundleOutward(Boolean(dto.autoCreateSerialAndBatchBundleForOutward));
+        setActionIfQiRejected(dto.actionIfQualityInspectionIsRejected || 'Stop');
+        setActionIfQiNotSubmitted(dto.actionIfQualityInspectionIsNotSubmitted || 'Stop');
+        setRaiseMrOnReorder(Boolean(dto.autoMaterialRequestOnReorderLevel));
+        setNotifyEmailOnAutoMr(Boolean(dto.notifyByEmailOnCreationOfAutomaticMaterialRequest));
+        setFreezeStocksOlderThanDays(String(dto.freezeStocksOlderThanDays ?? 0));
+        setStockFrozenUpTo(dto.stockFrozenUpto ? String(dto.stockFrozenUpto).slice(0, 10) : '');
+        setRoleAllowedBackdated(dto.roleAllowedToEditFrozenStock || '');
+      })
+      .catch((err) => console.error('Failed to load Stock Settings', err));
+  }, []);
+
+  useEffect(() => {
+    const handleSave = async () => {
+      try {
+        await stockService.updateStockSettings({
+          id: settingsIdRef.current,
+          itemNamingBy: itemNamingBy === 'Naming Series' ? 'NamingSeries' : 'ItemCode',
+          defaultValuationMethod:
+            defaultValuationMethod === 'Moving Average' ? 'MovingAverage' : defaultValuationMethod,
+          autoInsertPriceListRateIfMissing: autoInsertItemPrice,
+          allowEditStockUomQtyForSalesDocuments: allowEditUomSales,
+          allowEditStockUomQtyForPurchaseDocuments: allowEditUomPurchase,
+          allowNegativeStock,
+          overDeliveryReceiptAllowancePercent: Number(overDeliveryAllowance || 0),
+          showBarcodeFieldInStockTransactions: showBarcodeField,
+          convertItemDescriptionToCleanHtml: convertItemDescToHtml,
+          useSerialBatchFields,
+          autoCreateSerialAndBatchBundleForOutward: autoCreateBundleOutward,
+          actionIfQualityInspectionIsRejected: actionIfQiRejected,
+          actionIfQualityInspectionIsNotSubmitted: actionIfQiNotSubmitted,
+          autoMaterialRequestOnReorderLevel: raiseMrOnReorder,
+          notifyByEmailOnCreationOfAutomaticMaterialRequest: notifyEmailOnAutoMr,
+          freezeStocksOlderThanDays: Number(freezeStocksOlderThanDays || 0),
+          stockFrozenUpto: stockFrozenUpTo ? new Date(stockFrozenUpTo).toISOString() : null,
+          roleAllowedToEditFrozenStock: roleAllowedBackdated || null,
+        });
+        setSaveToast('Saved');
+      } catch (err) {
+        console.error('Failed to save Stock Settings', err);
+        setSaveToast('Error saving');
+      } finally {
+        setTimeout(() => setSaveToast(null), 2500);
+      }
     };
     window.addEventListener('stock-settings-save', handleSave);
     return () => window.removeEventListener('stock-settings-save', handleSave);
-  }, []);
+  }, [
+    itemNamingBy,
+    defaultValuationMethod,
+    autoInsertItemPrice,
+    allowEditUomSales,
+    allowEditUomPurchase,
+    allowNegativeStock,
+    overDeliveryAllowance,
+    showBarcodeField,
+    convertItemDescToHtml,
+    useSerialBatchFields,
+    autoCreateBundleOutward,
+    actionIfQiRejected,
+    actionIfQiNotSubmitted,
+    raiseMrOnReorder,
+    notifyEmailOnAutoMr,
+    freezeStocksOlderThanDays,
+    stockFrozenUpTo,
+    roleAllowedBackdated,
+  ]);
 
   const handleCommentKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && commentInput.trim()) {

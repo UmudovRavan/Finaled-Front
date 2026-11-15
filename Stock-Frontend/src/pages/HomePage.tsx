@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { StockValueChart } from '../components/StockValueChart';
 import { StockKpiCard } from '../components/StockKpiCard';
 import { MasterDetailModal } from '../components/MasterDetailModal';
 import { ArrowUpRight } from 'lucide-react';
+import { stockService } from '../api/stockService';
 
 interface MasterCardItem {
   name: string;
@@ -17,6 +18,30 @@ interface MasterCardSection {
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const [kpiStats, setKpiStats] = useState({
+    totalStockValue: 0,
+    totalWarehouses: 0,
+    totalActiveItems: 0,
+  });
+
+  useEffect(() => {
+    stockService
+      .getStats()
+      .then((s) =>
+        setKpiStats({
+          totalStockValue: Number(s.totalInventoryValue || 0),
+          totalWarehouses: Number(s.totalWarehouses || 0),
+          totalActiveItems: Number(s.totalProducts || 0),
+        })
+      )
+      .catch((err) => console.error('Failed to fetch home KPIs:', err));
+  }, []);
+
+  const formattedStockValue =
+    kpiStats.totalStockValue >= 1000
+      ? `${(kpiStats.totalStockValue / 1000).toFixed(3)} K`
+      : kpiStats.totalStockValue.toFixed(2);
+
   const [selectedModal, setSelectedModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -151,20 +176,20 @@ export const HomePage: React.FC = () => {
       <section className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4">
         <StockKpiCard
           title="Total Stock Value"
-          value="95.390 K"
-          subtitle="0 % since yesterday"
+          value={formattedStockValue}
+          subtitle="Live from backend"
           onViewDetails={() => handleOpenDetail('Total Stock Value', 'KPI Metric')}
         />
         <StockKpiCard
           title="Total Warehouses"
-          value="5"
-          subtitle="0 % since last month"
+          value={String(kpiStats.totalWarehouses)}
+          subtitle="Active warehouses"
           onViewDetails={() => handleOpenDetail('Total Warehouses', 'KPI Metric')}
         />
         <StockKpiCard
           title="Total Active Items"
-          value="10"
-          subtitle="0 % since last month"
+          value={String(kpiStats.totalActiveItems)}
+          subtitle="Active catalog items"
           onViewDetails={() => handleOpenDetail('Total Active Items', 'KPI Metric')}
         />
       </section>

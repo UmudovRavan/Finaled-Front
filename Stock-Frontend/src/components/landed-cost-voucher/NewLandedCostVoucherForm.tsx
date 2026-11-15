@@ -1001,6 +1001,7 @@ export const NewLandedCostVoucherForm: React.FC = () => {
           <li>Stock Ledger Entries and GL Entries are reposted for the selected Purchase Receipts</li>
         </ul>
       </div>
+      <button type="submit" className="hidden">Save</button>
     </form>
   );
 };

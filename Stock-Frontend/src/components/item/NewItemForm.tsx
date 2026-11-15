@@ -23,7 +23,14 @@ import {
   ArrowRight,
   ChevronsUpDown,
 } from 'lucide-react';
-import { useItem } from '../../context';
+import {
+  useItem,
+  useItemGroup,
+  useUOM,
+  useQualityInspectionTemplate,
+  useWarehouse,
+  useBrand,
+} from '../../context';
 
 type TabType =
   | 'details'
@@ -91,6 +98,11 @@ export const NewItemForm: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { addItem } = useItem();
+  const { groups: itemGroups } = useItemGroup();
+  const { uoms } = useUOM();
+  const { templates: qiTemplates } = useQualityInspectionTemplate();
+  const { warehouses } = useWarehouse();
+  const { brands } = useBrand();
 
   const initialValues = (location.state as any) || {};
 
@@ -212,6 +224,42 @@ export const NewItemForm: React.FC = () => {
         maintainStock,
         isFixedAsset,
         hasVariants,
+        brand: brand.trim(),
+        description: description.trim(),
+        allowSales,
+        allowPurchase,
+        allowAlternativeItem,
+        isCustomerProvidedItem,
+        standardSellingRate: Number(standardSellingRate || 0),
+        valuationMethod: valuationMethod || 'FIFO',
+        valuationRate: Number(valuationRate || 0),
+        endOfLife: endOfLife.trim(),
+        warrantyPeriodDays: Number(warrantyPeriod || 0),
+        defaultMaterialRequestType,
+        weightPerUnit: Number(weightPerUnit || 0),
+        weightUom: weightUom.trim(),
+        allowNegativeStock,
+        hasBatchNo,
+        hasSerialNo,
+        purchaseUom: defaultPurchaseUom.trim(),
+        minOrderQty: Number(minimumOrderQty || 0),
+        safetyStock: Number(safetyStock || 0),
+        leadTimeDays: Number(leadTimeInDays || 0),
+        salesUom: defaultSalesUom.trim(),
+        maxDiscountPercent: Number(maxDiscount || 0),
+        grantCommission,
+        includeItemInManufacturing,
+        isSubcontractedItem,
+        inspectionRequiredBeforePurchase,
+        inspectionRequiredBeforeDelivery,
+        qualityInspectionTemplate: qualityInspectionTemplate.trim(),
+        itemDefaults,
+        uomConversions: uomRows,
+        taxes: taxRows,
+        barcodes,
+        reorderLevels: autoReorderRows,
+        suppliers: itemSuppliers,
+        customerDetails: customerItems,
       });
 
       navigate('/item');
@@ -406,11 +454,17 @@ export const NewItemForm: React.FC = () => {
                   <input
                     type="text"
                     required
+                    list="new-item-groups-list"
                     value={itemGroup}
                     onChange={(e) => setItemGroup(e.target.value)}
                     placeholder="e.g. Products, Demo Item Group, Consumable"
                     className="w-full h-8 px-3 bg-[#F4F5F7] dark:bg-[#202024] hover:bg-[#EBEEF2] dark:hover:bg-[#27272A] focus:bg-white dark:focus:bg-[#18181B] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-[#2E2E33] outline-none text-xs transition-colors"
                   />
+                  <datalist id="new-item-groups-list">
+                    {itemGroups.map((g) => (
+                      <option key={g.id} value={g.itemGroupName} />
+                    ))}
+                  </datalist>
                 </div>
 
                 <div>
@@ -420,10 +474,16 @@ export const NewItemForm: React.FC = () => {
                   <input
                     type="text"
                     required
+                    list="new-item-uoms-list"
                     value={defaultUom}
                     onChange={(e) => setDefaultUom(e.target.value)}
                     className="w-full h-8 px-3 bg-[#F4F5F7] dark:bg-[#202024] hover:bg-[#EBEEF2] dark:hover:bg-[#27272A] focus:bg-white dark:focus:bg-[#18181B] text-slate-900 dark:text-white rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-[#2E2E33] outline-none text-xs transition-colors"
                   />
+                  <datalist id="new-item-uoms-list">
+                    {uoms.map((u) => (
+                      <option key={u.id} value={u.uomName} />
+                    ))}
+                  </datalist>
                 </div>
               </div>
 
@@ -575,6 +635,7 @@ export const NewItemForm: React.FC = () => {
                     </label>
                     <input
                       type="text"
+                      list="new-item-brands-list"
                       value={brand}
                       onChange={(e) => setBrand(e.target.value)}
                       placeholder="e.g. Apple, Dell, Nike"
@@ -1229,6 +1290,7 @@ export const NewItemForm: React.FC = () => {
                     </label>
                     <input
                       type="text"
+                      list="new-item-uoms-list"
                       value={weightUom}
                       onChange={(e) => setWeightUom(e.target.value)}
                       className="w-full h-8 px-3 bg-[#F4F5F7] dark:bg-[#202024] hover:bg-[#EBEEF2] dark:hover:bg-[#27272A] focus:bg-white dark:focus:bg-[#18181B] text-slate-900 dark:text-white rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-[#2E2E33] outline-none text-xs transition-colors"
@@ -1619,6 +1681,7 @@ export const NewItemForm: React.FC = () => {
                   </label>
                   <input
                     type="text"
+                    list="new-item-uoms-list"
                     value={defaultPurchaseUom}
                     onChange={(e) => setDefaultPurchaseUom(e.target.value)}
                     placeholder="e.g. Nos, Box"
@@ -1859,6 +1922,7 @@ export const NewItemForm: React.FC = () => {
                   </label>
                   <input
                     type="text"
+                    list="new-item-uoms-list"
                     value={defaultSalesUom}
                     onChange={(e) => setDefaultSalesUom(e.target.value)}
                     placeholder="e.g. Nos, Box"
@@ -2117,19 +2181,43 @@ export const NewItemForm: React.FC = () => {
                 <label className="block text-slate-700 dark:text-zinc-300 font-medium mb-1.5">
                   Quality Inspection Template
                 </label>
-                <input
-                  type="text"
+                <select
                   value={qualityInspectionTemplate}
                   onChange={(e) => setQualityInspectionTemplate(e.target.value)}
-                  className="w-full h-8 px-3 bg-[#F4F5F7] dark:bg-[#202024] hover:bg-[#EBEEF2] dark:hover:bg-[#27272A] focus:bg-white dark:focus:bg-[#18181B] text-slate-900 dark:text-white rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-[#2E2E33] outline-none text-xs transition-colors"
-                />
+                  className="w-full h-8 px-3 bg-[#F4F5F7] dark:bg-[#202024] hover:bg-[#EBEEF2] dark:hover:bg-[#27272A] focus:bg-white dark:focus:bg-[#18181B] text-slate-900 dark:text-white rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-[#2E2E33] outline-none text-xs transition-colors cursor-pointer"
+                >
+                  <option value="">-- Select Quality Inspection Template --</option>
+                  {qiTemplates.map((t) => (
+                    <option key={t.id} value={t.templateName}>
+                      {t.templateName}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
         )}
 
+        <datalist id="new-item-uoms-list">
+          {uoms.map((u) => (
+            <option key={u.id} value={u.uomName} />
+          ))}
+        </datalist>
+        <datalist id="new-item-brands-list">
+          {brands.map((b) => (
+            <option key={b.id} value={b.brandName} />
+          ))}
+        </datalist>
+        <datalist id="new-item-warehouses-list">
+          {warehouses.map((w) => (
+            <option key={w.id} value={w.warehouseName} />
+          ))}
+        </datalist>
+
         {/* Hidden submit button triggered by Header Save button */}
-        <button type="submit" className="hidden" aria-hidden="true" />
+        <button type="submit" className="hidden" aria-hidden="true">
+          Save
+        </button>
       </form>
     </div>
   );

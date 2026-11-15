@@ -57,6 +57,19 @@ export const WarehouseDetailPage: React.FC = () => {
           <div className="bg-white dark:bg-[#18181B] border border-slate-200/80 dark:border-[#27272A] rounded-xl p-6 shadow-xs space-y-6">
             {/* Top Form Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+              <div>
+                <label className="block text-slate-600 dark:text-zinc-400 mb-1.5 font-normal">
+                  Warehouse Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.warehouseName ?? ''}
+                  onChange={(e) => setFormData({ ...formData, warehouseName: e.target.value })}
+                  className="w-full bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all"
+                />
+              </div>
+              <div className="hidden md:block" />
+
               {/* Left Column */}
               <div className="space-y-4">
                 <div>
@@ -107,7 +120,7 @@ export const WarehouseDetailPage: React.FC = () => {
                   />
                   <datalist id="detail-parent-warehouses">
                     {warehouses.map((w) => (
-                      <option key={w.id} value={w.id} />
+                      <option key={w.id} value={w.warehouseName} />
                     ))}
                   </datalist>
                 </div>
@@ -339,12 +352,19 @@ export const WarehouseDetailPage: React.FC = () => {
                     </label>
                     <input
                       type="text"
+                      autoComplete="off"
+                      list="detail-in-transit-warehouses"
                       value={formData.defaultInTransitWarehouse ?? ''}
                       onChange={(e) =>
                         setFormData({ ...formData, defaultInTransitWarehouse: e.target.value })
                       }
                       className="w-full bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all"
                     />
+                    <datalist id="detail-in-transit-warehouses">
+                      {warehouses.map((w) => (
+                        <option key={w.id} value={w.warehouseName} />
+                      ))}
+                    </datalist>
                   </div>
                 </div>
               )}
@@ -403,13 +423,13 @@ export const WarehouseDetailPage: React.FC = () => {
                 <div className="relative flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-slate-400 dark:bg-zinc-600 -ml-[19px]" />
                   <span>
-                    You last edited this · {currentWarehouse.lastEdited || '3 months ago'}
+                    You last edited this · {currentWarehouse.lastEdited || 'just now'}
                   </span>
                 </div>
                 <div className="relative flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-slate-400 dark:bg-zinc-600 -ml-[19px]" />
                   <span>
-                    You created this · {currentWarehouse.createdBy || '3 months ago'}
+                    You created this · {currentWarehouse.createdBy || 'just now'}
                   </span>
                 </div>
               </div>

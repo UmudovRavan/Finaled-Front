@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Filter, X, Folder, ArrowUpDown, ChevronsUpDown, ChevronDown } from 'lucide-react';
+import { stockService } from '../api/stockService';
 
 interface SerialNoStatusRow {
   id: string;
@@ -9,17 +10,8 @@ interface SerialNoStatusRow {
   company: string;
 }
 
-const INITIAL_DATA: SerialNoStatusRow[] = [
-  {
-    id: 'NOUTBUK-0003',
-    itemCode: 'NOUTBUK-0003',
-    warehouse: '',
-    status: '',
-    company: 'Avalon (Demo)',
-  },
-];
-
 export const SerialNoStatusReportPage: React.FC = () => {
+  const [rows, setRows] = useState<SerialNoStatusRow[]>([]);
   const [idFilter, setIdFilter] = useState('');
   const [itemCodeFilter, setItemCodeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -37,8 +29,29 @@ export const SerialNoStatusReportPage: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [pageSize, setPageSize] = useState<number>(20);
 
+  const fetchSerials = useCallback(async () => {
+    try {
+      const data = await stockService.getSerialNos();
+      setRows(
+        data.map((s) => ({
+          id: s.serialNo || s.id,
+          itemCode: s.itemCode || '',
+          warehouse: s.warehouse || '',
+          status: s.status || '',
+          company: 'Avalon (Demo)',
+        }))
+      );
+    } catch (err) {
+      console.error('Failed to fetch serial numbers:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSerials();
+  }, [fetchSerials]);
+
   const filteredRows = useMemo(() => {
-    return INITIAL_DATA.filter((row) => {
+    return rows.filter((row) => {
       if (idFilter && !row.id.toLowerCase().includes(idFilter.toLowerCase())) return false;
       if (itemCodeFilter && !row.itemCode.toLowerCase().includes(itemCodeFilter.toLowerCase())) return false;
       if (statusFilter && row.status !== statusFilter) return false;
@@ -52,7 +65,7 @@ export const SerialNoStatusReportPage: React.FC = () => {
 
       return true;
     });
-  }, [idFilter, itemCodeFilter, statusFilter, companyFilter, colFilters]);
+  }, [rows, idFilter, itemCodeFilter, statusFilter, companyFilter, colFilters]);
 
   const toggleSelectAll = () => {
     if (selectedIds.length === filteredRows.length) {
@@ -307,7 +320,7 @@ export const SerialNoStatusReportPage: React.FC = () => {
           ))}
         </div>
         <div>
-          {filteredRows.length} of {INITIAL_DATA.length}
+          {filteredRows.length} of {rows.length}
         </div>
       </div>
     </div>

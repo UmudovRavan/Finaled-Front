@@ -10,8 +10,7 @@ import {
   Upload,
   ChevronsUpDown,
 } from 'lucide-react';
-import { useStockReconciliation } from '../context';
-import { INITIAL_PRODUCTS } from '../api';
+import { useStockReconciliation, useItem } from '../context';
 import type {
   StockReconciliationItem,
   StockReconciliationPurpose,
@@ -23,6 +22,7 @@ export const StockReconciliationDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { reconciliations, updateStatus, toggleLike } =
     useStockReconciliation();
+  const { items: rawItems } = useItem();
 
   const entry = reconciliations.find((r) => r.id === id) || reconciliations[0];
 
@@ -172,16 +172,16 @@ export const StockReconciliationDetailPage: React.FC = () => {
     if (e.key === 'Enter' && scanBarcode.trim()) {
       e.preventDefault();
       const q = scanBarcode.trim().toLowerCase();
-      const matched = INITIAL_PRODUCTS.find(
-        (p) => p.sku.toLowerCase().includes(q) || p.name.toLowerCase().includes(q)
+      const matched = rawItems.find(
+        (p) => p.itemCode.toLowerCase().includes(q) || p.itemName.toLowerCase().includes(q)
       );
-      const code = matched ? `${matched.sku}: ${matched.name}` : scanBarcode.trim();
+      const code = matched ? `${matched.itemCode}: ${matched.itemName}` : scanBarcode.trim();
       setItems((prev) => [
         ...prev,
         {
           id: `it-${Date.now()}`,
           itemCode: code,
-          itemName: matched ? matched.name : code,
+          itemName: matched ? matched.itemName : code,
           warehouse: defaultWarehouse || 'Bitmiş Ürünler - AD',
           qty: scanMode ? 0 : 1,
           stockUom: 'Nos',

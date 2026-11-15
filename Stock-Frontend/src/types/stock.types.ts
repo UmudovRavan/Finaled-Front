@@ -94,8 +94,11 @@ export type StockEntryType =
   | 'Material Receipt'
   | 'Material Issue'
   | 'Material Transfer'
+  | 'Material Transfer for Manufacture'
+  | 'Material Consumption for Manufacture'
   | 'Manufacture'
-  | 'Repack';
+  | 'Repack'
+  | 'Send to Subcontractor';
 
 export type StockEntryStatus = 'Draft' | 'Submitted' | 'Cancelled';
 
@@ -523,6 +526,45 @@ export interface ItemRecord {
   isFixedAsset: boolean;
   hasVariants?: boolean;
   variantOf?: string;
+  brand?: string;
+  description?: string;
+  allowSales?: boolean;
+  allowPurchase?: boolean;
+  allowAlternativeItem?: boolean;
+  isCustomerProvidedItem?: boolean;
+  standardSellingRate?: number;
+  overDeliveryAllowance?: number;
+  valuationMethod?: string;
+  valuationRate?: number;
+  endOfLife?: string;
+  warrantyPeriodDays?: number;
+  defaultMaterialRequestType?: string;
+  weightPerUnit?: number;
+  weightUom?: string;
+  allowNegativeStock?: boolean;
+  hasBatchNo?: boolean;
+  hasSerialNo?: boolean;
+  purchaseUom?: string;
+  minOrderQty?: number;
+  safetyStock?: number;
+  leadTimeDays?: number;
+  lastPurchaseRate?: number;
+  salesUom?: string;
+  maxDiscountPercent?: number;
+  grantCommission?: boolean;
+  includeItemInManufacturing?: boolean;
+  isSubcontractedItem?: boolean;
+  inspectionRequiredBeforePurchase?: boolean;
+  inspectionRequiredBeforeDelivery?: boolean;
+  qualityInspectionTemplate?: string;
+  qualityInspectionTemplateId?: string;
+  itemDefaults?: any[];
+  uomConversions?: any[];
+  taxes?: any[];
+  barcodes?: any[];
+  reorderLevels?: any[];
+  suppliers?: any[];
+  customerDetails?: any[];
   createdOn: string;
   lastUpdatedOn: string;
   timeAgoText: string;

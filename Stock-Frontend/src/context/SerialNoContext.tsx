@@ -112,8 +112,10 @@ export const SerialNoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const updateSerialNo = async (id: string, updated: Partial<SerialNoRecord>) => {
+    const existing = serialNos.find((item) => item.id === id) || {};
+    const saved = await stockService.updateSerialNo(id, { ...existing, ...updated });
     setSerialNos((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, ...updated, lastEdited: 'just now' } : item))
+      prev.map((item) => (item.id === id ? { ...saved, lastEdited: 'just now' } : item))
     );
   };
 

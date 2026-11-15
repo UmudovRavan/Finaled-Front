@@ -12,7 +12,7 @@ import type {
   StockViewMode,
   FilterRule,
 } from '../types';
-import { stockService, INITIAL_PACKING_SLIPS } from '../api';
+import { stockService } from '../api';
 
 interface PackingSlipQuickFiltersState {
   id: string;
@@ -60,17 +60,7 @@ const PackingSlipContext = createContext<PackingSlipContextType | undefined>(
 export const PackingSlipProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  const [slips, setSlips] = useState<PackingSlipRecord[]>(() => {
-    const saved = localStorage.getItem('altensor_packing_slips');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return INITIAL_PACKING_SLIPS;
-      }
-    }
-    return INITIAL_PACKING_SLIPS;
-  });
+  const [slips, setSlips] = useState<PackingSlipRecord[]>([]);
 
   const [viewMode, setViewMode] = useState<StockViewMode>('list');
   const [savedFilter, setSavedFilter] = useState<string>('All');
@@ -90,23 +80,21 @@ export const PackingSlipProvider: React.FC<{ children: ReactNode }> = ({
 
   const [filterRules, setFilterRules] = useState<FilterRule[]>([]);
 
-  useEffect(() => {
-    localStorage.setItem('altensor_packing_slips', JSON.stringify(slips));
-  }, [slips]);
-
   const refresh = async () => {
     setIsRefreshing(true);
     try {
       const data = await stockService.getPackingSlips();
-      if (data && data.length > 0) {
-        setSlips(data);
-      }
+      setSlips(data);
     } catch (err) {
       console.error('Failed to refresh packing slips:', err);
     } finally {
-      setTimeout(() => setIsRefreshing(false), 300);
+      setIsRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const createSlip = async (
     data: Partial<PackingSlipRecord>
@@ -116,10 +104,21 @@ export const PackingSlipProvider: React.FC<{ children: ReactNode }> = ({
     return res;
   };
 
-  const updateStatus = (id: string, status: PackingSlipStatus) => {
-    setSlips((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, status } : s))
-    );
+  const updateStatus = async (id: string, status: PackingSlipStatus) => {
+    try {
+      const updated =
+        status === 'Submitted'
+          ? await stockService.submitPackingSlip(id)
+          : status === 'Cancelled'
+          ? await stockService.cancelPackingSlip(id)
+          : null;
+      if (updated) {
+        setSlips((prev) => prev.map((s) => (s.id === id ? updated : s)));
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to update packing slip status', err);
+    }
   };
 
   const deleteSlips = (ids: string[]) => {

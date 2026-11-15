@@ -1,5 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { ChevronsUpDown } from 'lucide-react';
+import { stockService } from '../api/stockService';
+import { useItem } from '../context/ItemContext';
 
 interface SerialNoLedgerEntry {
   id: string;
@@ -15,95 +17,9 @@ interface SerialNoLedgerEntry {
   status: string;
 }
 
-const AVAILABLE_ITEMS = [
-  'NOUTBUK-0003',
-  'SKU002: Laptop',
-  'SKU004: Smartphone',
-  'SKU010: Camera',
-];
-
-const INITIAL_LEDGER_ENTRIES: SerialNoLedgerEntry[] = [
-  {
-    id: 'snl-1',
-    itemCode: 'NOUTBUK-0003',
-    postingDate: '10-11-2026',
-    postingTime: '09:15:00',
-    voucherType: 'Purchase Receipt',
-    voucherNo: 'MAT-PRE-2026-00001',
-    company: 'Avalon (Demo)',
-    warehouse: 'Devam Eden İşler - AD',
-    qty: 1.0,
-    serialNo: 'NOUTBUK-0003',
-    status: 'Active',
-  },
-  {
-    id: 'snl-2',
-    itemCode: 'NOUTBUK-0003',
-    postingDate: '12-11-2026',
-    postingTime: '14:30:00',
-    voucherType: 'Stock Entry',
-    voucherNo: 'MAT-STE-2026-00003',
-    company: 'Avalon (Demo)',
-    warehouse: 'Bitmiş Ürünler - AD',
-    qty: 1.0,
-    serialNo: 'NOUTBUK-0003',
-    status: 'Active',
-  },
-  {
-    id: 'snl-3',
-    itemCode: 'SKU002: Laptop',
-    postingDate: '01-11-2026',
-    postingTime: '11:00:00',
-    voucherType: 'Purchase Receipt',
-    voucherNo: 'MAT-PRE-2026-00004',
-    company: 'Avalon (Demo)',
-    warehouse: 'Mağazalar - AD',
-    qty: 2.0,
-    serialNo: 'SN-LAP-2026-01, SN-LAP-2026-02',
-    status: 'Active',
-  },
-  {
-    id: 'snl-4',
-    itemCode: 'SKU002: Laptop',
-    postingDate: '08-11-2026',
-    postingTime: '16:20:00',
-    voucherType: 'Delivery Note',
-    voucherNo: 'MAT-DN-2026-00002',
-    company: 'Avalon (Demo)',
-    warehouse: 'Mağazalar - AD',
-    qty: -1.0,
-    serialNo: 'SN-LAP-2026-01',
-    status: 'Delivered',
-  },
-  {
-    id: 'snl-5',
-    itemCode: 'SKU004: Smartphone',
-    postingDate: '05-11-2026',
-    postingTime: '10:45:00',
-    voucherType: 'Purchase Receipt',
-    voucherNo: 'MAT-PRE-2026-00007',
-    company: 'Avalon (Demo)',
-    warehouse: 'Mağazalar - AD',
-    qty: 1.0,
-    serialNo: 'SN-PHN-2026-09',
-    status: 'Active',
-  },
-  {
-    id: 'snl-6',
-    itemCode: 'SKU010: Camera',
-    postingDate: '07-11-2026',
-    postingTime: '13:10:00',
-    voucherType: 'Stock Entry',
-    voucherNo: 'MAT-STE-2026-00008',
-    company: 'Avalon (Demo)',
-    warehouse: 'Bitmiş Ürünler - AD',
-    qty: 1.0,
-    serialNo: 'SN-CAM-2026-04',
-    status: 'Active',
-  },
-];
-
 export const SerialNoLedgerReportPage: React.FC = () => {
+  const { items } = useItem();
+  const [entries, setEntries] = useState<SerialNoLedgerEntry[]>([]);
   const [itemCode, setItemCode] = useState('');
   const [warehouse, setWarehouse] = useState('');
   const [serialNo, setSerialNo] = useState('');
@@ -120,10 +36,55 @@ export const SerialNoLedgerReportPage: React.FC = () => {
     status: '',
   });
 
+  const availableItems = useMemo(
+    () =>
+      items.map((it) => ({
+        id: it.id,
+        label: it.itemCode ? `${it.itemCode}: ${it.itemName}` : it.itemName,
+        code: it.itemCode || it.itemName,
+      })),
+    [items]
+  );
+
+  const fetchSerialLedger = useCallback(async () => {
+    if (!itemCode.trim()) {
+      setEntries([]);
+      return;
+    }
+    const matchedItem = availableItems.find(
+      (i) => i.label === itemCode || i.code === itemCode || i.id === itemCode
+    );
+    try {
+      const data = await stockService.getSerialNoLedgerReport({
+        itemId: matchedItem?.id || undefined,
+      });
+      setEntries(
+        data.map((r: any, idx: number) => ({
+          id: r.id || `snl-${idx}`,
+          itemCode: itemCode,
+          postingDate: r.createdAt ? String(r.createdAt).slice(0, 10) : postingDate,
+          postingTime: r.createdAt ? String(r.createdAt).slice(11, 19) : postingTime,
+          voucherType: r.purchaseDocumentType || 'Serial No',
+          voucherNo: r.purchaseDocumentNo || r.serialNo || '',
+          company: 'Avalon (Demo)',
+          warehouse: r.warehouseName || r.warehouse || '',
+          qty: 1,
+          serialNo: r.serialNo || '',
+          status: r.status || 'Active',
+        }))
+      );
+    } catch (err) {
+      console.error('Failed to fetch serial no ledger:', err);
+    }
+  }, [itemCode, availableItems, postingDate, postingTime]);
+
+  useEffect(() => {
+    fetchSerialLedger();
+  }, [fetchSerialLedger]);
+
   const filteredEntries = useMemo(() => {
     if (!itemCode.trim()) return [];
-    return INITIAL_LEDGER_ENTRIES.filter((entry) => {
-      if (entry.itemCode !== itemCode) return false;
+    return entries.filter((entry) => {
       if (warehouse && !entry.warehouse.toLowerCase().includes(warehouse.toLowerCase())) return false;
       if (serialNo && !entry.serialNo.toLowerCase().includes(serialNo.toLowerCase())) return false;
 
@@ -136,7 +97,7 @@ export const SerialNoLedgerReportPage: React.FC = () => {
 
       return true;
     });
-  }, [itemCode, warehouse, serialNo, colFilters]);
+  }, [entries, itemCode, warehouse, serialNo, colFilters]);
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] flex flex-col justify-between bg-white dark:bg-[#121214] text-slate-800 dark:text-zinc-200">
@@ -151,9 +112,9 @@ export const SerialNoLedgerReportPage: React.FC = () => {
               className="appearance-none w-44 h-8 px-3 pr-8 text-xs rounded-lg bg-slate-100 dark:bg-[#1E1E22] border border-transparent dark:border-[#2E2E33] text-slate-800 dark:text-zinc-100 outline-none focus:border-slate-300 dark:focus:border-[#3E3E44] cursor-pointer"
             >
               <option value="">Item Code</option>
-              {AVAILABLE_ITEMS.map((item) => (
-                <option key={item} value={item}>
-                  {item}
+              {availableItems.map((item) => (
+                <option key={item.id} value={item.label}>
+                  {item.label}
                 </option>
               ))}
             </select>

@@ -16,7 +16,7 @@ export const QualityInspectionTemplateDetailSidebar: React.FC<
       {/* Top Header Title & Icons (Edit, Printer, Heart) */}
       <div className="flex items-center justify-between pb-1">
         <div className="font-semibold text-slate-800 dark:text-zinc-200 text-sm tracking-tight truncate">
-          {template.id}
+          {template.templateName || template.id}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <button

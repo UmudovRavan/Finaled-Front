@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUOMConversionFactor } from '../context';
+import { ChevronDown } from 'lucide-react';
+import { useUOMConversionFactor, useUOM } from '../context';
+
+const CATEGORY_OPTIONS = ['Unit', 'Quantity', 'Mass', 'Length', 'Volume', 'Area', 'Time'];
 
 export const NewUOMConversionFactorPage: React.FC = () => {
   const navigate = useNavigate();
   const { addConversionFactor } = useUOMConversionFactor();
+  const { uoms } = useUOM();
 
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState('Unit');
   const [fromUOM, setFromUOM] = useState('');
   const [toUOM, setToUOM] = useState('');
-  const [value, setValue] = useState('0.000000000');
+  const [value, setValue] = useState('1');
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
@@ -24,7 +28,7 @@ export const NewUOMConversionFactorPage: React.FC = () => {
         category: category.trim(),
         fromUOM: fromUOM.trim(),
         toUOM: toUOM.trim(),
-        value: value.trim() || '0.000000000',
+        value: value.trim() || '1',
       });
       navigate(`/uom-conversion-factor/${encodeURIComponent(newRecord.id)}`);
     } catch (err) {
@@ -42,13 +46,20 @@ export const NewUOMConversionFactorPage: React.FC = () => {
             <label className="block text-slate-600 dark:text-zinc-400 mb-1.5 font-normal">
               Category <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all"
-              autoFocus
-            />
+            <div className="relative">
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full appearance-none bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 px-3 py-2 pr-8 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all cursor-pointer"
+              >
+                {CATEGORY_OPTIONS.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
           </div>
 
           <div className="border-t border-slate-100 dark:border-[#27272A] pt-3 space-y-4">
@@ -56,24 +67,42 @@ export const NewUOMConversionFactorPage: React.FC = () => {
               <label className="block text-slate-600 dark:text-zinc-400 mb-1.5 font-normal">
                 From <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                value={fromUOM}
-                onChange={(e) => setFromUOM(e.target.value)}
-                className="w-full bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all"
-              />
+              <div className="relative">
+                <select
+                  value={fromUOM}
+                  onChange={(e) => setFromUOM(e.target.value)}
+                  className="w-full appearance-none bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 px-3 py-2 pr-8 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all cursor-pointer"
+                >
+                  <option value="">UOM seçin...</option>
+                  {uoms.map((u) => (
+                    <option key={u.id} value={u.uomName}>
+                      {u.uomName}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
 
             <div>
               <label className="block text-slate-600 dark:text-zinc-400 mb-1.5 font-normal">
                 To <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                value={toUOM}
-                onChange={(e) => setToUOM(e.target.value)}
-                className="w-full bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all"
-              />
+              <div className="relative">
+                <select
+                  value={toUOM}
+                  onChange={(e) => setToUOM(e.target.value)}
+                  className="w-full appearance-none bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 px-3 py-2 pr-8 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all cursor-pointer"
+                >
+                  <option value="">UOM seçin...</option>
+                  {uoms.map((u) => (
+                    <option key={u.id} value={u.uomName}>
+                      {u.uomName}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
 
             <div>
@@ -81,7 +110,8 @@ export const NewUOMConversionFactorPage: React.FC = () => {
                 Value <span className="text-red-500">*</span>
               </label>
               <input
-                type="text"
+                type="number"
+                step="any"
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 className="w-full bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 font-mono px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all"
@@ -104,4 +134,3 @@ export const NewUOMConversionFactorPage: React.FC = () => {
     </div>
   );
 };
-

@@ -55,11 +55,11 @@ export function parseJwtToken(token: string): UserInfo | null {
   }
 }
 
-export function isTokenExpired(token: string): boolean {
+export function isTokenExpired(token: string, bufferSeconds = 0): boolean {
   try {
     const decoded = jwtDecode<{ exp?: number }>(token);
     if (!decoded.exp) return false;
-    return Date.now() >= decoded.exp * 1000;
+    return Date.now() + bufferSeconds * 1000 >= decoded.exp * 1000;
   } catch {
     return true;
   }

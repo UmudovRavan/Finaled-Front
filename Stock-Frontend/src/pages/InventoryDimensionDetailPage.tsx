@@ -115,9 +115,20 @@ export const InventoryDimensionDetailPage: React.FC = () => {
           {activeTab === 'details' && (
             <div className="bg-white dark:bg-[#18181B] border border-slate-200/80 dark:border-[#27272A] rounded-xl p-6 shadow-xs space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Left side empty or read-only dimension name */}
+                {/* Dimension Name * */}
                 <div>
-                  {/* Keep blank or light subtitle matching Frappe UI */}
+                  <label className="block text-slate-600 dark:text-zinc-300 mb-1.5 font-normal text-xs">
+                    Dimension Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.dimensionName ?? ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, dimensionName: e.target.value })
+                    }
+                    className="w-full bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 text-xs px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none transition-all"
+                  />
                 </div>
 
                 {/* Reference Document * */}
@@ -299,13 +310,13 @@ export const InventoryDimensionDetailPage: React.FC = () => {
                   <div className="relative flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-slate-400 dark:bg-zinc-600 -ml-[19px]" />
                     <span>
-                      You created this · {currentDimension.createdOn || 'yesterday'}
+                      You created this · {currentDimension.createdOn || 'just now'}
                     </span>
                   </div>
                   <div className="relative flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-slate-400 dark:bg-zinc-600 -ml-[19px]" />
                     <span>
-                      You last edited this · {currentDimension.lastEdited || 'yesterday'}
+                      You last edited this · {currentDimension.lastEdited || 'just now'}
                     </span>
                   </div>
                 </div>

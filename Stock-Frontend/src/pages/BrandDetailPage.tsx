@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Settings, Plus, Trash2, ChevronUp } from 'lucide-react';
 import { useBrand } from '../context';
 import type { BrandDefaultRow } from '../types';
@@ -7,29 +7,48 @@ import { BrandDetailSidebar } from '../components/brand/BrandDetailSidebar';
 
 export const BrandDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { brands, updateBrand, toggleLike } = useBrand();
+  const navigate = useNavigate();
+  const { brands, loading, updateBrand, deleteBrand, toggleLike } = useBrand();
 
-  const decodedId = id ? decodeURIComponent(id) : 'ddd';
-  const brand =
-    brands.find(
-      (b) =>
-        b.id.toLowerCase() === decodedId.toLowerCase() ||
-        b.brandName.toLowerCase() === decodedId.toLowerCase()
-    ) || {
-      id: decodedId,
-      brandName: decodedId,
-      description: 'vbnm,',
-      defaults: [],
-      timeAgoText: 'now',
-      commentsCount: 0,
-      isLiked: false,
-    };
+  const decodedId = id ? decodeURIComponent(id) : '';
+  const brand = brands.find(
+    (b) =>
+      b.id.toLowerCase() === decodedId.toLowerCase() ||
+      b.brandName.toLowerCase() === decodedId.toLowerCase()
+  );
 
-  const [description, setDescription] = useState(brand.description || '');
-  const [defaults, setDefaults] = useState<BrandDefaultRow[]>(brand.defaults || []);
+  const [brandName, setBrandName] = useState('');
+  const [description, setDescription] = useState('');
+  const [defaults, setDefaults] = useState<BrandDefaultRow[]>([]);
   const [selectedDefaultRows, setSelectedDefaultRows] = useState<string[]>([]);
   const [commentText, setCommentText] = useState('');
   const [isActivityOpen, setIsActivityOpen] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    if (brand) {
+      setBrandName(brand.brandName || '');
+      setDescription(brand.description || '');
+      setDefaults(brand.defaults || []);
+    }
+  }, [brand]);
+
+  if (loading && !brand) {
+    return (
+      <div className="p-8 text-center text-slate-500 dark:text-zinc-400 text-sm">
+        Loading Brand...
+      </div>
+    );
+  }
+
+  if (!brand) {
+    return (
+      <div className="p-8 text-center text-slate-500 dark:text-zinc-400 text-sm">
+        Brand not found.
+      </div>
+    );
+  }
 
   const handleAddDefaultRow = () => {
     const newRow: BrandDefaultRow = {
@@ -46,12 +65,39 @@ export const BrandDetailPage: React.FC = () => {
     setSelectedDefaultRows([]);
   };
 
-  const handleSave = (e?: React.FormEvent) => {
+  const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    updateBrand(brand.id, {
-      description,
-      defaults,
-    });
+    if (!brandName.trim()) {
+      alert('Brand Name is required');
+      return;
+    }
+    try {
+      setIsSaving(true);
+      await updateBrand(brand.id, {
+        brandName: brandName.trim(),
+        description,
+        defaults,
+      });
+    } catch (err) {
+      console.error('Failed to update Brand', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm(`"${brand.brandName}" brendini silmək istədiyinizə əminsiniz?`)) {
+      return;
+    }
+    try {
+      setIsDeleting(true);
+      await deleteBrand(brand.id);
+      navigate('/brand');
+    } catch (err) {
+      console.error('Failed to delete Brand', err);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -62,6 +108,29 @@ export const BrandDetailPage: React.FC = () => {
         <div className="flex-1 w-full space-y-6">
           <form onSubmit={handleSave} className="space-y-6">
             <div className="bg-white dark:bg-[#151518] rounded-xl border border-slate-200/80 dark:border-[#27272A] p-6 shadow-xs space-y-8">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-2 max-w-md flex-1">
+                  <label className="block text-slate-700 dark:text-zinc-300 text-xs font-normal">
+                    Brand Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={brandName}
+                    onChange={(e) => setBrandName(e.target.value)}
+                    className="w-full bg-[#F4F5F7] dark:bg-[#1E1E22] text-slate-900 dark:text-white px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/70 text-xs font-medium transition-colors disabled:opacity-50 mt-6"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{isDeleting ? 'Deleting...' : 'Delete'}</span>
+                </button>
+              </div>
+
               {/* Description Input */}
               <div className="space-y-2 max-w-2xl">
                 <label className="block text-slate-700 dark:text-zinc-300 text-xs font-normal">
@@ -296,7 +365,8 @@ export const BrandDetailPage: React.FC = () => {
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                className="px-5 py-2 rounded-lg bg-black hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-medium text-xs shadow-sm transition-all"
+                disabled={isSaving}
+                className="px-5 py-2 rounded-lg bg-black hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-medium text-xs shadow-sm transition-all disabled:opacity-50"
               >
                 Save
               </button>

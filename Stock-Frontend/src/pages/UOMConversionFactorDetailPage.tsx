@@ -1,18 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react';
-import { useUOMConversionFactor } from '../context';
+import { useUOMConversionFactor, useUOM } from '../context';
 import { UOMConversionFactorDetailSidebar } from '../components/uom-conversion-factor/UOMConversionFactorDetailSidebar';
 import type { UOMConversionFactorRecord } from '../types';
+
+const CATEGORY_OPTIONS = ['Unit', 'Quantity', 'Mass', 'Length', 'Volume', 'Area', 'Time'];
 
 export const UOMConversionFactorDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { factors, updateConversionFactor, toggleLike } = useUOMConversionFactor();
+  const { uoms } = useUOM();
 
   const decodedId = decodeURIComponent(id || '');
   const currentFactor = factors.find(
     (f) => f.id.toLowerCase() === decodedId.toLowerCase()
   );
+
+  const resolveUomName = (val?: string) => {
+    if (!val) return '';
+    const match = uoms.find(
+      (u) => u.id.toLowerCase() === val.toLowerCase() || u.uomName.toLowerCase() === val.toLowerCase()
+    );
+    return match ? match.uomName : val;
+  };
 
   const [formData, setFormData] = useState<Partial<UOMConversionFactorRecord>>({});
   const [commentText, setCommentText] = useState('');
@@ -21,9 +32,13 @@ export const UOMConversionFactorDetailPage: React.FC = () => {
 
   useEffect(() => {
     if (currentFactor) {
-      setFormData(currentFactor);
+      setFormData({
+        ...currentFactor,
+        fromUOM: resolveUomName(currentFactor.fromUOM),
+        toUOM: resolveUomName(currentFactor.toUOM),
+      });
     }
-  }, [currentFactor]);
+  }, [currentFactor, uoms]);
 
   if (!currentFactor) {
     return (
@@ -55,12 +70,20 @@ export const UOMConversionFactorDetailPage: React.FC = () => {
                 <label className="block text-slate-600 dark:text-zinc-400 mb-1.5 font-normal">
                   Category <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  value={formData.category ?? 'Mass'}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all"
-                />
+                <div className="relative">
+                  <select
+                    value={formData.category ?? 'Unit'}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full appearance-none bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 px-3 py-2 pr-8 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all cursor-pointer"
+                  >
+                    {CATEGORY_OPTIONS.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
 
               <div className="border-t border-slate-100 dark:border-[#27272A] pt-3 space-y-4">
@@ -68,24 +91,42 @@ export const UOMConversionFactorDetailPage: React.FC = () => {
                   <label className="block text-slate-600 dark:text-zinc-400 mb-1.5 font-normal">
                     From <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    value={formData.fromUOM ?? 'Gram'}
-                    onChange={(e) => setFormData({ ...formData, fromUOM: e.target.value })}
-                    className="w-full bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all"
-                  />
+                  <div className="relative">
+                    <select
+                      value={resolveUomName(formData.fromUOM)}
+                      onChange={(e) => setFormData({ ...formData, fromUOM: e.target.value })}
+                      className="w-full appearance-none bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 px-3 py-2 pr-8 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all cursor-pointer"
+                    >
+                      <option value="">UOM seçin...</option>
+                      {uoms.map((u) => (
+                        <option key={u.id} value={u.uomName}>
+                          {u.uomName}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-slate-600 dark:text-zinc-400 mb-1.5 font-normal">
                     To <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    value={formData.toUOM ?? 'Ounce'}
-                    onChange={(e) => setFormData({ ...formData, toUOM: e.target.value })}
-                    className="w-full bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all"
-                  />
+                  <div className="relative">
+                    <select
+                      value={resolveUomName(formData.toUOM)}
+                      onChange={(e) => setFormData({ ...formData, toUOM: e.target.value })}
+                      className="w-full appearance-none bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 px-3 py-2 pr-8 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all cursor-pointer"
+                    >
+                      <option value="">UOM seçin...</option>
+                      {uoms.map((u) => (
+                        <option key={u.id} value={u.uomName}>
+                          {u.uomName}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
 
                 <div>
@@ -93,8 +134,9 @@ export const UOMConversionFactorDetailPage: React.FC = () => {
                     Value <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type="text"
-                    value={formData.value ?? '0.035274000'}
+                    type="number"
+                    step="any"
+                    value={formData.value ?? '1'}
                     onChange={(e) => setFormData({ ...formData, value: e.target.value })}
                     className="w-full bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 font-mono px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none text-xs transition-all"
                   />

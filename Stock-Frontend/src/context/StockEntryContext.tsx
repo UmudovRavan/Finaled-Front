@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import type { StockEntryRecord, StockViewMode, FilterRule } from '../types';
-import { stockService, INITIAL_STOCK_ENTRIES } from '../api';
+import { stockService } from '../api';
 
 interface QuickFilters {
   id: string;
@@ -46,17 +46,7 @@ interface StockEntryContextType {
 const StockEntryContext = createContext<StockEntryContextType | undefined>(undefined);
 
 export const StockEntryProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [entries, setEntries] = useState<StockEntryRecord[]>(() => {
-    const saved = localStorage.getItem('altensor_stock_entries');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return INITIAL_STOCK_ENTRIES;
-      }
-    }
-    return INITIAL_STOCK_ENTRIES;
-  });
+  const [entries, setEntries] = useState<StockEntryRecord[]>([]);
 
   const [viewMode, setViewMode] = useState<StockViewMode>('list');
   const [savedFilter, setSavedFilter] = useState<string>('All');
@@ -79,23 +69,21 @@ export const StockEntryProvider: React.FC<{ children: ReactNode }> = ({ children
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    localStorage.setItem('altensor_stock_entries', JSON.stringify(entries));
-  }, [entries]);
-
   const refresh = async () => {
     setIsRefreshing(true);
     try {
       const data = await stockService.getStockEntries();
-      if (data && data.length > 0) {
-        setEntries(data);
-      }
-    } catch {
-      // Keep current data
+      setEntries(data);
+    } catch (err) {
+      console.error('Failed to load stock entries', err);
     } finally {
-      setTimeout(() => setIsRefreshing(false), 400);
+      setIsRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) =>
@@ -125,30 +113,21 @@ export const StockEntryProvider: React.FC<{ children: ReactNode }> = ({ children
     setEntries((prev) => [created, ...prev]);
   };
 
-  const updateStatus = (id: string, status: 'Draft' | 'Submitted' | 'Cancelled') => {
-    setEntries((prev) =>
-      prev.map((e) =>
-        e.id === id
-          ? {
-              ...e,
-              status,
-              perTransferred: status === 'Submitted' ? 100 : e.perTransferred,
-              lastUpdatedOn: new Date().toISOString(),
-            }
-          : e
-      )
-    );
-    if (selectedEntry && selectedEntry.id === id) {
-      setSelectedEntry((prev) =>
-        prev
-          ? {
-              ...prev,
-              status,
-              perTransferred: status === 'Submitted' ? 100 : prev.perTransferred,
-              lastUpdatedOn: new Date().toISOString(),
-            }
-          : null
-      );
+  const updateStatus = async (id: string, status: 'Draft' | 'Submitted' | 'Cancelled') => {
+    try {
+      const updated =
+        status === 'Submitted'
+          ? await stockService.submitStockEntry(id)
+          : status === 'Cancelled'
+          ? await stockService.cancelStockEntry(id)
+          : null;
+      if (updated) {
+        setEntries((prev) => prev.map((e) => (e.id === id ? updated : e)));
+        if (selectedEntry?.id === id) setSelectedEntry(updated);
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to update stock entry status', err);
     }
   };
 

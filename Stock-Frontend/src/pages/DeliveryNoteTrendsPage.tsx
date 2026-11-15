@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { stockService } from '../api/stockService';
 
 interface DeliveryTrendRow {
   id: string;
@@ -31,130 +32,23 @@ interface DeliveryTrendRow {
   decAmt: number;
 }
 
-const INITIAL_DELIVERY_TREND_ROWS: DeliveryTrendRow[] = [
-  {
-    id: 'row-1',
-    item: 'SKU001: T-shirt',
-    itemName: 'T-shirt',
-    currency: 'USD',
-    janQty: 0.0,
-    janAmt: 0.0,
-    febQty: 0.0,
-    febAmt: 0.0,
-    marQty: 0.0,
-    marAmt: 0.0,
-    aprQty: 0.0,
-    aprAmt: 0.0,
-    mayQty: 0.0,
-    mayAmt: 0.0,
-    junQty: 0.0,
-    junAmt: 0.0,
-    julQty: 0.0,
-    julAmt: 0.0,
-    augQty: 0.0,
-    augAmt: 0.0,
-    sepQty: 0.0,
-    sepAmt: 0.0,
-    octQty: 0.0,
-    octAmt: 0.0,
-    novQty: 0.0,
-    novAmt: 0.0,
-    decQty: 0.0,
-    decAmt: 0.0,
-  },
-  {
-    id: 'row-2',
-    item: 'SKU002: Laptop',
-    itemName: 'Laptop',
-    currency: 'USD',
-    janQty: 0.0,
-    janAmt: 0.0,
-    febQty: 0.0,
-    febAmt: 0.0,
-    marQty: 0.0,
-    marAmt: 0.0,
-    aprQty: 0.0,
-    aprAmt: 0.0,
-    mayQty: 0.0,
-    mayAmt: 0.0,
-    junQty: 0.0,
-    junAmt: 0.0,
-    julQty: 0.0,
-    julAmt: 0.0,
-    augQty: 0.0,
-    augAmt: 0.0,
-    sepQty: 0.0,
-    sepAmt: 0.0,
-    octQty: 0.0,
-    octAmt: 0.0,
-    novQty: 5.0,
-    novAmt: 600.0,
-    decQty: 0.0,
-    decAmt: 0.0,
-  },
-  {
-    id: 'row-3',
-    item: 'SKU004: Smartphone',
-    itemName: 'Smartphone',
-    currency: 'USD',
-    janQty: 0.0,
-    janAmt: 0.0,
-    febQty: 0.0,
-    febAmt: 0.0,
-    marQty: 0.0,
-    marAmt: 0.0,
-    aprQty: 0.0,
-    aprAmt: 0.0,
-    mayQty: 0.0,
-    mayAmt: 0.0,
-    junQty: 0.0,
-    junAmt: 0.0,
-    julQty: 0.0,
-    julAmt: 0.0,
-    augQty: 0.0,
-    augAmt: 0.0,
-    sepQty: 0.0,
-    sepAmt: 0.0,
-    octQty: 0.0,
-    octAmt: 0.0,
-    novQty: 0.0,
-    novAmt: 0.0,
-    decQty: 0.0,
-    decAmt: 0.0,
-  },
-  {
-    id: 'row-4',
-    item: 'SKU007: Television',
-    itemName: 'Television',
-    currency: 'USD',
-    janQty: 0.0,
-    janAmt: 0.0,
-    febQty: 0.0,
-    febAmt: 0.0,
-    marQty: 0.0,
-    marAmt: 0.0,
-    aprQty: 0.0,
-    aprAmt: 0.0,
-    mayQty: 0.0,
-    mayAmt: 0.0,
-    junQty: 0.0,
-    junAmt: 0.0,
-    julQty: 0.0,
-    julAmt: 0.0,
-    augQty: 0.0,
-    augAmt: 0.0,
-    sepQty: 0.0,
-    sepAmt: 0.0,
-    octQty: 0.0,
-    octAmt: 0.0,
-    novQty: 0.0,
-    novAmt: 0.0,
-    decQty: 0.0,
-    decAmt: 0.0,
-  },
+const MONTH_KEYS: [keyof DeliveryTrendRow, keyof DeliveryTrendRow][] = [
+  ['janQty', 'janAmt'],
+  ['febQty', 'febAmt'],
+  ['marQty', 'marAmt'],
+  ['aprQty', 'aprAmt'],
+  ['mayQty', 'mayAmt'],
+  ['junQty', 'junAmt'],
+  ['julQty', 'julAmt'],
+  ['augQty', 'augAmt'],
+  ['sepQty', 'sepAmt'],
+  ['octQty', 'octAmt'],
+  ['novQty', 'novAmt'],
+  ['decQty', 'decAmt'],
 ];
 
 export const DeliveryNoteTrendsPage: React.FC = () => {
+  const [rows, setRows] = useState<DeliveryTrendRow[]>([]);
   // Top Filter state matching Image 4
   const [period, setPeriod] = useState('Monthly');
   const [basedOn, setBasedOn] = useState('Item');
@@ -163,14 +57,57 @@ export const DeliveryNoteTrendsPage: React.FC = () => {
   const [company, setCompany] = useState('Avalon (Demo)');
 
   const [colFilters, setColFilters] = useState<Record<string, string>>({});
-  const [executionTime, setExecutionTime] = useState('0.003534');
+  const [executionTime, setExecutionTime] = useState('0.000000');
+
+  const fetchReport = useCallback(async () => {
+    const start = performance.now();
+    try {
+      const notes = await stockService.getDeliveryNotes();
+      const map = new Map<string, DeliveryTrendRow>();
+      for (const dn of notes) {
+        const dateStr = dn.postingDate || '';
+        const monthIdx = dateStr ? new Date(dateStr).getMonth() : -1;
+        const items = dn.items || [];
+        for (const it of items) {
+          const key = it.itemCode || it.itemName || 'Unknown';
+          if (!map.has(key)) {
+            map.set(key, {
+              id: key,
+              item: it.itemCode ? `${it.itemCode}${it.itemName ? ': ' + it.itemName : ''}` : it.itemName || '',
+              itemName: it.itemName || '',
+              currency: 'USD',
+              janQty: 0, janAmt: 0, febQty: 0, febAmt: 0, marQty: 0, marAmt: 0,
+              aprQty: 0, aprAmt: 0, mayQty: 0, mayAmt: 0, junQty: 0, junAmt: 0,
+              julQty: 0, julAmt: 0, augQty: 0, augAmt: 0, sepQty: 0, sepAmt: 0,
+              octQty: 0, octAmt: 0, novQty: 0, novAmt: 0, decQty: 0, decAmt: 0,
+            });
+          }
+          if (monthIdx >= 0 && monthIdx < 12 && (!fiscalYear || dateStr.startsWith(fiscalYear))) {
+            const row = map.get(key)!;
+            const [qKey, aKey] = MONTH_KEYS[monthIdx];
+            (row[qKey] as number) += Number(it.qty || 0);
+            (row[aKey] as number) += Number(it.amount || 0);
+          }
+        }
+      }
+      setRows(Array.from(map.values()));
+    } catch (err) {
+      console.error('Failed to fetch delivery note trends:', err);
+    } finally {
+      setExecutionTime(((performance.now() - start) / 1000).toFixed(6));
+    }
+  }, [fiscalYear]);
+
+  useEffect(() => {
+    fetchReport();
+  }, [fetchReport]);
 
   const handleColFilterChange = (colKey: string, val: string) => {
     setColFilters((prev) => ({ ...prev, [colKey]: val }));
   };
 
   const filteredRows = useMemo(() => {
-    return INITIAL_DELIVERY_TREND_ROWS.filter((row) => {
+    return rows.filter((row) => {
       for (const [k, v] of Object.entries(colFilters)) {
         if (!v.trim()) continue;
         const fieldVal = String((row as any)[k] ?? '').toLowerCase();
@@ -178,7 +115,7 @@ export const DeliveryNoteTrendsPage: React.FC = () => {
       }
       return true;
     });
-  }, [colFilters]);
+  }, [rows, colFilters]);
 
   // Totals
   const totals = useMemo(() => {

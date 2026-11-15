@@ -386,6 +386,7 @@ export const NewPackingSlipForm: React.FC = () => {
           </div>
         </div>
       </div>
+      <button type="submit" className="hidden">Save</button>
     </form>
   );
 };

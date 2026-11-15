@@ -1,4 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { stockService } from '../api/stockService';
+import { useItem } from '../context/ItemContext';
 
 interface ReorderLevelRow {
   id: string;
@@ -16,93 +18,9 @@ interface ReorderLevelRow {
   reorderLevel: number;
 }
 
-const ITEM_GROUPS = [
-  'Consumable',
-  'Demo Item Group',
-  'Products',
-  'Raw Material',
-  'Services',
-];
-
-const INITIAL_REORDER_DATA: ReorderLevelRow[] = [
-  {
-    id: 'rr-1',
-    item: 'asas: daads',
-    itemName: 'daads',
-    itemGroup: 'Consumable',
-    brand: '',
-    description: '',
-    safetyStock: 0.0,
-    leadTimeDays: 0.0,
-    consumed: 0.0,
-    delivered: 0.0,
-    totalOutgoing: 0.0,
-    avgDailyOutgoing: 0.0,
-    reorderLevel: 0.0,
-  },
-  {
-    id: 'rr-2',
-    item: 'SKU002: Laptop',
-    itemName: 'Laptop',
-    itemGroup: 'Demo Item Group',
-    brand: 'Avalon Tech',
-    description: 'High performance workstation laptop',
-    safetyStock: 5.0,
-    leadTimeDays: 7.0,
-    consumed: 2.0,
-    delivered: 18.0,
-    totalOutgoing: 20.0,
-    avgDailyOutgoing: 0.25,
-    reorderLevel: 6.75,
-  },
-  {
-    id: 'rr-3',
-    item: 'SKU006: Coffee Mug',
-    itemName: 'Coffee Mug',
-    itemGroup: 'Demo Item Group',
-    brand: 'Avalon Home',
-    description: 'Insulated ceramic mug',
-    safetyStock: 20.0,
-    leadTimeDays: 5.0,
-    consumed: 10.0,
-    delivered: 45.0,
-    totalOutgoing: 55.0,
-    avgDailyOutgoing: 0.65,
-    reorderLevel: 23.25,
-  },
-  {
-    id: 'rr-4',
-    item: 'SKU010: Camera',
-    itemName: 'Camera',
-    itemGroup: 'Products',
-    brand: 'OpticPro',
-    description: '4K mirrorless digital camera',
-    safetyStock: 4.0,
-    leadTimeDays: 10.0,
-    consumed: 0.0,
-    delivered: 12.0,
-    totalOutgoing: 12.0,
-    avgDailyOutgoing: 0.15,
-    reorderLevel: 5.5,
-  },
-  {
-    id: 'rr-5',
-    item: 'RM-001: Aluminum Sheet',
-    itemName: 'Aluminum Sheet',
-    itemGroup: 'Raw Material',
-    brand: 'MetalCore',
-    description: 'Industrial grade 2mm sheet',
-    safetyStock: 50.0,
-    leadTimeDays: 14.0,
-    consumed: 140.0,
-    delivered: 0.0,
-    totalOutgoing: 140.0,
-    avgDailyOutgoing: 2.5,
-    reorderLevel: 85.0,
-  },
-];
-
 export const ItemwiseRecommendedReorderLevelPage: React.FC = () => {
+  const { items } = useItem();
+  const [rows, setRows] = useState<ReorderLevelRow[]>([]);
   const [fromDate, setFromDate] = useState('01-01-2026');
   const [toDate, setToDate] = useState('14-11-2026');
   const [itemGroup, setItemGroup] = useState('');
@@ -125,10 +43,71 @@ export const ItemwiseRecommendedReorderLevelPage: React.FC = () => {
     reorderLevel: '',
   });
 
+  const groupNames = useMemo(() => {
+    const names = new Set<string>();
+    items.forEach((i) => {
+      if (i.itemGroup) names.add(i.itemGroup);
+    });
+    return Array.from(names);
+  }, [items]);
+
+  const fetchReorderData = useCallback(async () => {
+    try {
+      const ledger = await stockService.getStockLedgerReport();
+      const outgoingByItem = new Map<string, { consumed: number; delivered: number }>();
+      for (const l of ledger) {
+        const key = l.itemId || l.itemCode || '';
+        if (!key) continue;
+        const curr = outgoingByItem.get(key) || { consumed: 0, delivered: 0 };
+        const out = Number(l.outQty || 0);
+        if (out > 0) {
+          if (String(l.voucherType || '').toLowerCase().includes('delivery')) {
+            curr.delivered += out;
+          } else {
+            curr.consumed += out;
+          }
+        }
+        outgoingByItem.set(key, curr);
+      }
+
+      setRows(
+        items.map((it) => {
+          const stats = outgoingByItem.get(it.id) || outgoingByItem.get(it.itemCode) || { consumed: 0, delivered: 0 };
+          const totalOutgoing = stats.consumed + stats.delivered;
+          const avgDailyOutgoing = Number((totalOutgoing / 30).toFixed(3));
+          const leadTimeDays = Number((it as any).leadTimeDays || 0);
+          const safetyStock = Number((it as any).safetyStock || (it as any).reorderLevel || 0);
+          const reorderLevel = Number((safetyStock + avgDailyOutgoing * leadTimeDays).toFixed(3));
+          return {
+            id: it.id,
+            item: it.itemCode ? `${it.itemCode}: ${it.itemName}` : it.itemName,
+            itemName: it.itemName,
+            itemGroup: it.itemGroup || '',
+            brand: (it as any).brand || '',
+            description: (it as any).description || '',
+            safetyStock,
+            leadTimeDays,
+            consumed: stats.consumed,
+            delivered: stats.delivered,
+            totalOutgoing,
+            avgDailyOutgoing,
+            reorderLevel,
+          };
+        })
+      );
+    } catch (err) {
+      console.error('Failed to fetch recommended reorder level data:', err);
+    }
+  }, [items]);
+
+  useEffect(() => {
+    fetchReorderData();
+  }, [fetchReorderData]);
+
   const filteredData = useMemo(() => {
     if (!itemGroup.trim()) return [];
 
-    return INITIAL_REORDER_DATA.filter((row) => {
+    return rows.filter((row) => {
       if (!row.itemGroup.toLowerCase().includes(itemGroup.trim().toLowerCase())) {
         return false;
       }
@@ -151,7 +130,7 @@ export const ItemwiseRecommendedReorderLevelPage: React.FC = () => {
 
       return true;
     });
-  }, [itemGroup, brandFilter, colFilters]);
+  }, [rows, itemGroup, brandFilter, colFilters]);
 
   const hasItemGroup = itemGroup.trim().length > 0;
 
@@ -192,7 +171,7 @@ export const ItemwiseRecommendedReorderLevelPage: React.FC = () => {
 
             {showGroupDropdown && (
               <div className="absolute left-0 top-9 z-40 w-48 bg-white dark:bg-[#1E1E22] border border-slate-200 dark:border-[#2E2E33] rounded-lg shadow-lg py-1 text-xs">
-                {ITEM_GROUPS.filter((g) =>
+                {groupNames.filter((g) =>
                   g.toLowerCase().includes(itemGroup.toLowerCase())
                 ).map((g) => (
                   <button

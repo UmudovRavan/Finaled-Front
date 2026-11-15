@@ -10,8 +10,7 @@ import {
   Edit2,
   Trash2,
 } from 'lucide-react';
-import { usePickList } from '../context';
-import { INITIAL_PRODUCTS, INITIAL_WAREHOUSES } from '../api';
+import { usePickList, useItem, useWarehouse } from '../context';
 import type { PickListItemLocation, PickListPurpose } from '../types';
 import { PickListDetailSidebar } from '../components/pick-list/PickListDetailSidebar';
 
@@ -19,6 +18,8 @@ export const PickListDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { pickLists, toggleLike } = usePickList();
+  const { items: rawItems } = useItem();
+  const { warehouses: rawWarehouses } = useWarehouse();
 
   const entry = pickLists.find((p) => p.id === id);
 
@@ -180,16 +181,16 @@ export const PickListDetailPage: React.FC = () => {
     if (e.key === 'Enter' && scanBarcode.trim()) {
       e.preventDefault();
       const q = scanBarcode.trim().toLowerCase();
-      const matched = INITIAL_PRODUCTS.find(
-        (p) => p.sku.toLowerCase().includes(q) || p.name.toLowerCase().includes(q)
+      const matched = rawItems.find(
+        (p) => p.itemCode.toLowerCase().includes(q) || p.itemName.toLowerCase().includes(q)
       );
-      const code = matched ? `${matched.sku}: ${matched.name}` : scanBarcode.trim();
+      const code = matched ? `${matched.itemCode}: ${matched.itemName}` : scanBarcode.trim();
       setItems((prev) => [
         ...prev,
         {
           id: `it-pl-${Date.now()}`,
           item: code,
-          itemName: matched ? matched.name : code,
+          itemName: matched ? matched.itemName : code,
           warehouse: warehouse || 'Bitmiş Ürünler - AD',
           qty: 1,
           stockQty: 1,
@@ -599,16 +600,13 @@ export const PickListDetailPage: React.FC = () => {
                     </table>
 
                     <datalist id="pl-detail-products-list">
-                      <option value="SKU002: Laptop" />
-                      {INITIAL_PRODUCTS.map((p) => (
-                        <option key={p.id} value={`${p.sku}: ${p.name}`} />
+                      {rawItems.map((p) => (
+                        <option key={p.id} value={`${p.itemCode}: ${p.itemName}`} />
                       ))}
                     </datalist>
                     <datalist id="pl-detail-warehouses-list">
-                      <option value="Bitmiş Ürünler - AD" />
-                      <option value="Devam Eden İşler - AD" />
-                      {INITIAL_WAREHOUSES.map((w) => (
-                        <option key={w.id} value={w.name} />
+                      {rawWarehouses.map((w) => (
+                        <option key={w.id} value={w.warehouseName} />
                       ))}
                     </datalist>
                   </div>

@@ -12,7 +12,7 @@ import type {
   StockViewMode,
   FilterRule,
 } from '../types';
-import { stockService, INITIAL_REPOST_ITEM_VALUATIONS } from '../api';
+import { stockService } from '../api';
 
 interface RepostItemValuationQuickFiltersState {
   id: string;
@@ -62,17 +62,7 @@ const RepostItemValuationContext = createContext<
 export const RepostItemValuationProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  const [valuations, setValuations] = useState<RepostItemValuationRecord[]>(() => {
-    const saved = localStorage.getItem('altensor_repost_item_valuations');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return INITIAL_REPOST_ITEM_VALUATIONS;
-      }
-    }
-    return INITIAL_REPOST_ITEM_VALUATIONS;
-  });
+  const [valuations, setValuations] = useState<RepostItemValuationRecord[]>([]);
 
   const [viewMode, setViewMode] = useState<StockViewMode>('list');
   const [savedFilter, setSavedFilter] = useState<string>('All');
@@ -93,26 +83,21 @@ export const RepostItemValuationProvider: React.FC<{ children: ReactNode }> = ({
 
   const [filterRules, setFilterRules] = useState<FilterRule[]>([]);
 
-  useEffect(() => {
-    localStorage.setItem(
-      'altensor_repost_item_valuations',
-      JSON.stringify(valuations)
-    );
-  }, [valuations]);
-
   const refresh = async () => {
     setIsRefreshing(true);
     try {
       const data = await stockService.getRepostItemValuations();
-      if (data && data.length > 0) {
-        setValuations(data);
-      }
+      setValuations(data);
     } catch (err) {
       console.error('Failed to refresh repost item valuations:', err);
     } finally {
-      setTimeout(() => setIsRefreshing(false), 300);
+      setIsRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const createValuation = async (
     data: Partial<RepostItemValuationRecord>

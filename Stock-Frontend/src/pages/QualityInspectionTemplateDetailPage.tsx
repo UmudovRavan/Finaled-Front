@@ -111,6 +111,22 @@ export const QualityInspectionTemplateDetailPage: React.FC = () => {
         <div className="flex-1 w-full space-y-6">
           <form onSubmit={handleSave} className="space-y-6">
             <div className="bg-white dark:bg-[#18181B] rounded-xl border border-slate-200/80 dark:border-[#27272A] p-6 shadow-xs space-y-6">
+              {/* Quality Inspection Template Name * */}
+              <div className="max-w-md">
+                <label className="block text-slate-600 dark:text-zinc-300 mb-1.5 font-normal text-xs">
+                  Quality Inspection Template Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.templateName ?? ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, templateName: e.target.value })
+                  }
+                  className="w-full bg-[#F4F5F7] dark:bg-[#202024] text-slate-800 dark:text-zinc-200 text-xs px-3 py-2 rounded-lg border border-transparent focus:border-slate-300 dark:focus:border-zinc-700 focus:bg-white dark:focus:bg-[#151518] outline-none transition-all"
+                />
+              </div>
+
               {/* Quality Inspection Top Box */}
               <div>
                 <label className="block text-slate-600 dark:text-zinc-300 mb-2 font-normal text-xs">
@@ -346,7 +362,7 @@ export const QualityInspectionTemplateDetailPage: React.FC = () => {
                     You created this
                   </span>
                   <span className="text-slate-400 dark:text-zinc-500 text-[11px]">
-                    · {currentTemplate.createdOn || 'yesterday'}
+                    · {currentTemplate.createdOn || 'just now'}
                   </span>
                 </div>
                 <div className="relative flex items-center gap-2">
@@ -357,7 +373,7 @@ export const QualityInspectionTemplateDetailPage: React.FC = () => {
                     You last edited this
                   </span>
                   <span className="text-slate-400 dark:text-zinc-500 text-[11px]">
-                    · {currentTemplate.lastEdited || 'yesterday'}
+                    · {currentTemplate.lastEdited || 'just now'}
                   </span>
                 </div>
               </div>

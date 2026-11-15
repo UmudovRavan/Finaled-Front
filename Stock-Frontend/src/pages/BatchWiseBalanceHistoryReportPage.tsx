@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Table } from 'lucide-react';
+import { stockService } from '../api/stockService';
 
 interface BatchBalanceHistoryRow {
   id: string;
@@ -16,80 +17,8 @@ interface BatchBalanceHistoryRow {
   uom: string;
 }
 
-const INITIAL_BATCH_HISTORY: BatchBalanceHistoryRow[] = [
-  {
-    id: 'bbh-1',
-    item: 'SKU002: Laptop',
-    itemName: 'Laptop',
-    description: 'High performance workstation laptop',
-    warehouseType: 'Transit',
-    warehouse: 'Devam Eden İşler - AD',
-    batch: 'BATCH-2026-001',
-    openingQty: 10.0,
-    inQty: 15.0,
-    outQty: 5.0,
-    balanceQty: 20.0,
-    uom: 'Nos',
-  },
-  {
-    id: 'bbh-2',
-    item: 'SKU004: Smartphone',
-    itemName: 'Smartphone',
-    description: 'Enterprise 5G smartphone device',
-    warehouseType: 'Retail',
-    warehouse: 'Mağazalar - AD',
-    batch: 'BATCH-2026-002',
-    openingQty: 25.0,
-    inQty: 10.0,
-    outQty: 12.0,
-    balanceQty: 23.0,
-    uom: 'Nos',
-  },
-  {
-    id: 'bbh-3',
-    item: 'SKU006: Coffee Mug',
-    itemName: 'Coffee Mug',
-    description: 'Ceramic insulated company mug',
-    warehouseType: 'Finished Goods',
-    warehouse: 'Bitmiş Ürünler - AD',
-    batch: 'BATCH-2026-003',
-    openingQty: 100.0,
-    inQty: 50.0,
-    outQty: 30.0,
-    balanceQty: 120.0,
-    uom: 'Nos',
-  },
-  {
-    id: 'bbh-4',
-    item: 'SKU009: Headphones',
-    itemName: 'Headphones',
-    description: 'Wireless noise-canceling headset',
-    warehouseType: 'Finished Goods',
-    warehouse: 'Bitmiş Ürünler - AD',
-    batch: 'BATCH-2026-004',
-    openingQty: 18.0,
-    inQty: 12.0,
-    outQty: 6.0,
-    balanceQty: 24.0,
-    uom: 'Nos',
-  },
-  {
-    id: 'bbh-5',
-    item: 'SKU010: Camera',
-    itemName: 'Camera',
-    description: '4K mirrorless digital camera',
-    warehouseType: 'Retail',
-    warehouse: 'Mağazalar - AD',
-    batch: 'BATCH-2026-005',
-    openingQty: 14.0,
-    inQty: 8.0,
-    outQty: 4.0,
-    balanceQty: 18.0,
-    uom: 'Nos',
-  },
-];
-
 export const BatchWiseBalanceHistoryReportPage: React.FC = () => {
+  const [rows, setRows] = useState<BatchBalanceHistoryRow[]>([]);
   const [company] = useState('Avalon (Demo)');
   const [fromDate, setFromDate] = useState('01-01-2026');
   const [toDate, setToDate] = useState('14-11-2026');
@@ -108,8 +37,36 @@ export const BatchWiseBalanceHistoryReportPage: React.FC = () => {
     uom: '',
   });
 
+  const fetchReport = useCallback(async () => {
+    try {
+      const data = await stockService.getBatchWiseBalanceReport();
+      setRows(
+        data.map((r: any, idx: number) => ({
+          id: r.batchId || r.id || `bbh-${idx}`,
+          item: r.itemCode ? `${r.itemCode}${r.itemName ? ': ' + r.itemName : ''}` : r.itemName || '',
+          itemName: r.itemName || '',
+          description: r.description || '',
+          warehouseType: r.warehouseType || '',
+          warehouse: r.warehouseName || '',
+          batch: r.batchNo || '',
+          openingQty: Number(r.openingQty || 0),
+          inQty: Number(r.inQty || 0),
+          outQty: Number(r.outQty || 0),
+          balanceQty: Number(r.balanceQty ?? r.availableQty ?? 0),
+          uom: r.stockUomName || r.uom || 'Nos',
+        }))
+      );
+    } catch (err) {
+      console.error('Failed to fetch batch wise balance history:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchReport();
+  }, [fetchReport]);
+
   const filteredData = useMemo(() => {
-    return INITIAL_BATCH_HISTORY.filter((row) => {
+    return rows.filter((row) => {
       if (
         itemCode &&
         !row.item.toLowerCase().includes(itemCode.toLowerCase()) &&
@@ -142,7 +99,7 @@ export const BatchWiseBalanceHistoryReportPage: React.FC = () => {
 
       return true;
     });
-  }, [itemCode, warehouseType, warehouse, batchNo, colFilters]);
+  }, [rows, itemCode, warehouseType, warehouse, batchNo, colFilters]);
 
   const totals = useMemo(() => {
     return filteredData.reduce(

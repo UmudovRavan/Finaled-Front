@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import type { DeliveryNoteRecord, DeliveryNoteStatus, StockViewMode, FilterRule } from '../types';
-import { stockService, INITIAL_DELIVERY_NOTES } from '../api';
+import { stockService } from '../api';
 
 interface DeliveryNoteQuickFiltersState {
   id: string;
@@ -48,17 +48,7 @@ interface DeliveryNoteContextType {
 const DeliveryNoteContext = createContext<DeliveryNoteContextType | undefined>(undefined);
 
 export const DeliveryNoteProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [notes, setNotes] = useState<DeliveryNoteRecord[]>(() => {
-    const saved = localStorage.getItem('altensor_delivery_notes');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return INITIAL_DELIVERY_NOTES;
-      }
-    }
-    return INITIAL_DELIVERY_NOTES;
-  });
+  const [notes, setNotes] = useState<DeliveryNoteRecord[]>([]);
 
   const [viewMode, setViewMode] = useState<StockViewMode>('list');
   const [savedFilter, setSavedFilter] = useState<string>('All');
@@ -83,23 +73,21 @@ export const DeliveryNoteProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    localStorage.setItem('altensor_delivery_notes', JSON.stringify(notes));
-  }, [notes]);
-
   const refresh = async () => {
     setIsRefreshing(true);
     try {
       const data = await stockService.getDeliveryNotes();
-      if (data && data.length > 0) {
-        setNotes(data);
-      }
-    } catch {
-      // Keep existing data
+      setNotes(data);
+    } catch (err) {
+      console.error('Failed to load delivery notes', err);
     } finally {
-      setTimeout(() => setIsRefreshing(false), 400);
+      setIsRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) =>
@@ -127,19 +115,21 @@ export const DeliveryNoteProvider: React.FC<{ children: ReactNode }> = ({ childr
     return created;
   };
 
-  const updateStatus = (id: string, status: DeliveryNoteStatus) => {
-    setNotes((prev) =>
-      prev.map((e) =>
-        e.id === id
-          ? {
-              ...e,
-              status,
-              perAmountBilled: status === 'Completed' ? 100 : e.perAmountBilled,
-              lastUpdatedOn: new Date().toISOString(),
-            }
-          : e
-      )
-    );
+  const updateStatus = async (id: string, status: DeliveryNoteStatus) => {
+    try {
+      const updated =
+        status === 'To Bill' || status === 'Completed'
+          ? await stockService.submitDeliveryNote(id)
+          : status === 'Cancelled'
+          ? await stockService.cancelDeliveryNote(id)
+          : null;
+      if (updated) {
+        setNotes((prev) => prev.map((e) => (e.id === id ? updated : e)));
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to update delivery note status', err);
+    }
   };
 
   const deleteNotes = (ids: string[]) => {

@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { stockService } from '../api/stockService';
 import {
   RotateCw,
   MoreHorizontal,
@@ -33,107 +34,9 @@ interface StockLedgerRow {
   company: string;
 }
 
-const INITIAL_LEDGER_ROWS: StockLedgerRow[] = [
-  {
-    id: 'row-1',
-    date: '01-11-2026 23:14:02',
-    item: 'SKU002: Laptop',
-    itemName: 'Laptop',
-    stockUom: 'Nos',
-    apiRequestLog: '',
-    inQty: 10.0,
-    outQty: 0.0,
-    balanceQty: 10.0,
-    warehouse: 'Devam Eden İşler - AD',
-    itemGroup: 'Demo Item Group',
-    brand: '',
-    description: '',
-    incomingRate: 50.0,
-    avgRate: 50.0,
-    outgoingRate: 0.0,
-    balanceValue: 500.0,
-    valueChange: 500.0,
-    voucherType: 'Stock Entry',
-    voucherNo: 'MAT-STE-2026-00001',
-    project: '',
-    company: 'Avalon (Demo)',
-  },
-  {
-    id: 'row-2',
-    date: '02-11-2026 10:20:15',
-    item: 'SKU001: Headset Pro',
-    itemName: 'Wireless Headset Pro',
-    stockUom: 'Nos',
-    apiRequestLog: '',
-    inQty: 25.0,
-    outQty: 0.0,
-    balanceQty: 25.0,
-    warehouse: 'Mərkəzi Baş Anbar',
-    itemGroup: 'Products',
-    brand: '',
-    description: '',
-    incomingRate: 120.0,
-    avgRate: 120.0,
-    outgoingRate: 0.0,
-    balanceValue: 3000.0,
-    valueChange: 3000.0,
-    voucherType: 'Purchase Receipt',
-    voucherNo: 'MAT-PRE-2026-00001',
-    project: '',
-    company: 'Avalon (Demo)',
-  },
-  {
-    id: 'row-3',
-    date: '03-11-2026 15:30:00',
-    item: 'SKU001: Headset Pro',
-    itemName: 'Wireless Headset Pro',
-    stockUom: 'Nos',
-    apiRequestLog: '',
-    inQty: 0.0,
-    outQty: 5.0,
-    balanceQty: 20.0,
-    warehouse: 'Mərkəzi Baş Anbar',
-    itemGroup: 'Products',
-    brand: '',
-    description: '',
-    incomingRate: 0.0,
-    avgRate: 120.0,
-    outgoingRate: 120.0,
-    balanceValue: 2400.0,
-    valueChange: -600.0,
-    voucherType: 'Delivery Note',
-    voucherNo: 'MAT-DN-2026-00001',
-    project: '',
-    company: 'Avalon (Demo)',
-  },
-  {
-    id: 'row-4',
-    date: '04-11-2026 09:45:00',
-    item: 'SKU003: Ultra Monitor',
-    itemName: 'Ultra HD Monitor 27"',
-    stockUom: 'Nos',
-    apiRequestLog: '',
-    inQty: 15.0,
-    outQty: 0.0,
-    balanceQty: 15.0,
-    warehouse: 'Sumqayıt Logistika Mərkəzi',
-    itemGroup: 'Monitors',
-    brand: '',
-    description: '',
-    incomingRate: 450.0,
-    avgRate: 450.0,
-    outgoingRate: 0.0,
-    balanceValue: 6750.0,
-    valueChange: 6750.0,
-    voucherType: 'Purchase Receipt',
-    voucherNo: 'MAT-PRE-2026-00002',
-    project: '',
-    company: 'Avalon (Demo)',
-  },
-];
-
 export const StockLedgerReportPage: React.FC = () => {
   const navigate = useNavigate();
+  const [rows, setRows] = useState<StockLedgerRow[]>([]);
 
   // Top Filter state (matching Image 1 & 2)
   const [company, setCompany] = useState('Avalon (Demo)');
@@ -163,17 +66,58 @@ export const StockLedgerReportPage: React.FC = () => {
     setColFilters((prev) => ({ ...prev, [colKey]: val }));
   };
 
-  const handleRebuild = () => {
+  const fetchReport = useCallback(async () => {
     setIsRebuilding(true);
-    setTimeout(() => {
+    const start = performance.now();
+    try {
+      const data = await stockService.getStockLedgerReport({
+        voucherNo: voucherNo || undefined,
+      });
+      setRows(
+        data.map((r, idx) => ({
+          id: r.id || `row-${idx}`,
+          date: `${r.postingDate ? String(r.postingDate).slice(0, 10) : ''} ${r.postingTime || ''}`.trim(),
+          item: r.itemCode ? `${r.itemCode}${r.itemName ? ': ' + r.itemName : ''}` : r.itemName || '',
+          itemName: r.itemName || '',
+          stockUom: r.stockUomName || 'Nos',
+          apiRequestLog: '',
+          inQty: Number(r.inQty || 0),
+          outQty: Number(r.outQty || 0),
+          balanceQty: Number(r.balanceQty || 0),
+          warehouse: r.warehouseName || '',
+          itemGroup: r.itemGroupName || '',
+          brand: r.brandName || '',
+          description: '',
+          incomingRate: Number(r.incomingRate || 0),
+          avgRate: Number(r.valuationRate || 0),
+          outgoingRate: Number(r.outgoingRate || 0),
+          balanceValue: Number(r.balanceValue || 0),
+          valueChange: Number(r.stockValueDifference || 0),
+          voucherType: r.voucherType || '',
+          voucherNo: r.voucherNo || '',
+          project: r.project || '',
+          company: 'Avalon (Demo)',
+        }))
+      );
+    } catch (err) {
+      console.error('Failed to fetch stock ledger report:', err);
+    } finally {
+      setExecutionTime(((performance.now() - start) / 1000).toFixed(6));
       setIsRebuilding(false);
-      setExecutionTime((Math.random() * 0.01 + 0.004).toFixed(6));
-    }, 500);
+    }
+  }, [voucherNo]);
+
+  useEffect(() => {
+    fetchReport();
+  }, [fetchReport]);
+
+  const handleRebuild = () => {
+    fetchReport();
   };
 
   // Filtered rows
   const filteredRows = useMemo(() => {
-    return INITIAL_LEDGER_ROWS.filter((row) => {
+    return rows.filter((row) => {
       // Global row filters
       if (company && !row.company.toLowerCase().includes(company.toLowerCase())) {
         return false;
@@ -215,6 +159,7 @@ export const StockLedgerReportPage: React.FC = () => {
       return true;
     });
   }, [
+    rows,
     company,
     warehouse,
     itemFilter,
